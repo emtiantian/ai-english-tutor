@@ -1,5 +1,10 @@
-import type { CharacterProvider, CharacterState, MotionRegistry } from '@ai-english-tutor/shared'
-import { HIYORI_MOTION_REGISTRY } from '@ai-english-tutor/shared'
+import type {
+  CharacterProvider,
+  CharacterState,
+  Live2DModelManifest,
+  MotionRegistry,
+} from '@ai-english-tutor/shared'
+import { HIYORI_MANIFEST } from '@ai-english-tutor/shared'
 
 import { CubismFramework, Option, LogLevel } from '@/lib/cubism-framework/live2dcubismframework'
 import { CubismModelSettingJson } from '@/lib/cubism-framework/cubismmodelsettingjson'
@@ -13,68 +18,15 @@ import { CubismIdHandle } from '@/lib/cubism-framework/id/cubismid'
 import { ACubismMotion } from '@/lib/cubism-framework/motion/acubismmotion'
 import { CubismMotion } from '@/lib/cubism-framework/motion/cubismmotion'
 
-const MODEL_PATH = '/models/hiyori/Hiyori.model3.json'
+/**
+ * 模型路径与表情参数预设由调用方通过 `Live2DModelManifest` 注入,
+ * 这里不再硬编码任何模型相关常量。Manifest 定义在 `@ai-english-tutor/shared`。
+ *
+ * 见 doc/live2d-素材集成计划.md(A 阶段重构)。
+ */
+type ExpressionPresetMap = NonNullable<Live2DModelManifest['expressionParamPresets']>
 
-/** 表情参数预设（Hiyori 无 .exp3.json，通过参数直接模拟） */
-const EXPRESSION_PRESETS: Record<string, Record<string, number>> = {
-  happy: {
-    ParamBrowLY: -0.3,
-    ParamBrowRY: -0.3,
-    ParamMouthForm: 1.0,
-    ParamCheek: 0.6,
-    ParamEyeLSmile: 1.0,
-    ParamEyeRSmile: 1.0,
-  },
-  neutral: {
-    ParamBrowLY: 0,
-    ParamBrowRY: 0,
-    ParamMouthForm: 0,
-    ParamCheek: 0,
-    ParamEyeLSmile: 0,
-    ParamEyeRSmile: 0,
-  },
-  curious: {
-    ParamBrowLY: -0.2,
-    ParamBrowRY: -0.5,
-    ParamBrowLAngle: 0.2,
-    ParamBrowRAngle: -0.2,
-    ParamMouthForm: 0.3,
-    ParamAngleZ: -5,
-  },
-  surprised: {
-    ParamBrowLY: -1.0,
-    ParamBrowRY: -1.0,
-    ParamEyeLOpen: 1.5,
-    ParamEyeROpen: 1.5,
-    ParamMouthForm: 0.5,
-  },
-  encouraging: {
-    ParamBrowLY: -0.4,
-    ParamBrowRY: -0.4,
-    ParamMouthForm: 1.0,
-    ParamCheek: 0.5,
-    ParamEyeLSmile: 1.0,
-    ParamEyeRSmile: 1.0,
-  },
-  thoughtful: {
-    ParamBrowLY: 0.2,
-    ParamBrowRY: 0.2,
-    ParamBrowLAngle: 0.3,
-    ParamBrowRAngle: 0.3,
-    ParamMouthForm: 0.2,
-    ParamAngleX: 3,
-    ParamAngleY: -2,
-  },
-  sad: {
-    ParamBrowLY: 0.3,
-    ParamBrowRY: 0.3,
-    ParamBrowLAngle: -0.2,
-    ParamBrowRAngle: -0.2,
-    ParamMouthForm: -0.3,
-    ParamEyeLOpen: 0.7,
-    ParamEyeROpen: 0.7,
-  },
-}
+const EMPTY_EXPRESSION_PRESETS: ExpressionPresetMap = {}
 
 /** 打哈欠参数预设（不加载新资源） */
 const YAWN_PRESET: Record<string, number> = {
@@ -127,6 +79,11 @@ class LAppModel extends CubismUserModel {
   private _idleMotionKeys: string[] = []
   /** 动作注册表：语义 ID → 模型 key */
   private _motionRegistry: MotionRegistry | null = null
+  /**
+   * 表情参数预设(由 Manifest 注入)。
+   * 模型无 .exp3.json 时,setExpression 走这套预设模拟表情。
+   */
+  private _expressionPresets: ExpressionPresetMap = EMPTY_EXPRESSION_PRESETS
 
   /** 当前表情 ID */
   private _currentExpressionId = 'neutral'
@@ -485,8 +442,9 @@ class LAppModel extends CubismUserModel {
       ? this._expressionFadeTimer / this._expressionFadeDuration
       : 1.0
 
-    const targetPreset = EXPRESSION_PRESETS[this._targetExpressionId] || EXPRESSION_PRESETS.neutral
-    const currentPreset = EXPRESSION_PRESETS[this._currentExpressionId] || EXPRESSION_PRESETS.neutral
+    const fallbackPreset = this._expressionPresets.neutral ?? {}
+    const targetPreset = this._expressionPresets[this._targetExpressionId] ?? fallbackPreset
+    const currentPreset = this._expressionPresets[this._currentExpressionId] ?? fallbackPreset
 
     // 收集所有涉及的参数
     const paramIds = new Set([
@@ -864,11 +822,18 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
+   * 设置表情参数预设(由 Provider 在 init 时根据 Manifest 注入)
+   */
+  setExpressionPresets(presets: ExpressionPresetMap): void {
+    this._expressionPresets = presets ?? EMPTY_EXPRESSION_PRESETS
+  }
+
+  /**
    * 设置表情目标，由 applyExpression 平滑过渡到目标
    * @param exprId 后端返回的表情 ID（如 'happy', 'surprised'）
    */
   setExpression(exprId: string): void {
-    if (EXPRESSION_PRESETS[exprId]) {
+    if (this._expressionPresets[exprId]) {
       this._targetExpressionId = exprId
       console.log('[Live2D] Expression target set:', exprId)
     } else {
@@ -1002,13 +967,24 @@ export class Live2DCharacterProvider implements CharacterProvider {
   private animFrameId = 0
   private lastFrameTime = 0
 
-  /** MotionRegistry — 默认使用 Hiyori 映射，可通过 setRegistry 运行时切换 */
-  private _registry: MotionRegistry = HIYORI_MOTION_REGISTRY
+  /** 当前使用的模型 manifest(决定路径、表情预设、动作映射) */
+  private _manifest: Live2DModelManifest
+  /** MotionRegistry — 默认取自 manifest,可通过 setRegistry 运行时覆盖 */
+  private _registry: MotionRegistry
 
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
     mouthOpen: 0,
+  }
+
+  /**
+   * @param manifest 模型清单。不传则使用默认的 Hiyori manifest,
+   *   行为与重构前完全一致(向后兼容)。
+   */
+  constructor(manifest: Live2DModelManifest = HIYORI_MANIFEST) {
+    this._manifest = manifest
+    this._registry = manifest.motionRegistry
   }
 
   /** 点击身体回调 */
@@ -1057,7 +1033,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
     // 加载模型
     this.model = new LAppModel()
     this.model.setMotionRegistry(this._registry)
-    await this.model.loadAssets(MODEL_PATH, this.gl, canvas.width, canvas.height)
+    this.model.setExpressionPresets(this._manifest.expressionParamPresets ?? EMPTY_EXPRESSION_PRESETS)
+    await this.model.loadAssets(this._manifest.modelJsonPath, this.gl, canvas.width, canvas.height)
 
     // 绑定鼠标事件（眼睛跟随 + 点击互动）
     this.bindMouseEvents(canvas)

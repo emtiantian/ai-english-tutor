@@ -1,4 +1,5 @@
 import type { CharacterProvider } from '@ai-english-tutor/shared'
+import { getLive2DModelManifestOrDefault } from '@ai-english-tutor/shared'
 import type { SpineModelConfig } from '../types/spine'
 import { defaultSpineConfig } from '../config/spine-animations'
 
@@ -11,6 +12,12 @@ export interface ProviderFactoryOptions {
   canvas: HTMLCanvasElement
   /** Spine 专用：自定义模型配置（可选，默认使用 spineboy） */
   spineConfig?: SpineModelConfig
+  /**
+   * Live2D 专用：模型 ID(如 'hiyori')。
+   * 未指定时使用 DEFAULT_LIVE2D_MODEL_ID,保持向后兼容。
+   * 见 packages/shared/src/models/list.ts。
+   */
+  live2dModelId?: string
 }
 
 /**
@@ -27,7 +34,7 @@ export interface ProviderFactoryOptions {
 export async function createCharacterProvider(
   options: ProviderFactoryOptions,
 ): Promise<CharacterProvider> {
-  const { type, canvas, spineConfig } = options
+  const { type, canvas, spineConfig, live2dModelId } = options
 
   switch (type) {
     case 'spine': {
@@ -39,7 +46,8 @@ export async function createCharacterProvider(
 
     case 'live2d': {
       const { Live2DCharacterProvider } = await import('./live2d-character')
-      const provider = new Live2DCharacterProvider()
+      const manifest = getLive2DModelManifestOrDefault(live2dModelId)
+      const provider = new Live2DCharacterProvider(manifest)
       await provider.init(canvas)
       return provider
     }

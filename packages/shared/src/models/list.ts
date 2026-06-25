@@ -1,16 +1,20 @@
 /**
  * 内置 Live2D 模型清单与查表 API
  *
- * 现阶段(A 阶段)只有 hiyori 一个。B 阶段拷贝 shizuku / mao_pro 时,
- * 在这里追加 import + push 即可,Provider 代码无需改动。
+ * 加新模型:在 registry/ 下加文件 → 这里 import + push 到 AVAILABLE_LIVE2D_MODELS。
+ * Provider 代码无需改动。
  */
 
 import type { Live2DModelManifest } from './types.js'
 import { HIYORI_MANIFEST } from './registry/hiyori.js'
+import { SHIZUKU_MANIFEST } from './registry/shizuku.js'
+import { MAO_PRO_MANIFEST } from './registry/mao_pro.js'
 
 /** 所有内置的 Live2D 模型 */
 export const AVAILABLE_LIVE2D_MODELS: readonly Live2DModelManifest[] = [
   HIYORI_MANIFEST,
+  SHIZUKU_MANIFEST,
+  MAO_PRO_MANIFEST,
 ]
 
 /** 默认模型 ID — 未指定时使用,保持向后兼容 */

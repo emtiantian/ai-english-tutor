@@ -293,6 +293,18 @@ A: 将 Live2D 模型放入 `apps/tutor-app/public/models/`，或 Spine 模型放
 | 50000 | CosyVoice | 可选 TTS 服务 |
 | 8080 | Whisper | 可选 ASR 服务 |
 
+## 第三方 Live2D 素材声明
+
+本仓库内置 3 个 Live2D Inc. 官方 sample 模型,均遵循 **Live2D Free Material License Agreement**(全文见 [`LICENSE-Live2D.md`](./LICENSE-Live2D.md)):
+
+| 模型 | 路径 | 出处 | 备注 |
+|---|---|---|---|
+| Hiyori Momose | `apps/tutor-app/public/models/hiyori/` | Live2D Cubism SDK Sample | 默认角色,**不得对角色设计作任何改动** |
+| Shizuku | `apps/tutor-app/public/models/shizuku/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/shizuku/` | **保持角色名与设定不变** |
+| Mao Pro | `apps/tutor-app/public/models/mao_pro/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/mao_pro/` | Mao Niziiro,无附加条款 |
+
+各模型目录下保留了原始 `ReadMe.txt`(协议要求) + `LICENSE-Live2D.md` 副本。**本项目目前为个人学习用途;商业化(订阅/卖软件/企业版)前必须向 Live2D Inc. 取得商业 license。**
+
 ## License
 
 Private — 仅供个人学习使用。

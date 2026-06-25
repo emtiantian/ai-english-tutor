@@ -106,7 +106,7 @@ loading → ready → assessing → assess-result → scenario-select → teachi
 UI 各组件按 `phase` 条件渲染（见 `App.vue`）。
 
 **三套 Provider 抽象**（接口在 `packages/shared/src/providers/`）：
-- `CharacterProvider`（`tutor-app/src/providers/factory.ts`）— `live2d` / `spine` / `svg` 三种实现，`createCharacterProviderSafe` 失败自动降级到 SVG。由 `VITE_CHARACTER_PROVIDER` 选择
+- `CharacterProvider`（`tutor-app/src/providers/factory.ts`）— `live2d` / `spine` / `rive` / `svg` 四种实现，`createCharacterProviderSafe` 失败自动降级到 SVG。由 `VITE_CHARACTER_PROVIDER` 选择 provider 类型；当 `live2d` 时由 `VITE_LIVE2D_MODEL_ID` + localStorage `tutor.live2dModelId` 选具体模型，运行时通过右上角 `CharacterModelSwitcher` 切换（`composables/useCharacterProvider.ts` 的 `switchLive2DModel` 负责 dispose + 重建）
 - `TTSProvider` — `local`（浏览器 SpeechSynthesis）/ `remote`（后端音频流），由 `VITE_TTS_SOURCE` 选择
 - `AITeacherProvider` — `preset-teacher`（mock）/ `remote-teacher`（生产，走 `TutorClient` → SSE）
 
@@ -119,7 +119,8 @@ UI 各组件按 `phase` 条件渲染（见 `App.vue`）。
 `packages/shared/src/`：
 - `types.ts`、`character-persona.ts`、`scenarios.ts` — 前后端共用的领域类型
 - `providers/{character,tts,ai-teacher,voice-input}-provider.ts` — Provider 接口定义
-- `motion-registry*.ts` — Live2D 动作/表情注册表（带 motion-analyzer 根据回复文本选动作）
+- `motion-registry*.ts` — Live2D 动作/表情注册表（带 motion-analyzer 根据回复文本选动作；hiyori 的 `HIYORI_MOTION_REGISTRY` 被后端 engine.ts 直接 import）
+- `models/` — Live2D 模型清单系统（`types.ts` 定义 `Live2DModelManifest`；`registry/{hiyori,shizuku,mao_pro}.ts` 各模型 manifest；`list.ts` 注册到 `AVAILABLE_LIVE2D_MODELS`）。Provider 不再硬编码模型路径，统一读 manifest
 - `persona-default.json`、`scenarios-default.json`、`motion-registry-default.json` — 默认数据，部署时可被 `~/.ai-english-tutor/data/{persona,scenarios}.json` 覆盖
 
 ### 配置覆盖优先级
@@ -165,6 +166,28 @@ import { config } from './config'
 加新 LLM/TTS/ASR 后端：在 `voice/providers/` 或 `ai/providers/` 加文件 → 在对应工厂（`ai/llm.ts` / `voice/tts.ts` / `voice/asr.ts`）的 `createXxxProvider()` switch 里加 case → 在 `.env.example` 加 env 文档。
 
 加新场景：编辑 `packages/shared/src/scenarios-default.json`（或部署后的 `~/.ai-english-tutor/data/scenarios.json` 覆盖）。
+
+### 加新 Live2D 模型
+
+A-D 阶段完成后，加模型已经是**纯数据工作**，不改 Provider 代码：
+
+1. **放素材** — 把 `runtime/` 下整套文件（`*.moc3` / `*.model3.json` / `*.physics3.json` / `*.cdi3.json` / `*.pose3.json` / textures / motions / expressions）拍平拷到 `apps/tutor-app/public/models/<id>/`
+2. **协议合规** — 如果是 Live2D Inc. 官方 sample，**必须**保留 `ReadMe.txt`（协议要求），并放一份 `LICENSE-Live2D.md` 到该目录；首次引入新协议时同步更新仓库根 `README.md` 的"第三方 Live2D 素材声明"章节
+3. **写 manifest** — 新建 `packages/shared/src/models/registry/<id>.ts`，照 `hiyori.ts` / `shizuku.ts` / `mao_pro.ts` 三个样例（顺序复杂度递增）写：
+   - `modelJsonPath` 指向第 1 步的 `.model3.json`
+   - `motionRegistry` — 把 8 个语义 motion ID（`wave/nod/think/...`）映射到模型自己的 motion key（`${groupName}_${index}` 格式；空字符串组的 key 是 `_0` / `_1` / ...，**坑**）
+   - `expressionParamPresets` — 用模型的 cdi3.json 里能找到的参数名写 6+1 个语义表情（happy/neutral/curious/surprised/encouraging/thoughtful/sad）；**neutral 必须把所有用到的参数显式清 0**，否则切表情时会有残留漂移
+   - `view.scale/offsetX/offsetY` — 各模型画幅差异大，需要手测调节，先填 1.0 跑起来再调
+4. **注册** — 在 `packages/shared/src/models/list.ts` 的 `AVAILABLE_LIVE2D_MODELS` 数组里加进去；在 `models/index.ts` 加 export
+5. **测试** — `apps/tutor-app/src/providers/__tests__/live2d-manifest.test.ts` 抄一组 case 覆盖新 manifest（motion key、neutral 清零、credit 字段）
+6. **构建注意** — 大于 5MB 的贴图不会进 PWA precache（`vite.config.ts` 的 `globIgnores: ['**/models/**']` 已经排除），但会被 runtime CacheFirst 缓存，无需额外动作
+
+跑 `pnpm --filter tutor-app test` + `pnpm --filter tutor-app build` 全绿就算完成。然后右上角 🎭 下拉就有新模型可选。
+
+**坑提醒**：
+- `.model3.json` 里 motion 在空字符串组 `""` 里时，Provider 加载后的 key 是 `_0` ~ `_N`（前缀为空串），manifest 里要这么写（见 `mao_pro.ts`）
+- Cubism 2.1 风格模型用 `PARAM_*` 大写下划线参数名（见 `shizuku.ts`），Cubism 4 风格用 `Param*` 驼峰（见 `hiyori.ts` / `mao_pro.ts`），**两类不能混**
+- 模型自带 `.exp3.json` 时（mao_pro 有 8 个），当前 Provider **不会自动加载**，仍走 `expressionParamPresets`；如果未来想直接用 `.exp3.json`，是 Provider 层改造，不是单加模型能解决的
 
 ### 测试约定
 

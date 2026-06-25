@@ -43,7 +43,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
+        // Live2D 模型素材(textures、moc3、motion3.json 等)体积大且按需加载,
+        // 不进 precache(下面 runtimeCaching 已经把 /models/* 走 CacheFirst 了)。
+        // 注意:此处 glob 是相对 dist/ 的,所以前缀不带 /
+        globIgnores: ['**/models/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB (Live2D textures)
         runtimeCaching: [
           {

@@ -93,6 +93,15 @@
     <div v-if="!store.isConnected && store.phase === 'teaching'" class="absolute top-10px right-10px z-20 px-12px py-6px rounded-12px text-12px font-500 bg-danger-80 text-white">
       连接断开
     </div>
+
+    <!-- Live2D Model Switcher (only after initial loading; live2d-only) -->
+    <CharacterModelSwitcher
+      v-if="!showSvg && showCharacterCanvas"
+      :current-model-id="currentLive2DModelId"
+      :is-switching="isSwitchingModel"
+      :show-at-lower-position="store.phase === 'teaching'"
+      @switch="handleSwitchLive2DModel"
+    />
   </div>
 </template>
 
@@ -112,6 +121,7 @@ import ScenarioPicker from './components/ScenarioPicker.vue'
 import ScenarioComplete from './components/ScenarioComplete.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import LevelResult from './components/LevelResult.vue'
+import CharacterModelSwitcher from './components/CharacterModelSwitcher.vue'
 import { SpeechSynthesisTTSProvider } from './providers/speech-synthesis-tts'
 import { RemoteTeacherProvider } from './providers/remote-teacher'
 import type { ChatRequestBody } from './client/types'
@@ -202,7 +212,7 @@ const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
 // run browser-side SpeechRecognition or send audio to the backend.
 const { asrProvider } = useASRConfig()
 const { isRecording, isEncoding, recordingDuration, requestType: recordRequestType, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
-const { init: initCharacter } = useCharacterProvider(characterCanvas, client)
+const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
 
 // --- Helpers ---
 async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) {
@@ -385,6 +395,11 @@ function handleNextScenario() {
   fetchScenarios().then(() => {
     store.phase = 'scenario-select'
   })
+}
+
+// --- Live2D model switching ---
+async function handleSwitchLive2DModel(modelId: string) {
+  await switchLive2DModel(modelId)
 }
 
 // --- Replay audio ---

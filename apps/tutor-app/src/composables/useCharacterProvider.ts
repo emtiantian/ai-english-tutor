@@ -1,14 +1,18 @@
-import { onUnmounted, type Ref } from 'vue'
+import { onUnmounted, ref, type Ref } from 'vue'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
 import { createCharacterProviderSafe, type CharacterProviderType } from '../providers/factory'
 import { useTutorStore } from '../stores/tutor'
 import type { TutorClient } from '../client/TutorClient'
+import { getLive2DModelId, setLive2DModelId } from '../lib/live2d-model-prefs'
 
 /**
  * Composable that manages CharacterProvider lifecycle.
  *
  * Reads VITE_CHARACTER_PROVIDER env var to determine which provider to use.
  * Supports: 'live2d' | 'spine' | 'rive' | 'svg'
+ *
+ * 当 providerType='live2d' 时,从 localStorage / VITE_LIVE2D_MODEL_ID 读模型 ID,
+ * 并提供 switchLive2DModel(id) 在运行时切换。
  */
 export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, client: TutorClient) {
   const store = useTutorStore()
@@ -18,6 +22,44 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
   let currentProvider: CharacterProvider | null = null
   let eventUnsubscribers: (() => void)[] = []
 
+  /** 当前生效的 Live2D 模型 ID(响应式,UI 可以绑定) */
+  const currentLive2DModelId = ref<string>(getLive2DModelId())
+
+  /** 切换中标志(避免并发切换 / UI loading 提示) */
+  const isSwitching = ref(false)
+
+  /**
+   * 内部:基于 modelId 创建 provider 并装配事件。
+   * 失败时 createCharacterProviderSafe 会自动降级到 SVG,这里只负责装配 wiring。
+   */
+  async function buildProvider(modelId: string): Promise<CharacterProvider | null> {
+    if (!canvasRef.value) return null
+    const provider = await createCharacterProviderSafe({
+      type: providerType,
+      canvas: canvasRef.value,
+      live2dModelId: providerType === 'live2d' ? modelId : undefined,
+    })
+
+    // Wire tap-body interaction
+    provider.onTapBody?.(() => {
+      const tapMessages = [
+        'Hey, you tapped me!',
+        'That tickles!',
+        'Hi there! Nice to meet you!',
+        'Ooh, what do you want to learn today?',
+        'Hello! Ready for an English lesson?',
+      ]
+      const text = tapMessages[Math.floor(Math.random() * tapMessages.length)]
+      store.teacherProvider?.generateResponse({
+        text,
+        level: store.currentLevel ?? undefined,
+      }).catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
+    })
+
+    eventUnsubscribers = wireCharacterEvents(provider, client)
+    return provider
+  }
+
   /**
    * Initialize the character provider.
    * Call this once after canvas is ready.
@@ -26,36 +68,89 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
     if (!canvasRef.value) return
 
     try {
-      const provider = await createCharacterProviderSafe({
-        type: providerType,
-        canvas: canvasRef.value,
-      })
+      const provider = await buildProvider(currentLive2DModelId.value)
+      if (!provider) return
 
       currentProvider = provider
-
-      // Wire tap-body interaction
-      provider.onTapBody?.(() => {
-        const tapMessages = [
-          'Hey, you tapped me!',
-          'That tickles!',
-          'Hi there! Nice to meet you!',
-          'Ooh, what do you want to learn today?',
-          'Hello! Ready for an English lesson?',
-        ]
-        const text = tapMessages[Math.floor(Math.random() * tapMessages.length)]
-        store.teacherProvider?.generateResponse({
-          text,
-          level: store.currentLevel ?? undefined,
-        }).catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
-      })
-
-      // Wire Live2D enhanced behavior events
-      eventUnsubscribers = wireCharacterEvents(provider, client)
-
       store.characterProvider = provider
-      console.log(`[CharacterProvider] Initialized: ${providerType}`)
+      console.log(`[CharacterProvider] Initialized: ${providerType}` +
+        (providerType === 'live2d' ? ` (model=${currentLive2DModelId.value})` : ''))
     } catch (err) {
       console.error(`[CharacterProvider] Failed to init ${providerType}:`, err)
+    }
+  }
+
+  /**
+   * 运行时切换 Live2D 模型。
+   *
+   * 流程:
+   *   1. 标记 isSwitching=true(供 UI loading 显示)
+   *   2. unwire 旧 provider 事件 + dispose 释放 WebGL/Framework
+   *   3. 写 localStorage(用户下次启动会沿用这个选择)
+   *   4. 用新 modelId 重建 provider
+   *   5. 失败时 fallback 到 hiyori,再失败保持旧 provider
+   *
+   * 只对 type='live2d' 生效,其他 type 调用会 no-op。
+   */
+  async function switchLive2DModel(newModelId: string): Promise<void> {
+    if (providerType !== 'live2d') {
+      console.warn('[CharacterProvider] switchLive2DModel called but providerType is not live2d')
+      return
+    }
+    if (newModelId === currentLive2DModelId.value && currentProvider) {
+      // 同一个模型,直接返回
+      return
+    }
+    if (isSwitching.value) {
+      console.warn('[CharacterProvider] switch already in progress, ignoring')
+      return
+    }
+
+    isSwitching.value = true
+    const previousProvider = currentProvider
+    const previousModelId = currentLive2DModelId.value
+    const previousUnsubs = eventUnsubscribers
+
+    try {
+      // 1. 拆旧的事件订阅 + 释放 WebGL/Framework
+      previousUnsubs.forEach((unsub) => unsub())
+      eventUnsubscribers = []
+      previousProvider?.dispose()
+      currentProvider = null
+      store.characterProvider = null
+
+      // 2. 持久化用户选择 + 用新 ID 重建
+      setLive2DModelId(newModelId)
+      currentLive2DModelId.value = newModelId
+      const next = await buildProvider(newModelId)
+
+      if (!next) {
+        // canvas 不可用 — 极少见,等下次 init
+        return
+      }
+
+      currentProvider = next
+      store.characterProvider = next
+      console.log(`[CharacterProvider] Switched live2d model: ${previousModelId} → ${newModelId}`)
+    } catch (err) {
+      console.error(
+        `[CharacterProvider] Failed to switch to ${newModelId}, falling back to hiyori:`,
+        err,
+      )
+      // 失败兜底:尝试用 hiyori 重建。如果连 hiyori 都建不出来,记录但保持空。
+      try {
+        setLive2DModelId('hiyori')
+        currentLive2DModelId.value = 'hiyori'
+        const fallback = await buildProvider('hiyori')
+        if (fallback) {
+          currentProvider = fallback
+          store.characterProvider = fallback
+        }
+      } catch (fallbackErr) {
+        console.error('[CharacterProvider] Even hiyori fallback failed:', fallbackErr)
+      }
+    } finally {
+      isSwitching.value = false
     }
   }
 
@@ -65,7 +160,12 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
     currentProvider = null
   })
 
-  return { init }
+  return {
+    init,
+    switchLive2DModel,
+    currentLive2DModelId,
+    isSwitching,
+  }
 }
 
 /**

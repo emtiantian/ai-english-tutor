@@ -1,0 +1,30 @@
+# ── Whisper.cpp ASR 可选叠加部署 ──
+#
+# 用法（需要先把模型放进 <部署根>/data/whisper-models/，部署脚本会引导下载）：
+#   docker compose -f docker-compose.yml -f docker-compose.whisper.yml up -d
+#
+# 说明：
+# - 主 docker-compose.yml 只包含 gateway / frontend / backend 核心服务
+# - 默认 ASR 走浏览器 Web Speech API（ASR_PROVIDER=browser），无需此容器
+# - 仅当 ASR_PROVIDER=whisper 时才需要叠加此文件启动 whisper.cpp 服务
+# - 模型用 bind mount（${AI_TUTOR_HOME}/data/whisper-models），随部署目录走，
+#   便于和其余 data/ 一起备份/迁移；不再用 docker named volume。
+
+services:
+  whisper:
+    image: ghcr.io/ggerganov/whisper.cpp:main
+    # 镜像默认 entrypoint 是 `bash -c`，必须显式指定二进制绝对路径，否则
+    # 启动会变成 `bash -c "-m /models/..."`，shell 会把 -m 当成命令参数解析失败。
+    entrypoint: ["/app/build/bin/whisper-server"]
+    volumes:
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/whisper-models:/models
+    command:
+      - "-m"
+      - "/models/ggml-base.en.bin"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+    networks:
+      - tutor-net
+    restart: unless-stopped

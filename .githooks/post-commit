@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# ── Context Memory 自动 link-commit hook ──
+# 把最近 60 分钟内 commits:[] 的 active entry 自动关联到刚 commit 的 HEAD。
+#
+# 设计：6 层过滤器，任一命中即静默退出（不阻塞 commit）。
+# 安装：scripts/install-githooks.sh
+# 跳过本次：commit message 加 [skip-context]
+# 卸载：git config --unset core.hooksPath
+
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+CTX_SCRIPT="$HOME/.claude/skills/context-memory/scripts/context_manager.py"
+
+# 静默前置条件
+[ -f "$CTX_SCRIPT" ] || exit 0
+[ -d "$REPO_ROOT/.context/entries" ] || exit 0
+
+# ════════════════════════════════════════
+# 过滤器 1: merge commit（多父）
+# ════════════════════════════════════════
+parent_count=$(git rev-list --no-walk --parents HEAD | awk '{print NF-1}')
+if [ "$parent_count" -gt 1 ]; then
+  exit 0
+fi
+
+# ════════════════════════════════════════
+# 过滤器 2: revert commit
+# ════════════════════════════════════════
+subject=$(git log -1 --format=%s)
+case "$subject" in
+  Revert*|revert*) exit 0 ;;
+esac
+
+# ════════════════════════════════════════
+# 过滤器 3: 显式 opt-out
+# ════════════════════════════════════════
+git log -1 --format=%B | grep -qiE '\[(skip|no)-context\]' && exit 0
+
+# ════════════════════════════════════════
+# 过滤器 4: context 系统自身的元提交（防循环 + 防误绑）
+# ════════════════════════════════════════
+case "$subject" in
+  "chore(context):"*|"chore(memory):"*) exit 0 ;;
+esac
+
+# ════════════════════════════════════════
+# 过滤器 5: 仅文档 / .context / 元数据改动
+# ════════════════════════════════════════
+changed=$(git diff-tree --no-commit-id --name-only -r HEAD)
+non_doc=$(echo "$changed" | grep -vE '^(\.context/|docs/|README|\.gitignore|\.gitattributes|\.githooks/.*\.md)' || true)
+[ -z "$non_doc" ] && exit 0
+
+# ════════════════════════════════════════
+# 过滤器 6: 改动太小（< 5 行）
+# ════════════════════════════════════════
+loc=$(git diff-tree --numstat HEAD | awk '{
+  if ($1 ~ /^[0-9]+$/ && $2 ~ /^[0-9]+$/) sum += $1 + $2
+} END { print sum+0 }')
+if [ "$loc" -lt 5 ]; then
+  exit 0
+fi
+
+# ════════════════════════════════════════
+# 寻找待绑 entry（60 分钟内 mtime + commits:[] + status:active）
+# ════════════════════════════════════════
+COMMIT_SHA=$(git rev-parse --short HEAD)
+linked_count=0
+
+while IFS= read -r f; do
+  if grep -q '^commits: \[\]' "$f" 2>/dev/null && \
+     grep -q '^status: "active"' "$f" 2>/dev/null; then
+    eid=$(grep -oE 'ctx-[0-9]{8}-[0-9]+-[a-f0-9]+' "$f" | head -1)
+    if [ -n "$eid" ]; then
+      if python3 "$CTX_SCRIPT" --project-root "$REPO_ROOT" link-commit \
+           --entry-id "$eid" --commit HEAD >/dev/null 2>&1; then
+        title=$(grep '^title:' "$f" | sed 's/title: *"\(.*\)"/\1/' | head -1)
+        echo "[context] linked $eid → $COMMIT_SHA (${title:-untitled})" >&2
+        linked_count=$((linked_count + 1))
+      fi
+    fi
+  fi
+done < <(find "$REPO_ROOT/.context/entries" -name "*.md" -type f -mmin -60 2>/dev/null)
+
+# 静默成功（什么都没匹配也正常）
+exit 0

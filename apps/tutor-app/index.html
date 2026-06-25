@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>AI English Tutor</title>
+    <style>
+      html, body {
+        width: 100%; height: 100%;
+        overflow: hidden; background: #000;
+        overscroll-behavior: none;
+      }
+      #app { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- Live2D Cubism Core (WASM engine) — 自托管，避免外部 CDN 墙内超时；版本 1.0.2，与 patchCoreForFramework 兼容。defer 不阻塞解析，Live2D init 时已就绪 -->
+    <script defer src="/lib/live2dcubismcore.min.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+# ── CosyVoice TTS 可选叠加部署 ──
+#
+# 用法（需要本机已构建好 cosyvoice:local 镜像，并具备 NVIDIA GPU）：
+#   docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml up -d
+#
+# 说明：
+# - 主 docker-compose.yml 只包含 gateway / frontend / backend / whisper 核心服务
+# - CosyVoice 强依赖 GPU，作为可选 TTS Provider 拆到此 override 文件
+# - 首次启动时会从 modelscope 拉取 iic/CosyVoice2-0.5B 模型到 modelscope 缓存
+# - 模型挂载随 AI_TUTOR_HOME（部署根）走，便于跨机/跨目录迁移并命中缓存：
+#     <root>/data/modelscope-cache → /root/.cache/modelscope（modelscope 下载缓存，
+#       镜像未设 MODELSCOPE_CACHE，默认落在 root HOME 下；命中即跳过 ~11G 重下）
+#     <root>/data/cosyvoice-models  → pretrained_models（代码侧预置模型目录）
+
+services:
+  cosyvoice:
+    image: cosyvoice:local
+    ports:
+      - "50000:50000"
+    volumes:
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/modelscope-cache:/root/.cache/modelscope
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-models:/opt/CosyVoice/CosyVoice/pretrained_models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - tutor-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - tutor-net
+    restart: unless-stopped

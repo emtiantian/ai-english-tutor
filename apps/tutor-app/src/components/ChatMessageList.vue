@@ -1,0 +1,273 @@
+<template>
+  <div
+    ref="containerEl"
+    class="chat-messages-container"
+  >
+    <div
+      v-for="msg in messages"
+      :key="msg.id"
+      v-show="msg.visible !== false"
+      class="bubble-base animate-message-in"
+      :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'"
+    >
+      <span>{{ msg.text }}</span>
+      <span v-if="msg.isStreaming" class="animate-blink">▊</span>
+      <!-- Voice transcript -->
+      <div v-if="msg.transcript && msg.text === '[语音]'" class="voice-transcript">
+        {{ msg.transcript }}
+      </div>
+      <!-- Replay buttons -->
+      <div v-if="msg.role === 'assistant' && !msg.isStreaming" class="replay-group">
+        <button
+          class="replay-btn"
+          :class="{ 'replay-btn--playing': isPlaying }"
+          :disabled="isPlaying"
+          @click="$emit('replay', msg.id)"
+          title="重听英文"
+        >
+          <svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+        </button>
+        <button
+          class="replay-btn replay-btn--zh"
+          :class="{ 'replay-btn--playing': isPlaying }"
+          :disabled="isPlaying"
+          @click="$emit('replay-chinese', msg.id)"
+          title="中文翻译"
+        >
+          <span class="zh-text">中</span>
+        </button>
+      </div>
+      <!-- Vocabulary tags -->
+      <div v-if="msg.vocabulary?.length" class="vocab-tags">
+        <span class="vocab-label">
+          <svg class="vocab-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          生词
+        </span>
+        <span
+          v-for="word in msg.vocabulary"
+          :key="word"
+          class="vocab-tag"
+        >{{ word }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, nextTick } from 'vue'
+import type { ChatMessage } from '../stores/tutor'
+
+const props = defineProps<{
+  messages: ChatMessage[]
+  isPlaying: boolean
+}>()
+
+defineEmits<{
+  replay: [messageId: string]
+  'replay-chinese': [messageId: string]
+}>()
+
+const containerEl = ref<HTMLDivElement | null>(null)
+
+// Auto-scroll to bottom when new messages arrive
+watch(
+  () => props.messages.length,
+  async () => {
+    await nextTick()
+    if (containerEl.value) {
+      containerEl.value.scrollTop = containerEl.value.scrollHeight
+    }
+  },
+)
+</script>
+
+<style scoped>
+.chat-messages-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 0;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none; /* Allow clicks to pass through to canvas below */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  /* Reserve space for the fixed bottom input bar.
+     Input bar: ~64px base + scenario section ~90px + vocab section ~50px + safe-area ~34px
+     = ~240px worst case. Use padding-bottom so messages scroll above the bar. */
+  padding-bottom: 240px;
+  box-sizing: border-box;
+}
+.chat-messages-container::-webkit-scrollbar { display: none; }
+
+/* Bubble base */
+.bubble-base {
+  max-width: 80%;
+  min-width: 0;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  color: white;
+  pointer-events: auto; /* Re-enable pointer events for bubbles (replay buttons etc.) */
+}
+
+.voice-transcript {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+  word-break: break-word;
+}
+
+.bubble-user {
+  align-self: flex-end;
+  background: rgba(59, 130, 246, 0.55);
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.bubble-assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .chat-messages-container {
+    max-height: calc(100% - 40px);
+    padding-bottom: 200px;
+    left: 12px;
+    right: 12px;
+  }
+  .bubble-base {
+    max-width: 85%;
+  }
+}
+
+/* Replay button group */
+.replay-group {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.replay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: auto;
+}
+
+.replay-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.1);
+}
+
+.replay-btn:active {
+  transform: scale(0.95);
+}
+
+.replay-btn--playing {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Chinese TTS button */
+.replay-btn--zh {
+  background: rgba(255, 100, 100, 0.15);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.replay-btn--zh:hover {
+  background: rgba(255, 100, 100, 0.3);
+}
+
+.replay-btn--zh .zh-text {
+  font-size: 13px;
+  line-height: 1;
+}
+
+
+.replay-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Vocabulary tags */
+.vocab-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vocab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.vocab-label-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.vocab-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.2));
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.vocab-tag:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.3));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+</style>

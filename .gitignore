@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Environment variables (API keys, secrets)
+.env
+.env.local
+.env.*.local
+
+# Database files
+data/
+.dev-data/
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.claude/
+.codegraph/
+
+# AI/model auto-generated artifacts (not committed)
+.context/
+/docs/
+/doc/plans/
+/doc/specs/
+/doc/design/
+/doc/PRD.md

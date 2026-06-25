@@ -1,0 +1,15 @@
+{
+  "name": "ai-english-tutor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter tutor-app dev",
+    "server": "pnpm --filter @ai-english-tutor/server dev",
+    "gateway": "bash gateway/dev.sh",
+    "local": "bash scripts/dev-local.sh",
+    "dev:clean": "bash scripts/kill-ports.sh",
+    "build": "pnpm --filter tutor-app build",
+    "push:server": "bash scripts/deploy-to-server.sh"
+  },
+  "packageManager": "pnpm@10.7.1"
+}

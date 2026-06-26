@@ -95,6 +95,12 @@ class LAppModel extends CubismUserModel {
   private readonly _mouthSmoothFactor = 0.25
   /** 口型放大系数（让嘴巴张得更大） */
   private readonly _mouthAmplify = 1.5
+  /**
+   * 模型声明的 LipSync 参数 ID(从 model3.json 的 LipSync 组读取)。
+   * 各模型嘴型参数不同:hiyori=ParamMouthOpenY / shizuku=PARAM_MOUTH_OPEN_Y / mao_pro=ParamA,
+   * 不能硬编码,必须按模型声明驱动,否则口型不动。
+   */
+  private _lipSyncIds: CubismIdHandle[] = []
 
   /** Idle 动作定时器 */
   private _idleTimer = 0.0
@@ -295,6 +301,17 @@ class LAppModel extends CubismUserModel {
       this._eyeBlink.setBlinkingSetting(0.18, 0.08, 0.25)
     }
     this._breath = CubismBreath.create()
+
+    // 8.5 收集 LipSync 参数 ID(口型同步用)。
+    // 不同模型嘴型参数不同(hiyori=ParamMouthOpenY / shizuku=PARAM_MOUTH_OPEN_Y / mao_pro=ParamA),
+    // 从 model3.json 的 LipSync 组读取,避免硬编码导致非 hiyori 模型口型不动。
+    this._lipSyncIds = []
+    const lipSyncCount = this._modelSetting.getLipSyncParameterCount()
+    for (let i = 0; i < lipSyncCount; i++) {
+      const id = this._modelSetting.getLipSyncParameterId(i)
+      if (id) this._lipSyncIds.push(id)
+    }
+    console.log('[Live2D] LipSync params:', this._lipSyncIds.length)
 
     // 9. 设置 modelMatrix 居中并缩放（复用 resize 逻辑）
     this.resize(canvasWidth, canvasHeight)
@@ -517,9 +534,17 @@ class LAppModel extends CubismUserModel {
     // 放大口型并 clamp 到 [0, 1]
     const amplified = Math.min(this._currentMouthOpen * this._mouthAmplify, 1.0)
 
-    const id = CubismFramework.getIdManager().getId('ParamMouthOpenY')
-    if (id) {
-      this._model.setParameterValueById(id, amplified)
+    // 优先驱动模型声明的 LipSync 参数(各模型不同);
+    // 模型没声明 LipSync 组时,回退到通用的 ParamMouthOpenY。
+    if (this._lipSyncIds.length > 0) {
+      for (const id of this._lipSyncIds) {
+        this._model.setParameterValueById(id, amplified)
+      }
+    } else {
+      const id = CubismFramework.getIdManager().getId('ParamMouthOpenY')
+      if (id) {
+        this._model.setParameterValueById(id, amplified)
+      }
     }
   }
 

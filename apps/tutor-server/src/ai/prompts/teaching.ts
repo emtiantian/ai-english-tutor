@@ -102,13 +102,16 @@ export function buildScenarioStartMessages(
   style?: OpeningStyle,
   persona: CharacterPersona = LUNA_PERSONA,
   reusableLines?: string[],
+  targetWords?: string[],
 ): { messages: LLMMessage[]; style: OpeningStyle } {
   const chosen = style ?? pickOpeningStyle(persona)
   // Strip base OUTPUT FORMAT — scenario context provides its own
   let systemPrompt = stripBaseOutputFormat(persona.buildSystemPrompt(level, chosen.persona))
 
+  // v2: use runtime target words when available; fall back to static scenario.targetWords
+  const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
   // Inject scenario context (includes its own OUTPUT FORMAT)
-  systemPrompt += buildScenarioContext(scenario, targetLevel)
+  systemPrompt += buildScenarioContext(scenario, targetLevel, words, { currentActIndex: 0 })
   systemPrompt += buildLineReuseBlock(reusableLines)
 
   const messages: LLMMessage[] = [
@@ -141,13 +144,20 @@ export function buildScenarioTeachingMessages(
   persona: CharacterPersona = LUNA_PERSONA,
   reviewWords?: ReviewWord[],
   reusableLines?: string[],
+  targetWords?: string[],
+  vocabState?: {
+    currentActIndex?: number
+    wordsUsed?: string[]
+  },
 ): LLMMessage[] {
   const personality = style?.persona
   // Strip base OUTPUT FORMAT — scenario context provides its own
   let systemPrompt = stripBaseOutputFormat(persona.buildSystemPrompt(level, personality))
 
+  // v2: use runtime target words when available; fall back to static scenario.targetWords
+  const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
   // Inject scenario context (includes its own OUTPUT FORMAT)
-  systemPrompt += buildScenarioContext(scenario, targetLevel)
+  systemPrompt += buildScenarioContext(scenario, targetLevel, words, vocabState)
   systemPrompt += buildLineReuseBlock(reusableLines)
 
   // Inject vocabulary review instructions if there are words to review
@@ -207,11 +217,66 @@ ${list}`
 /**
  * Build the scenario context block to inject into the system prompt.
  */
-function buildScenarioContext(scenario: Scenario, targetLevel: CEFRLevel): string {
+function buildScenarioContext(
+  scenario: Scenario,
+  targetLevel: CEFRLevel,
+  targetWords: string[],
+  state?: {
+    currentActIndex?: number
+    wordsUsed?: string[]
+  },
+): string {
+  // v2: split target words across acts so the LLM focuses on a small batch each turn
+  const actsCount = scenario.acts?.length ?? 3
+  const buckets = bucketWordsForActs(targetWords, actsCount)
+  const currentActIndex = Math.min(
+    buckets.length - 1,
+    Math.max(0, state?.currentActIndex ?? 0),
+  )
+  const currentBucket = buckets[currentActIndex]
+
+  const usedSet = new Set((state?.wordsUsed ?? []).map((w) => w.toLowerCase()))
+  const usedTargetWords = targetWords.filter((w) => usedSet.has(w.toLowerCase()))
+  const unusedTargetWords = targetWords.filter((w) => !usedSet.has(w.toLowerCase()))
+
+  const focusWords = currentBucket.words.filter(
+    (w) => !usedSet.has(w.toLowerCase()),
+  )
+  // If the current act is almost done, start surfacing next-act words too
+  const currentBucketUsedCount = currentBucket.words.filter((w) =>
+    usedSet.has(w.toLowerCase()),
+  ).length
+  const currentBucketProgress =
+    currentBucket.words.length > 0
+      ? currentBucketUsedCount / currentBucket.words.length
+      : 0
+
+  let nextBucketWords: string[] = []
+  if (currentBucketProgress >= 0.5 && currentActIndex < buckets.length - 1) {
+    nextBucketWords = buckets[currentActIndex + 1].words.filter(
+      (w) => !usedSet.has(w.toLowerCase()),
+    )
+  }
+
   // v2: use 3-act structure if available; otherwise fall back to objectives
   const actsBlock = scenario.acts
     ? buildActsBlock(scenario.acts)
     : buildObjectivesBlock(scenario.objectives)
+
+  const focusList = focusWords.slice(0, 5)
+  const nextList = nextBucketWords.slice(0, 3)
+
+  const focusSection = focusList.length
+    ? `FOCUS WORDS FOR THIS TURN (naturally use or model these UNUSED words, in priority order):\n${focusList.map((w) => `- ${w}`).join('\n')}`
+    : `FOCUS WORDS FOR THIS TURN: none left in this act — move the conversation forward toward the next act.`
+
+  const nextSection = nextList.length
+    ? `COMING UP NEXT (you may lightly preview one of these if the current act is wrapping up):\n${nextList.map((w) => `- ${w}`).join('\n')}`
+    : ''
+
+  const usedSection = usedTargetWords.length
+    ? `ALREADY USED BY STUDENT (acknowledge positively, do not force reuse):\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
+    : 'No target words used by the student yet.'
 
   return `
 
@@ -222,19 +287,25 @@ Your role: ${scenario.role.teacher}
 Student's role: ${scenario.role.student}
 Target CEFR level: ${targetLevel}
 
-TARGET VOCABULARY (use these words naturally in the conversation):
-${scenario.targetWords.join(', ')}
-
 ${actsBlock}
+
+TARGET VOCABULARY POOL (${targetWords.length} words to weave naturally across the whole scenario):
+${targetWords.join(', ')}
+
+CURRENT ACT: ${currentActIndex + 1} of ${buckets.length}
+${focusSection}
+${nextSection}
+${usedSection}
 
 SCENARIO RULES:
 - Stay in character as ${scenario.role.teacher} throughout
 - Guide the student through the act structure in order
-- Use the target vocabulary naturally in your responses
-- When the student uses target vocabulary, acknowledge it positively and naturally move forward
+- Use the FOCUS WORDS naturally in your responses; if they don't fit the moment, model one in your own line rather than forcing the student
+- When the student uses a target word, acknowledge it positively and naturally move forward
 - Keep responses concise (1-3 sentences)
 - In the Main act, introduce organic twists or complications to make the conversation feel real (do NOT rely on pre-written twists)
 - When the student has used enough target words or the conversation has gone on long enough, move toward the Closing act and wrap up naturally
+- studentReplyHints MUST be 1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT, written IN CHARACTER. Prefer hints that naturally include one of the FOCUS WORDS above.
 
 OUTPUT FORMAT:
 {
@@ -242,10 +313,22 @@ OUTPUT FORMAT:
   "textZh": "简短的中文翻译，帮助学生理解",
   "motionId": "one of: wave|nod|think|gesture|clap|point|write|surprised — pick the gesture that best fits your text",
   "expressionId": "one of: happy|neutral|curious|surprised|encouraging|thoughtful — pick the facial expression that best fits your text",
-  "vocabulary": ["target words you used from the TARGET VOCABULARY list above — only include words from that list"],
+  "vocabulary": ["target words you used from the TARGET VOCABULARY POOL above — only include words from that pool"],
   "vocabularySentences": ["TEACHING examples — one fresh natural example sentence per vocabulary word, never reuse a sentence from earlier turns; each sentence must include at least one word from the vocabulary list above. Use [] only if vocabulary is also empty."],
-  "studentReplyHints": ["1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT in response to your text — written IN CHARACTER, in the student's own voice. Prefer replies that fit the current scenario phase and naturally use a target word when it suits the moment. NEVER write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are real in-character lines the student would speak. Always provide at least one hint."]
+  "studentReplyHints": ["1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT in response to your text — written IN CHARACTER, in the student's own voice. Prefer replies that fit the current scenario phase and naturally use a FOCUS WORD when it suits the moment. NEVER write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are real in-character lines the student would speak. Always provide at least one hint."]
 }`
+}
+
+/**
+ * Split target words into roughly equal buckets, one per act.
+ */
+function bucketWordsForActs(targetWords: string[], actsCount: number): { actIndex: number; words: string[] }[] {
+  const count = Math.max(1, actsCount)
+  const bucketSize = Math.ceil(targetWords.length / count)
+  return Array.from({ length: count }, (_, i) => ({
+    actIndex: i,
+    words: targetWords.slice(i * bucketSize, (i + 1) * bucketSize),
+  }))
 }
 
 function buildActsBlock(acts: NonNullable<Scenario['acts']>): string {

@@ -87,6 +87,30 @@ function isScenarioComplete(turnsCount: number, coverage: number): boolean {
 }
 
 /**
+ * Determine which act the scenario conversation is currently in.
+ *
+ * Target words are split evenly across acts. We stay in an act until at least
+ * half of its words have been used, then advance. This keeps the LLM focused
+ * on a small, actionable batch of vocabulary each turn.
+ */
+function computeCurrentActIndex(scenarioState: ScenarioState): number {
+  // v2: scenarios are designed around a 3-act structure. When the runtime scenario
+  // does not declare acts, we still split target words into 3 buckets to keep the
+  // LLM focused on a small, actionable batch each turn.
+  const actsCount = 3
+  const bucketSize = Math.ceil(scenarioState.targetWords.length / actsCount)
+  if (bucketSize <= 0) return 0
+
+  const usedSet = scenarioState.wordsUsed
+  for (let i = 0; i < actsCount - 1; i++) {
+    const bucket = scenarioState.targetWords.slice(i * bucketSize, (i + 1) * bucketSize)
+    const usedInBucket = bucket.filter((w) => usedSet.has(w.toLowerCase())).length
+    if (usedInBucket / bucket.length < 0.5) return i
+  }
+  return actsCount - 1
+}
+
+/**
  * AI Teaching Engine
  *
  * Orchestrates LLM, ASR, and TTS for:
@@ -425,7 +449,7 @@ export class TutorEngine {
       const lineGroup = lineGroupKey(scenario.id, cefrLevel, resolvedStyle.voiceDesign)
       const reusableLines = await getReusableLines(lineGroup)
 
-      const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(scenario, level, cefrLevel, resolvedStyle, this.persona, reusableLines)
+      const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(scenario, level, cefrLevel, resolvedStyle, this.persona, reusableLines, scenarioState.targetWords)
 
       const session = this.sessions.getOrCreate(sessionId, level)
       session.userId = userId
@@ -700,6 +724,11 @@ export class TutorEngine {
         this.persona,
         reviewWords.length > 0 ? reviewWords : undefined,
         reusableLines,
+        scenarioState.targetWords,
+        {
+          currentActIndex: computeCurrentActIndex(scenarioState),
+          wordsUsed: Array.from(scenarioState.wordsUsed),
+        },
       )
     } else {
       messages = buildTeachingMessages(

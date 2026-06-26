@@ -7,7 +7,7 @@ import type {
   TeacherResponseEvent,
   LevelResultEvent,
 } from '../sse/types.js'
-import { createLLMProvider, type LLMMessage } from './llm.js'
+import { createLLMProvider, extractTextContent, type LLMMessage } from './llm.js'
 import { createTTSProvider } from '../voice/tts.js'
 import { createASRProvider } from '../voice/asr.js'
 import {
@@ -187,6 +187,23 @@ export class TutorEngine {
       const messages = isInitialTrigger
         ? buildAssessmentTurnMessages(1, '(Assessment just started — generate the first greeting and question only, do not evaluate)', previousScores, this.persona, topicSeed)
         : buildAssessmentTurnMessages(round, userText, previousScores, this.persona, topicSeed)
+
+      // Voice-capable LLM: attach raw audio to the user turn (no standalone ASR ran),
+      // otherwise the CEFR evaluation sees an empty answer.
+      if (!isInitialTrigger && audioBase64 && this.llm.capabilities.supportsAudioInput) {
+        const lastMsg = messages[messages.length - 1]
+        if (lastMsg && lastMsg.role === 'user') {
+          const existingText = extractTextContent(lastMsg)
+          lastMsg.content = [
+            { type: 'text', text: existingText || 'Please listen to the audio and respond.' },
+            { type: 'audio', data: audioBase64, format: audioFormat ?? 'webm' },
+          ]
+          logger.info(
+            { llm: this.llm.name, base64Size: audioBase64.length },
+            '[Assessment] Attached audio to user turn for voice-capable LLM',
+          )
+        }
+      }
       logger.info({
         messageCount: messages.length,
         lastUserMsg: messages.filter(m => m.role === 'user').pop()?.content?.toString().slice(0, 100),
@@ -693,6 +710,25 @@ export class TutorEngine {
         this.persona,
         reviewWords.length > 0 ? reviewWords : undefined,
       )
+    }
+
+    // Voice-capable LLMs transcribe + understand audio themselves, so no
+    // standalone ASR ran (transcribeAudio returned early). Attach the raw audio
+    // to the last user turn here, otherwise the model only sees empty/placeholder
+    // text and never actually "hears" the user.
+    if (isAudioInput && audioBase64 && this.llm.capabilities.supportsAudioInput) {
+      const lastMsg = messages[messages.length - 1]
+      if (lastMsg && lastMsg.role === 'user') {
+        const existingText = extractTextContent(lastMsg)
+        lastMsg.content = [
+          { type: 'text', text: existingText || 'Please listen to the audio and respond.' },
+          { type: 'audio', data: audioBase64, format: audioFormat },
+        ]
+        logger.info(
+          { llm: this.llm.name, audioFormat, base64Size: audioBase64.length },
+          '[LLM] Attached audio to user turn for voice-capable LLM',
+        )
+      }
     }
 
     // Call LLM and finalize

@@ -45,9 +45,18 @@ export class XiaomiTTSProvider implements TTSProvider {
         cloneSource = await this.ensureVoiceSample(voiceDesign)
       }
 
-      logger.debug(
-        { provider: this.name, mode: effectiveMode, textLength: text.length, hasVoiceDesign: !!voiceDesign },
-        'Xiaomi TTS synthesize request',
+      logger.info(
+        {
+          provider: this.name,
+          mode: effectiveMode,
+          voice: options?.voice ?? config.XIAOMI_TTS_VOICE ?? 'Chloe',
+          textLength: text.length,
+          hasVoiceDesign: !!voiceDesign,
+          voiceDesignPreview: voiceDesign?.slice(0, 60),
+          usedCloneSample: !!cloneSource,
+          textPreview: text.slice(0, 60),
+        },
+        '[Xiaomi TTS] synthesize request',
       )
 
       const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
@@ -78,7 +87,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
       logger.info(
         { provider: this.name, mode: effectiveMode, duration, size: buffer.length },
-        'Xiaomi TTS synthesize complete',
+        '[Xiaomi TTS] synthesize complete',
       )
 
       return buffer
@@ -244,6 +253,27 @@ export class XiaomiTTSProvider implements TTSProvider {
       case 'voiceclone': {
         // cloneSource 来自自动标定（ensureVoiceSample），优先级高于静态配置
         const sample = cloneSource || config.XIAOMI_TTS_VOICE_CLONE || ''
+
+        // voiceclone 模型要求 audio.voice 必须是参考音频的 DataURL。
+        // 没有任何参考样本时（没传 voiceDesign 且没配 XIAOMI_TTS_VOICE_CLONE）
+        // 无法做克隆 —— 退回 preset 模型用音色名兜底，避免 400。
+        if (!sample) {
+          logger.warn(
+            { voice },
+            '[Xiaomi TTS] voiceclone has no reference sample (missing voiceDesign) → falling back to preset model',
+          )
+          return {
+            model: 'mimo-v2.5-tts',
+            messages: [{ role: 'assistant', content: text }],
+            audio: { format, voice },
+          }
+        }
+
+        // 原始 base64 需补上 DataURL 前缀；已是 data: 开头则原样使用
+        const voiceDataUrl = sample.startsWith('data:')
+          ? sample
+          : `data:audio/wav;base64,${sample}`
+
         return {
           model: 'mimo-v2.5-tts-voiceclone',
           messages: [
@@ -254,7 +284,7 @@ export class XiaomiTTSProvider implements TTSProvider {
           ],
           audio: {
             format,
-            voice: sample || voice,
+            voice: voiceDataUrl,
           },
         }
       }

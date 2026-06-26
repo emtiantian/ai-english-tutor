@@ -41,7 +41,10 @@ export class AudioPipeline {
 
     // If LLM supports audio input, skip ASR
     if (this.llm.capabilities.supportsAudioInput) {
-      logger.info('[ASR] LLM supports audio input, skipping ASR')
+      logger.info(
+        { llm: this.llm.name, asrProviderConfigured: this.asr.name },
+        '[ASR] LLM is voice-capable → audio sent straight to LLM, standalone ASR provider NOT invoked',
+      )
       return text
     }
 
@@ -71,7 +74,10 @@ export class AudioPipeline {
   ): Promise<{ messages: LLMMessage[]; userText: string }> {
     // If audio provided and LLM supports audio input, send directly
     if (audioBase64 && this.llm.capabilities.supportsAudioInput) {
-      logger.debug('Sending audio directly to LLM (provider supports audio input)')
+      logger.info(
+        { llm: this.llm.name, audioFormat, mime: `audio/${audioFormat}`, base64Size: audioBase64.length },
+        '[LLM] Sending audio directly to voice-capable LLM (no standalone ASR)',
+      )
 
       const messages = buildTeachingMessages(text, session.level, session.history, session.openingStyle, persona)
       // Convert last user message to multimodal (text + audio)

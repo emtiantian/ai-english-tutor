@@ -196,7 +196,7 @@ export class XiaomiProvider implements LLMProvider {
         parts.push({
           type: 'input_audio',
           input_audio: {
-            data: `data:${audio.format};base64,${audio.data}`,
+            data: `data:audio/${audio.format};base64,${audio.data}`,
           },
         })
       }

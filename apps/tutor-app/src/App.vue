@@ -102,6 +102,12 @@
       :show-at-lower-position="store.phase === 'teaching'"
       @switch="handleSwitchLive2DModel"
     />
+
+    <!-- DEV-only 动作/表情调试面板 -->
+    <MotionDebugPanel
+      v-if="isDev && !showSvg && showCharacterCanvas"
+      :show-at-lower-position="store.phase === 'teaching'"
+    />
   </div>
 </template>
 
@@ -122,6 +128,7 @@ import ScenarioComplete from './components/ScenarioComplete.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import LevelResult from './components/LevelResult.vue'
 import CharacterModelSwitcher from './components/CharacterModelSwitcher.vue'
+import MotionDebugPanel from './components/MotionDebugPanel.vue'
 import { SpeechSynthesisTTSProvider } from './providers/speech-synthesis-tts'
 import { RemoteTeacherProvider } from './providers/remote-teacher'
 import type { ChatRequestBody } from './client/types'
@@ -129,6 +136,9 @@ import type { CEFRLevel } from '@ai-english-tutor/shared'
 import type { ScenarioPausedSnapshot } from './lib/scenario-paused-db'
 
 const store = useTutorStore()
+
+/** 仅开发环境显示动作/表情调试面板 */
+const isDev = import.meta.env.DEV
 
 /** Pick the most recent assistant message's vocabulary example sentences */
 const lastVocabularySentences = computed(() => {

@@ -40,8 +40,12 @@ export class CubismMoc {
 
     if (moc) {
       cubismMoc = new CubismMoc(moc);
+      // Cubism 5 Core 的 csmGetMocVersion 需要 (moc, mocBytes) 两个参数,
+      // 旧 Core 只要 (mocBytes)。这里 vendored framework 原本只传 mocBytes,
+      // 配合新 Core 时第二参 undefined → 内部读 .byteLength 崩溃,
+      // 导致 moc3 v5 模型(如 mao_pro)加载失败。必须把 moc 对象一起传。
       cubismMoc._mocVersion =
-        Live2DCubismCore.Version.csmGetMocVersion(mocBytes);
+        Live2DCubismCore.Version.csmGetMocVersion(moc, mocBytes);
     }
 
     return cubismMoc;

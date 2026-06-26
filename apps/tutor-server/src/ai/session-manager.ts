@@ -1,6 +1,5 @@
 import { LRUCache } from 'lru-cache'
 import { logger } from '../logger.js'
-import { HIYORI_MOTION_REGISTRY, type MotionRegistry } from '@ai-english-tutor/shared'
 import type { CEFRLevel } from '@ai-english-tutor/shared'
 import type { OpeningStyle } from './prompts/teaching.js'
 import {
@@ -39,7 +38,6 @@ export interface SessionData {
   vocabulary: Set<string>
   openingStyle?: OpeningStyle
   voiceDesign?: string
-  motionRegistry: MotionRegistry
   /** User ID for vocabulary tracking (null for anonymous sessions) */
   userId?: string
   /** Scenario state (if in a scenario lesson) */
@@ -96,7 +94,6 @@ export class SessionManager {
         level: dbSession.level,
         history: dbMessages.map((m) => ({ role: m.role, content: m.content })),
         vocabulary: new Set(),
-        motionRegistry: HIYORI_MOTION_REGISTRY,
         voiceDesign: dbSession.voiceDesign,
         scenario: dbSession.scenarioState ? parseScenarioState(dbSession.scenarioState) : undefined,
       }
@@ -109,7 +106,6 @@ export class SessionManager {
       level,
       history: [],
       vocabulary: new Set(),
-      motionRegistry: HIYORI_MOTION_REGISTRY,
     }
     this.sessions.set(sessionId, session)
     return session

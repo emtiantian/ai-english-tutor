@@ -306,6 +306,8 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
 {
   "text": "Your teaching response in English",
   "textZh": "简短的中文翻译，帮助学生理解意思",
+  "motionId": "one of: wave|nod|think|gesture|clap|point|write|surprised",
+  "expressionId": "one of: happy|neutral|curious|surprised|encouraging|thoughtful",
   "vocabulary": ["word1", "word2"],
   "vocabularySentences": ["Natural example sentence using word1 in this conversation.", "Natural example sentence using word2 in this conversation."],
   "studentReplyHints": ["Short reply the student could say next, in their voice.", "Another natural reply option."]

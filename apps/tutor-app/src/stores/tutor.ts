@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import type { CharacterProvider, TTSProvider, AITeacherProvider, TTSSource, CEFRLevel } from '@ai-english-tutor/shared'
 import type { ScenarioProgress, UserScenarioProgress } from '../client/types'
 import {
@@ -32,9 +32,14 @@ export interface ChatMessage {
 export const useTutorStore = defineStore('tutor', () => {
   // === State ===
   const phase = ref<AppPhase>('loading')
-  const characterProvider = ref<CharacterProvider | null>(null)
-  const ttsProvider = ref<TTSProvider | null>(null)
-  const teacherProvider = ref<AITeacherProvider | null>(null)
+  // Provider instances wrap WebGL / Cubism / audio objects. They MUST be held in
+  // shallowRef, not ref: a deep `ref` proxies the whole object graph (the Live2D
+  // model, its Maps and CubismMotionManager), and calling playMotion/setExpression
+  // through that Proxy silently no-ops. shallowRef keeps `.value` the raw instance
+  // while still reacting to provider *replacement* (model switch).
+  const characterProvider = shallowRef<CharacterProvider | null>(null)
+  const ttsProvider = shallowRef<TTSProvider | null>(null)
+  const teacherProvider = shallowRef<AITeacherProvider | null>(null)
 
   const isConnected = ref(false)
   const isThinking = ref(false)

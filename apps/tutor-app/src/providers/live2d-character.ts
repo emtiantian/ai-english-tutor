@@ -818,14 +818,20 @@ class LAppModel extends CubismUserModel {
   playMotion(motionId: string): void {
     if (!this._motionManager) return
 
-    // 通过注册表翻译语义 ID → 模型 key
+    // 决定要播放的模型 key:
+    // 1) 若 motionId 本身就是模型原始 key(如 '_3'/'Idle_0')→ 直接用(调试直通)。
+    //    语义 ID(wave/nod/…)永远不会撞上原始 key,所以这个优先判断是安全的;
+    //    且必须放在 registry 翻译之前——否则未知语义会被 fallback 成 'Idle_0' 而它恰好存在,
+    //    导致原始 key 永远播成 Idle。
+    // 2) 否则交给 registry 把语义 ID 翻译成原始 key。
     let modelKey = motionId
-    if (this._motionRegistry) {
+    if (this._motions.has(motionId)) {
+      modelKey = motionId
+    } else if (this._motionRegistry) {
       modelKey = this._motionRegistry.getMotion(motionId as any)
     }
 
     let motion: ACubismMotion | undefined
-
     if (modelKey) {
       motion = this._motions.get(modelKey)
     }
@@ -844,6 +850,11 @@ class LAppModel extends CubismUserModel {
     } else {
       console.warn('[Live2D] Motion not found:', motionId, '→', modelKey)
     }
+  }
+
+  /** 调试用:返回已加载的全部原始动画 key(如 'Idle_0' / '_0'…)。 */
+  getMotionKeys(): string[] {
+    return Array.from(this._motions.keys())
   }
 
   /**
@@ -1145,6 +1156,16 @@ export class Live2DCharacterProvider implements CharacterProvider {
   setEmotion(emotionId: string, intensity?: number): void {
     this.state.currentExpression = emotionId
     this.model?.setEmotion(emotionId, intensity)
+  }
+
+  /** 调试用:当前模型已加载的全部原始动画 key。 */
+  listMotionKeys(): string[] {
+    return this.model?.getMotionKeys() ?? []
+  }
+
+  /** 调试用:当前模型 manifest 声明的全部表情 key。 */
+  listExpressionKeys(): string[] {
+    return Object.keys(this._manifest?.expressionParamPresets ?? {})
   }
 
   /** 设置说话状态（实现 CharacterProvider.setSpeaking） */

@@ -1,5 +1,5 @@
 import { logger } from '../logger.js'
-import { defaultMotionAnalyzer } from '@ai-english-tutor/shared'
+import { defaultMotionAnalyzer, isMotionId, isExpressionId, normalizeMotionId, normalizeExpressionId } from '@ai-english-tutor/shared'
 
 export interface ParsedResponse {
   text: string
@@ -14,17 +14,20 @@ export interface ParsedResponse {
 }
 
 /**
- * Parse teaching response from LLM output and determine motion via deterministic mapper.
+ * Parse teaching response from LLM output and determine motion/expression.
  *
- * Motion/expression are determined server-side by keyword matching,
- * not extracted from the LLM response. This makes behavior deterministic
- * and removes motion-related tokens from the prompt.
+ * Motion/expression are LLM-driven when the model emits valid `motionId` /
+ * `expressionId` in its JSON (clamped to the semantic vocabulary). When absent
+ * or invalid, we fall back to the deterministic keyword analyzer so older
+ * prompts and non-JSON replies still animate.
  */
 export function parseTeachingResponse(content: string): ParsedResponse {
   let text = content
   let vocabulary: string[] | undefined
   let vocabularySentences: string[] | undefined
   let studentReplyHints: string[] | undefined
+  let llmMotionId: string | undefined
+  let llmExpressionId: string | undefined
 
   let textZh: string | undefined
 
@@ -41,6 +44,9 @@ export function parseTeachingResponse(content: string): ParsedResponse {
       studentReplyHints = Array.isArray(parsed.studentReplyHints)
         ? parsed.studentReplyHints.filter((s: unknown) => typeof s === 'string' && s.length > 0)
         : undefined
+      // Only adopt LLM motion/expression when they are valid semantic IDs.
+      if (isMotionId(parsed.motionId)) llmMotionId = parsed.motionId
+      if (isExpressionId(parsed.expressionId)) llmExpressionId = parsed.expressionId
       logger.debug(
         { hasText: !!parsed.text, hasTextZh: !!parsed.textZh, textZhPreview: textZh?.slice(0, 30) },
         'Parsed LLM response',
@@ -66,9 +72,13 @@ export function parseTeachingResponse(content: string): ParsedResponse {
     }
   }
 
-  const { motionId, expressionId, intent } = defaultMotionAnalyzer.analyze(text)
+  // Prefer LLM-chosen motion/expression; fall back to the keyword analyzer.
+  const analyzed = defaultMotionAnalyzer.analyze(text)
+  const motionId = llmMotionId ?? normalizeMotionId(analyzed.motionId)
+  const expressionId = llmExpressionId ?? normalizeExpressionId(analyzed.expressionId)
+  const intent = llmMotionId ? 'llm' : analyzed.intent
 
-  logger.debug({ intent, motionId, expressionId }, 'Motion determined by mapper')
+  logger.debug({ intent, motionId, expressionId, source: llmMotionId ? 'llm' : 'analyzer' }, 'Motion determined')
 
   return { text, textZh, motionId, expressionId, vocabulary, vocabularySentences, studentReplyHints, intent }
 }

@@ -1,7 +1,7 @@
 import { logger } from '../logger.js'
 import { config } from '../config.js'
 import { broadcastToSession } from '../sse/handler.js'
-import { HIYORI_MOTION_REGISTRY, type CharacterPersona, type OpeningStyle, type CEFRLevel } from '@ai-english-tutor/shared'
+import { type CharacterPersona, type OpeningStyle, type CEFRLevel } from '@ai-english-tutor/shared'
 import type {
   TeacherChunkEvent,
   TeacherResponseEvent,
@@ -539,7 +539,6 @@ export class TutorEngine {
         level,
         history: [],
         vocabulary: new Set(),
-        motionRegistry: HIYORI_MOTION_REGISTRY,
         openingStyle: chosenStyle,
         voiceDesign: chosenStyle.voiceDesign,
         userId,

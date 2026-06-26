@@ -1,4 +1,4 @@
-import { LUNA_PERSONA, type CharacterPersona } from '@ai-english-tutor/shared'
+import { LUNA_PERSONA, normalizeMotionId, normalizeExpressionId, type CharacterPersona } from '@ai-english-tutor/shared'
 import type { LLMMessage } from '../llm.js'
 
 /**
@@ -73,7 +73,7 @@ OUTPUT ONLY VALID JSON:
   "confidence": "low"|"medium"|"high",
   "reason": "Brief explanation in Chinese",
   "nextQuestion": "Your next question in English (only if round < 3, otherwise null)",
-  "motionId": "wave|nod|think|gesture|clap",
+  "motionId": "wave|nod|think|gesture|clap|point|write|surprised",
   "expressionId": "happy|neutral|curious|surprised|encouraging|thoughtful"
 }`
 
@@ -188,8 +188,10 @@ export function parseAssessmentTurnResponse(content: string): AssessmentResult &
       return {
         ...result,
         nextQuestion: parsed.nextQuestion || undefined,
-        motionId: parsed.motionId || undefined,
-        expressionId: parsed.expressionId || undefined,
+        // Clamp to the semantic vocabulary so an off-list hallucination
+        // doesn't silently degrade to Idle/neutral on the frontend.
+        motionId: normalizeMotionId(parsed.motionId, 'wave'),
+        expressionId: normalizeExpressionId(parsed.expressionId, 'happy'),
       }
     }
   } catch {

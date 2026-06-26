@@ -57,6 +57,21 @@ async function main(): Promise<void> {
   const badHints = parseTeachingResponse('{"text":"Hi","studentReplyHints":"not-an-array"}')
   assert.strictEqual(badHints.studentReplyHints, undefined)
 
+  // LLM-provided valid motion/expression override the keyword analyzer
+  const llmDriven = parseTeachingResponse(
+    '{"text":"What is your name?","motionId":"point","expressionId":"curious"}',
+  )
+  assert.strictEqual(llmDriven.motionId, 'point', 'valid LLM motionId is used verbatim')
+  assert.strictEqual(llmDriven.expressionId, 'curious', 'valid LLM expressionId is used verbatim')
+  assert.strictEqual(llmDriven.intent, 'llm', 'intent marked llm when LLM chose the motion')
+
+  // Invalid LLM motion/expression are ignored → fall back to the analyzer
+  const llmInvalid = parseTeachingResponse(
+    '{"text":"What is your name?","motionId":"backflip","expressionId":"angry"}',
+  )
+  assert.strictEqual(llmInvalid.motionId, 'think', 'invalid LLM motionId falls back to analyzer (question→think)')
+  assert.strictEqual(llmInvalid.intent, 'question', 'intent stays analyzer intent when LLM id invalid')
+
   console.log('✅ response-parser test passed')
 }
 

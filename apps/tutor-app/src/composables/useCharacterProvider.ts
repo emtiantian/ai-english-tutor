@@ -75,6 +75,14 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
       store.characterProvider = provider
       console.log(`[CharacterProvider] Initialized: ${providerType}` +
         (providerType === 'live2d' ? ` (model=${currentLive2DModelId.value})` : ''))
+      // DEV 调试:window.__char 实时返回当前 provider(切模型后自动跟随),
+      // 方便控制台逐个测动作:__char.playMotion('wave') / __char.playMotion('_3')(原始 key 直通)
+      if (import.meta.env.DEV) {
+        Object.defineProperty(window, '__char', {
+          get: () => store.characterProvider,
+          configurable: true,
+        })
+      }
     } catch (err) {
       console.error(`[CharacterProvider] Failed to init ${providerType}:`, err)
     }

@@ -7,7 +7,6 @@ const tmpDir = mkdtempSync(join(tmpdir(), 'tutor-scenario-test-'))
 process.env.DB_PATH = join(tmpDir, 'test.db')
 
 // Dynamic imports so that DB_PATH is set before config/db modules are evaluated.
-const { HIYORI_MOTION_REGISTRY } = await import('@ai-english-tutor/shared')
 const { initSchema, closeDb } = await import('../db/index.js')
 const { SessionManager } = await import('./session-manager.js')
 type ScenarioState = import('./session-manager.js').ScenarioState
@@ -43,7 +42,6 @@ async function main(): Promise<void> {
     level: 2,
     history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
     vocabulary: new Set<string>(),
-    motionRegistry: HIYORI_MOTION_REGISTRY,
     voiceDesign: 'calm-friendly',
     scenario,
   }

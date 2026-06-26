@@ -240,6 +240,8 @@ OUTPUT FORMAT:
 {
   "text": "your response in character",
   "textZh": "简短的中文翻译，帮助学生理解",
+  "motionId": "one of: wave|nod|think|gesture|clap|point|write|surprised — pick the gesture that best fits your text",
+  "expressionId": "one of: happy|neutral|curious|surprised|encouraging|thoughtful — pick the facial expression that best fits your text",
   "vocabulary": ["target words you used from the TARGET VOCABULARY list above — only include words from that list"],
   "vocabularySentences": ["TEACHING examples — one fresh natural example sentence per vocabulary word, never reuse a sentence from earlier turns; each sentence must include at least one word from the vocabulary list above. Use [] only if vocabulary is also empty."],
   "studentReplyHints": ["1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT in response to your text — written IN CHARACTER, in the student's own voice. Prefer replies that fit the current scenario phase and naturally use a target word when it suits the moment. NEVER write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are real in-character lines the student would speak. Always provide at least one hint."]

@@ -22,6 +22,7 @@
       v-if="store.phase === 'scenario-select'"
       :scenarios="availableScenarios"
       :style-name="pendingStyleName"
+      :voice-style-selectable="voiceStyleSelectable"
       :user-level="userCEFRLevel"
       :paused-snapshots="store.pausedSnapshots"
       :user-scenario-progress="store.userScenarioProgress"
@@ -210,7 +211,7 @@ _learnWords = learnWords
 const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
 // Load ASR provider config from /api/config so the recorder knows whether to
 // run browser-side SpeechRecognition or send audio to the backend.
-const { asrProvider } = useASRConfig()
+const { asrProvider, voiceStyleSelectable } = useASRConfig()
 const { isRecording, isEncoding, recordingDuration, requestType: recordRequestType, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
 const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
 

@@ -91,7 +91,7 @@ npx tsx apps/tutor-server/src/routes/chat.test.ts
 ### Voice：TTS / ASR
 
 - `voice/tts.ts` 和 `voice/asr.ts` 是工厂；具体 provider 在 `voice/providers/`
-- `TTS_PROVIDER`：`xiaomi`（小米 MiMo voicedesign，**结构化角色音色描述**作 prompt）/ `cosyvoice` / `openai` / `browser`
+- `TTS_PROVIDER`：`xiaomi`（小米 MiMo voicedesign，**结构化角色音色描述**作 prompt）/ `cosyvoice` / `volcengine`（火山引擎语音合成大模型，HTTP 一次性合成，**纯 TTS 不带 ASR**，固定 voice_type → 忽略音色，前端「语音风格」下拉仅作用于 LLM 人格、标签切「性格风格」，见 `/api/config` 的 `voiceStyleSelectable`）/ `openai` / `browser`
 - `ASR_PROVIDER`：`browser`（默认，浏览器 Web Speech API）/ `xiaomi` / `whisper`
 - 浏览器录音上传前会用 lamejs 转 MP3（16kHz mono 64kbps），所有 ASR provider 兼容
 

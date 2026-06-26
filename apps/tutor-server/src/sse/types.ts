@@ -82,16 +82,6 @@ export interface HeartbeatEvent extends SSEEventBase {
   }
 }
 
-/** Chinese translation audio (TTS) */
-export interface ChineseAudioEvent extends SSEEventBase {
-  event: 'teacher.chinese-audio'
-  data: {
-    audioBase64: string
-    format: string
-    isEnd: boolean
-  }
-}
-
 /** Union type of all SSE events */
 export type SSEEvent =
   | ConfigEvent
@@ -99,5 +89,4 @@ export type SSEEvent =
   | TeacherChunkEvent
   | LevelResultEvent
   | TeacherAudioEvent
-  | ChineseAudioEvent
   | HeartbeatEvent

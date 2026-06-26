@@ -368,7 +368,6 @@ export class TutorEngine {
     vocabularySentences?: string[]
     studentReplyHints?: string[]
     audioBase64?: string
-    chineseAudioBase64?: string
     scenario?: {
       id: string
       name: string
@@ -500,24 +499,9 @@ export class TutorEngine {
 
       const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
-      // Generate Chinese TTS if textZh is available
-      let chineseAudioBase64: string | undefined
-      if (parsed.textZh) {
-        try {
-          const zhVoiceDesign = config.XIAOMI_TTS_ZH_VOICE_DESIGN
-          const zhAudioBuffer = await this.audio.synthesizeDirect(parsed.textZh, zhVoiceDesign)
-          chineseAudioBase64 = zhAudioBuffer.toString('base64')
-          this.audio.broadcastAudioChunksDirect(zhAudioBuffer, 'mp3', sessionId, 'teacher.chinese-audio')
-          logger.info({ size: zhAudioBuffer.length }, 'Chinese TTS generated for scenario start')
-        } catch (err) {
-          logger.warn({ err }, 'Chinese TTS failed for scenario start (non-fatal)')
-        }
-      }
-
       return {
         ...parsed,
         audioBase64: audioResult.audioBase64,
-        chineseAudioBase64,
         scenario: this.buildScenarioResponse(scenarioState),
       }
     } catch (err) {
@@ -606,21 +590,7 @@ export class TutorEngine {
 
       const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
-      // Generate Chinese TTS if textZh is available
-      let chineseAudioBase64: string | undefined
-      if (parsed.textZh) {
-        try {
-          const zhVoiceDesign = config.XIAOMI_TTS_ZH_VOICE_DESIGN
-          const zhAudioBuffer = await this.audio.synthesizeDirect(parsed.textZh, zhVoiceDesign)
-          chineseAudioBase64 = zhAudioBuffer.toString('base64')
-          this.audio.broadcastAudioChunksDirect(zhAudioBuffer, 'mp3', sessionId, 'teacher.chinese-audio')
-          logger.info({ size: zhAudioBuffer.length }, 'Chinese TTS generated for lesson start')
-        } catch (err) {
-          logger.warn({ err }, 'Chinese TTS failed for lesson start (non-fatal)')
-        }
-      }
-
-      return { ...parsed, audioBase64: audioResult.audioBase64, chineseAudioBase64 }
+      return { ...parsed, audioBase64: audioResult.audioBase64 }
     } catch (err) {
       logger.error({ err }, 'Lesson start failed, using fallback')
       return {
@@ -951,26 +921,10 @@ export class TutorEngine {
     // Generate English TTS
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
-    // Generate Chinese TTS if textZh is available
-    let chineseAudioBase64: string | undefined
-    if (parsed.textZh) {
-      try {
-        const zhVoiceDesign = config.XIAOMI_TTS_ZH_VOICE_DESIGN
-        const zhAudioBuffer = await this.audio.synthesizeDirect(parsed.textZh, zhVoiceDesign)
-        chineseAudioBase64 = zhAudioBuffer.toString('base64')
-        // Broadcast Chinese audio chunks via SSE
-        this.audio.broadcastAudioChunksDirect(zhAudioBuffer, 'mp3', sessionId, 'teacher.chinese-audio')
-        logger.info({ size: zhAudioBuffer.length }, 'Chinese TTS generated')
-      } catch (err) {
-        logger.warn({ err }, 'Chinese TTS failed (non-fatal)')
-      }
-    }
-
     return {
       ...parsed,
       transcript: userText,
       audioBase64: audioResult.audioBase64,
-      chineseAudioBase64,
       scenario: scenarioProgress,
     }
   }

@@ -14,7 +14,6 @@
       :messages="store.messages"
       :is-playing="store.isPlaying"
       @replay="handleReplay"
-      @replay-chinese="handleReplayChinese"
     />
 
     <!-- Scenario Picker (includes style selector + v2 progress dots + resume dialog) -->
@@ -421,20 +420,6 @@ function handleReplay(messageId: string) {
     replayAudio(msg.audioBase64)
   } else {
     audioPlayer.speak(msg.text, { lang: 'en-US' })
-  }
-}
-
-async function handleReplayChinese(messageId: string) {
-  const msg = store.messages.find(m => m.id === messageId)
-  if (!msg) return
-
-  if (store.ttsSource === 'remote' && msg.chineseAudioBase64) {
-    replayAudio(msg.chineseAudioBase64)
-  } else {
-    const text = msg.textZh || msg.text
-    if (text) {
-      audioPlayer.speak(text, { lang: 'zh-CN' })
-    }
   }
 }
 

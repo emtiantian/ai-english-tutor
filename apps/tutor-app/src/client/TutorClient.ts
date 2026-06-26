@@ -178,7 +178,6 @@ export class TutorClient {
       'teacher.response',
       'teacher.chunk',
       'teacher.audio',
-      'teacher.chinese-audio',
       'level.result',
       'error',
       'heartbeat',

@@ -99,28 +99,6 @@ export function useAudioPlayback(client: TutorClient) {
     }
   })
 
-  // Chinese translation audio — collect chunks and store on the latest assistant message.
-  // The Chinese TTS is generated AFTER the English response, so the message already exists
-  // by the time these chunks arrive (either finalized via teacher.response or added directly).
-  let pendingChineseChunks: string[] = []
-
-  client.on('teacher.chinese-audio', (chunk) => {
-    pendingChineseChunks.push(chunk.audioBase64)
-
-    if (chunk.isEnd) {
-      const audioBase64 = pendingChineseChunks.join('')
-      pendingChineseChunks = []
-
-      // Find the last assistant message (the one this audio belongs to)
-      for (let i = store.messages.length - 1; i >= 0; i--) {
-        if (store.messages[i].role === 'assistant') {
-          store.messages[i].chineseAudioBase64 = audioBase64
-          break
-        }
-      }
-    }
-  })
-
   // Wire assistant messages → local TTS playback
   client.on('message.assistant', (response) => {
     if (store.ttsSource === 'local') {

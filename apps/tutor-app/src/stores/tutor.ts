@@ -23,8 +23,6 @@ export interface ChatMessage {
   timestamp: number
   visible?: boolean // false = 等待语音结束后显示
   audioBase64?: string // 用于重听
-  /** Chinese translation audio (lazy-loaded on first click) */
-  chineseAudioBase64?: string
   /** Scenario progress snapshot when this message was sent */
   scenario?: ScenarioProgress
 }
@@ -456,14 +454,6 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-  /** 为指定消息保存中文翻译音频 */
-  function setMessageChineseAudio(messageId: string, audioBase64: string) {
-    const msg = messages.value.find(m => m.id === messageId)
-    if (msg) {
-      msg.chineseAudioBase64 = audioBase64
-    }
-  }
-
   /** 为最后一条用户语音消息设置识别文本 */
   function setLastUserTranscript(transcript: string) {
     for (let i = messages.value.length - 1; i >= 0; i--) {
@@ -550,7 +540,6 @@ export const useTutorStore = defineStore('tutor', () => {
     setScenario,
     clearScenario,
     setMessageAudio,
-    setMessageChineseAudio,
     setLastUserTranscript,
     confirmLevel,
     // v2 actions

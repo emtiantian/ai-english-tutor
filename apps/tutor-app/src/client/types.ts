@@ -33,7 +33,6 @@ export interface TutorEventMap {
   'teacher.response': TeachingResponse
   'teacher.chunk': { chunk: string; isEnd: boolean }
   'teacher.audio': { audioBase64: string; format: string; isEnd: boolean }
-  'teacher.chinese-audio': { audioBase64: string; format: string; isEnd: boolean }
   'level.result': { level: number; reason: string }
 
   // Recording

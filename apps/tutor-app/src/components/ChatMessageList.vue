@@ -16,6 +16,10 @@
       <div v-if="msg.transcript && msg.text === '[语音]'" class="voice-transcript">
         {{ msg.transcript }}
       </div>
+      <!-- Chinese translation (toggled by 中 button) -->
+      <div v-if="msg.textZh && expandedZh.has(msg.id)" class="zh-translation">
+        {{ msg.textZh }}
+      </div>
       <!-- Replay buttons -->
       <div v-if="msg.role === 'assistant' && !msg.isStreaming" class="replay-group">
         <button
@@ -32,11 +36,11 @@
           </svg>
         </button>
         <button
+          v-if="msg.textZh"
           class="replay-btn replay-btn--zh"
-          :class="{ 'replay-btn--playing': isPlaying }"
-          :disabled="isPlaying"
-          @click="$emit('replay-chinese', msg.id)"
-          title="中文翻译"
+          :class="{ 'replay-btn--zh-active': expandedZh.has(msg.id) }"
+          @click="toggleZh(msg.id)"
+          :title="expandedZh.has(msg.id) ? '隐藏中文' : '显示中文翻译'"
         >
           <span class="zh-text">中</span>
         </button>
@@ -72,10 +76,21 @@ const props = defineProps<{
 
 defineEmits<{
   replay: [messageId: string]
-  'replay-chinese': [messageId: string]
 }>()
 
 const containerEl = ref<HTMLDivElement | null>(null)
+
+// 中文按钮：在英文气泡下方显示/隐藏 textZh 翻译（不再走语音）
+const expandedZh = ref<Set<string>>(new Set())
+function toggleZh(messageId: string) {
+  const next = new Set(expandedZh.value)
+  if (next.has(messageId)) {
+    next.delete(messageId)
+  } else {
+    next.add(messageId)
+  }
+  expandedZh.value = next
+}
 
 // Auto-scroll to bottom when new messages arrive
 watch(
@@ -133,6 +148,17 @@ watch(
   font-size: 12px;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.55);
+  word-break: break-word;
+}
+
+/* Chinese translation shown below the English text */
+.zh-translation {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
   word-break: break-word;
 }
 
@@ -203,7 +229,7 @@ watch(
   pointer-events: none;
 }
 
-/* Chinese TTS button */
+/* Chinese translation toggle button */
 .replay-btn--zh {
   background: rgba(255, 100, 100, 0.15);
   font-size: 12px;
@@ -212,6 +238,11 @@ watch(
 
 .replay-btn--zh:hover {
   background: rgba(255, 100, 100, 0.3);
+}
+
+.replay-btn--zh-active {
+  background: rgba(255, 100, 100, 0.45);
+  color: white;
 }
 
 .replay-btn--zh .zh-text {

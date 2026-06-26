@@ -12,7 +12,7 @@ describe('ChatMessageList', () => {
       },
     })
 
-  it('shows replay and chinese buttons for completed assistant messages without audioBase64', () => {
+  it('shows only the english replay button when assistant message has no Chinese translation', () => {
     const wrapper = mountComponent({
       messages: [
         {
@@ -26,9 +26,28 @@ describe('ChatMessageList', () => {
     })
 
     const buttons = wrapper.findAll('.replay-btn')
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].attributes('title')).toBe('重听英文')
+  })
+
+  it('shows the 中 toggle button when assistant message has a Chinese translation', () => {
+    const wrapper = mountComponent({
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'assistant',
+          text: 'Hello!',
+          textZh: '你好！',
+          isStreaming: false,
+          timestamp: Date.now(),
+        },
+      ],
+    })
+
+    const buttons = wrapper.findAll('.replay-btn')
     expect(buttons).toHaveLength(2)
     expect(buttons[0].attributes('title')).toBe('重听英文')
-    expect(buttons[1].attributes('title')).toBe('中文翻译')
+    expect(buttons[1].attributes('title')).toBe('显示中文翻译')
   })
 
   it('hides replay buttons while assistant message is streaming', () => {
@@ -80,31 +99,44 @@ describe('ChatMessageList', () => {
     expect(wrapper.emitted('replay')![0]).toEqual(['msg-abc'])
   })
 
-  it('emits replay-chinese event with message id when chinese button clicked', async () => {
+  it('toggles the Chinese translation below the English text when 中 button clicked', async () => {
     const wrapper = mountComponent({
       messages: [
         {
           id: 'msg-xyz',
           role: 'assistant',
           text: 'Hello!',
+          textZh: '你好！',
           isStreaming: false,
           timestamp: Date.now(),
         },
       ],
     })
 
-    await wrapper.find('.replay-btn[title="中文翻译"]').trigger('click')
-    expect(wrapper.emitted('replay-chinese')).toHaveLength(1)
-    expect(wrapper.emitted('replay-chinese')![0]).toEqual(['msg-xyz'])
+    // Initially hidden
+    expect(wrapper.find('.zh-translation').exists()).toBe(false)
+
+    // Click to show
+    await wrapper.find('.replay-btn--zh').trigger('click')
+    expect(wrapper.find('.zh-translation').exists()).toBe(true)
+    expect(wrapper.find('.zh-translation').text()).toBe('你好！')
+    expect(wrapper.find('.replay-btn--zh').attributes('title')).toBe('隐藏中文')
+    // No voice playback is triggered
+    expect(wrapper.emitted('replay-chinese')).toBeUndefined()
+
+    // Click again to hide
+    await wrapper.find('.replay-btn--zh').trigger('click')
+    expect(wrapper.find('.zh-translation').exists()).toBe(false)
   })
 
-  it('disables buttons while audio is playing', () => {
+  it('keeps the 中 toggle button enabled while audio is playing', () => {
     const wrapper = mountComponent({
       messages: [
         {
           id: 'msg-1',
           role: 'assistant',
           text: 'Hello!',
+          textZh: '你好！',
           isStreaming: false,
           timestamp: Date.now(),
         },
@@ -112,9 +144,9 @@ describe('ChatMessageList', () => {
       isPlaying: true,
     })
 
-    const buttons = wrapper.findAll('.replay-btn')
-    for (const btn of buttons) {
-      expect(btn.attributes('disabled')).toBeDefined()
-    }
+    // English replay button is disabled during playback...
+    expect(wrapper.find('.replay-btn[title="重听英文"]').attributes('disabled')).toBeDefined()
+    // ...but the Chinese text toggle stays usable (it no longer plays audio).
+    expect(wrapper.find('.replay-btn--zh').attributes('disabled')).toBeUndefined()
   })
 })

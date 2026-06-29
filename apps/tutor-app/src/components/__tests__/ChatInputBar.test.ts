@@ -12,6 +12,7 @@ describe('ChatInputBar', () => {
 
   const mountComponent = (props?: Record<string, unknown>) =>
     mount(ChatInputBar, {
+      attachTo: document.body,
       props: {
         ...DEFAULT_PROPS,
         ...props,
@@ -20,6 +21,7 @@ describe('ChatInputBar', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks()
+    document.body.innerHTML = ''
   })
 
   it('默认显示语音模式', () => {
@@ -117,8 +119,9 @@ describe('ChatInputBar', () => {
     const wrapper = mountComponent()
 
     await wrapper.find('.voice-talk-btn').trigger('mousedown')
+    await nextTick()
 
-    expect(wrapper.find('.recording-overlay').exists()).toBe(true)
+    expect(document.body.querySelector('.recording-overlay')).not.toBeNull()
   })
 
   it('上滑取消时浮层显示取消文案', async () => {
@@ -127,11 +130,12 @@ describe('ChatInputBar', () => {
 
     await btn.trigger('mousedown', { clientY: 200 })
     await btn.trigger('mousemove', { clientY: 100 })
+    await nextTick()
 
-    const overlay = wrapper.find('.recording-overlay')
-    expect(overlay.exists()).toBe(true)
-    expect(overlay.classes()).toContain('cancelled')
-    expect(overlay.text()).toContain('松开 取消发送')
+    const overlay = document.body.querySelector('.recording-overlay')
+    expect(overlay).not.toBeNull()
+    expect(overlay?.classList.contains('cancelled')).toBe(true)
+    expect(overlay?.textContent).toContain('松开 取消发送')
   })
 
   it('touchstart 在语音按钮上触发 record-start', async () => {

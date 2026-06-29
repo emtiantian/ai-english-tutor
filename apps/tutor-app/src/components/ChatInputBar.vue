@@ -77,62 +77,71 @@
     </div>
 
     <!-- Recording Overlay -->
-    <div
-      v-if="isRecordingLocal"
-      class="recording-overlay"
-      :class="{ 'cancelled': isCancelled }"
-      role="status"
-      aria-live="polite"
-    >
-      <!-- Volume bars -->
-      <div class="volume-bars">
-        <div
-          v-for="i in 5"
-          :key="i"
-          class="volume-bar"
-          :style="{ animationDelay: `${(i - 1) * 0.1}s` }"
-        ></div>
-      </div>
+    <Teleport to="body">
+      <div
+        v-if="isRecordingLocal"
+        class="recording-overlay"
+        :class="{ 'cancelled': isCancelled }"
+        role="status"
+        aria-live="polite"
+      >
+        <!-- Volume bars -->
+        <div class="volume-bars">
+          <div
+            v-for="i in 5"
+            :key="i"
+            class="volume-bar"
+            :style="{ animationDelay: `${(i - 1) * 0.1}s` }"
+          ></div>
+        </div>
 
-      <!-- Countdown text -->
-      <div class="recording-text">
-        录音中... ({{ recordingDuration }}s)
-      </div>
+        <!-- Countdown text -->
+        <div class="recording-text">
+          录音中... ({{ recordingDuration }}s)
+        </div>
 
-      <!-- Hint text -->
-      <div class="recording-hint">
-        {{ isCancelled ? '松开 取消发送' : '上滑取消发送' }}
+        <!-- Hint text -->
+        <div class="recording-hint">
+          {{ isCancelled ? '松开 取消发送' : '上滑取消发送' }}
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Encoding Indicator -->
-    <div v-if="isEncoding" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-32px py-16px bg-primary-90 text-white rounded-12px text-16px flex items-center gap-10px animate-fade-in">
-      <span class="w-12px h-12px bg-white rounded-full animate-blink"></span>
-      处理中...
-    </div>
+    <Teleport to="body">
+      <div v-if="isEncoding" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-32px py-16px bg-primary-90 text-white rounded-12px text-16px flex items-center gap-10px animate-fade-in">
+        <span class="w-12px h-12px bg-white rounded-full animate-blink"></span>
+        处理中...
+      </div>
+    </Teleport>
 
     <!-- Target Words Drawer -->
-    <TargetWordsPanel
-      v-if="showTargetWords && scenario"
-      :target-words="scenario.targetWords"
-      :words-learned="scenario.wordsLearned"
-      :level="scenario.level"
-      @close="showTargetWords = false"
-    />
+    <Teleport to="body">
+      <TargetWordsPanel
+        v-if="showTargetWords && scenario"
+        :target-words="scenario.targetWords"
+        :words-learned="scenario.wordsLearned"
+        :level="scenario.level"
+        @close="showTargetWords = false"
+      />
+    </Teleport>
 
     <!-- Switch Scenario Confirmation -->
-    <SwitchScenarioConfirm
-      v-if="showSwitchConfirm && scenario"
-      :turns-count="scenario.turnsCount ?? 0"
-      @confirm="handleSwitchScenario"
-      @cancel="showSwitchConfirm = false"
-    />
+    <Teleport to="body">
+      <SwitchScenarioConfirm
+        v-if="showSwitchConfirm && scenario"
+        :turns-count="scenario.turnsCount ?? 0"
+        @confirm="handleSwitchScenario"
+        @cancel="showSwitchConfirm = false"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { ScenarioProgress } from '../client/types'
+import { pickBestStudentHint } from '../lib/hint-picker'
 import ScenarioStatusStrip from './ScenarioStatusStrip.vue'
 import TargetWordsPanel from './TargetWordsPanel.vue'
 import SwitchScenarioConfirm from './SwitchScenarioConfirm.vue'
@@ -242,32 +251,23 @@ function sendText() {
 }
 
 // --- Suggested phrase (💡 hint) ---
-const learnedWordsSet = computed(() => new Set(props.scenario?.wordsLearned ?? []))
-
-/** Pick the best phrase from a candidate list: prefer one containing an unlearned target
- * word, then any target word, otherwise the first candidate. Used for both the
- * student-reply hints (primary) and the vocabulary teaching examples (fallback). */
-function pickPhraseFor(candidates: string[]): string | undefined {
-  if (candidates.length === 0) return undefined
-  const targetWords = props.scenario?.targetWords ?? []
-  const unlearnedWords = targetWords.filter((w) => !learnedWordsSet.value.has(w.toLowerCase()))
-  const findMatch = (words: string[]) =>
-    candidates.find((s) => words.some((w) => s.toLowerCase().includes(w.toLowerCase())))
-  return findMatch(unlearnedWords) || findMatch(targetWords) || candidates[0]
-}
-
 const suggestedPhrase = computed(() => {
+  const hintOptions = {
+    targetWords: props.scenario?.targetWords,
+    wordsLearned: props.scenario?.wordsLearned,
+  }
+
   // 主源：LLM 给的"学生下一句"建议（学生口吻、贴合当前对话）
   const hints = props.studentReplyHints
   if (hints && hints.length > 0) {
-    const picked = pickPhraseFor(hints)
+    const picked = pickBestStudentHint(hints, hintOptions)
     if (picked) return picked
   }
 
   // 退化 1：LLM 没给 reply hints，但给了 vocabularySentences（教学例句）→ 顶上用
   const sentences = props.vocabularySentences
   if (sentences && sentences.length > 0) {
-    const picked = pickPhraseFor(sentences)
+    const picked = pickBestStudentHint(sentences, hintOptions)
     if (picked) return picked
   }
 

@@ -28,6 +28,23 @@ type ExpressionPresetMap = NonNullable<Live2DModelManifest['expressionParamPrese
 
 const EMPTY_EXPRESSION_PRESETS: ExpressionPresetMap = {}
 
+/**
+ * 表情参数的混合模式。表情在 eyeBlink / eyeTracking 之后应用,所以这些与眨眼/
+ * 头部跟随同参数的表情值不能直接覆盖(否则要么压掉眨眼、要么压掉跟随),按模式叠加:
+ * - MULTIPLY: 与眨眼写入的眼开度相乘。surprised(>1)放大、sad(<1)收窄,且眨眼时仍随之闭合;
+ *   静息因子=1(表情未声明该参数时不改变眨眼)。
+ * - ADD: 叠加到头部跟随写入的角度上。curious/thoughtful 的歪头叠加在跟随之上,鼠标仍能带动;
+ *   静息偏移=0。
+ * - 其余参数(眉毛/嘴型/腮红/眼笑)走默认 OVERWRITE,直接覆盖,静息值=0。
+ * 用「按模式取静息默认」让被释放的参数天然等于各自的 no-op 值,无残留漂移。
+ */
+const EXPRESSION_MULTIPLY_PARAMS = new Set(['ParamEyeLOpen', 'ParamEyeROpen'])
+const EXPRESSION_ADD_PARAMS = new Set([
+  'ParamAngleX', 'ParamAngleY', 'ParamAngleZ',
+  'ParamBodyAngleX', 'ParamBodyAngleY', 'ParamBodyAngleZ',
+  'ParamEyeBallX', 'ParamEyeBallY',
+])
+
 /** 打哈欠参数预设（不加载新资源） */
 const YAWN_PRESET: Record<string, number> = {
   ParamMouthOpenY: 0.6,
@@ -102,6 +119,12 @@ class LAppModel extends CubismUserModel {
    */
   private _lipSyncIds: CubismIdHandle[] = []
 
+  /** Manifest 注入的视图缩放系数,在 resize 计算结果上额外乘,1=不变 */
+  private _viewScale = 1.0
+  /** Manifest 注入的视图偏移(像素,以 canvas 逻辑像素为准) */
+  private _viewOffsetX = 0.0
+  private _viewOffsetY = 0.0
+
   /** Idle 动作定时器 */
   private _idleTimer = 0.0
   private readonly _idleInterval = 6.0 // 每 6 秒随机播放一个 Idle 动作
@@ -128,8 +151,6 @@ class LAppModel extends CubismUserModel {
   // === 表情平滑融合 ===
   /** 目标表情 ID */
   private _targetExpressionId = 'neutral'
-  /** 当前已混合的表情参数值 */
-  private _currentExpressionValues = new Map<string, number>()
   /** 表情渐变时长（秒） */
   private readonly _expressionFadeDuration = 0.5
   /** 表情渐变计时器 */
@@ -378,8 +399,10 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
-   * 每帧更新 —— 按 Live2D SDK 官方推荐的顺序:
-   * loadParameters → motion → expression → eyeBlink → breath → physics → pose → saveParameters
+   * 每帧更新 —— 顺序:
+   * loadParameters → motion → mouth → eyeBlink → breath → physics → pose → eyeTracking → expression → saveParameters
+   * 表情放在 eyeBlink / eyeTracking 之后,确保 surprised/sad(眼开度)、curious/thoughtful(头部角度)
+   * 这些与眨眼/跟随同参数的表情不被覆盖。
    */
   update(deltaTimeSeconds: number): void {
     this._userTimeSeconds += deltaTimeSeconds
@@ -392,32 +415,35 @@ class LAppModel extends CubismUserModel {
       this._motionManager.updateMotion(this._model, deltaTimeSeconds)
     }
 
-    // 3. 应用表情（叠加在 motion 之上，含平滑融合与微动作）
-    this.applyExpression(deltaTimeSeconds)
-
-    // 4. 口型同步（叠加在表情之上）
+    // 3. 口型同步
     this.applyMouthOpen()
 
-    // 5. 自动眨眼（支持可变频率）
+    // 4. 自动眨眼（支持可变频率）
     this.applyEyeBlink(deltaTimeSeconds)
 
-    // 6. 呼吸
+    // 5. 呼吸
     if (this._breath) {
       this._breath.updateParameters(this._model, deltaTimeSeconds)
     }
 
-    // 7. 物理（头发飘动，基于当前参数值计算）
+    // 6. 物理（头发飘动，基于当前参数值计算）
     if (this._physics) {
       this._physics.evaluate(this._model, deltaTimeSeconds)
     }
 
-    // 8. 姿势
+    // 7. 姿势
     if (this._pose) {
       this._pose.updateParameters(this._model, deltaTimeSeconds)
     }
 
-    // 9. 眼睛/头部/身体跟随鼠标（含点头、摇摆、倾听姿态、凝视覆盖）
+    // 8. 眼睛/头部/身体跟随鼠标（含点头、摇摆、倾听姿态、凝视覆盖）
     this.applyEyeTracking(deltaTimeSeconds)
+
+    // 9. 应用表情 —— 必须在 eyeBlink / eyeTracking 之后，否则 surprised/sad 的
+    //    ParamEyeLOpen/ROpen 会被眨眼覆盖、curious/thoughtful 的 ParamAngle* 会被
+    //    头部跟随覆盖，表情就「看不见」。放最后让表情对它声明的参数有最终话语权；
+    //    它没声明的参数（如 happy 不写 EyeOpen）仍保留眨眼/跟随的值，眨眼照常。
+    this.applyExpression(deltaTimeSeconds)
 
     // 10. 保存参数供下帧恢复
     this._model.update()
@@ -440,8 +466,11 @@ class LAppModel extends CubismUserModel {
    * 应用当前表情参数到模型，支持平滑融合与微动作叠加
    */
   private applyExpression(deltaTimeSeconds: number): void {
-    // 如果目标表情变化，启动渐变
-    if (this._targetExpressionId !== this._currentExpressionId) {
+    // 如果目标表情变化，启动渐变。
+    // 注意：必须用 !this._isExpressionFading 守卫，只在「开始一段新渐变」时重置计时器；
+    // 否则只要 target !== current 就每帧把 timer 清 0，timer 永远累加不到 fadeDuration，
+    // current 永不追上 target，t 卡在约 dt/0.5≈3%，表情只融合 3% → 看起来「点击没反应」。
+    if (this._targetExpressionId !== this._currentExpressionId && !this._isExpressionFading) {
       this._isExpressionFading = true
       this._expressionFadeTimer = 0.0
     }
@@ -463,25 +492,34 @@ class LAppModel extends CubismUserModel {
     const targetPreset = this._expressionPresets[this._targetExpressionId] ?? fallbackPreset
     const currentPreset = this._expressionPresets[this._currentExpressionId] ?? fallbackPreset
 
-    // 收集所有涉及的参数
+    // 每帧从 preset 重算并直接应用(不保留跨帧状态):
+    // 渐变中并集 current∪target,使被淡出的参数平滑回到各自静息默认;
+    // 稳态(current==target)只剩 target 的参数,其余参数自然交还给眨眼/跟随。
     const paramIds = new Set([
       ...Object.keys(targetPreset),
       ...Object.keys(currentPreset),
     ])
 
-    // 线性插值得到当前表情值
+    const idManager = CubismFramework.getIdManager()
     for (const paramId of paramIds) {
-      const from = currentPreset[paramId] ?? 0
-      const to = targetPreset[paramId] ?? 0
-      const value = from * (1 - t) + to * t
-      this._currentExpressionValues.set(paramId, value)
-    }
+      const isMultiply = EXPRESSION_MULTIPLY_PARAMS.has(paramId)
+      const isAdd = EXPRESSION_ADD_PARAMS.has(paramId)
+      // 按模式取静息默认:MULTIPLY 缺省=1(不缩放),ADD/OVERWRITE 缺省=0
+      const rest = isMultiply ? 1 : 0
+      const from = currentPreset[paramId] ?? rest
+      const to = targetPreset[paramId] ?? rest
+      const exprValue = from * (1 - t) + to * t
 
-    // 应用表情值
-    for (const [paramId, value] of this._currentExpressionValues) {
-      const id = CubismFramework.getIdManager().getId(paramId)
-      if (id) {
-        this._model.setParameterValueById(id, value)
+      const id = idManager.getId(paramId)
+      if (!id) continue
+      if (isMultiply) {
+        // 与眨眼写入的眼开度相乘 → 既体现表情又保留眨眼
+        this._model.setParameterValueById(id, this._model.getParameterValueById(id) * exprValue)
+      } else if (isAdd) {
+        // 叠加到头部跟随写入的角度上 → 既体现歪头又保留鼠标跟随
+        this._model.setParameterValueById(id, this._model.getParameterValueById(id) + exprValue)
+      } else {
+        this._model.setParameterValueById(id, exprValue)
       }
     }
 
@@ -858,6 +896,21 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
+   * 设置视图缩放系数(由 Provider 在 init 时根据 Manifest 注入)
+   */
+  setViewScale(scale: number): void {
+    this._viewScale = scale ?? 1.0
+  }
+
+  /**
+   * 设置视图偏移像素(由 Provider 在 init 时根据 Manifest 注入)
+   */
+  setViewOffset(offsetX: number, offsetY: number): void {
+    this._viewOffsetX = offsetX ?? 0.0
+    this._viewOffsetY = offsetY ?? 0.0
+  }
+
+  /**
    * 设置表情参数预设(由 Provider 在 init 时根据 Manifest 注入)
    */
   setExpressionPresets(presets: ExpressionPresetMap): void {
@@ -973,10 +1026,17 @@ class LAppModel extends CubismUserModel {
       }
     }
 
+    scale *= this._viewScale
+
+    // 把像素偏移转成 world 坐标系偏移。
+    // canvas 逻辑像素 Y 向下为正,world 坐标 Y 向上为正,所以向下移动像素值时 world 偏移为负。
+    const offsetXWorld = (this._viewOffsetX * 2) / canvasWidth
+    const offsetYWorld = -(this._viewOffsetY * 2) / canvasHeight
+
     this._modelMatrix.loadIdentity()
     this._modelMatrix.scale(scale, scale)
-    this._modelMatrix.translateX(-scale * (actualBounds.minX + boundsW * 0.5))
-    this._modelMatrix.translateY(-scale * (actualBounds.minY + boundsH * 0.5))
+    this._modelMatrix.translateX(-scale * (actualBounds.minX + boundsW * 0.5) + offsetXWorld)
+    this._modelMatrix.translateY(-scale * (actualBounds.minY + boundsH * 0.5) + offsetYWorld)
   }
 
   /**
@@ -1070,6 +1130,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
     this.model = new LAppModel()
     this.model.setMotionRegistry(this._registry)
     this.model.setExpressionPresets(this._manifest.expressionParamPresets ?? EMPTY_EXPRESSION_PRESETS)
+    this.model.setViewScale(this._manifest.view.scale)
+    this.model.setViewOffset(this._manifest.view.offsetX, this._manifest.view.offsetY)
     await this.model.loadAssets(this._manifest.modelJsonPath, this.gl, canvas.width, canvas.height)
 
     // 绑定鼠标事件（眼睛跟随 + 点击互动）

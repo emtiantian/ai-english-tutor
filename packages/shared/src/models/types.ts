@@ -30,9 +30,9 @@ export interface ModelCredit {
 export interface Live2DModelView {
   /** 额外缩放系数(乘到 resize 计算结果上),1 = 不变 */
   scale: number
-  /** X 方向额外平移(模型坐标系),0 = 不变 */
+  /** X 方向额外平移(像素,以 canvas 逻辑像素为准),0 = 不变 */
   offsetX: number
-  /** Y 方向额外平移(模型坐标系),0 = 不变 */
+  /** Y 方向额外平移(像素,以 canvas 逻辑像素为准),正值 = 向下 */
   offsetY: number
 }
 

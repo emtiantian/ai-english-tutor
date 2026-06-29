@@ -180,10 +180,11 @@ export const MAO_PRO_MANIFEST: Live2DModelManifest = {
   hasExpressions: false,                   // 先用 preset;TODO 后续支持 .exp3.json 加载
   expressionParamPresets: MAO_PRO_EXPRESSION_PRESETS,
   view: {
-    // mao_pro 是 chibi(头大身小)风,4096 贴图较大,默认稍微缩一点。D 阶段细调。
-    scale: 0.9,
+    // mao_pro 在模型坐标系里偏高(boundsH ~3.06),基础 scale 只有 0.59 左右,
+    // 需要比 hiyori/shizuku 更大的 viewScale 才能在画布上看起来大小接近。
+    scale: 1.6,
     offsetX: 0,
-    offsetY: 0,
+    offsetY: 100,
   },
   motionRegistry: MAO_PRO_MOTION_REGISTRY,
   credit: {

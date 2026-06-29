@@ -4,6 +4,22 @@ import { createCharacterProviderSafe, type CharacterProviderType } from '../prov
 import { useTutorStore } from '../stores/tutor'
 import type { TutorClient } from '../client/TutorClient'
 import { getLive2DModelId, setLive2DModelId } from '../lib/live2d-model-prefs'
+import { pickBestStudentHint } from '../lib/hint-picker'
+
+/** 角色被点击、且 LLM 没有给出 reply hints 时的趣味兜底文案。 */
+const TAP_BODY_FALLBACKS = [
+  "I'm all ears—give it a try!",
+  "Need a hint? Check the lightbulb above the input!",
+  "Don't be shy, say something in English!",
+  "Tap the 💡 if you'd like a suggestion!",
+  "I'm ready when you are!",
+  "Your turn—say it in your own words!",
+  "Stuck? Try the hint first, then tap me again.",
+]
+
+function getTapFallbackText(): string {
+  return TAP_BODY_FALLBACKS[Math.floor(Math.random() * TAP_BODY_FALLBACKS.length)]
+}
 
 /**
  * Composable that manages CharacterProvider lifecycle.
@@ -40,16 +56,24 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
       live2dModelId: providerType === 'live2d' ? modelId : undefined,
     })
 
-    // Wire tap-body interaction
+    // Wire tap-body interaction.
+    // When LLM has provided studentReplyHints, tapping the character speaks the
+    // best hint for the user ("AI answers for me"). Otherwise we fall back to a
+    // small set of playful, learning-oriented easter-eggs.
     provider.onTapBody?.(() => {
-      const tapMessages = [
-        'Hey, you tapped me!',
-        'That tickles!',
-        'Hi there! Nice to meet you!',
-        'Ooh, what do you want to learn today?',
-        'Hello! Ready for an English lesson?',
-      ]
-      const text = tapMessages[Math.floor(Math.random() * tapMessages.length)]
+      let replyText: string | undefined
+      for (let i = store.messages.length - 1; i >= 0; i--) {
+        const msg = store.messages[i]
+        if (msg.role === 'assistant' && msg.studentReplyHints && msg.studentReplyHints.length > 0) {
+          replyText = pickBestStudentHint(msg.studentReplyHints, {
+            targetWords: store.currentScenario?.targetWords,
+            wordsLearned: store.currentScenario?.wordsLearned,
+          })
+          break
+        }
+      }
+
+      const text = replyText ?? getTapFallbackText()
       store.teacherProvider?.generateResponse({
         text,
         level: store.currentLevel ?? undefined,

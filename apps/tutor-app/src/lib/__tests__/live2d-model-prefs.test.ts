@@ -4,7 +4,7 @@
  * 验证:
  * - localStorage 中合法 ID 优先,无效 ID 自动清掉并 fallback
  * - VITE_LIVE2D_MODEL_ID env 作为次选
- * - 默认 'hiyori' 作为最后兜底
+ * - 默认 'mao_pro' 作为最后兜底
  * - localStorage 不可用时不抛错
  */
 
@@ -32,8 +32,8 @@ describe('live2d-model-prefs', () => {
   })
 
   describe('getLive2DModelId', () => {
-    it('returns DEFAULT (hiyori) when nothing is set', () => {
-      expect(getLive2DModelId()).toBe('hiyori')
+    it('returns DEFAULT (mao_pro) when nothing is set', () => {
+      expect(getLive2DModelId()).toBe('mao_pro')
     })
 
     it('returns the stored value when it is a valid model id', () => {
@@ -59,18 +59,18 @@ describe('live2d-model-prefs', () => {
 
     it('invalid stored id falls back to default AND clears storage', () => {
       localStorage.setItem(STORAGE_KEY, 'nonexistent_model')
-      expect(getLive2DModelId()).toBe('hiyori')
+      expect(getLive2DModelId()).toBe('mao_pro')
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
     it('invalid env var falls back to default', () => {
       vi.stubEnv('VITE_LIVE2D_MODEL_ID', 'nonexistent_model')
-      expect(getLive2DModelId()).toBe('hiyori')
+      expect(getLive2DModelId()).toBe('mao_pro')
     })
 
     it('empty/whitespace env var falls back to default', () => {
       vi.stubEnv('VITE_LIVE2D_MODEL_ID', '   ')
-      expect(getLive2DModelId()).toBe('hiyori')
+      expect(getLive2DModelId()).toBe('mao_pro')
     })
 
     it('survives localStorage throwing (e.g. privacy mode)', () => {
@@ -78,7 +78,7 @@ describe('live2d-model-prefs', () => {
         throw new Error('SecurityError')
       })
       expect(() => getLive2DModelId()).not.toThrow()
-      expect(getLive2DModelId()).toBe('hiyori')
+      expect(getLive2DModelId()).toBe('mao_pro')
     })
   })
 
@@ -127,10 +127,10 @@ describe('live2d-model-prefs', () => {
       }
     })
 
-    it('clear → get returns default (hiyori)', () => {
+    it('clear → get returns default (mao_pro)', () => {
       setLive2DModelId('shizuku')
       clearLive2DModelId()
-      expect(getLive2DModelId()).toBe('hiyori')
+      expect(getLive2DModelId()).toBe('mao_pro')
     })
   })
 })

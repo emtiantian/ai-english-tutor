@@ -25,7 +25,7 @@ const STORAGE_KEY = 'tutor.live2dModelId'
  * 优先级:
  *   1. localStorage 中保存的用户选择(如果该 ID 仍在 AVAILABLE_LIVE2D_MODELS 中)
  *   2. VITE_LIVE2D_MODEL_ID 环境变量(构建时注入)
- *   3. DEFAULT_LIVE2D_MODEL_ID('hiyori')
+ *   3. DEFAULT_LIVE2D_MODEL_ID('mao_pro')
  *
  * 总会返回一个合法的、当前可用的 ID。如果 localStorage 里保存的 ID 已经下架
  * (例如未来移除了某模型),会自动 fallback 到默认并清掉无效记录。

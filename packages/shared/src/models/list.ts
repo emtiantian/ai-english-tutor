@@ -18,7 +18,7 @@ export const AVAILABLE_LIVE2D_MODELS: readonly Live2DModelManifest[] = [
 ]
 
 /** 默认模型 ID — 未指定时使用,保持向后兼容 */
-export const DEFAULT_LIVE2D_MODEL_ID = 'hiyori'
+export const DEFAULT_LIVE2D_MODEL_ID = 'mao_pro'
 
 /**
  * 按 ID 查找 Live2D 模型 manifest。

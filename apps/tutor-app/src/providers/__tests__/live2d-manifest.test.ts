@@ -123,8 +123,8 @@ describe('Live2D model manifests', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('DEFAULT_LIVE2D_MODEL_ID points to hiyori', () => {
-    expect(DEFAULT_LIVE2D_MODEL_ID).toBe('hiyori')
+  it('DEFAULT_LIVE2D_MODEL_ID points to mao_pro', () => {
+    expect(DEFAULT_LIVE2D_MODEL_ID).toBe('mao_pro')
   })
 
   it('getLive2DModelManifest returns manifest by id', () => {
@@ -134,11 +134,11 @@ describe('Live2D model manifests', () => {
     expect(getLive2DModelManifest('nonexistent')).toBeUndefined()
   })
 
-  it('getLive2DModelManifestOrDefault falls back to hiyori', () => {
+  it('getLive2DModelManifestOrDefault falls back to mao_pro', () => {
     expect(getLive2DModelManifestOrDefault('hiyori')).toBe(HIYORI_MANIFEST)
     expect(getLive2DModelManifestOrDefault('shizuku')).toBe(SHIZUKU_MANIFEST)
-    expect(getLive2DModelManifestOrDefault('nonexistent')).toBe(HIYORI_MANIFEST)
-    expect(getLive2DModelManifestOrDefault(undefined)).toBe(HIYORI_MANIFEST)
-    expect(getLive2DModelManifestOrDefault()).toBe(HIYORI_MANIFEST)
+    expect(getLive2DModelManifestOrDefault('nonexistent')).toBe(MAO_PRO_MANIFEST)
+    expect(getLive2DModelManifestOrDefault(undefined)).toBe(MAO_PRO_MANIFEST)
+    expect(getLive2DModelManifestOrDefault()).toBe(MAO_PRO_MANIFEST)
   })
 })

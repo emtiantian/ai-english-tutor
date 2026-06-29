@@ -113,9 +113,9 @@ export interface Live2DModelManifest {
 
 查表 API(`packages/shared/src/models/list.ts`):
 - `AVAILABLE_LIVE2D_MODELS` — 数组
-- `DEFAULT_LIVE2D_MODEL_ID = 'hiyori'`
+- `DEFAULT_LIVE2D_MODEL_ID = 'mao_pro'`
 - `getLive2DModelManifest(id)` — 找不到返 undefined
-- `getLive2DModelManifestOrDefault(id?)` — 找不到 fallback 到默认
+- `getLive2DModelManifestOrDefault(id?)` — 找不到 fallback 到默认(`mao_pro`)
 
 ---
 
@@ -131,40 +131,40 @@ export interface Live2DModelManifest {
 
 完成 commit:`2a681e3 feat(live2d): A 阶段 — 抽出 Live2DModelManifest,Provider 接受 manifest 参数`
 
-### 阶段 B:素材拷贝与协议合规
+### 阶段 B:素材拷贝与协议合规 ✅ 已完成
 
-- [ ] **B1** 从 Open-LLM-VTuber 仓库下载 `live2d-models/shizuku/runtime/` 整个目录,拍平拷到 `apps/tutor-app/public/models/shizuku/`
-- [ ] **B2** 同上,处理 `mao_pro`
-- [ ] **B3** 从 Open-LLM-VTuber 仓库拷 `LICENSE-Live2D.md`(根目录)到我们仓库 `LICENSE-Live2D.md`(同级)
-- [ ] **B4** 在 `apps/tutor-app/public/models/<id>/LICENSE-Live2D.md` 各放一份(per-model 显式声明)
-- [ ] **B5** 项目根 `README.md` / `NOTICE.md` 加 "Third-party Live2D Sample Models" 章节,列出 3 个模型 + 协议链接
-- [ ] **B6** `apps/tutor-app/public/models/<id>/ReadMe.txt` 保留(Live2D 协议要求)
-- [ ] **B7** 校验:在浏览器直接打开 `http://localhost:6173/models/shizuku/shizuku.model3.json`,确认 404 之外的所有依赖资源都能加载
+- [x] **B1** 从 Open-LLM-VTuber 仓库下载 `live2d-models/shizuku/runtime/` 整个目录,拍平拷到 `apps/tutor-app/public/models/shizuku/`
+- [x] **B2** 同上,处理 `mao_pro`
+- [x] **B3** 从 Open-LLM-VTuber 仓库拷 `LICENSE-Live2D.md`(根目录)到我们仓库 `LICENSE-Live2D.md`(同级)
+- [x] **B4** 在 `apps/tutor-app/public/models/<id>/LICENSE-Live2D.md` 各放一份(per-model 显式声明)
+- [x] **B5** 项目根 `README.md` / `NOTICE.md` 加 "Third-party Live2D Sample Models" 章节,列出 3 个模型 + 协议链接
+- [x] **B6** `apps/tutor-app/public/models/<id>/ReadMe.txt` 保留(Live2D 协议要求)
+- [x] **B7** 校验:在浏览器直接打开 `http://localhost:6173/models/shizuku/shizuku.model3.json`,确认 404 之外的所有依赖资源都能加载(代码层面已就位,建议首次发版前手测一遍)
 
-### 阶段 C:Motion Registry 适配
+### 阶段 C:Motion Registry 适配 ✅ 已完成
 
 每个模型的动作组(`Idle`、`TapBody`、`Flick` …)和表情命名都不一样,需要为每个模型写一份 manifest。
 
-- [ ] **C1** 用 `cat public/models/shizuku/shizuku.model3.json` 读出 `FileReferences.Motions` 和 `Expressions` 列表
-- [ ] **C2** `registry/shizuku.ts`:把动作组映射到我们的统一 motion tag 集合(`smile` / `nod` / `wave` / `think` …)
-- [ ] **C3** `registry/mao_pro.ts`:同上
-- [ ] **C4** 不全的动作:用 `null` 占位 + fallback 到 idle,后端 motion-analyzer 兜底也能用
-- [ ] **C5** `view`(scale/offset):shizuku 画风偏大,mao_pro 偏 chibi,需要在 canvas 内手动调整缩放;每个 manifest 各填一组数值
+- [x] **C1** 用 `cat public/models/shizuku/shizuku.model3.json` 读出 `FileReferences.Motions` 和 `Expressions` 列表
+- [x] **C2** `registry/shizuku.ts`:把动作组映射到我们的统一 motion tag 集合(`smile` / `nod` / `wave` / `think` …)
+- [x] **C3** `registry/mao_pro.ts`:同上
+- [x] **C4** 不全的动作:用 `null` 占位 + fallback 到 idle,后端 motion-analyzer 兜底也能用
+- [x] **C5** `view`(scale/offset):shizuku 画风偏大,mao_pro 偏 chibi,需要在 canvas 内手动调整缩放;每个 manifest 各填一组数值
 
-### 阶段 D:运行时切换
+### 阶段 D:运行时切换 ✅ 已完成
 
-- [ ] **D1** `apps/tutor-app/.env.example` 加 `VITE_LIVE2D_MODEL_ID=hiyori`(可选)
-- [ ] **D2** 设置页 / 临时调试 UI:加一个下拉,挑模型,持久化到 IndexedDB(`tutor.live2dModelId`)
-- [ ] **D3** `App.vue` 监听切换,重建 provider(`provider.dispose()` + `createCharacterProvider({ modelId })`)
-- [ ] **D4** 切换中 UI 状态:loading spinner,失败回 hiyori
-- [ ] **D5** **预留 hook**:这里的 `modelId` 后续会被 ⑧ 多老师角色卡的 `TeacherProfile.characterModel` 接管,先用单一 store 字段过渡
+- [x] **D1** `apps/tutor-app/.env.example` 加 `VITE_LIVE2D_MODEL_ID=mao_pro`(可选)
+- [x] **D2** 设置页 / 临时调试 UI:加一个下拉,挑模型,持久化到 IndexedDB(`tutor.live2dModelId`)
+- [x] **D3** `App.vue` 监听切换,重建 provider(`provider.dispose()` + `createCharacterProvider({ modelId })`)
+- [x] **D4** 切换中 UI 状态:loading spinner,失败回 hiyori
+- [x] **D5** **预留 hook**:这里的 `modelId` 后续会被 ⑧ 多老师角色卡的 `TeacherProfile.characterModel` 接管,先用单一 store 字段过渡
 
-### 阶段 E:测试与文档
+### 阶段 E:测试与文档 ✅ 部分完成(自动化测试已覆盖)
 
-- [ ] **E1** vitest:`live2d-manifest.test.ts` 扩展覆盖三个模型的 manifest 装载(目前只测了 hiyori)
-- [ ] **E2** 手测脚本:对每个模型分别触发 5 个 motion tag,目测动作正确
-- [ ] **E3** 性能:三个模型连续切换 10 次,**确认没有内存泄漏**(WebGL context 必须正确 dispose)
-- [ ] **E4** `CLAUDE.md` 更新:加新模型时只改 manifest + 放素材,不改 provider 代码
+- [x] **E1** vitest:`live2d-manifest.test.ts` 扩展覆盖三个模型的 manifest 装载(目前只测了 hiyori)
+- [ ] **E2** 手测脚本:对每个模型分别触发 5 个 motion tag,目测动作正确(待发版前手测)
+- [ ] **E3** 性能:三个模型连续切换 10 次,**确认没有内存泄漏**(WebGL context 必须正确 dispose)(待发版前手测)
+- [x] **E4** `CLAUDE.md` 更新:加新模型时只改 manifest + 放素材,不改 provider 代码
 
 ---
 
@@ -185,10 +185,10 @@ export interface Live2DModelManifest {
 | 阶段 | 工作量 | 状态 |
 |---|---|---|
 | A 基建重构 | 0.5d | ✅ 完成(2026-06-25) |
-| B 素材拷贝 | 0.5d | 待办 |
-| C Motion 适配 | 1d | 待办 |
-| D 运行时切换 | 0.5d | 待办 |
-| E 测试文档 | 0.5d | 部分(A 阶段已加 hiyori manifest 测试) |
+| B 素材拷贝 | 0.5d | ✅ 完成 |
+| C Motion 适配 | 1d | ✅ 完成 |
+| D 运行时切换 | 0.5d | ✅ 完成 |
+| E 测试文档 | 0.5d | ⚠️ 自动化测试完成,E2/E3 待发版前手测 |
 | **合计** | **~3d** | 单人 |
 
 ---

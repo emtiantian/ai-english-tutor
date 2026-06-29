@@ -294,11 +294,17 @@ function closeDialog() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
+  /* safe center：内容が画面に収まるときは中央寄せ、はみ出すときは
+     先頭寄せにフォールバックして上下端までスクロール可能にする */
+  justify-content: safe center;
+  gap: 4px;
+  padding: clamp(16px, 5vw, 24px);
+  padding-top: max(clamp(16px, 5vw, 24px), env(safe-area-inset-top, 0px));
+  padding-bottom: max(clamp(16px, 5vw, 24px), env(safe-area-inset-bottom, 0px));
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(12px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scenario-header {
@@ -322,7 +328,10 @@ function closeDialog() {
 .style-section {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
+  max-width: 100%;
   margin-bottom: 20px;
 }
 
@@ -355,7 +364,7 @@ function closeDialog() {
 
 .scenario-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   max-width: 380px;
   width: 100%;
@@ -368,6 +377,7 @@ function closeDialog() {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   padding: 14px 10px 12px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -422,7 +432,9 @@ function closeDialog() {
 .level-dots {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
   margin-bottom: 8px;
 }
 
@@ -436,8 +448,8 @@ function closeDialog() {
 
 .level-dot {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -446,6 +458,7 @@ function closeDialog() {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .level-dot.next {
@@ -572,4 +585,22 @@ function closeDialog() {
 .arrow-up {
   transform: rotate(180deg);
 }
+
+/* 超窄屏（小型手机）：双列会让 6 个 CEFR 圆点挤爆卡片，降级为单列 */
+@media (max-width: 360px) {
+  .scenario-grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+  }
+
+  .level-dots {
+    gap: 8px;
+  }
+
+  .level-dot {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 </style>

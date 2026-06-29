@@ -479,7 +479,7 @@ export class TutorEngine {
       const parsed = parseTeachingResponse(response.content)
       warnIfMissingVocabSentences(parsed, sessionId, isResume ? 'resumeScenarioLesson' : 'startScenarioLesson')
 
-      this.sessions.addMessage(sessionId, session, 'assistant', response.content, {
+      this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
         motionId: parsed.motionId,
         expressionId: parsed.expressionId,
         vocabulary: parsed.vocabulary,
@@ -581,7 +581,7 @@ export class TutorEngine {
       const parsed = parseTeachingResponse(response.content)
       warnIfMissingVocabSentences(parsed, sessionId, 'startFreeFormLesson')
 
-      this.sessions.addMessage(sessionId, session, 'assistant', response.content, {
+      this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
         motionId: parsed.motionId,
         expressionId: parsed.expressionId,
         vocabulary: parsed.vocabulary,
@@ -878,7 +878,7 @@ export class TutorEngine {
     }
 
     this.sessions.addMessage(sessionId, session, 'user', userText)
-    this.sessions.addMessage(sessionId, session, 'assistant', rawContent, {
+    this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
       motionId: parsed.motionId,
       expressionId: parsed.expressionId,
       vocabulary: parsed.vocabulary,

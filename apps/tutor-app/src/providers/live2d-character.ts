@@ -313,6 +313,13 @@ class LAppModel extends CubismUserModel {
       }
     }
     await Promise.all(motionPromises)
+
+    // Idle 组过少的模型(如 mao_pro 只有 1 个 Idle),把全部已加载动作纳入空闲轮播,
+    // 否则角色几乎不自主动(空闲循环只会反复播那一个 idle)。
+    // Idle 组丰富的模型(hiyori 9 个)保持原行为。
+    if (this._idleMotionKeys.length <= 1) {
+      this._idleMotionKeys = Array.from(this._motions.keys())
+    }
     console.log('[Live2D] Motions loaded:', this._motions.size, 'idle:', this._idleMotionKeys.length)
 
     // 8. 初始化效果
@@ -691,9 +698,11 @@ class LAppModel extends CubismUserModel {
     const nx = (mouseX / canvasWidth) * 2 - 1   // -1(left) ~ 1(right)
     const ny = -((mouseY / canvasHeight) * 2 - 1) // -1(bottom) ~ 1(top), Y翻转
 
-    // 考虑 modelMatrix 的缩放/平移，逆变换到模型坐标
-    this._targetEyeX = this._modelMatrix.invertTransformX(nx)
-    this._targetEyeY = this._modelMatrix.invertTransformY(ny)
+    // 直接用归一化光标坐标作为跟随目标(clamp 到 [-1,1]),与模型缩放/位置解耦。
+    // 不再走 modelMatrix.invertTransform —— 那会被大 view.scale 的模型(如 mao_pro
+    // scale=1.6)除小,跟随幅度压到几乎不可见,看起来像「眼睛不动」。
+    this._targetEyeX = Math.max(-1, Math.min(1, nx))
+    this._targetEyeY = Math.max(-1, Math.min(1, ny))
   }
 
   /**
@@ -706,14 +715,36 @@ class LAppModel extends CubismUserModel {
     const nx = (pointX / canvasWidth) * 2 - 1
     const ny = -((pointY / canvasHeight) * 2 - 1)
 
-    // 遍历所有 hit areas 检测
+    // 遍历所有 hit areas 检测。
+    // 优先按 hit area 的语义(Id/Name 含 head/hand/body)判定分区,这对
+    // mao_pro 这类「头、身分成多个独立 hit area」的模型才准确;
+    // 只有单个泛化 hit area(如 hiyori 的 Id:"HitArea",无部位语义)时,
+    // 才回退到 getHitZoneForArea 的 relativeY 上下细分。
     const hitAreaCount = this._modelSetting.getHitAreasCount()
     for (let i = 0; i < hitAreaCount; i++) {
       const hitAreaId = this._modelSetting.getHitAreaId(i)
       if (this.isHit(hitAreaId, nx, ny)) {
+        const semanticZone = this.zoneFromHitAreaLabel(
+          hitAreaId.getString() ?? '',
+          this._modelSetting.getHitAreaName(i) ?? '',
+        )
+        if (semanticZone) return semanticZone
         return this.getHitZoneForArea(hitAreaId, nx, ny)
       }
     }
+    return null
+  }
+
+  /**
+   * 从 hit area 的 Id / Name 文本推断语义分区。
+   * 命中含「head/face」→ head,「hand/arm」→ hand,「body/torso」→ body。
+   * 没有可识别部位关键词(如 hiyori 的 "HitArea")时返回 null,交给 relativeY 回退。
+   */
+  private zoneFromHitAreaLabel(id: string, name: string): 'head' | 'body' | 'hand' | null {
+    const label = `${id} ${name}`.toLowerCase()
+    if (/head|face/.test(label)) return 'head'
+    if (/hand|arm/.test(label)) return 'hand'
+    if (/body|torso|chest/.test(label)) return 'body'
     return null
   }
 
@@ -1179,6 +1210,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
       if (!zone) return
 
       console.log('[Live2D] Tapped:', zone)
+      // 先按命中部位播分区表情/动作,再无条件触发语音回复。
+      // 语音只装配在 onTapBody(见 useCharacterProvider),所以任意部位点击都要
+      // 走 _onTapBody,否则 mao_pro 这类点头/脸先命中 head 的模型点了没语音。
       switch (zone) {
         case 'head':
           this._onTapHead?.()
@@ -1190,11 +1224,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
           this.setExpression('happy')
           this.playMotion('wave')
           break
-        case 'body':
-        default:
-          this._onTapBody?.()
-          break
       }
+      this._onTapBody?.()
     }
     canvas.addEventListener('click', this._canvasClick)
   }

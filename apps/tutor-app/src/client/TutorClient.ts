@@ -8,6 +8,7 @@ import type {
   VocabProgress,
   ReviewWord,
   VocabSyncItem,
+  WordExplanation,
 } from './types'
 
 export interface TutorClientOptions {
@@ -106,6 +107,15 @@ export class TutorClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, words }),
       timeout: 15000,
+    })
+  }
+
+  async explainWord(word: string, sentence?: string): Promise<WordExplanation> {
+    return this.fetchJson('/api/vocab/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word, sentence }),
+      timeout: 30000,
     })
   }
 

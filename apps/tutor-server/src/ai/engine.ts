@@ -29,7 +29,12 @@ import { AudioPipeline } from './audio-pipeline.js'
 import { parseTeachingResponse } from './response-parser.js'
 import { JsonTextStreamExtractor } from './stream-text-extractor.js'
 import { VocabTracker } from './vocab-tracker.js'
-import { loadPersona, getScenarioById } from '../vocab/loader.js'
+import { loadPersona, getScenarioById, lookupWord } from '../vocab/loader.js'
+import {
+  buildVocabExplainMessages,
+  parseVocabExplainResponse,
+  type WordExplanation,
+} from './prompts/vocab-explain.js'
 import { pickScenarioVocabulary } from './scenario-vocab-picker.js'
 import { lineGroupKey, getReusableLines, recordTeacherLine } from './line-pool.js'
 
@@ -999,6 +1004,44 @@ export class TutorEngine {
       coverageRate: 0,
       stars: 0 as 0 | 3 | 4 | 5,
     }
+  }
+
+  /**
+   * Explain a single vocabulary word for the dictionary popup.
+   *
+   * LLM-first (covers any conversational word, gives context-aware senses),
+   * with the static vocab DB as offline/failure fallback. Returns null only
+   * when neither source can produce a usable explanation.
+   */
+  async explainWord(word: string, sentence?: string): Promise<WordExplanation | null> {
+    const cleaned = word.trim()
+    if (!cleaned) return null
+
+    const staticEntry = lookupWord(cleaned)
+    const hint = staticEntry
+      ? { level: staticEntry.level, meaning: staticEntry.data.meaning, pos: staticEntry.data.pos }
+      : undefined
+
+    try {
+      const messages = buildVocabExplainMessages(cleaned, sentence, hint)
+      const response = await this.llm.complete(messages)
+      const parsed = parseVocabExplainResponse(response.content, cleaned)
+      if (parsed) {
+        if (!parsed.level && staticEntry) parsed.level = staticEntry.level
+        return parsed
+      }
+    } catch (err) {
+      logger.error({ err, word: cleaned }, 'explainWord LLM failed, static fallback')
+    }
+
+    if (staticEntry) {
+      return {
+        word: staticEntry.data.word,
+        level: staticEntry.level,
+        senses: [{ pos: staticEntry.data.pos, meaningZh: staticEntry.data.meaning }],
+      }
+    }
+    return null
   }
 
   /** Get session info (for API) */

@@ -56,10 +56,27 @@
           生词
         </span>
         <span
-          v-for="word in msg.vocabulary"
+          v-for="(word, idx) in msg.vocabulary"
           :key="word"
-          class="vocab-tag"
-        >{{ word }}</span>
+          class="vocab-item"
+        >
+          <button
+            class="vocab-tag"
+            @click="$emit('speak-word', word)"
+            title="点击朗读"
+          >
+            <svg class="vocab-speak-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            {{ word }}
+          </button>
+          <button
+            class="vocab-detail-btn"
+            @click="$emit('word-detail', { word, sentence: msg.vocabularySentences?.[idx] })"
+            title="查看详细说明"
+          >详细</button>
+        </span>
       </div>
     </div>
   </div>

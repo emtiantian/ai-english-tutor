@@ -10,6 +10,37 @@ import {
   getRandomWords,
 } from '../vocab/loader.js'
 import { vocabRepo } from '../db/repositories/vocabulary.js'
+import { tutorEngine } from '../ai/engine.js'
+import type { WordExplanation } from '../ai/prompts/vocab-explain.js'
+
+/**
+ * In-memory LRU cache for word explanations.
+ *
+ * Key is normalized lower-case word only (ignoring sentence context) to keep
+ * the cache compact; callers lose context-specific ranking on hits, which is
+ * an acceptable trade-off for a quick lookup popup.
+ */
+const EXPLAIN_CACHE_MAX = 500
+const explainCache = new Map<string, WordExplanation>()
+
+function explainCacheGet(key: string): WordExplanation | undefined {
+  const value = explainCache.get(key)
+  if (value !== undefined) {
+    // Touch: move to end so oldest stays at insertion order front.
+    explainCache.delete(key)
+    explainCache.set(key, value)
+  }
+  return value
+}
+
+function explainCacheSet(key: string, value: WordExplanation): void {
+  if (explainCache.has(key)) explainCache.delete(key)
+  explainCache.set(key, value)
+  if (explainCache.size > EXPLAIN_CACHE_MAX) {
+    const firstKey = explainCache.keys().next().value as string
+    explainCache.delete(firstKey)
+  }
+}
 
 /**
  * Vocabulary API routes
@@ -23,6 +54,7 @@ import { vocabRepo } from '../db/repositories/vocabulary.js'
  * GET  /api/vocab/random/:level       - Get random words for practice
  * GET  /api/vocab/progress/:userId    - Get user's vocabulary progress
  * POST /api/vocab/track               - Track a word (mark as learning/mastered)
+ * POST /api/vocab/explain             - Explain a word for the detail popup
  */
 export async function vocabRoutes(server: FastifyInstance): Promise<void> {
   // List all levels
@@ -178,6 +210,26 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     const limit = parseInt(request.query.limit ?? '10', 10)
     const words = vocabRepo.getDueForReview(request.params.userId, limit)
     return reply.send({ dueCount: words.length, words })
+  })
+
+  // Explain a word for the detail popup
+  server.post('/api/vocab/explain', async (request: FastifyRequest<{
+    Body: { word: string; sentence?: string }
+  }>, reply) => {
+    const { word, sentence } = request.body
+    if (!word) {
+      return reply.status(400).send({ error: 'word is required', code: 'MISSING_FIELDS' })
+    }
+    const key = word.toLowerCase().trim()
+    const cached = explainCacheGet(key)
+    if (cached) return reply.send(cached)
+
+    const explanation = await tutorEngine.explainWord(word, sentence)
+    if (!explanation) {
+      return reply.status(404).send({ error: 'Word not found', code: 'WORD_NOT_FOUND' })
+    }
+    explainCacheSet(key, explanation)
+    return reply.send(explanation)
   })
 }
 

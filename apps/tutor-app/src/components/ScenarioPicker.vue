@@ -5,9 +5,9 @@
       <p class="scenario-subtitle">在真实情境中练习英语，通关后解锁更高难度</p>
     </div>
 
-    <!-- Style Selector -->
+    <!-- Style Selector：选人格预设。火山 TTS 用固定音色时仍可选(只作用于 LLM 人格)，标签随之切换。 -->
     <div class="style-section">
-      <span class="style-label">选择语音风格</span>
+      <span class="style-label">{{ voiceStyleSelectable === false ? '选择性格风格' : '选择语音风格' }}</span>
       <select v-model="localStyle" class="style-select">
         <option value="">🎲 随机风格</option>
         <option value="cheeky-cute">😜 俏皮可爱</option>
@@ -117,6 +117,8 @@ interface ScenarioInfo {
 const props = defineProps<{
   scenarios: ScenarioInfo[]
   styleName?: string
+  /** 风格下拉是否也作用于音色。火山 TTS 用固定 voice_type 时为 false：下拉仍在，但只改 LLM 人格、标签变「性格风格」。 */
+  voiceStyleSelectable?: boolean
   /** 用户的 CEFR 基准档（从 store.currentLevel 映射而来） */
   userLevel: CEFRLevel
   pausedSnapshots: Map<string, ScenarioPausedSnapshot>

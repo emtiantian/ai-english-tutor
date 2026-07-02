@@ -172,7 +172,7 @@ export const config = {
 
   // ── Voice Services Configuration ──
 
-  /** TTS Provider: 'browser' | 'xiaomi' | 'cosyvoice' */
+  /** TTS Provider: 'browser' | 'xiaomi' | 'cosyvoice' | 'volcengine' */
   TTS_PROVIDER: process.env.TTS_PROVIDER ?? 'browser',
 
   /** Default TTS voice */
@@ -211,6 +211,30 @@ export const config = {
    */
   COSYVOICE_SAMPLE_RATE: parseInt(process.env.COSYVOICE_SAMPLE_RATE ?? '22050', 10),
 
+  // ── Volcengine (火山引擎) 语音合成大模型 TTS Configuration ──
+  // 纯 TTS（不提供 ASR）；HTTP 一次性合成 operation=query。
+  // 音色由 voice_type 固定在服务端，前端不再选择音色（见 /api/config voiceStyleSelectable）。
+
+  /** Volcengine TTS HTTP endpoint (一次性合成) */
+  VOLCENGINE_TTS_BASE_URL:
+    process.env.VOLCENGINE_TTS_BASE_URL ?? 'https://openspeech.bytedance.com/api/v1/tts',
+
+  /** Volcengine 应用 App ID（控制台「语音合成大模型」获取） */
+  VOLCENGINE_TTS_APP_ID: process.env.VOLCENGINE_TTS_APP_ID ?? '',
+
+  /** Volcengine Access Token（鉴权用，header 形如 `Authorization: Bearer;{token}`） */
+  VOLCENGINE_TTS_ACCESS_TOKEN: process.env.VOLCENGINE_TTS_ACCESS_TOKEN ?? '',
+
+  /** Volcengine 业务集群：大模型音色用 volcano_tts */
+  VOLCENGINE_TTS_CLUSTER: process.env.VOLCENGINE_TTS_CLUSTER ?? 'volcano_tts',
+
+  /** Volcengine 大模型音色 ID（固定，前端不可选） */
+  VOLCENGINE_TTS_VOICE_TYPE:
+    process.env.VOLCENGINE_TTS_VOICE_TYPE ?? 'zh_female_gaolengyujie_moon_bigtts',
+
+  /** Volcengine 输出音频编码：mp3 | wav | pcm | ogg_opus */
+  VOLCENGINE_TTS_ENCODING: process.env.VOLCENGINE_TTS_ENCODING ?? 'mp3',
+
   // ── Whisper.cpp Configuration ──
 
   /** Whisper.cpp server Base URL */
@@ -222,9 +246,11 @@ export const config = {
 
 export type Config = typeof config
 
-/** Derive ttsSource from TTS_PROVIDER: browser/unknown → local, xiaomi/cosyvoice → remote */
+/** Derive ttsSource from TTS_PROVIDER: browser/unknown → local, xiaomi/cosyvoice/volcengine → remote */
 export function getTtsSource(): 'local' | 'remote' {
-  return config.TTS_PROVIDER === 'xiaomi' || config.TTS_PROVIDER === 'cosyvoice'
+  return config.TTS_PROVIDER === 'xiaomi' ||
+    config.TTS_PROVIDER === 'cosyvoice' ||
+    config.TTS_PROVIDER === 'volcengine'
     ? 'remote'
     : 'local'
 }

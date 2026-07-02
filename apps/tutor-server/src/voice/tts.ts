@@ -2,6 +2,7 @@ import { config } from '../config.js'
 import { logger } from '../logger.js'
 import { CosyVoiceProvider } from './providers/cosyvoice.js'
 import { XiaomiTTSProvider } from './providers/xiaomi-tts.js'
+import { VolcengineTTSProvider } from './providers/volcengine-tts.js'
 
 /**
  * TTS (Text-to-Speech) Provider Interface
@@ -104,6 +105,8 @@ export function createTTSProvider(): TTSProvider {
       return new XiaomiTTSProvider()
     case 'cosyvoice':
       return new CosyVoiceProvider()
+    case 'volcengine':
+      return new VolcengineTTSProvider()
     case 'browser':
       // 浏览器输出：前端走 SpeechSynthesis，后端不合成。这里仅作兜底。
       return new BrowserTTSProvider()

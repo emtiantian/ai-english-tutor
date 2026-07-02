@@ -302,22 +302,55 @@ watch(
   height: 12px;
 }
 
+.vocab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .vocab-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 12px;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.2));
   color: rgba(255, 255, 255, 0.95);
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
   border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
 .vocab-tag:hover {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0.3));
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.vocab-speak-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+}
+
+.vocab-detail-btn {
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.vocab-detail-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
 }
 
 </style>

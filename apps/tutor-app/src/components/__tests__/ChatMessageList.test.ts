@@ -149,4 +149,50 @@ describe('ChatMessageList', () => {
     // ...but the Chinese text toggle stays usable (it no longer plays audio).
     expect(wrapper.find('.replay-btn--zh').attributes('disabled')).toBeUndefined()
   })
+
+  it('emits speak-word when a vocabulary tag is clicked', async () => {
+    const wrapper = mountComponent({
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'assistant',
+          text: 'Let us practice.',
+          isStreaming: false,
+          timestamp: Date.now(),
+          vocabulary: ['practice', 'abandon'],
+          vocabularySentences: ['Let us practice.', 'Do not abandon it.'],
+        },
+      ],
+    })
+
+    const tags = wrapper.findAll('.vocab-tag')
+    expect(tags).toHaveLength(2)
+    await tags[0].trigger('click')
+    expect(wrapper.emitted('speak-word')).toHaveLength(1)
+    expect(wrapper.emitted('speak-word')![0]).toEqual(['practice'])
+  })
+
+  it('emits word-detail with the aligned sentence when 详细 button is clicked', async () => {
+    const wrapper = mountComponent({
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'assistant',
+          text: 'Let us practice.',
+          isStreaming: false,
+          timestamp: Date.now(),
+          vocabulary: ['practice', 'abandon'],
+          vocabularySentences: ['Let us practice.', 'Do not abandon it.'],
+        },
+      ],
+    })
+
+    const detailButtons = wrapper.findAll('.vocab-detail-btn')
+    expect(detailButtons).toHaveLength(2)
+    await detailButtons[1].trigger('click')
+    expect(wrapper.emitted('word-detail')).toHaveLength(1)
+    expect(wrapper.emitted('word-detail')![0]).toEqual([
+      { word: 'abandon', sentence: 'Do not abandon it.' },
+    ])
+  })
 })

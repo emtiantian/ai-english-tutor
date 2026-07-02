@@ -93,6 +93,8 @@ const props = defineProps<{
 
 defineEmits<{
   replay: [messageId: string]
+  'speak-word': [word: string]
+  'word-detail': [payload: { word: string; sentence?: string }]
 }>()
 
 const containerEl = ref<HTMLDivElement | null>(null)

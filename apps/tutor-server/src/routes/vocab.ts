@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { LRUCache } from 'lru-cache'
+import type { WordExplanation } from '@ai-english-tutor/shared'
 import {
   getVocabularyByLevel,
   getVocabularyByLevelNum,
@@ -11,36 +13,15 @@ import {
 } from '../vocab/loader.js'
 import { vocabRepo } from '../db/repositories/vocabulary.js'
 import { tutorEngine } from '../ai/engine.js'
-import type { WordExplanation } from '../ai/prompts/vocab-explain.js'
 
 /**
  * In-memory LRU cache for word explanations.
  *
  * Key is normalized lower-case word only (ignoring sentence context) to keep
- * the cache compact; callers lose context-specific ranking on hits, which is
- * an acceptable trade-off for a quick lookup popup.
+ * the cache compact; callers lose context-specific ranking on hits, which is an
+ * acceptable trade-off for a quick lookup popup.
  */
-const EXPLAIN_CACHE_MAX = 500
-const explainCache = new Map<string, WordExplanation>()
-
-function explainCacheGet(key: string): WordExplanation | undefined {
-  const value = explainCache.get(key)
-  if (value !== undefined) {
-    // Touch: move to end so oldest stays at insertion order front.
-    explainCache.delete(key)
-    explainCache.set(key, value)
-  }
-  return value
-}
-
-function explainCacheSet(key: string, value: WordExplanation): void {
-  if (explainCache.has(key)) explainCache.delete(key)
-  explainCache.set(key, value)
-  if (explainCache.size > EXPLAIN_CACHE_MAX) {
-    const firstKey = explainCache.keys().next().value as string
-    explainCache.delete(firstKey)
-  }
-}
+const explainCache = new LRUCache<string, WordExplanation>({ max: 500 })
 
 /**
  * Vocabulary API routes
@@ -221,14 +202,14 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: 'word is required', code: 'MISSING_FIELDS' })
     }
     const key = word.toLowerCase().trim()
-    const cached = explainCacheGet(key)
+    const cached = explainCache.get(key)
     if (cached) return reply.send(cached)
 
     const explanation = await tutorEngine.explainWord(word, sentence)
     if (!explanation) {
       return reply.status(404).send({ error: 'Word not found', code: 'WORD_NOT_FOUND' })
     }
-    explainCacheSet(key, explanation)
+    explainCache.set(key, explanation)
     return reply.send(explanation)
   })
 }

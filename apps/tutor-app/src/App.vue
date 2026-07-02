@@ -14,6 +14,19 @@
       :messages="store.messages"
       :is-playing="store.isPlaying"
       @replay="handleReplay"
+      @speak-word="handleSpeakWord"
+      @word-detail="handleWordDetail"
+    />
+
+    <!-- Word Detail Modal -->
+    <WordDetailModal
+      v-if="activeWord"
+      :word="activeWord"
+      :explanation="wordExplanation"
+      :loading="wordLoading"
+      :error="wordError"
+      @close="closeWordDetail"
+      @speak="handleSpeakWord(activeWord)"
     />
 
     <!-- Scenario Picker (includes style selector + v2 progress dots + resume dialog) -->
@@ -122,6 +135,7 @@ import { useASRConfig } from './composables/useASRConfig'
 import { useVocabSync } from './composables/useVocabSync'
 import SvgLoading from './components/SvgLoading.vue'
 import ChatMessageList from './components/ChatMessageList.vue'
+import WordDetailModal from './components/WordDetailModal.vue'
 import ChatInputBar from './components/ChatInputBar.vue'
 import ScenarioPicker from './components/ScenarioPicker.vue'
 import ScenarioComplete from './components/ScenarioComplete.vue'
@@ -131,7 +145,7 @@ import CharacterModelSwitcher from './components/CharacterModelSwitcher.vue'
 import MotionDebugPanel from './components/MotionDebugPanel.vue'
 import { SpeechSynthesisTTSProvider } from './providers/speech-synthesis-tts'
 import { RemoteTeacherProvider } from './providers/remote-teacher'
-import type { ChatRequestBody } from './client/types'
+import type { ChatRequestBody, WordExplanation } from './client/types'
 import type { CEFRLevel } from '@ai-english-tutor/shared'
 import type { ScenarioPausedSnapshot } from './lib/scenario-paused-db'
 
@@ -422,6 +436,39 @@ function handleReplay(messageId: string) {
   } else {
     audioPlayer.speak(msg.text, { lang: 'en-US' })
   }
+}
+
+// --- Vocabulary word: pronunciation + detail popup ---
+const activeWord = ref<string | null>(null)
+const wordExplanation = ref<WordExplanation | null>(null)
+const wordLoading = ref(false)
+const wordError = ref<string | null>(null)
+
+function handleSpeakWord(word: string) {
+  if (!word) return
+  audioPlayer.speak(word, { lang: 'en-US' })
+}
+
+async function handleWordDetail({ word, sentence }: { word: string; sentence?: string }) {
+  activeWord.value = word
+  wordExplanation.value = null
+  wordError.value = null
+  wordLoading.value = true
+  try {
+    wordExplanation.value = await client.explainWord(word, sentence)
+  } catch (err) {
+    console.error('[App] explainWord failed:', err)
+    wordError.value = '离线或查询失败，请稍后再试。'
+  } finally {
+    wordLoading.value = false
+  }
+}
+
+function closeWordDetail() {
+  activeWord.value = null
+  wordExplanation.value = null
+  wordError.value = null
+  wordLoading.value = false
 }
 
 // --- Send text ---

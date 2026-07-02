@@ -92,3 +92,31 @@ export interface CharacterState {
   currentExpression: string | null
   mouthOpen: number
 }
+
+/** One sense (词义条目) of a word in a dictionary-style explanation. */
+export interface WordSense {
+  /** 词性，如 n. / v. / adj. / adv. / phrase */
+  pos: string
+  /** 中文释义 */
+  meaningZh: string
+  /** 英文例句 */
+  exampleEn?: string
+  /** 例句中文翻译 */
+  exampleZh?: string
+}
+
+/** Structured dictionary entry returned by POST /api/vocab/explain. */
+export interface WordExplanation {
+  /** 单词原形 */
+  word: string
+  /** 音标（IPA，含两侧斜杠），如 /əˈbændən/ */
+  phonetic?: string
+  /** CEFR 等级（若已知） */
+  level?: string
+  /** 多义项 */
+  senses: WordSense[]
+  /** 近义词 */
+  synonyms?: string[]
+  /** 用法/搭配笔记（中文） */
+  usageNoteZh?: string
+}

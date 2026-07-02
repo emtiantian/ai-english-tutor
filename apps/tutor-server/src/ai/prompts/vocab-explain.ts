@@ -1,4 +1,7 @@
 import type { LLMMessage } from '../llm.js'
+import { extractFirstJson } from '../response-parser.js'
+import type { WordExplanation, WordSense } from '@ai-english-tutor/shared'
+export type { WordExplanation, WordSense }
 
 /**
  * Word detail / dictionary explanation
@@ -8,34 +11,6 @@ import type { LLMMessage } from '../llm.js'
  * the primary source (covers any contextual word); the static vocab list only
  * provides optional hints (level / known gloss) folded into the prompt.
  */
-
-/** One sense (词义条目) of the word. */
-export interface WordSense {
-  /** 词性，如 n. / v. / adj. / adv. / phrase */
-  pos: string
-  /** 中文释义 */
-  meaningZh: string
-  /** 英文例句 */
-  exampleEn?: string
-  /** 例句中文翻译 */
-  exampleZh?: string
-}
-
-/** Structured dictionary entry returned to the client. */
-export interface WordExplanation {
-  /** 单词原形 */
-  word: string
-  /** 音标（IPA，含两侧斜杠），如 /əˈbændən/ */
-  phonetic?: string
-  /** CEFR 等级（若已知） */
-  level?: string
-  /** 多义项 */
-  senses: WordSense[]
-  /** 近义词 */
-  synonyms?: string[]
-  /** 用法/搭配笔记（中文） */
-  usageNoteZh?: string
-}
 
 /**
  * Build the LLM messages that request a dictionary-style explanation.
@@ -94,42 +69,6 @@ export function buildVocabExplainMessages(
     { role: 'system', content: system },
     { role: 'user', content: userParts.join('\n\n') },
   ]
-}
-
-/**
- * Extract the first balanced top-level JSON object from text.
- * Ignores braces inside double-quoted strings.
- */
-function extractFirstJson(text: string): string | null {
-  const start = text.indexOf('{')
-  if (start === -1) return null
-
-  let depth = 0
-  let inString = false
-  let escaped = false
-
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i]
-    if (inString) {
-      if (escaped) {
-        escaped = false
-      } else if (ch === '\\') {
-        escaped = true
-      } else if (ch === '"') {
-        inString = false
-      }
-      continue
-    }
-    if (ch === '"') {
-      inString = true
-    } else if (ch === '{') {
-      depth++
-    } else if (ch === '}') {
-      depth--
-      if (depth === 0) return text.slice(start, i + 1)
-    }
-  }
-  return null
 }
 
 function asString(v: unknown): string | undefined {

@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import type { WordExplanation } from '../client/types'
+import type { WordExplanation } from '@ai-english-tutor/shared'
 
 defineProps<{
   word: string

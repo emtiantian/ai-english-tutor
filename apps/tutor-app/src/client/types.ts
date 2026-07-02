@@ -7,25 +7,8 @@
  * - App.vue (character animation)
  */
 
-import type { TeachingResponse, CEFRLevel } from '@ai-english-tutor/shared'
-export type { TeachingResponse, CEFRLevel }
-
-/** Detailed dictionary popup entry for one word */
-export interface WordSense {
-  pos: string
-  meaningZh: string
-  exampleEn?: string
-  exampleZh?: string
-}
-
-export interface WordExplanation {
-  word: string
-  phonetic?: string
-  level?: string
-  senses: WordSense[]
-  synonyms?: string[]
-  usageNoteZh?: string
-}
+import type { TeachingResponse, CEFRLevel, WordExplanation, WordSense } from '@ai-english-tutor/shared'
+export type { TeachingResponse, CEFRLevel, WordExplanation, WordSense }
 
 export interface TutorEventMap {
   [key: string]: unknown

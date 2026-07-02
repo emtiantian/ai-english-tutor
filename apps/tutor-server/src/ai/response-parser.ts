@@ -88,7 +88,7 @@ export function parseTeachingResponse(content: string): ParsedResponse {
  * Ignores braces inside double-quoted strings so nested JSON or text containing
  * braces does not confuse the matcher.
  */
-function extractFirstJson(text: string): string | null {
+export function extractFirstJson(text: string): string | null {
   let depth = 0
   let start = -1
   let inString = false

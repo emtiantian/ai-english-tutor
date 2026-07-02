@@ -1,26 +1,16 @@
 #!/usr/bin/env bash
-# ── AI English Tutor — 一键部署到服务器 ──
+# AI English Tutor — 一键部署到服务器
 # 用法: ./scripts/deploy-to-server.sh
 #
-# 流程:
-#   git clean → ssh ok → 交互确认部署根目录 → 远端目录 → 本地测试 →
-#   交互式 .env → 备份 → rsync → init-host-dir → 探测 compose 叠加 →
-#   (ASR=whisper 时下载模型) → docker compose up →
-#   健康检查 (3 次) → 失败回滚 → 报告
-#
-# 部署根目录可在运行时交互式确认/自定义（默认 /home/haohe/data），内部维持
-# app/ data/ backups/ 子目录；所有运行时数据与本地模型（whisper / cosyvoice）
-# 都落在 <root>/data/ 下，通过 AI_TUTOR_HOME 注入给 docker compose 的 bind mount。
-#
-# 默认部署「浏览器 ASR + 浏览器 TTS + Xiaomi LLM」最小栈，主 compose 仅
-# gateway/frontend/backend；ASR=whisper 或 TTS=cosyvoice 时自动叠加对应 compose 文件。
+# 流程: git clean → ssh 检查 → 交互式 .env → rsync → docker compose up → 健康检查 → 报告
+# 默认最小栈: 浏览器 ASR/TTS + Xiaomi LLM；需要时自动叠加 whisper / cosyvoice compose。
 
 set -euo pipefail
 
 if [[ $# -gt 0 ]]; then
   case "$1" in
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
-    *)         echo "未知参数: $1" >&2; sed -n '2,16p' "$0"; exit 1 ;;
+    -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
+    *)         echo "未知参数: $1" >&2; sed -n '2,5p' "$0"; exit 1 ;;
   esac
 fi
 
@@ -29,22 +19,16 @@ fi
 # ════════════════════════════════════════
 REMOTE_HOST="100.100.132.72"
 REMOTE_USER="haohe"
-# 部署根目录：默认值，部署时可交互式覆盖（见 configure_remote_dir）。
-# 内部维持 app/ data/ backups/ 子目录结构；所有运行时数据（含 whisper /
-# cosyvoice 模型、TTS 缓存、SQLite、证书）都收敛到 <root>/data/ 下。
 REMOTE_DIR_DEFAULT="/home/haohe/data/.ai-english-tutor"
 REMOTE_DIR="${REMOTE_DIR_DEFAULT}"
-# 下列派生路径在 configure_remote_dir 里按最终 REMOTE_DIR 重算，这里先给占位默认值
 REMOTE_APP_DIR="${REMOTE_DIR}/app"
 REMOTE_DATA_DIR="${REMOTE_DIR}/data"
 REMOTE_BACKUP_DIR="${REMOTE_DIR}/backups"
-REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"   # 与 docker-compose env_file 路径一致
+REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
 
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
 
-# whisper 模型存放在 <root>/data/whisper-models（bind mount，随部署目录走），
-# 不再用 docker named volume，便于和其余数据一起备份/迁移。
 WHISPER_MODEL_FILE="ggml-base.en.bin"
 WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_FILE}"
 
@@ -81,15 +65,12 @@ GREEN=$'\033[0;32m'
 YELLOW=$'\033[1;33m'
 NC=$'\033[0m'
 
-# 全局给报告用
 TEST_DURATION=0
 SYNC_COUNT=0
 
-# compose 叠加开关（由 detect_compose_overlays 依据远端 .env 推断）
 ENABLE_WHISPER=false
 ENABLE_COSYVOICE=false
 
-# 远端已有 .env 拉到本地的副本路径（交互式配置时作默认值来源）；空=首次部署，用内置默认值
 EXISTING_ENV_FILE=""
 
 # ════════════════════════════════════════
@@ -103,9 +84,7 @@ remote_exec() {
   ssh "${REMOTE_USER}@${REMOTE_HOST}" "$*"
 }
 
-# TTY 版远端执行：分配伪终端（-t），让远端命令的实时进度（如 docker build 的
-# BuildKit 进度条）能流式刷到本地终端。
-# ⚠ 不要用于需要捕获/解析输出的命令——TTY 会注入 \r 与控制字符，污染 json/table 解析。
+# TTY 版：用于需要实时进度的命令（如 docker build）。会注入控制字符，不用于解析输出。
 remote_exec_tty() {
   ssh -t "${REMOTE_USER}@${REMOTE_HOST}" "$*"
 }
@@ -123,8 +102,7 @@ prompt() {
   fi
 }
 
-# 静默输入：用于 API Key，不回显也不进 history
-# 第二个参数为已有值时：提示「已输入」，回车保留原值，否则用新输入覆盖
+# 静默输入：用于 API Key，不回显
 prompt_secret() {
   local message="$1"
   local existing="${2:-}"
@@ -140,8 +118,7 @@ prompt_secret() {
   fi
 }
 
-# 从 env 文件读取某个 key 的值（取最后一个匹配，保留 = 后全部内容）
-# 文件不存在或 key 不存在时返回空，调用方用 :- 兜底到内置默认值
+# 读取 env 文件中 key 的最后一个匹配值
 env_get() {
   local file="$1" key="$2"
   [ -n "${file}" ] && [ -f "${file}" ] || return 0
@@ -185,14 +162,10 @@ ensure_remote_dirs() {
   remote_exec "mkdir -p ${REMOTE_APP_DIR} ${REMOTE_DATA_DIR} ${REMOTE_BACKUP_DIR}"
 }
 
-# ── 交互式确认部署根目录 ──
-# 在所有路径派生之前调用：让用户确认/自定义部署根目录，然后按最终值重算
-# 全部派生路径（app/ data/ backups/ + 备份子目录）。运行时数据（whisper /
-# cosyvoice 模型、TTS 缓存、SQLite、证书）都落在 <root>/data/ 下。
+# 交互式确认部署根目录，并按最终值重算派生路径
 configure_remote_dir() {
   local input
-  input=$(prompt "部署根目录（运行时数据/模型/镜像数据都放这里）" "${REMOTE_DIR_DEFAULT}")
-  # 去掉结尾斜杠，避免出现 //
+  input=$(prompt "部署根目录（运行时数据/模型都放这里）" "${REMOTE_DIR_DEFAULT}")
   REMOTE_DIR="${input%/}"
   if [ -z "${REMOTE_DIR}" ]; then
     log_error "部署根目录不能为空"
@@ -202,7 +175,6 @@ configure_remote_dir() {
     /*) ;;
     *) log_error "部署根目录必须是绝对路径（以 / 开头）: ${REMOTE_DIR}"; exit 1 ;;
   esac
-  # 按最终根目录重算全部派生路径
   REMOTE_APP_DIR="${REMOTE_DIR}/app"
   REMOTE_DATA_DIR="${REMOTE_DIR}/data"
   REMOTE_BACKUP_DIR="${REMOTE_DIR}/backups"
@@ -211,24 +183,16 @@ configure_remote_dir() {
   BACKUP_APP_DIR="${REMOTE_BACKUP_DIR}/app-${TIMESTAMP}"
   log_info "部署根目录: ${REMOTE_DIR}"
   log_info "  代码:   ${REMOTE_APP_DIR}"
-  log_info "  数据:   ${REMOTE_DATA_DIR}（含 whisper/cosyvoice 模型、TTS 缓存、SQLite、证书）"
+  log_info "  数据:   ${REMOTE_DATA_DIR}"
   log_info "  备份:   ${REMOTE_BACKUP_DIR}"
 }
 
-# 统一的远端 docker compose 调用。一处收口三件事，避免各调用点重复、也避免手动跑命令
-# 时漏掉导致挂错路径（如 .env 落到默认 ~/.ai-english-tutor）：
-#   1) AI_TUTOR_HOME=${REMOTE_DIR} —— compose 里 ${AI_TUTOR_HOME:-~/...} 的 bind-mount /
-#      env_file 据此解析到本次部署根目录（shell env 注入，绝对路径，避免 ~ 不被展开）
-#   2) --env-file ${REMOTE_ENV_FILE} —— 变量替换（前端 build args）+ backend env_file
-#   3) $(compose_files) —— 主 compose + 按需叠加（whisper / cosyvoice）
-# 用法: dc down / dc "up --build -d" / dc "ps --format json ..."
-# 注：compose_files 定义在下方，bash 仅要求调用时（main 流程中）已定义，故此处前向引用无碍。
+# 统一的远端 docker compose 调用：注入 AI_TUTOR_HOME、--env-file、叠加文件
 dc() {
   remote_exec "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
 }
 
-# dc 的 TTY 版：仅用于需要实时进度的命令（如 up --build），让 BuildKit 进度条
-# 流式可见。不要用于 ps --format json/table 等需要捕获解析的命令（见 remote_exec_tty）。
+# TTY 版 dc：仅用于 up --build 等需要实时进度的命令
 dc_tty() {
   remote_exec_tty "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
 }
@@ -292,6 +256,9 @@ generate_env() {
   prev_tts_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_API_KEY)
   prev_tts_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_BASE_URL)
   prev_tts_mode=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_MODE)
+  prev_volcengine_app_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_APP_ID)
+  prev_volcengine_token=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_ACCESS_TOKEN)
+  prev_volcengine_voice=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_VOICE_TYPE)
   prev_asr_provider=$(env_get "${EXISTING_ENV_FILE}" ASR_PROVIDER)
   prev_asr_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_API_KEY)
   prev_asr_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_BASE_URL)
@@ -327,8 +294,8 @@ generate_env() {
       ;;
   esac
 
-  # ── TTS ──（默认 browser：浏览器 SpeechSynthesis 输出，零容器零 key）
-  tts_provider=$(prompt "TTS 厂商 (browser/xiaomi/cosyvoice)" "${prev_tts_provider:-browser}")
+  # ── TTS ──（browser / xiaomi / cosyvoice / volcengine）
+  tts_provider=$(prompt "TTS 厂商 (browser/xiaomi/cosyvoice/volcengine)" "${prev_tts_provider:-browser}")
   case "${tts_provider}" in
     browser)
       log_info "TTS=browser：前端走浏览器 SpeechSynthesis，后端不合成"
@@ -336,13 +303,6 @@ generate_env() {
     xiaomi)
       tts_api_key=$(prompt_secret "Xiaomi TTS API Key (输入不回显)" "${prev_tts_key}")
       tts_base_url=$(prompt "Xiaomi TTS Base URL" "${prev_tts_url:-https://token-plan-sgp.xiaomimimo.com/v1}")
-      # Xiaomi TTS 两种模式（对应不同 model 与请求体，见 voice/providers/xiaomi-tts.ts）：
-      #   voicedesign — model=mimo-v2.5-tts-voicedesign。用「自然语言音色描述」生成音色，
-      #                 描述作为 user 消息（如「少女音色，甜美清澈」），不吃 audio.voice。
-      #                 session 有角色人设时按人设动态描述，否则回退 XIAOMI_TTS_VOICE_DESIGN。
-      #                 → 本项目走人设驱动音色，默认且推荐用这个。
-      #   preset      — model=mimo-v2.5-tts。固定预置音色，不随人设变化；音色 ID 由后端
-      #                 代码默认值兜底（不在此脚本暴露，要改在 .env 手填 XIAOMI_TTS_VOICE）。
       tts_mode=$(prompt "Xiaomi TTS 模式 (voicedesign=按人设描述生成 / preset=固定预置音色)" "${prev_tts_mode:-voicedesign}")
       ;;
     cosyvoice)
@@ -355,13 +315,22 @@ generate_env() {
         tts_provider="browser"
       fi
       ;;
+    volcengine)
+      local volcengine_app_id volcengine_token volcengine_voice
+      volcengine_app_id=$(prompt_secret "Volcengine App ID (输入不回显)" "${prev_volcengine_app_id}")
+      volcengine_token=$(prompt_secret "Volcengine Access Token (输入不回显)" "${prev_volcengine_token}")
+      volcengine_voice=$(prompt "Volcengine Voice Type" "${prev_volcengine_voice:-zh_female_gaolengyujie_moon_bigtts}")
+      VOLCENGINE_TTS_APP_ID="${volcengine_app_id}"
+      VOLCENGINE_TTS_ACCESS_TOKEN="${volcengine_token}"
+      VOLCENGINE_TTS_VOICE_TYPE="${volcengine_voice}"
+      ;;
     *)
       log_error "不支持的 TTS 厂商: ${tts_provider}"
       exit 1
       ;;
   esac
 
-  # ── ASR ──（默认 browser：浏览器 Web Speech API 识别，零容器零 key）
+  # ── ASR ──（browser / xiaomi / whisper）
   asr_provider=$(prompt "ASR 厂商 (browser/xiaomi/whisper)" "${prev_asr_provider:-browser}")
   case "${asr_provider}" in
     browser)
@@ -412,16 +381,15 @@ DEEPSEEK_API_KEY=${deepseek_api_key}
 DEEPSEEK_BASE_URL=${deepseek_base_url}
 DEEPSEEK_MODEL=${deepseek_model}
 
-# ── TTS ──（browser=浏览器输出 / xiaomi / cosyvoice）
+# ── TTS ──（browser / xiaomi / cosyvoice / volcengine）
 TTS_PROVIDER=${tts_provider}
 XIAOMI_TTS_API_KEY=${tts_api_key}
 XIAOMI_TTS_BASE_URL=${tts_base_url}
-# XIAOMI_TTS_MODE：voicedesign=按自然语言音色描述生成（贴合角色人设，本项目默认）；
-#                  preset=固定预置音色（音色 ID 由后端代码默认值兜底，需要时在此手填 XIAOMI_TTS_VOICE=xxx）。
+# XIAOMI_TTS_MODE：voicedesign=按人设描述生成；preset=固定预置音色
 XIAOMI_TTS_MODE=${tts_mode}
-# voicedesign 模式英文音色描述（fallback，session 有人设时优先走人设）。默认慵懒御姐风。
+# voicedesign 英文兜底音色描述
 XIAOMI_TTS_VOICE_DESIGN=成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声
-# 中文翻译音色（默认台湾腔温柔女声）
+# 中文翻译音色
 # XIAOMI_TTS_ZH_VOICE_DESIGN=台湾腔温柔女声，语速适中，声音甜美温暖
 # 通用 TTS 参数（按需开启）
 # TTS_VOICE=alloy
@@ -431,6 +399,14 @@ XIAOMI_TTS_VOICE_DESIGN=成熟知性的御姐，声线低沉磁性、略带沙�
 COSYVOICE_BASE_URL=http://cosyvoice:50000
 COSYVOICE_SPK_ID=英文女
 COSYVOICE_SPEED=0.9
+
+# Volcengine 火山引擎语音合成（纯 TTS，云 API，无需额外容器）
+VOLCENGINE_TTS_APP_ID=${VOLCENGINE_TTS_APP_ID:-}
+VOLCENGINE_TTS_ACCESS_TOKEN=${VOLCENGINE_TTS_ACCESS_TOKEN:-}
+VOLCENGINE_TTS_BASE_URL=https://openspeech.bytedance.com/api/v1/tts
+VOLCENGINE_TTS_CLUSTER=volcano_tts
+VOLCENGINE_TTS_VOICE_TYPE=${VOLCENGINE_TTS_VOICE_TYPE:-zh_female_gaolengyujie_moon_bigtts}
+VOLCENGINE_TTS_ENCODING=mp3
 
 # ── ASR ──（browser=浏览器识别 / xiaomi / whisper）
 ASR_PROVIDER=${asr_provider}
@@ -464,7 +440,7 @@ configure_remote_env() {
       EXISTING_ENV_FILE=""
     fi
     local reconfigure=false
-    if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$' ${REMOTE_ENV_FILE}"; then
+    if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_APP_ID=$' ${REMOTE_ENV_FILE}"; then
       log_warn "检测到 .env 中存在占位符或空 API Key"
       if prompt_yes_no "是否重新交互式配置（默认值=现有配置，API Key 回车保留）"; then
         reconfigure=true
@@ -498,8 +474,7 @@ configure_remote_env() {
 backup_remote() {
   log_info "备份服务器数据..."
   remote_exec "mkdir -p ${BACKUP_DATA_DIR} ${BACKUP_APP_DIR}"
-  # 备份 data/ 时排除本地模型目录（whisper / cosyvoice，可能上百 MB ~ 数 GB），
-  # 它们随时可重新下载，无需每次部署都复制一份占满磁盘。
+  # 排除 whisper/cosyvoice 模型目录（可重新下载）
   remote_exec "if [ -d ${REMOTE_DATA_DIR} ]; then find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models -exec cp -a {} ${BACKUP_DATA_DIR}/ \\; 2>/dev/null || true; fi"
   remote_exec "if [ -d ${REMOTE_APP_DIR} ]; then cp -a ${REMOTE_APP_DIR}/. ${BACKUP_APP_DIR}/ 2>/dev/null || true; fi"
   log_info "数据备份: ${BACKUP_DATA_DIR}"
@@ -520,7 +495,6 @@ sync_code() {
     "${LOCAL_PROJECT_ROOT}/" \
     "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_APP_DIR}/" | tee "${rsync_log}"
 
-  # itemize-changes 行: <YXcstpoguax  path 或 >YXcstpoguax  path
   SYNC_COUNT=$(grep -cE '^[<>][fcdLDS]' "${rsync_log}" 2>/dev/null || true)
   SYNC_COUNT=${SYNC_COUNT:-0}
   rm -f "${rsync_log}"
@@ -528,13 +502,11 @@ sync_code() {
 }
 
 init_remote_data_dir() {
-  log_info "在服务器初始化 data/ 目录（持久化配置/词汇/角色）..."
+  log_info "在服务器初始化 data/ 目录..."
   remote_exec "bash ${REMOTE_APP_DIR}/scripts/init-host-dir.sh ${REMOTE_DIR}"
 }
 
-# 上传本地 mkcert 生成的自签证书到远端。
-# rsync 默认排除 data/，所以证书必须显式 scp。
-# 本地未跑过 init-host-dir.sh 生成证书时跳过，gateway 会降级到 HTTP-only。
+# 上传本地 mkcert 自签证书到远端。rsync 排除 data/，所以证书必须显式 scp。
 sync_certs() {
   local local_cert="${LOCAL_PROJECT_ROOT}/data/certs/fullchain.pem"
   local local_key="${LOCAL_PROJECT_ROOT}/data/certs/privkey.pem"
@@ -553,7 +525,6 @@ sync_certs() {
 # Compose 叠加文件探测
 # ════════════════════════════════════════
 # 依据远端 .env 的 ASR_PROVIDER / TTS_PROVIDER 推断需要哪些叠加 compose 文件。
-# 覆盖两种情况：本次新生成 .env（generate_env 已设标志），或复用远端已有 .env。
 detect_compose_overlays() {
   if ! remote_exec "[ -f ${REMOTE_ENV_FILE} ]"; then
     log_warn "远端无 .env，按仅主 compose 部署"
@@ -583,7 +554,6 @@ ensure_whisper_model() {
     log_info "ASR 非 whisper，跳过 whisper 模型引导"
     return 0
   fi
-  # 模型存放在部署根目录下的 data/whisper-models（bind mount，随部署目录走）
   local model_dir="${REMOTE_DATA_DIR}/whisper-models"
   local model_path="${model_dir}/${WHISPER_MODEL_FILE}"
   log_info "检查 whisper 模型 (${model_path})..."
@@ -631,8 +601,7 @@ deploy_services() {
   log_info "在服务器上构建并启动服务..."
   log_info "compose 文件: $(compose_files)"
   dc down
-  # 用 TTY 版执行 up --build，让 BuildKit 的镜像构建进度实时刷到本地终端，
-  # 避免「rsync 完代码后卡在重新 build、看不到进度」。
+  # 用 TTY 版执行 up --build，让 BuildKit 进度实时可见
   dc_tty "up --build -d"
   log_info "服务已启动（后台），等待健康检查"
 }
@@ -660,7 +629,6 @@ check_health() {
 rollback() {
   log_error "健康检查连续 ${HEALTH_CHECK_RETRIES} 次失败，开始回滚到 ${BACKUP_APP_DIR}..."
   dc down
-  # find -mindepth 1 -delete 能清掉隐藏文件（rm -rf */ 不行）
   remote_exec "find ${REMOTE_APP_DIR} -mindepth 1 -delete && cp -a ${BACKUP_APP_DIR}/. ${REMOTE_APP_DIR}/"
   dc "up -d"
 

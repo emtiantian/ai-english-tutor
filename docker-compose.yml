@@ -1,7 +1,6 @@
 name: ai-english-tutor
 
 services:
-  # ── Gateway (Nginx, handles CORS, terminates TLS) ──
   gateway:
     build:
       context: .
@@ -10,18 +9,12 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      # Proxy targets
       - BACKEND_URL=http://backend:3000
       - FRONTEND_URL=http://frontend:80
-      # CORS: allow all origins (gateway handles CORS, not backend)
       - CORS_ORIGIN=*
-      # Virtual host for HTTP/HTTPS server_name. Use FQDN or IP in
-      # production; _ (default) matches all hosts.
       - SERVER_NAME=${SERVER_NAME:-_}
     volumes:
-      # TLS certs for HTTPS. If fullchain.pem / privkey.pem are missing
-      # the entrypoint script silently disables the 443 listener, so
-      # this volume is safe to mount even when no certs are present yet.
+      # TLS certs；缺失时 entrypoint 静默禁用 443，可安全挂载
       - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data/certs:/etc/nginx/certs:ro
     depends_on:
       backend:
@@ -32,39 +25,31 @@ services:
       - tutor-net
     restart: unless-stopped
     healthcheck:
-      # Hit HTTP (always on) rather than HTTPS, so healthcheck works
-      # regardless of whether TLS certs are mounted.
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
-  # ── Frontend (Vite SPA served by nginx) ──
   frontend:
     build:
       context: .
       dockerfile: apps/tutor-app/Dockerfile
       args:
-        # 来自 docker compose --env-file ${AI_TUTOR_HOME}/data/.env
-        # 留空 = 同源请求（gateway 反代）
         - VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
         - VITE_CHARACTER_PROVIDER=${VITE_CHARACTER_PROVIDER:-live2d}
-    # No ports exposed — accessed via gateway
+    # 不暴露端口，通过 gateway 访问
     networks:
       - tutor-net
     restart: unless-stopped
 
-  # ── Backend (Fastify + Node.js) ──
   backend:
     build:
       context: .
       dockerfile: apps/tutor-server/Dockerfile
-    # No ports exposed — accessed via gateway
     env_file:
       - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data/.env
     environment:
-      # Server (non-sensitive, container-internal)
       - PORT=3000
       - NODE_ENV=production
       - LOG_LEVEL=info
@@ -84,12 +69,10 @@ services:
       retries: 5
       start_period: 10s
 
-  # ── Whisper / CosyVoice 为可选叠加服务，不在主 compose ──
-  #   ASR=whisper:  docker compose -f docker-compose.yml -f docker-compose.whisper.yml up -d
+  # Whisper / CosyVoice 为可选叠加服务，不在主 compose：
+  #   ASR=whisper:   docker compose -f docker-compose.yml -f docker-compose.whisper.yml up -d
   #   TTS=cosyvoice: docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml up -d
-  # 默认 ASR/TTS 走浏览器（browser），无需额外容器。
 
 networks:
   tutor-net:
     driver: bridge
-

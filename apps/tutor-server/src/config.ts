@@ -237,16 +237,10 @@ export const config = {
 
   /**
    * Volcengine TTS 模型版本（可选）。
-   * 例如 doubao-seed-2.0-mini、seed-tts-2.0 等；留空时保持原接口行为不变。
+   * 例如 seed-tts-1.1；留空时保持原接口行为不变。
+   * 该字段放在请求体 request.model 中，见 voice/providers/volcengine-tts.ts。
    */
   VOLCENGINE_TTS_MODEL: process.env.VOLCENGINE_TTS_MODEL ?? '',
-
-  /**
-   * Volcengine TTS ResourceId（可选）。
-   * 部分新接口（如双向流式/Seed-TTS）需要在请求中指定 ResourceId；
-   * 留空时保持原接口行为不变。
-   */
-  VOLCENGINE_TTS_RESOURCE_ID: process.env.VOLCENGINE_TTS_RESOURCE_ID ?? '',
 
   // ── Whisper.cpp Configuration ──
 

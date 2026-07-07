@@ -19,6 +19,11 @@ import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
  *
  * 音色（voice_type）固定在服务端配置（VOLCENGINE_TTS_VOICE_TYPE），前端不可选；
  * 因此 options.voice / options.voiceDesign 都被忽略（大模型音色不吃文本音色描述）。
+ *
+ * 可选扩展：
+ * - VOLCENGINE_TTS_MODEL       → 在请求体顶层加入 model 字段（如新模型版本）
+ * - VOLCENGINE_TTS_RESOURCE_ID → 在请求体顶层加入 resource_id 字段（如 Seed-TTS 系列需要的 ResourceId）
+ * 两者都为空时保持原接口行为不变，避免破坏旧音色。
  */
 export class VolcengineTTSProvider implements TTSProvider {
   readonly name = 'volcengine'
@@ -28,6 +33,8 @@ export class VolcengineTTSProvider implements TTSProvider {
   private cluster: string
   private voiceType: string
   private encoding: string
+  private model: string
+  private resourceId: string
 
   constructor() {
     if (!config.VOLCENGINE_TTS_APP_ID || !config.VOLCENGINE_TTS_ACCESS_TOKEN) {
@@ -41,8 +48,17 @@ export class VolcengineTTSProvider implements TTSProvider {
     this.cluster = config.VOLCENGINE_TTS_CLUSTER
     this.voiceType = config.VOLCENGINE_TTS_VOICE_TYPE
     this.encoding = config.VOLCENGINE_TTS_ENCODING
+    this.model = config.VOLCENGINE_TTS_MODEL
+    this.resourceId = config.VOLCENGINE_TTS_RESOURCE_ID
     logger.info(
-      { baseUrl: this.baseUrl, cluster: this.cluster, voiceType: this.voiceType, encoding: this.encoding },
+      {
+        baseUrl: this.baseUrl,
+        cluster: this.cluster,
+        voiceType: this.voiceType,
+        encoding: this.encoding,
+        model: this.model || undefined,
+        resourceId: this.resourceId || undefined,
+      },
       'Volcengine TTS provider initialized',
     )
   }
@@ -58,6 +74,8 @@ export class VolcengineTTSProvider implements TTSProvider {
           provider: this.name,
           voiceType: this.voiceType,
           encoding: this.encoding,
+          model: this.model || undefined,
+          resourceId: this.resourceId || undefined,
           speed,
           textLength: text.length,
           textPreview: text.slice(0, 60),
@@ -65,7 +83,7 @@ export class VolcengineTTSProvider implements TTSProvider {
         '[Volcengine TTS] synthesize request',
       )
 
-      const body = {
+      const body: Record<string, unknown> = {
         app: {
           appid: this.appId,
           token: this.accessToken,
@@ -84,6 +102,14 @@ export class VolcengineTTSProvider implements TTSProvider {
           text,
           operation: 'query',
         },
+      }
+
+      // 可选：携带模型版本 / ResourceId，支持 Seed-TTS 等新模型；为空时保持旧行为
+      if (this.model) {
+        body.model = this.model
+      }
+      if (this.resourceId) {
+        body.resource_id = this.resourceId
       }
 
       const response = await fetch(this.baseUrl, {

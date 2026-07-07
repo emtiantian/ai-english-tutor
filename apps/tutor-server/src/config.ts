@@ -235,6 +235,19 @@ export const config = {
   /** Volcengine 输出音频编码：mp3 | wav | pcm | ogg_opus */
   VOLCENGINE_TTS_ENCODING: process.env.VOLCENGINE_TTS_ENCODING ?? 'mp3',
 
+  /**
+   * Volcengine TTS 模型版本（可选）。
+   * 例如 doubao-seed-2.0-mini、seed-tts-2.0 等；留空时保持原接口行为不变。
+   */
+  VOLCENGINE_TTS_MODEL: process.env.VOLCENGINE_TTS_MODEL ?? '',
+
+  /**
+   * Volcengine TTS ResourceId（可选）。
+   * 部分新接口（如双向流式/Seed-TTS）需要在请求中指定 ResourceId；
+   * 留空时保持原接口行为不变。
+   */
+  VOLCENGINE_TTS_RESOURCE_ID: process.env.VOLCENGINE_TTS_RESOURCE_ID ?? '',
+
   // ── Whisper.cpp Configuration ──
 
   /** Whisper.cpp server Base URL */

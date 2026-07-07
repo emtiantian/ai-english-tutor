@@ -14,9 +14,17 @@ import { normalizeToString } from '../llm.js'
  * DeepSeek LLM Provider
  *
  * DeepSeek API is compatible with OpenAI API format.
- * Base URL: https://api.deepseek.com
- * Model: deepseek-chat (DeepSeek-V3)
- *        deepseek-reasoner (DeepSeek-R1)
+ *
+ * DeepSeek 官方：
+ *   Base URL: https://api.deepseek.com
+ *   Model:    deepseek-chat (DeepSeek-V3)
+ *             deepseek-reasoner (DeepSeek-R1)
+ *
+ * 火山方舟（OpenAI 兼容）：
+ *   Base URL: https://ark.cn-beijing.volces.com/api/v3
+ *   API Key:  火山方舟 API Key
+ *   Model:    必须填火山方舟「推理接入点 ID」，例如 ep-xxxxxxxxxxxxx
+ *             （在方舟控制台「在线推理」创建 deepseek-v4-pro 接入点后复制）
  */
 export class DeepSeekProvider implements LLMProvider {
   private client: OpenAI

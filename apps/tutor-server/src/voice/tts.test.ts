@@ -33,6 +33,15 @@ async function main(): Promise<void> {
   const volcengineProvider = createTTSProvider()
   assert.strictEqual(volcengineProvider.name, 'volcengine')
 
+  // 可选 model / resource_id 不应影响 provider 初始化
+  const originalModel = config.VOLCENGINE_TTS_MODEL
+  const originalResourceId = config.VOLCENGINE_TTS_RESOURCE_ID
+  config.VOLCENGINE_TTS_MODEL = 'doubao-seed-2.0-mini'
+  config.VOLCENGINE_TTS_RESOURCE_ID = 'seed-tts-2.0'
+  assert.doesNotThrow(() => createTTSProvider(), 'Volcengine TTS with model/resource_id should initialize')
+  config.VOLCENGINE_TTS_MODEL = originalModel
+  config.VOLCENGINE_TTS_RESOURCE_ID = originalResourceId
+
   config.VOLCENGINE_TTS_APP_ID = originalAppId
   config.VOLCENGINE_TTS_ACCESS_TOKEN = originalToken
 

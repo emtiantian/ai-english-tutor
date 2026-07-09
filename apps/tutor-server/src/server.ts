@@ -9,23 +9,23 @@ import { initSchema } from './db/index.js'
 import { loadAllVocabulary, loadAllScenarios } from './vocab/loader.js'
 
 /**
- * Create and configure the Fastify server instance
+ * 创建并配置 Fastify 服务器实例
  */
 export async function createServer(): Promise<ReturnType<typeof Fastify>> {
   const server = Fastify({
     logger: {
       level: config.LOG_LEVEL,
     },
-    // WAV audio from ASR can be large (uncompressed), increase body limit to 25MB
+    // ASR 返回的 WAV 音频可能很大（未压缩），将 body 限制提高到 25MB
     bodyLimit: 25 * 1024 * 1024,
   })
 
-  // Register CORS
+  // 注册 CORS
   const isWildcardCors = config.CORS_ORIGIN.includes('*')
   if (isWildcardCors) {
     logger.warn(
       { corsOrigin: config.CORS_ORIGIN },
-      'CORS_ORIGIN is a wildcard (*); credentials are disabled. Use an explicit whitelist in production.',
+      'CORS_ORIGIN 为通配符 (*)；凭据模式已禁用。生产环境请使用明确的白名单。',
     )
   }
   await server.register(cors, {
@@ -38,42 +38,42 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
         cb(null, true)
         return
       }
-      cb(new Error('Not allowed by CORS'), false)
+      cb(new Error('CORS 不允许该来源'), false)
     },
     credentials: !isWildcardCors,
   })
 
-  // Register multipart for file uploads (ASR audio)
+  // 注册 multipart，用于文件上传（ASR 音频）
   await server.register(multipart, {
     limits: {
       fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024,
     },
   })
 
-  // Initialize database, vocabulary, and scenarios
+  // 初始化数据库、词汇表和场景
   initSchema()
   loadAllVocabulary()
   loadAllScenarios()
 
-  // Register API routes
+  // 注册 API 路由
   await registerRoutes(server)
 
-  // Register SSE endpoint
+  // 注册 SSE 端点
   await registerSSE(server)
 
-  // Global error handler
+  // 全局错误处理器
   server.setErrorHandler((error: Error, _request, reply) => {
-    logger.error({ err: error }, 'Unhandled error')
+    logger.error({ err: error }, '未处理的错误')
     reply.status(500).send({
-      error: error.message ?? 'Internal server error',
+      error: error.message ?? '内部服务器错误',
       code: 'INTERNAL_ERROR',
     })
   })
 
-  // 404 handler
+  // 404 处理器
   server.setNotFoundHandler((_request, reply) => {
     reply.status(404).send({
-      error: 'Not found',
+      error: '未找到',
       code: 'NOT_FOUND',
     })
   })

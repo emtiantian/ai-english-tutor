@@ -1,10 +1,10 @@
 /**
- * TutorClient Event Type Definitions
+ * TutorClient 事件类型定义
  *
- * All events are emitted via mitt and consumed by:
- * - Pinia store (UI state)
- * - AudioPlayer (TTS playback)
- * - App.vue (character animation)
+ * 所有事件都通过 mitt 发出，由以下模块消费：
+ * - Pinia store（UI 状态）
+ * - AudioPlayer（TTS 播放）
+ * - App.vue（角色动画）
  */
 
 import type { TeachingResponse, CEFRLevel, WordExplanation, WordSense } from '@ai-english-tutor/shared'
@@ -13,42 +13,42 @@ export type { TeachingResponse, CEFRLevel, WordExplanation, WordSense }
 export interface TutorEventMap {
   [key: string]: unknown
   [key: symbol]: unknown
-  // Connection state
+  // 连接状态
   'connected': void
   'disconnected': { reason: string }
   'reconnecting': { attempt: number; delayMs: number }
 
-  // Server config (sent once on connect)
+  // 服务端配置（连接时发送一次）
   'config': { ttsSource: 'local' | 'remote' }
 
-  // Messages (for UI chat history)
+  // 消息（用于 UI 聊天记录）
   'message.user': { text: string; sessionId?: string; isVoice: boolean }
   'message.assistant': TeachingResponse & { sessionId?: string }
 
-  // AI state
+  // AI 状态
   'state.thinking': void
   'state.idle': void
 
-  // SSE raw events
+  // SSE 原始事件
   'teacher.response': TeachingResponse
   'teacher.chunk': { chunk: string; isEnd: boolean }
   'teacher.audio': { audioBase64: string; format: string; isEnd: boolean }
   'level.result': { level: number; reason: string }
 
-  // Recording
+  // 录音
   'recording.start': void
   'recording.stop': { durationMs: number; cancelled: boolean }
   'recording.volume': { volume: number }
 
-  // TTS
+  // TTS 语音合成
   'tts.start': { text: string; source: 'remote' | 'local' }
   'tts.end': { source: 'remote' | 'local' }
 
 
-  // Vocabulary
+  // 词汇
   'vocab.new': { words: string[] }
 
-  // System
+  // 系统
   'error': { code: string; message: string }
   'heartbeat': { timestamp: number }
 }
@@ -73,7 +73,7 @@ export interface ChatRequestBody {
   resumeFrom?: string
 }
 
-/** Multi-turn assessment response */
+/** 多轮评估响应 */
 export interface AssessmentResponse {
   round: number
   scores: {
@@ -93,7 +93,7 @@ export interface AssessmentResponse {
   isComplete: boolean
 }
 
-/** Scenario progress info from backend */
+/** 后端返回的场景进度信息 */
 export interface ScenarioProgress {
   id: string
   name: string
@@ -142,14 +142,14 @@ export interface ChatResponse {
   expressionId?: string
   vocabulary?: string[]
   vocabularySentences?: string[]
-  /** Learner-voiced reply suggestions (powers the 💡 hint). */
+  /** 学习者口吻的回复建议（用于 💡 提示）。 */
   studentReplyHints?: string[]
   audioBase64?: string
   sessionId?: string
   scenario?: ScenarioProgress
 }
 
-/** Vocabulary progress statistics */
+/** 词汇进度统计 */
 export interface VocabProgress {
   totalWords: number
   learning: number
@@ -159,7 +159,7 @@ export interface VocabProgress {
   masteryRate: number
 }
 
-/** Word due for review */
+/** 待复习单词 */
 export interface ReviewWord {
   word: string
   level: string
@@ -169,7 +169,7 @@ export interface ReviewWord {
   incorrectCount: number
 }
 
-/** Vocabulary sync item */
+/** 词汇同步项 */
 export interface VocabSyncItem {
   word: string
   action: 'learn' | 'review'

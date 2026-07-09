@@ -14,34 +14,34 @@ async function main(): Promise<void> {
   const tracker = new VocabTracker()
   const userId = 'test-user-1'
 
-  // ── analyzeUserText ───────────────────────────────────────
+  // ── analyzeUserText 测试 ───────────────────────────────────
 
-  // Exact match (case-insensitive)
+  // 精确匹配（不区分大小写）
   const exact = tracker.analyzeUserText('I love apples', ['apples'])
   assert.deepStrictEqual(exact.used, ['apples'])
   assert.deepStrictEqual(exact.missed, [])
 
-  // Stemmed match: "walked" should match target "walk"
+  // 词干匹配："walked" 应匹配目标 "walk"
   const stemmed = tracker.analyzeUserText('I walked to school', ['walk'])
   assert.deepStrictEqual(stemmed.used, ['walk'])
   assert.deepStrictEqual(stemmed.missed, [])
 
-  // Fuzzy match for audio input (Levenshtein distance ≤ 2)
+  // 音频输入的模糊匹配（Levenshtein 距离 ≤ 2）
   const fuzzy = tracker.analyzeUserText('I ate an aple', ['apple'], { isAudioInput: true })
   assert.deepStrictEqual(fuzzy.used, ['apple'])
   assert.deepStrictEqual(fuzzy.missed, [])
 
-  // Too different even for fuzzy
+  // 差异过大，即使模糊匹配也过不了
   const missed = tracker.analyzeUserText('I ate an orange', ['apple'], { isAudioInput: true })
   assert.deepStrictEqual(missed.used, [])
   assert.deepStrictEqual(missed.missed, ['apple'])
 
-  // Invalid target words (regex injection / non-words) should be skipped
+  // 无效目标词（正则注入 / 非单词）应被跳过
   const invalid = tracker.analyzeUserText("' -", ["'", '-'])
   assert.deepStrictEqual(invalid.used, [])
   assert.deepStrictEqual(invalid.missed, [])
 
-  // ── processTurn ───────────────────────────────────────────
+  // ── processTurn 测试 ─────────────────────────────────────
 
   const reviewWords = tracker.getReviewWords(userId, 10)
   assert.strictEqual(reviewWords.length, 0, 'no words due before any are recorded')
@@ -51,11 +51,11 @@ async function main(): Promise<void> {
   assert.strictEqual(progress.totalWords, 2)
   assert.strictEqual(progress.learning, 2)
 
-  // Newly recorded words have a 10-minute delay before first review
+  // 新记录的词汇在首次复习前有 10 分钟延迟
   const due = tracker.getReviewWords(userId, 10)
   assert.strictEqual(due.length, 0, 'new words are not due immediately')
 
-  // ── buildReviewPrompt ─────────────────────────────────────
+  // ── buildReviewPrompt 测试 ─────────────────────────────────
 
   const emptyPrompt = tracker.buildReviewPrompt([])
   assert.strictEqual(emptyPrompt, '')
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
     { word: 'study', level: 'A1', status: 'learning', contextCount: 0 },
   ])
   assert(prompt.includes('study'))
-  assert(prompt.includes('VOCABULARY REVIEW'))
+  assert(prompt.includes('词汇复习'))
 
   console.log('✅ vocab-tracker test passed')
 }

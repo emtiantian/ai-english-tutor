@@ -9,16 +9,16 @@
 import { CubismMatrix44 } from './cubismmatrix44';
 
 /**
- * モデル座標設定用の4x4行列
+ * 用于设置模型坐标的 4x4 矩阵
  *
- * モデル座標設定用の4x4行列クラス
+ * 用于设置模型坐标的 4x4 矩阵类
  */
 export class CubismModelMatrix extends CubismMatrix44 {
   /**
-   * コンストラクタ
+   * 构造函数
    *
-   * @param w 横幅
-   * @param h 縦幅
+   * @param w 宽度
+   * @param h 高度
    */
   constructor(w?: number, h?: number) {
     super();
@@ -30,9 +30,9 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * 横幅を設定
+   * 设置宽度
    *
-   * @param w 横幅
+   * @param w 宽度
    */
   public setWidth(w: number): void {
     const scaleX: number = w / this._width;
@@ -41,8 +41,8 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * 縦幅を設定
-   * @param h 縦幅
+   * 设置高度
+   * @param h 高度
    */
   public setHeight(h: number): void {
     const scaleX: number = h / this._height;
@@ -51,22 +51,22 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * 位置を設定
+   * 设置位置
    *
-   * @param x X軸の位置
-   * @param y Y軸の位置
+   * @param x X 轴位置
+   * @param y Y 轴位置
    */
   public setPosition(x: number, y: number): void {
     this.translate(x, y);
   }
 
   /**
-   * 中心位置を設定
+   * 设置中心位置
    *
-   * @param x X軸の中心位置
-   * @param y Y軸の中心位置
+   * @param x X 轴中心位置
+   * @param y Y 轴中心位置
    *
-   * @note widthかheightを設定したあとでないと、拡大率が正しく取得できないためずれる。
+   * @note 若未先设置 width 或 height，将无法正确获取缩放率，会导致位置偏移。
    */
   public setCenterPosition(x: number, y: number) {
     this.centerX(x);
@@ -74,18 +74,18 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * 上辺の位置を設定する
+   * 设置上边缘位置
    *
-   * @param y 上辺のY軸位置
+   * @param y 上边缘的 Y 轴位置
    */
   public top(y: number): void {
     this.setY(y);
   }
 
   /**
-   * 下辺の位置を設定する
+   * 设置下边缘位置
    *
-   * @param y 下辺のY軸位置
+   * @param y 下边缘的 Y 轴位置
    */
   public bottom(y: number) {
     const h: number = this._height * this.getScaleY();
@@ -94,18 +94,18 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * 左辺の位置を設定
+   * 设置左边缘位置
    *
-   * @param x 左辺のX軸位置
+   * @param x 左边缘的 X 轴位置
    */
   public left(x: number): void {
     this.setX(x);
   }
 
   /**
-   * 右辺の位置を設定
+   * 设置右边缘位置
    *
-   * @param x 右辺のX軸位置
+   * @param x 右边缘的 X 轴位置
    */
   public right(x: number): void {
     const w = this._width * this.getScaleX();
@@ -114,9 +114,9 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * X軸の中心位置を設定
+   * 设置 X 轴中心位置
    *
-   * @param x X軸の中心位置
+   * @param x X 轴中心位置
    */
   public centerX(x: number): void {
     const w = this._width * this.getScaleX();
@@ -125,18 +125,18 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * X軸の位置を設定
+   * 设置 X 轴位置
    *
-   * @param x X軸の位置
+   * @param x X 轴位置
    */
   public setX(x: number): void {
     this.translateX(x);
   }
 
   /**
-   * Y軸の中心位置を設定
+   * 设置 Y 轴中心位置
    *
-   * @param y Y軸の中心位置
+   * @param y Y 轴中心位置
    */
   public centerY(y: number): void {
     const h: number = this._height * this.getScaleY();
@@ -145,18 +145,18 @@ export class CubismModelMatrix extends CubismMatrix44 {
   }
 
   /**
-   * Y軸の位置を設定する
+   * 设置 Y 轴位置
    *
-   * @param y Y軸の位置
+   * @param y Y 轴位置
    */
   public setY(y: number): void {
     this.translateY(y);
   }
 
   /**
-   * レイアウト情報から位置を設定
+   * 根据布局信息设置位置
    *
-   * @param layout レイアウト情報
+   * @param layout 布局信息
    */
   public setupFromLayout(layout: Map<string, number>): void {
     const keyWidth = 'width';
@@ -205,11 +205,11 @@ export class CubismModelMatrix extends CubismMatrix44 {
     }
   }
 
-  private _width: number; // 横幅
-  private _height: number; // 縦幅
+  private _width: number; // 宽度
+  private _height: number; // 高度
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmodelmatrix';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

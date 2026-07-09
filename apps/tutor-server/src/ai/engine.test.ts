@@ -80,7 +80,7 @@ async function main(): Promise<void> {
   const engine = new TutorEngine()
   const userId = 'engine-test-user'
 
-  // ── Non-streaming response ────────────────────────────────
+  // ── 非流式响应 ────────────────────────────────
 
   const nonStream = await engine.handleUserSpeak('Hello', {
     level: 2,
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
   assert(nonStream.motionId, 'non-stream response should have motionId')
   assert(nonStream.expressionId, 'non-stream response should have expressionId')
 
-  // ── Streaming response ────────────────────────────────────
+  // ── 流式响应 ────────────────────────────────────
 
   const { server, port } = await createSSEServer()
   const sessionId = 'stream-test-session'
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
   })
   assert(streamResult.text.length > 0, 'stream response should have text')
 
-  // Wait a tick for all chunks to be broadcast
+  // 等待一帧，让所有 chunk 广播完成
   await new Promise((resolve) => setTimeout(resolve, 500))
 
   const chunkEvents = collector.events.filter((e) => e.event === 'teacher.chunk')
@@ -116,7 +116,7 @@ async function main(): Promise<void> {
   collector.req.destroy()
   await server.close()
 
-  // ── Session persistence ───────────────────────────────────
+  // ── 会话持久化 ───────────────────────────────────
 
   const sessionA = 'persist-session'
   await engine.handleUserSpeak('First message', { sessionId: sessionA, level: 2, stream: false, userId })
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
   const info2 = engine.getSession(sessionA)
   assert.strictEqual(info2?.historyCount, 4, 'session history should accumulate')
 
-  // ── AbortSignal propagation ───────────────────────────────
+  // ── AbortSignal 传播 ───────────────────────────────
 
   const controller = new AbortController()
   controller.abort()
@@ -136,7 +136,7 @@ async function main(): Promise<void> {
     /AbortError/,
   )
 
-  // ── Scenario progress ─────────────────────────────────────
+  // ── 场景进度 ─────────────────────────────────────
 
   const scenarioSession = 'scenario-session'
   const scenarioStart = await engine.startLesson(1, scenarioSession, userId, 'restaurant-ordering')

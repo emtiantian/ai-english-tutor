@@ -7,37 +7,37 @@
  */
 
 /**
- * パラメータ名・パーツ名・Drawable名を保持
+ * 保存参数名、部件名、Drawable 名
  *
- * パラメータ名・パーツ名・Drawable名を保持するクラス。
+ * 保存参数名、部件名、Drawable 名的类。
  *
- * @note 指定したID文字列からCubismIdを取得する際はこのクラスの生成メソッドを呼ばず、
- *       CubismIdManager().getId(id)を使用してください
+ * @note 要从指定 ID 字符串获取 CubismId 时，请勿调用本类的生成方法，
+ *       请使用 CubismIdManager().getId(id)
  */
 export class CubismId {
   /**
-   * 内部で使用するCubismIdクラス生成メソッド
+   * 内部使用的 CubismId 类生成方法
    *
-   * @param id ID文字列
+   * @param id ID 字符串
    * @return CubismId
-   * @note 指定したID文字列からCubismIdを取得する際は
-   *       CubismIdManager().getId(id)を使用してください
+   * @note 要从指定 ID 字符串获取 CubismId 时，
+   *       请使用 CubismIdManager().getId(id)
    */
   public static createIdInternal(id: string) {
     return new CubismId(id);
   }
 
   /**
-   * ID名を取得する
+   * 获取 ID 名称
    */
   public getString() {
     return this._id;
   }
 
   /**
-   * idを比較
-   * @param c 比較するid
-   * @return 同じならばtrue,異なっていればfalseを返す
+   * 比较 id
+   * @param c 要比较的 id
+   * @return 相同返回 true，不同返回 false
    */
   public isEqual(c: string | CubismId): boolean {
     if (typeof c === 'string') {
@@ -49,9 +49,9 @@ export class CubismId {
   }
 
   /**
-   * idを比較
-   * @param c 比較するid
-   * @return 同じならばtrue,異なっていればfalseを返す
+   * 比较 id
+   * @param c 要比较的 id
+   * @return 相同返回 true，不同返回 false
    */
   public isNotEqual(c: string | CubismId): boolean {
     if (typeof c == 'string') {
@@ -63,20 +63,20 @@ export class CubismId {
   }
 
   /**
-   * プライベートコンストラクタ
+   * 私有构造函数
    *
-   * @note ユーザーによる生成は許可しません
+   * @note 不允许用户自行创建
    */
   private constructor(id: string) {
     this._id = id;
   }
 
-  private _id: string; // ID名
+  private _id: string; // ID 名称
 }
 
 export declare type CubismIdHandle = CubismId;
 
-// Namespace definition for compatibility.
+// 用于兼容性的命名空间定义。
 import * as $ from './cubismid';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

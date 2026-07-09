@@ -7,7 +7,7 @@
  */
 
 /**
- * Arrayのサイズを変更する。
+ * 修改数组大小。
  * @param curArray
  * @param newSize
  * @param value
@@ -25,9 +25,9 @@ export function updateSize<T>(
     if (callPlacementNew) {
       for (let i: number = curArray.length; i < newSize; i++) {
         if (typeof value == 'function') {
-          // new
+          // 新建实例
           curArray[i] = JSON.parse(JSON.stringify(new value()));
-        } // プリミティブ型なので値渡し
+        } // 基础类型，按值传递
         else {
           curArray[i] = value;
         }

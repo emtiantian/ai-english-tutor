@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   await app.register(multipart, { limits: { fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024 } })
   await app.register(voiceRoutes)
 
-  // ── POST /api/tts ─────────────────────────────────────────
+  // ── POST /api/tts 文字转语音 ─────────────────────────────────
 
   const ttsMissing = await app.inject({
     method: 'POST',
@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   assert.strictEqual(ttsUnknownFormat.statusCode, 200)
   assert.strictEqual(ttsUnknownFormat.headers['content-type'], 'audio/mpeg', 'unknown format defaults to audio/mpeg')
 
-  // ── POST /api/asr ─────────────────────────────────────────
+  // ── POST /api/asr 语音转文字 ─────────────────────────────────
 
   const asrMissing = await app.inject({
     method: 'POST',
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   const asrMissingBody = JSON.parse(asrMissing.body)
   assert.strictEqual(asrMissingBody.code, 'MISSING_AUDIO')
 
-  // Temporarily lower size limit to exercise oversized rejection.
+  // 临时降低大小限制，以测试过大文件拒绝逻辑。
   const originalMaxAudio = config.MAX_AUDIO_SIZE_MB
   config.MAX_AUDIO_SIZE_MB = 0.001 // ~1 KB
   const asrLarge = await app.inject({
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
   const asrOkBody = JSON.parse(asrOk.body)
   assert.strictEqual(asrOkBody.text, '', 'browser ASR returns empty transcript on server')
 
-  // ── POST /api/translate-tts ───────────────────────────────
+  // ── POST /api/translate-tts 翻译并语音合成 ──────────────────
 
   const translateMissing = await app.inject({
     method: 'POST',

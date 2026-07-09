@@ -17,10 +17,10 @@ import {
 } from './cubismjson';
 
 /**
- * CubismJsonで実装されているJsonパーサを使用せず、
- * TypeScript標準のJsonパーサなどを使用し出力された結果を
- * Cubism SDKで定義されているJSONエレメントの要素に
- * 置き換える処理をするクラス。
+ * 不采用 CubismJson 内置的 Json 解析器，
+ * 而是使用 TypeScript 标准 Json 解析器等输出结果，
+ * 并将其转换为 Cubism SDK 定义的 JSON 元素
+ * 的处理类。
  */
 export class CubismJsonExtension {
   static parseJsonObject(obj: Value, map: JsonMap) {
@@ -35,7 +35,7 @@ export class CubismJsonExtension {
         const convValue = Number(obj[key]);
         map.put(key, new JsonFloat(convValue));
       } else if (obj[key] instanceof Array) {
-        // HACK: Array 単体で変換できないので unknown に変更してから Value にしている
+        // HACK: 无法单独转换 Array，因此先改为 unknown 再转为 Value
         map.put(
           key,
           CubismJsonExtension.parseJsonArray(obj[key] as unknown as Value)
@@ -48,7 +48,7 @@ export class CubismJsonExtension {
       } else if (obj[key] == null) {
         map.put(key, new JsonNullvalue());
       } else {
-        // どれにも当てはまらない場合でも処理する
+        // 即使不匹配任何类型也进行处理
         map.put(key, obj[key]);
       }
     });
@@ -70,18 +70,18 @@ export class CubismJsonExtension {
           const convValue = Number(obj[key]);
           arr.add(new JsonFloat(convValue));
         } else if (obj[key] instanceof Array) {
-          // HACK: Array 単体で変換できないので unknown に変更してから Value にしている
+          // HACK: 无法单独转换 Array，因此先改为 unknown 再转为 Value
           arr.add(this.parseJsonArray(obj[key] as unknown as Value));
         } else if (obj[key] instanceof Object) {
           arr.add(this.parseJsonObject(obj[key], new JsonMap()));
         } else if (obj[key] == null) {
           arr.add(new JsonNullvalue());
         } else {
-          // どれにも当てはまらない場合でも処理する
+          // 即使不匹配任何类型也进行处理
           arr.add(obj[key]);
         }
       } else if (obj[key] instanceof Array) {
-        // HACK: Array 単体で変換できないので unknown に変更してから Value にしている
+        // HACK: 无法单独转换 Array，因此先改为 unknown 再转为 Value
         arr.add(this.parseJsonArray(obj[key] as unknown as Value));
       } else if (obj[key] instanceof Object) {
         arr.add(this.parseJsonObject(obj[key], new JsonMap()));
@@ -89,7 +89,7 @@ export class CubismJsonExtension {
         arr.add(new JsonNullvalue());
       } else {
         const convValue = Array(obj[key]);
-        // 配列ともObjectとも判定できなかった場合でも処理する
+        // 即使无法判定为数组或 Object 也进行处理
         for (let i = 0; i < convValue.length; i++) {
           arr.add(convValue[i]);
         }

@@ -5,16 +5,16 @@ import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 import { getOrGenerateVoiceSample } from '../voice-samples.js'
 
 /**
- * Xiaomi MiMo TTS v2.5 Provider
+ * 小米 MiMo TTS v2.5 Provider
  *
- * Supports three modes:
- * 1. preset      - mimo-v2.5-tts (built-in voices, supports singing)
- * 2. voicedesign - mimo-v2.5-tts-voicedesign (text-described voice)
- * 3. voiceclone  - mimo-v2.5-tts-voiceclone (audio sample cloning)
+ * 支持三种模式：
+ * 1. preset      - mimo-v2.5-tts（内置音色，支持唱歌）
+ * 2. voicedesign - mimo-v2.5-tts-voicedesign（文本描述音色）
+ * 3. voiceclone  - mimo-v2.5-tts-voiceclone（音频样本克隆）
  *
- * Base URL: Token Plan uses cluster-specific URLs
- * Auth: Header "api-key: $MIMO_API_KEY"
- * Response audio at: choices[0].message.audio.data (base64)
+ * Base URL：Token Plan 使用集群专属 URL
+ * 鉴权：Header "api-key: $MIMO_API_KEY"
+ * 响应音频位置：choices[0].message.audio.data（base64）
  */
 export class XiaomiTTSProvider implements TTSProvider {
   readonly name = 'xiaomi'
@@ -23,13 +23,13 @@ export class XiaomiTTSProvider implements TTSProvider {
 
   constructor() {
     if (!config.XIAOMI_TTS_API_KEY) {
-      throw new Error('XIAOMI_TTS_API_KEY is not configured for TTS')
+      throw new Error('使用小米 TTS 必须配置 XIAOMI_TTS_API_KEY')
     }
     this.baseUrl = config.XIAOMI_TTS_BASE_URL ?? 'https://token-plan-cn.xiaomimimo.com/v1'
     this.mode = config.XIAOMI_TTS_MODE ?? 'preset'
     logger.info(
       { baseUrl: this.baseUrl, mode: this.mode },
-      'Xiaomi MiMo TTS provider initialized',
+      '小米 MiMo TTS 提供商初始化完成',
     )
   }
 
@@ -56,7 +56,7 @@ export class XiaomiTTSProvider implements TTSProvider {
           usedCloneSample: !!cloneSource,
           textPreview: text.slice(0, 60),
         },
-        '[Xiaomi TTS] synthesize request',
+        '[小米 TTS] 合成请求',
       )
 
       const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
@@ -72,14 +72,14 @@ export class XiaomiTTSProvider implements TTSProvider {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`Xiaomi TTS error: ${response.status} - ${errorText}`)
+        throw new Error(`小米 TTS 错误：${response.status} - ${errorText}`)
       }
 
       const result = (await response.json()) as XiaomiTTSResponse
       const audioBase64 = result.choices?.[0]?.message?.audio?.data
 
       if (!audioBase64) {
-        throw new Error('Xiaomi TTS response missing audio data')
+          throw new Error('小米 TTS 响应缺少音频数据')
       }
 
       const buffer = Buffer.from(audioBase64, 'base64')
@@ -87,7 +87,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
       logger.info(
         { provider: this.name, mode: effectiveMode, duration, size: buffer.length },
-        '[Xiaomi TTS] synthesize complete',
+        '[小米 TTS] 合成完成',
       )
 
       return buffer
@@ -125,13 +125,13 @@ export class XiaomiTTSProvider implements TTSProvider {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`Voice sample calibration failed: ${response.status} - ${errorText}`)
+        throw new Error(`音色样本标定失败：${response.status} - ${errorText}`)
       }
 
       const result = (await response.json()) as XiaomiTTSResponse
       const audioBase64 = result.choices?.[0]?.message?.audio?.data
       if (!audioBase64) {
-        throw new Error('Voice sample calibration response missing audio data')
+        throw new Error('音色样本标定响应缺少音频数据')
       }
 
       return Buffer.from(audioBase64, 'base64')
@@ -153,7 +153,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
     logger.debug(
       { provider: this.name, mode: effectiveMode, textLength: text.length },
-      'Xiaomi TTS stream request',
+      '小米 TTS 流式请求',
     )
 
     const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
@@ -170,7 +170,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
     if (!response.ok || !response.body) {
       const errorText = await response.text().catch(() => 'unknown error')
-      throw new Error(`Xiaomi TTS stream error: ${response.status} - ${errorText}`)
+      throw new Error(`小米 TTS 流式错误：${response.status} - ${errorText}`)
     }
 
     const reader = response.body.getReader()
@@ -199,7 +199,7 @@ export class XiaomiTTSProvider implements TTSProvider {
               yield Buffer.from(audioData, 'base64')
             }
           } catch {
-            // Skip malformed JSON lines
+            // 跳过格式错误的 JSON 行
           }
         }
       }
@@ -209,9 +209,9 @@ export class XiaomiTTSProvider implements TTSProvider {
   }
 
   /**
-   * Build request body based on TTS mode
+   * 根据 TTS 模式构建请求体
    *
-   * @param cloneSource - pre-resolved base64 audio for voiceclone mode (from ensureVoiceSample)
+   * @param cloneSource - voiceclone 模式使用的预解析 base64 音频（来自 ensureVoiceSample）
    */
   private async buildRequestBody(
     text: string,
@@ -224,7 +224,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
     switch (mode) {
       case 'voicedesign': {
-        // Priority: dynamic voiceDesign from session > config default (慵懒御姐兜底)。
+        // 优先级：session 中的动态 voiceDesign > config 默认（慵懒御姐兜底）。
         // 用 || 而非 ??：避免 env 把 XIAOMI_TTS_VOICE_DESIGN 设成空串时漏到上游，
         // 触发小米「user message content must not be empty for voice design model」400。
         const designDesc =
@@ -245,7 +245,7 @@ export class XiaomiTTSProvider implements TTSProvider {
           ],
           audio: {
             format,
-            // Note: voiceDesign mode does NOT support audio.voice
+            // 注意：voiceDesign 模式不支持 audio.voice
           },
         }
       }
@@ -260,7 +260,7 @@ export class XiaomiTTSProvider implements TTSProvider {
         if (!sample) {
           logger.warn(
             { voice },
-            '[Xiaomi TTS] voiceclone has no reference sample (missing voiceDesign) → falling back to preset model',
+            '[小米 TTS] voiceclone 缺少参考样本（未提供 voiceDesign），回退到 preset 模型',
           )
           return {
             model: 'mimo-v2.5-tts',
@@ -309,7 +309,7 @@ export class XiaomiTTSProvider implements TTSProvider {
   }
 }
 
-/** Non-streaming response */
+/** 非流式响应 */
 interface XiaomiTTSResponse {
   choices?: Array<{
     message?: {
@@ -320,7 +320,7 @@ interface XiaomiTTSResponse {
   }>
 }
 
-/** Streaming chunk */
+/** 流式分块 */
 interface XiaomiTTSStreamChunk {
   choices?: Array<{
     delta?: {

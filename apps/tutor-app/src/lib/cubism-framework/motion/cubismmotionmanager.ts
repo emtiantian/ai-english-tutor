@@ -14,13 +14,13 @@ import {
 } from './cubismmotionqueuemanager';
 
 /**
- * モーションの管理
+ * 动作管理
  *
- * モーションの管理を行うクラス
+ * 管理动作的类
  */
 export class CubismMotionManager extends CubismMotionQueueManager {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   public constructor() {
     super();
@@ -29,36 +29,36 @@ export class CubismMotionManager extends CubismMotionQueueManager {
   }
 
   /**
-   * 再生中のモーションの優先度の取得
-   * @return  モーションの優先度
+   * 获取播放中动作的优先级
+   * @return  动作优先级
    */
   public getCurrentPriority(): number {
     return this._currentPriority;
   }
 
   /**
-   * 予約中のモーションの優先度を取得する。
-   * @return  モーションの優先度
+   * 获取预约中动作的优先级。
+   * @return  动作优先级
    */
   public getReservePriority(): number {
     return this._reservePriority;
   }
 
   /**
-   * 予約中のモーションの優先度を設定する。
-   * @param   val     優先度
+   * 设置预约中动作的优先级。
+   * @param   val     优先级
    */
   public setReservePriority(val: number): void {
     this._reservePriority = val;
   }
 
   /**
-   * 優先度を設定してモーションを開始する。
+   * 设置优先级并开始动作。
    *
-   * @param motion          モーション
-   * @param autoDelete      再生が狩猟したモーションのインスタンスを削除するならtrue
-   * @param priority        優先度
-   * @return                開始したモーションの識別番号を返す。個別のモーションが終了したか否かを判定するIsFinished()の引数で使用する。開始できない時は「-1」
+   * @param motion          动作
+   * @param autoDelete      播放结束后是否删除动作实例，true 为删除
+   * @param priority        优先级
+   * @return                返回已开始动作的识别编号。用于判断单个动作是否结束的 IsFinished() 参数。无法开始时返回「-1」
    */
   public startMotionPriority(
     motion: ACubismMotion,
@@ -66,21 +66,21 @@ export class CubismMotionManager extends CubismMotionQueueManager {
     priority: number
   ): CubismMotionQueueEntryHandle {
     if (priority == this._reservePriority) {
-      this._reservePriority = 0; // 予約を解除
+      this._reservePriority = 0; // 解除预约
     }
 
-    this._currentPriority = priority; // 再生中モーションの優先度を設定
+    this._currentPriority = priority; // 设置播放中动作的优先级
 
     return super.startMotion(motion, autoDelete);
   }
 
   /**
-   * モーションを更新して、モデルにパラメータ値を反映する。
+   * 更新动作并将参数值反映到模型。
    *
-   * @param model   対象のモデル
-   * @param deltaTimeSeconds    デルタ時間[秒]
-   * @return  true    更新されている
-   * @return  false   更新されていない
+   * @param model   目标模型
+   * @param deltaTimeSeconds    增量时间[秒]
+   * @return  true    已更新
+   * @return  false   未更新
    */
   public updateMotion(model: CubismModel, deltaTimeSeconds: number): boolean {
     this._userTimeSeconds += deltaTimeSeconds;
@@ -88,18 +88,18 @@ export class CubismMotionManager extends CubismMotionQueueManager {
     const updated: boolean = super.doUpdateMotion(model, this._userTimeSeconds);
 
     if (this.isFinished()) {
-      this._currentPriority = 0; // 再生中のモーションの優先度を解除
+      this._currentPriority = 0; // 解除播放中动作的优先级
     }
 
     return updated;
   }
 
   /**
-   * モーションを予約する。
+   * 预约动作。
    *
-   * @param   priority    優先度
-   * @return  true    予約できた
-   * @return  false   予約できなかった
+   * @param   priority    优先级
+   * @return  true    预约成功
+   * @return  false   预约失败
    */
   public reserveMotion(priority: number): boolean {
     if (
@@ -114,11 +114,11 @@ export class CubismMotionManager extends CubismMotionQueueManager {
     return true;
   }
 
-  _currentPriority: number; // 現在再生中のモーションの優先度
-  _reservePriority: number; // 再生予定のモーションの優先度。再生中は0になる。モーションファイルを別スレッドで読み込むときの機能。
+  _currentPriority: number; // 当前播放中动作的优先级
+  _reservePriority: number; // 待播放动作的优先级。播放中为 0。用于在另一个线程读取动作文件的功能。
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmotionmanager';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

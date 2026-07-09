@@ -1,6 +1,6 @@
 <template>
   <div class="input-bar-container">
-    <!-- Scenario Status Strip (v2: 三段进度 + 换场景 + 目标词抽屉入口) -->
+    <!-- 场景状态条（v2：三段进度 + 换场景 + 目标词抽屉入口） -->
     <ScenarioStatusStrip
       v-if="scenario"
       :level="scenario.level"
@@ -13,14 +13,14 @@
       @switch-scenario="showSwitchConfirm = true"
     />
 
-    <!-- 💡 Student-reply hint (learner-voiced suggestion for the next turn) -->
+    <!-- 💡 学生回复提示（下一回合学习者可以说的话） -->
     <div v-if="scenario && suggestedPhrase" class="scenario-hint">
       <div class="suggested-phrase">💡 {{ suggestedPhrase }}</div>
     </div>
 
-    <!-- Input Bar -->
+    <!-- 输入栏 -->
     <div class="glass flex items-center gap-8px px-12px py-8px">
-      <!-- Mode Toggle Button (left) -->
+      <!-- 模式切换按钮（左侧） -->
       <button
         class="mode-toggle-btn"
         :aria-label="inputMode === 'voice' ? '切换到键盘输入' : '切换到语音输入'"
@@ -29,7 +29,7 @@
         <span class="mode-toggle-icon">{{ inputMode === 'voice' ? '⌨️' : '🎙️' }}</span>
       </button>
 
-      <!-- Voice Mode: Hold to Talk button -->
+      <!-- 语音模式：按住说话按钮 -->
       <button
         v-if="inputMode === 'voice'"
         class="voice-talk-btn"
@@ -51,7 +51,7 @@
         {{ isRecordingLocal ? (isCancelled ? '松开 取消发送' : '松开 结束') : '按住 说话' }}
       </button>
 
-      <!-- Keyboard Mode: Text input + Send button -->
+      <!-- 键盘模式：文本输入 + 发送按钮 -->
       <template v-else>
         <input
           ref="inputRef"
@@ -76,7 +76,7 @@
       </template>
     </div>
 
-    <!-- Recording Overlay -->
+    <!-- 录音浮层 -->
     <Teleport to="body">
       <div
         v-if="isRecordingLocal"
@@ -85,7 +85,7 @@
         role="status"
         aria-live="polite"
       >
-        <!-- Volume bars -->
+        <!-- 音量条 -->
         <div class="volume-bars">
           <div
             v-for="i in 5"
@@ -95,19 +95,19 @@
           ></div>
         </div>
 
-        <!-- Countdown text -->
+        <!-- 倒计时文案 -->
         <div class="recording-text">
           录音中... ({{ recordingDuration }}s)
         </div>
 
-        <!-- Hint text -->
+        <!-- 提示文案 -->
         <div class="recording-hint">
           {{ isCancelled ? '松开 取消发送' : '上滑取消发送' }}
         </div>
       </div>
     </Teleport>
 
-    <!-- Encoding Indicator -->
+    <!-- 编码指示器 -->
     <Teleport to="body">
       <div v-if="isEncoding" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-32px py-16px bg-primary-90 text-white rounded-12px text-16px flex items-center gap-10px animate-fade-in">
         <span class="w-12px h-12px bg-white rounded-full animate-blink"></span>
@@ -115,7 +115,7 @@
       </div>
     </Teleport>
 
-    <!-- Target Words Drawer -->
+    <!-- 目标词抽屉 -->
     <Teleport to="body">
       <TargetWordsPanel
         v-if="showTargetWords && scenario"
@@ -126,7 +126,7 @@
       />
     </Teleport>
 
-    <!-- Switch Scenario Confirmation -->
+    <!-- 切换场景确认 -->
     <Teleport to="body">
       <SwitchScenarioConfirm
         v-if="showSwitchConfirm && scenario"
@@ -151,9 +151,9 @@ const props = defineProps<{
   isEncoding: boolean
   recordingDuration: number
   scenario?: ScenarioProgress | null
-  /** Primary source for the 💡 hint: learner-voiced replies the student could say next. */
+  /** 💡 提示的主要来源：学习者口吻的下一句回复建议 */
   studentReplyHints?: string[]
-  /** Fallback for the 💡 hint when reply hints are absent: vocabulary teaching examples. */
+  /** 没有回复提示时 💡 提示的兜底：教学例句 */
   vocabularySentences?: string[]
   lastVocabulary?: string[]
   recordError?: string | null
@@ -168,20 +168,20 @@ const emit = defineEmits<{
   'update:record-error': [error: string | null]
 }>()
 
-// --- Input mode state ---
+// --- 输入模式状态 ---
 type InputMode = 'voice' | 'keyboard'
 const inputMode = ref<InputMode>('voice')
 const inputText = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
-// --- Recording interaction state ---
+// --- 录音交互状态 ---
 const isRecordingLocal = ref(false)
 const isCancelled = ref(false)
 const startY = ref(0)
 const currentY = ref(0)
 const CANCEL_THRESHOLD = -80
 
-// --- v2: drawer / confirm state ---
+// --- v2：抽屉 / 确认状态 ---
 const showTargetWords = ref(false)
 const showSwitchConfirm = ref(false)
 
@@ -237,12 +237,12 @@ function onPointerUp() {
 
 function onPointerLeave() {
   if (!isRecordingLocal.value) return
-  // On desktop, mouseleave cancels the recording
+  // 桌面端：鼠标离开则取消录音
   resetGestureState()
   emit('record-cancel')
 }
 
-// --- Text send ---
+// --- 文本发送 ---
 function sendText() {
   const text = inputText.value.trim()
   if (!text) return
@@ -250,7 +250,7 @@ function sendText() {
   emit('send-text', text)
 }
 
-// --- Suggested phrase (💡 hint) ---
+// --- 建议话术（💡 提示） ---
 const suggestedPhrase = computed(() => {
   const hintOptions = {
     targetWords: props.scenario?.targetWords,
@@ -291,7 +291,7 @@ function handleSwitchScenario() {
   emit('switch-scenario')
 }
 
-// --- Record error handling ---
+// --- 录音错误处理 ---
 watch(() => props.recordError, (err) => {
   if (err) {
     alert(err)
@@ -299,7 +299,7 @@ watch(() => props.recordError, (err) => {
   }
 })
 
-// --- iOS keyboard handling ---
+// --- iOS 键盘处理 ---
 function updateBottomOffset() {
   const vv = window.visualViewport
   if (!vv) return
@@ -330,7 +330,7 @@ onUnmounted(() => {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* 💡 Student-reply hint band (between status strip and input bar) */
+/* 💡 学生回复提示条（位于状态条和输入栏之间） */
 .scenario-hint {
   background: rgba(15, 15, 20, 0.92);
   backdrop-filter: blur(16px);
@@ -347,7 +347,7 @@ onUnmounted(() => {
   padding-left: 2px;
 }
 
-/* Input bar glass effect */
+/* 输入栏玻璃效果 */
 .glass {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
@@ -356,12 +356,12 @@ onUnmounted(() => {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* When no scenario, round all corners */
+/* 无场景时圆角处理所有角 */
 .input-bar-container:not(:has(.scenario-status-strip)) .glass {
   border-radius: 16px;
 }
 
-/* Mode toggle button */
+/* 模式切换按钮 */
 .mode-toggle-btn {
   width: 40px;
   height: 40px;
@@ -391,7 +391,7 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-/* Voice talk button */
+/* 语音对讲按钮 */
 .voice-talk-btn {
   flex: 1;
   height: 40px;
@@ -438,7 +438,7 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-/* Keyboard input */
+/* 键盘输入 */
 .input-pill {
   flex: 1;
   height: 40px;
@@ -478,7 +478,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 
-/* Recording overlay */
+/* 录音浮层 */
 .recording-overlay {
   position: fixed;
   top: 50%;
@@ -514,7 +514,7 @@ onUnmounted(() => {
   }
 }
 
-/* Volume bars */
+/* 音量条 */
 .volume-bars {
   display: flex;
   align-items: flex-end;
@@ -545,7 +545,7 @@ onUnmounted(() => {
   }
 }
 
-/* Stagger bar animations */
+/* 音量条错开动画 */
 .volume-bar:nth-child(1) { animation-delay: 0s; }
 .volume-bar:nth-child(2) { animation-delay: 0.1s; }
 .volume-bar:nth-child(3) { animation-delay: 0.2s; }

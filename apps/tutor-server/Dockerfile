@@ -40,8 +40,8 @@ RUN pnpm --filter @ai-english-tutor/server deploy --legacy --prod /prod/server
 FROM node:22-alpine
 WORKDIR /app
 
-# Install healthcheck tooling
-RUN apk add --no-cache wget
+# Install healthcheck tooling + ffmpeg (required for Volcengine ASR audio conversion)
+RUN apk add --no-cache wget ffmpeg
 
 # Copy the deployed bundle (includes dist, package.json, and full node_modules)
 COPY --from=builder /prod/server/dist ./dist

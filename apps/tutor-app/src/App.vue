@@ -8,7 +8,7 @@
       :class="{ 'opacity-100': showCharacterCanvas }"
     />
 
-    <!-- Chat Messages -->
+    <!-- 聊天消息 -->
     <ChatMessageList
       v-if="store.phase === 'teaching'"
       :messages="store.messages"
@@ -18,7 +18,7 @@
       @word-detail="handleWordDetail"
     />
 
-    <!-- Word Detail Modal -->
+    <!-- 单词详情弹窗 -->
     <WordDetailModal
       v-if="activeWord"
       :word="activeWord"
@@ -29,7 +29,7 @@
       @speak="handleSpeakWord(activeWord)"
     />
 
-    <!-- Scenario Picker (includes style selector + v2 progress dots + resume dialog) -->
+    <!-- 场景选择器（含风格选择、v2 进度点与续玩弹窗） -->
     <ScenarioPicker
       v-if="store.phase === 'scenario-select'"
       :scenarios="availableScenarios"
@@ -43,7 +43,7 @@
       @free-chat="handleFreeChat"
     />
 
-    <!-- Scenario Complete -->
+    <!-- 场景完成 -->
     <ScenarioComplete
       v-if="store.phase === 'scenario-complete' && store.currentScenario"
       :scenario="store.currentScenario"
@@ -59,7 +59,7 @@
       @confirm="handleLevelConfirm"
     />
 
-    <!-- Text Display Timing Switch -->
+    <!-- 文字显示时机开关 -->
     <div v-if="store.phase === 'teaching'" class="absolute top-10px right-10px z-20">
       <label class="flex items-center gap-8px text-white/70 text-12px cursor-pointer">
         <span>{{ store.showTextImmediately ? '实时显示文字' : '语音结束后显示' }}</span>
@@ -76,7 +76,7 @@
       </label>
     </div>
 
-    <!-- Bottom Input Bar (with integrated scenario status strip + switch scenario) -->
+    <!-- 底部输入栏（含场景状态条与切换场景按钮） -->
     <ChatInputBar
       v-if="store.phase === 'teaching'"
       :is-recording="isRecording"
@@ -92,7 +92,7 @@
       @switch-scenario="handleSwitchScenario"
     />
 
-    <!-- Thinking Indicator (only in teaching phase, not during assessment) -->
+    <!-- 思考指示器（仅在教学阶段显示，评估时不显示） -->
     <div v-if="store.isThinking && store.phase === 'teaching'" class="absolute left-1/2 -translate-x-1/2 z-15 glass-sm px-16px py-8px text-white/80 text-13px flex items-center gap-6px"
       :style="{ bottom: '100px' }"
     >
@@ -102,12 +102,12 @@
       正在思考...
     </div>
 
-    <!-- Connection Status -->
+    <!-- 连接状态 -->
     <div v-if="!store.isConnected && store.phase === 'teaching'" class="absolute top-10px right-10px z-20 px-12px py-6px rounded-12px text-12px font-500 bg-danger-80 text-white">
       连接断开
     </div>
 
-    <!-- Live2D Model Switcher (only after initial loading; live2d-only) -->
+    <!-- Live2D 模型切换器（仅在初始加载完成后显示；仅 Live2D 可用） -->
     <CharacterModelSwitcher
       v-if="!showSvg && showCharacterCanvas"
       :current-model-id="currentLive2DModelId"
@@ -154,7 +154,7 @@ const store = useTutorStore()
 /** 仅开发环境显示动作/表情调试面板 */
 const isDev = import.meta.env.DEV
 
-/** Pick the most recent assistant message's vocabulary example sentences */
+/** 取最近一条助教消息里的词汇例句 */
 const lastVocabularySentences = computed(() => {
   for (let i = store.messages.length - 1; i >= 0; i--) {
     const msg = store.messages[i]
@@ -165,7 +165,7 @@ const lastVocabularySentences = computed(() => {
   return undefined
 })
 
-/** Pick the most recent assistant message's student reply hints (powers 💡 hint, primary source) */
+/** 取最近一条助教消息里的学生回复提示（用于 💡 提示，主要来源） */
 const lastStudentReplyHints = computed(() => {
   for (let i = store.messages.length - 1; i >= 0; i--) {
     const msg = store.messages[i]
@@ -176,7 +176,7 @@ const lastStudentReplyHints = computed(() => {
   return undefined
 })
 
-/** Pick the most recent assistant message's vocabulary list (used when sentences are missing) */
+/** 取最近一条助教消息里的词汇列表（在没有例句时使用） */
 const lastVocabulary = computed(() => {
   for (let i = store.messages.length - 1; i >= 0; i--) {
     const msg = store.messages[i]
@@ -191,11 +191,11 @@ const showSvg = ref(true)
 const showCharacterCanvas = ref(false)
 const characterCanvas = ref<HTMLCanvasElement | null>(null)
 
-// Scenario state
+// 场景状态
 const availableScenarios = ref<Array<{ id: string; name: string; nameEn: string; icon: string }>>([])
 const currentScenarioId = ref<string | null>(null)
 
-// v2: CEFR <-> numeric level mapping
+// v2: CEFR 与数字等级映射
 const LEVEL_TO_CEFR: Record<number, CEFRLevel> = {
   1: 'A1', 2: 'A2', 3: 'B1', 4: 'B2', 5: 'C1', 6: 'C2',
 }
@@ -214,38 +214,37 @@ const isScenarioCapped = computed(() => {
   return store.getNextChallengeLevel(store.currentScenario.id, userCEFRLevel.value) === null
 })
 
-// Pending selections (set before assessment, used after level confirmation)
+// 待生效选项（评估前设置，等级确认后使用）
 const pendingScenarioId = ref<string | null>(null)
 const pendingStyleName = ref<string | undefined>(undefined)
 const pendingTargetLevel = ref<CEFRLevel | undefined>(undefined)
 
-// Late-binding ref: populated after useVocabSync, read by SSE handler at runtime
+// 延迟绑定引用：在 useVocabSync 后赋值，运行时由 SSE 处理器读取
 let _learnWords: ((words: string[]) => Promise<void>) | null = null
 
-// Backend communication — must init first (sets store.ttsSource from env)
+// 后端通信 — 必须先初始化（会从环境变量设置 store.ttsSource）
 const { client } = useTutorClient({
   onLearnWords: (words) => { _learnWords?.(words) },
 })
 
-// Composable modules — each manages its own lifecycle
+// 可组合模块 — 各自管理自身生命周期
 const { learnWords, restoreScenarioProgress } = useVocabSync(client)
 _learnWords = learnWords
 
 const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
-// Load ASR provider config from /api/config so the recorder knows whether to
-// run browser-side SpeechRecognition or send audio to the backend.
+// 从 /api/config 加载 ASR Provider 配置，让录音器知道是走浏览器端 SpeechRecognition 还是把音频发到后端。
 const { asrProvider, voiceStyleSelectable } = useASRConfig()
 const { isRecording, isEncoding, recordingDuration, requestType: recordRequestType, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
 const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
 
-// --- Helpers ---
+// --- 辅助函数 ---
 async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) {
-  // Voice requests need more time: ASR + LLM + TTS can take 30-60s
+  // 语音请求需要更多时间：ASR + LLM + TTS 可能需要 30-60 秒
   const timeoutMs = payload.audioBase64 ? 120000 : undefined
   return client.sendMessage({
     level: store.currentLevel ?? 1,
-    // Always use connectionId as sessionId — this is the SSE scoping key.
-    // The backend uses this same ID for session lookup and SSE broadcast targeting.
+    // 始终使用 connectionId 作为 sessionId — 这是 SSE 作用域键。
+    // 后端使用同一个 ID 进行会话查找和 SSE 广播定向。
     sessionId: store.connectionId,
     userId: store.userId,
     ...payload,
@@ -253,40 +252,41 @@ async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatReq
 }
 
 onMounted(async () => {
-  // Create remote teacher provider
+  // 创建远程教师 Provider
   const teacher = new RemoteTeacherProvider(client)
 
-  // Start loading character provider in parallel with SVG animation
+  // 与加载动画并行开始加载角色 Provider。
+  // SVG 加载画面会一直保持，直到角色就绪且
+  // 品牌动画最短播放时间结束，这样 Live2D 慢加载会被掩盖，
+  // 而快速 Provider 也能平滑入场。
   const characterLoad = initCharacter()
+  const minDisplayTime = new Promise(resolve => setTimeout(resolve, 3000))
+  await Promise.all([characterLoad, minDisplayTime])
 
-  // Wait for SVG animation (~3 seconds) while character loads in parallel
-  await new Promise(resolve => setTimeout(resolve, 3200))
-
-  // Wait for character provider to finish loading
-  await characterLoad
+  // 角色 Provider 已就绪；显示画布并淡出 SVG 加载。
   showCharacterCanvas.value = true
 
-  // Set providers (character already set by composable)
+  // 设置 Provider（角色已由可组合函数设置）
   store.ttsProvider = new SpeechSynthesisTTSProvider()
   store.teacherProvider = teacher
 
-  // SVG fade out
+  // SVG 淡出
   showSvg.value = false
 
-  // Restore confirmed level if returning user
+  // 如果是回头用户，恢复已确认等级
   const confirmedLevel = localStorage.getItem('tutor_level_confirmed')
   if (confirmedLevel) {
     store.currentLevel = parseInt(confirmedLevel)
   }
 
-  // Always show scenario picker after loading (scenario selection comes first)
+  // 加载完成后始终显示场景选择器（先选场景）
   setTimeout(async () => {
     await fetchScenarios()
     store.phase = 'scenario-select'
   }, 600)
 })
 
-// --- Fetch all scenarios from backend (no level filter) ---
+// --- 从后端获取全部场景（不按等级过滤） ---
 async function fetchScenarios() {
   try {
     const baseUrl = import.meta.env.VITE_BACKEND_URL || ''
@@ -299,7 +299,7 @@ async function fetchScenarios() {
   }
 }
 
-// --- Scenario selected → start teaching at the chosen CEFR level ---
+// --- 场景已选择 → 按所选 CEFR 等级开始教学 ---
 async function handleScenarioSelect(
   scenarioId: string,
   options: { styleName?: string; level: CEFRLevel },
@@ -317,7 +317,7 @@ async function handleScenarioSelect(
   await startTeaching()
 }
 
-// --- Resume a paused scenario ---
+// --- 续玩暂停的场景 ---
 async function handleScenarioResume(snapshot: ScenarioPausedSnapshot, styleName?: string) {
   pendingScenarioId.value = snapshot.scenarioId
   pendingStyleName.value = styleName
@@ -329,14 +329,14 @@ async function handleScenarioResume(snapshot: ScenarioPausedSnapshot, styleName?
   await startTeaching(snapshot.serverSessionId)
 }
 
-// --- Switch scenario from ChatInputBar ---
+// --- 从聊天输入栏切换场景 ---
 async function handleSwitchScenario() {
   await store.switchScenario(store.sessionId ?? undefined)
   // switchScenario 已更新 pausedSnapshots 并把 phase 切到 scenario-select
   await fetchScenarios()
 }
 
-// --- Free chat → directly show difficulty selection ---
+// --- 自由聊天 → 直接显示难度选择 ---
 async function handleFreeChat(styleName?: string) {
   pendingScenarioId.value = null
   pendingStyleName.value = styleName
@@ -349,13 +349,13 @@ async function handleFreeChat(styleName?: string) {
   store.phase = 'assess-result'
 }
 
-// --- Level confirmed → start teaching with pending scenario ---
+// --- 等级已确认 → 用待生效场景开始教学 ---
 async function handleLevelConfirm(level: number) {
   store.confirmLevel(level)
   await startTeaching()
 }
 
-// --- Start teaching with stored scenario/style/level ---
+// --- 用已保存的场景/风格/等级开始教学 ---
 async function startTeaching(resumeFrom?: string) {
   store.phase = 'teaching'
   store.messages = []
@@ -375,15 +375,15 @@ async function startTeaching(resumeFrom?: string) {
       store.sessionId = response.sessionId
     }
 
-    // The opening message, scenario updates and thinking-state reset are
-    // handled by the SSE `teacher.response` event in useTutorClient.
+    // 开场白、场景更新和思考状态重置
+    // 由 useTutorClient 中的 SSE teacher.response 事件处理。
   } catch (err) {
     console.error('[App] Failed to start teaching:', err)
     store.isThinking = false
   }
 }
 
-// --- Scenario completed actions ---
+// --- 场景完成后的操作 ---
 function handleScenarioRetry() {
   if (currentScenarioId.value) {
     const level = store.currentScenarioLevel ?? undefined
@@ -415,18 +415,18 @@ function handleNextScenario() {
   store.clearScenario()
   store.messages = []
   pendingTargetLevel.value = undefined
-  // Show scenario picker again
+  // 再次显示场景选择器
   fetchScenarios().then(() => {
     store.phase = 'scenario-select'
   })
 }
 
-// --- Live2D model switching ---
+// --- Live2D 模型切换 ---
 async function handleSwitchLive2DModel(modelId: string) {
   await switchLive2DModel(modelId)
 }
 
-// --- Replay audio ---
+// --- 重放音频 ---
 function handleReplay(messageId: string) {
   const msg = store.messages.find(m => m.id === messageId)
   if (!msg) return
@@ -438,7 +438,7 @@ function handleReplay(messageId: string) {
   }
 }
 
-// --- Vocabulary word: pronunciation + detail popup ---
+// --- 单词：发音 + 详情弹窗 ---
 const activeWord = ref<string | null>(null)
 const wordExplanation = ref<WordExplanation | null>(null)
 const wordLoading = ref(false)
@@ -471,13 +471,13 @@ function closeWordDetail() {
   wordLoading.value = false
 }
 
-// --- Send text ---
+// --- 发送文字 ---
 async function sendText(text: string) {
   client.emit('message.user', { text, isVoice: false })
   client.emit('state.thinking', undefined)
 
-  // When streaming, SSE handles message finalization and scenario updates.
-  // Fire-and-forget the HTTP request — only await for error handling.
+  // 流式场景下，SSE 负责消息最终化和场景更新。
+  // HTTP 请求走即发即忘模式 — 仅等待以处理错误。
   try {
     await sendToBackend({ type: 'user.speak', text, stream: true })
   } catch (err) {
@@ -498,7 +498,7 @@ async function sendText(text: string) {
 .app-root {
   width: 100%;
   height: 100vh;
-  height: 100dvh; /* iOS Safari: dynamic viewport height excludes address bar */
+  height: 100dvh; /* iOS Safari：动态视口高度会排除地址栏 */
   background: #000;
   position: relative;
   overflow: hidden;
@@ -509,7 +509,7 @@ async function sendText(text: string) {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Vue transition (can't be expressed as utility classes) */
+/* Vue 过渡动画（无法用工具类表达） */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.5s ease;
 }

@@ -1,44 +1,36 @@
 /**
- * Streaming JSON `text` field extractor.
+ * 流式 JSON `text` 字段提取器。
  *
- * The teaching/scenario prompts force the LLM to respond with a JSON object
- * shaped like `{"text": "...", "textZh": "...", "vocabulary": [...]}`.
- * Some models (notably reasoning-style ones, even in non-`<think>` mode)
- * dump a stretch of plain reasoning prose BEFORE the JSON object.
+ * 教学/场景 prompt 强制 LLM 以形如 `{"text": "...", "textZh": "...", "vocabulary": [...]}`
+ * 的 JSON 对象响应。某些模型（尤其是推理风格模型，即使不在 `<think>` 模式下）会在 JSON 对象前
+ * 输出一段纯推理文本。
  *
- * Without filtering, that prose plus the JSON syntax characters and other
- * fields all leak into `teacher.chunk` SSE events and show up live in the
- * chat bubble until `teacher.response` finalizes and replaces it.
+ * 不过滤的话，这段文本加上 JSON 语法字符和其他字段都会泄漏到 `teacher.chunk` SSE 事件中，
+ * 并在聊天气泡里实时显示，直到 `teacher.response` 最终完成并替换它。
  *
- * This extractor walks the streamed bytes through a small state machine
- * and yields ONLY the decoded characters of the top-level `text` field
- * value, one chunk at a time. Everything else — the reasoning prefix,
- * the braces, the keys/colons/quotes, the other field values — is
- * silently swallowed.
+ * 本提取器通过一个小型状态机遍历流式字节，每次只产出顶层 `text` 字段值解码后的字符。
+ * 其余所有内容 — 推理前缀、花括号、键/冒号/引号、其他字段值 — 都会被静默吞掉。
  *
- * Design notes:
- * - Pure synchronous string processing, no JSON.parse, no allocations
- *   beyond the buffer and a small accumulator.
- * - Resilient to chunk boundaries that split escape sequences (`\n`,
- *   `\uXXXX`), the `"text":"` literal, the value's closing quote, etc.:
- *   the cursor only advances over fully-consumable bytes; partial trailing
- *   bytes are kept in the buffer until the next push().
- * - If the LLM never emits `{` or never emits a `"text"` key, the
- *   extractor never emits anything — the caller still has the raw
- *   accumulated content via the LLM stream's chunks for `parseTeachingResponse`
- *   to do a non-streaming fallback parse, which feeds `teacher.response`.
+ * 设计说明：
+ * - 纯同步字符串处理，不调用 JSON.parse，除缓冲区和一个小型累加器外无额外分配。
+ * - 对分块边界健壮：即使转义序列（`\n`、`\uXXXX`）、`"text":"` 字面量、值的结束引号等
+ *   被拆分到不同 chunk，光标也只前进完全可消费的字节；尾部不完整字节保留在缓冲区中，
+ *   等待下一次 push()。
+ * - 若 LLM 从未输出 `{` 或从未输出 `"text"` 键，提取器也不会输出任何内容 — 调用方仍可通过
+ *   LLM 流的 chunk 获得原始累积内容，供 `parseTeachingResponse` 进行非流式降级解析，
+ *   从而生成 `teacher.response`。
  */
 
-const PHASE_SEEK_OBJ = 0 // before the first `{`
-const PHASE_TOP = 1 // inside `{}`, between fields, expecting a key string or `}`
-const PHASE_KEY = 2 // inside a key string `"..."` (collecting key chars)
-const PHASE_AFTER_KEY = 3 // after key's closing `"`, scanning ws then `:`
-const PHASE_AFTER_COLON = 4 // after `:`, scanning ws then value start
-const PHASE_TEXT_VAL = 5 // inside the text field's string value (emit chars)
-const PHASE_OTHER_STR = 6 // inside a non-text string value (discard)
-const PHASE_OTHER_NESTED = 7 // inside an object/array value (discard, depth-tracked)
-const PHASE_OTHER_PRIM = 8 // inside a number/true/false/null value (discard)
-const PHASE_DONE = 9 // text value seen and closed; ignore everything else
+const PHASE_SEEK_OBJ = 0 // 在第一个 `{` 之前
+const PHASE_TOP = 1 // 在 `{}` 内部、字段之间，期待键字符串或 `}`
+const PHASE_KEY = 2 // 在键字符串 `"..."` 内部（收集键字符）
+const PHASE_AFTER_KEY = 3 // 在键的结束 `"` 之后，跳过空白再找 `:`
+const PHASE_AFTER_COLON = 4 // 在 `:` 之后，跳过空白再找值起始
+const PHASE_TEXT_VAL = 5 // 在 text 字段的字符串值内部（输出字符）
+const PHASE_OTHER_STR = 6 // 在非 text 字符串值内部（丢弃）
+const PHASE_OTHER_NESTED = 7 // 在对象/数组值内部（丢弃，跟踪深度）
+const PHASE_OTHER_PRIM = 8 // 在 number/true/false/null 值内部（丢弃）
+const PHASE_DONE = 9 // 已看到并关闭 text 值；忽略其余所有内容
 
 const ESCAPE_MAP: Record<string, string> = {
   n: '\n',
@@ -65,9 +57,8 @@ export class JsonTextStreamExtractor {
   private insideNestedString = false
 
   /**
-   * Append a raw LLM chunk and return any newly-decoded `text` field
-   * characters. Returns `''` if this chunk produced nothing visible
-   * (e.g. it was reasoning prefix, a key, whitespace, or a non-text value).
+   * 追加一段原始 LLM chunk，并返回新解码出的 `text` 字段字符。
+   * 若该 chunk 未产生可见内容（例如是推理前缀、键、空白或非 text 值），则返回 `''`。
    */
   push(rawChunk: string): string {
     if (this.phase === PHASE_DONE) return ''
@@ -90,18 +81,16 @@ export class JsonTextStreamExtractor {
             this.currentKey = ''
             this.cursor++
           } else if (ch === '}') {
-            // object closed without a `text` field — nothing more to extract
+            // 对象已关闭但没有 `text` 字段 — 无需继续提取
             this.phase = PHASE_DONE
             this.cursor++
             return out
           } else if (isWs(ch) || ch === ',') {
-            // whitespace or `,` between fields
+            // 字段之间的空白或 `,`
             this.cursor++
           } else {
-            // The `{` we entered on was a false positive — e.g. the model
-            // wrote reasoning prose containing a literal `{`. Reset and
-            // resume seeking the real top-level JSON object instead of
-            // silently swallowing arbitrary characters here.
+            // 我们进入的 `{` 是误报 — 例如模型写了包含字面量 `{` 的推理文本。
+            // 重置并继续寻找真正的顶层 JSON 对象，而不是在此静默吞掉任意字符。
             this.phase = PHASE_SEEK_OBJ
             this.cursor++
           }
@@ -110,11 +99,10 @@ export class JsonTextStreamExtractor {
 
         case PHASE_KEY: {
           if (ch === '\\') {
-            // need at least one more char for the escape sequence
+            // 转义序列至少需要再多一个字符
             if (this.cursor + 1 >= this.buffer.length) return out
-            // We only care whether the key equals "text"; that key has no
-            // escapes, so we can append the literal escaped char and any
-            // mismatch just won't equal "text".
+            // 我们只关心键是否等于 "text"；该键没有转义，因此可以直接追加字面转义字符，
+            // 任何不匹配都不会等于 "text"。
             this.currentKey += this.buffer[this.cursor + 1]
             this.cursor += 2
           } else if (ch === '"') {
@@ -135,7 +123,7 @@ export class JsonTextStreamExtractor {
           } else if (isWs(ch)) {
             this.cursor++
           } else {
-            // malformed input; bail
+            // 输入格式错误；退出
             this.phase = PHASE_DONE
             return out
           }
@@ -149,15 +137,14 @@ export class JsonTextStreamExtractor {
             this.phase = this.currentKeyIsText ? PHASE_TEXT_VAL : PHASE_OTHER_STR
             this.cursor++
           } else if (ch === '{' || ch === '[') {
-            // nested structured value — text is always a string per our schema,
-            // so currentKeyIsText hitting this is malformed; either way we skip.
+            // 嵌套结构化值 — 根据我们的 schema，text 始终是字符串，因此 currentKeyIsText
+            // 走到这里属于格式错误；无论如何都跳过。
             this.phase = PHASE_OTHER_NESTED
             this.depth = 1
             this.insideNestedString = false
             this.cursor++
           } else {
-            // primitive (number/true/false/null) — let PHASE_OTHER_PRIM
-            // re-read this same char on the next loop iteration
+            // 原始值（number/true/false/null）— 让 PHASE_OTHER_PRIM 在下次循环中重新读取同一个字符
             this.phase = PHASE_OTHER_PRIM
           }
           break
@@ -165,7 +152,7 @@ export class JsonTextStreamExtractor {
 
         case PHASE_TEXT_VAL: {
           if (ch === '\\') {
-            // need at least 2 chars for any escape; \u needs 6
+            // 任意转义至少需要 2 个字符；\u 需要 6 个
             if (this.cursor + 1 >= this.buffer.length) return out
             const next = this.buffer[this.cursor + 1]
             if (next === 'u') {
@@ -174,7 +161,7 @@ export class JsonTextStreamExtractor {
               if (/^[0-9a-fA-F]{4}$/.test(hex)) {
                 out += String.fromCharCode(parseInt(hex, 16))
               } else {
-                // malformed unicode escape — emit it literally so we don't drop content
+                // 格式错误的 unicode 转义 — 原样输出，避免丢失内容
                 out += this.buffer.substring(this.cursor, this.cursor + 6)
               }
               this.cursor += 6
@@ -183,7 +170,7 @@ export class JsonTextStreamExtractor {
               this.cursor += 2
             }
           } else if (ch === '"') {
-            // end of text value — we have everything we need
+            // text 值结束 — 已获取所需全部内容
             this.phase = PHASE_DONE
             this.cursor++
             return out
@@ -236,7 +223,7 @@ export class JsonTextStreamExtractor {
 
         case PHASE_OTHER_PRIM: {
           if (ch === ',' || ch === '}') {
-            // end of primitive — re-dispatch the terminator under PHASE_TOP
+            // 原始值结束 — 在 PHASE_TOP 下重新分发终止符
             this.phase = PHASE_TOP
           } else {
             this.cursor++
@@ -245,7 +232,7 @@ export class JsonTextStreamExtractor {
         }
 
         default: {
-          // unreachable
+          // 不可达
           this.cursor++
         }
       }
@@ -255,9 +242,8 @@ export class JsonTextStreamExtractor {
   }
 
   /**
-   * Called when the LLM stream signals end. There is no buffered partial
-   * output in this implementation (we only ever return fully-decoded
-   * characters), so this is a no-op returning `''`. Kept for API symmetry.
+   * 在 LLM 流发出结束信号时调用。本实现中没有缓冲的部分输出（只返回完全解码的字符），
+   * 因此这是一个返回 `''` 的空操作。为 API 对称性保留。
    */
   flush(): string {
     return ''

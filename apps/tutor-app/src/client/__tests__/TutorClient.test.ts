@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { TutorClient } from '../TutorClient'
 
-// Mock EventSource
+// 模拟 EventSource
 global.EventSource = vi.fn() as any
 
 describe('TutorClient', () => {
@@ -202,19 +202,19 @@ describe('TutorClient', () => {
 
       client.connect()
 
-      // First error triggers reconnect
+      // 第一次错误触发重连
       mockES.onerror()
       expect(reconnectingHandler).toHaveBeenCalledWith({ attempt: 1, delayMs: 1000 })
 
-      // Fast-forward past first delay
+      // 快进越过第一次延迟
       vi.advanceTimersByTime(1000)
       expect(global.EventSource).toHaveBeenCalledTimes(2)
 
-      // Second error
+      // 第二次错误
       mockES.onerror()
       expect(reconnectingHandler).toHaveBeenCalledWith({ attempt: 2, delayMs: 2000 })
 
-      // Third error exceeds max
+      // 第三次错误超过上限
       vi.advanceTimersByTime(2000)
       mockES.onerror()
       vi.advanceTimersByTime(4000)

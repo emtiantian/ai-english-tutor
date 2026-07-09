@@ -35,7 +35,7 @@ export interface ScenarioPausedSnapshot {
 const DB_NAME = 'english-tutor-scenario-paused'
 const DB_VERSION = 1
 const STORE = 'snapshots'
-/** 24 hours */
+/** 24 小时 */
 export const SCENARIO_PAUSED_TTL_MS = 24 * 60 * 60 * 1000
 
 let dbPromise: Promise<IDBPDatabase> | null = null

@@ -11,19 +11,19 @@ import type {
 import { normalizeToString } from '../llm.js'
 
 /**
- * DeepSeek LLM Provider
+ * DeepSeek LLM Provider 实现
  *
- * DeepSeek API is compatible with OpenAI API format.
+ * DeepSeek API 兼容 OpenAI API 格式。
  *
  * DeepSeek 官方：
- *   Base URL: https://api.deepseek.com
- *   Model:    deepseek-chat (DeepSeek-V3)
+ *   基础地址：https://api.deepseek.com
+ *   模型：    deepseek-chat (DeepSeek-V3)
  *             deepseek-reasoner (DeepSeek-R1)
  *
  * 火山方舟（OpenAI 兼容）：
- *   Base URL: https://ark.cn-beijing.volces.com/api/v3
- *   API Key:  火山方舟 API Key
- *   Model:    必须填火山方舟「推理接入点 ID」，例如 ep-xxxxxxxxxxxxx
+ *   基础地址：https://ark.cn-beijing.volces.com/api/v3
+ *   API 密钥：火山方舟 API 密钥
+ *   模型：    必须填火山方舟「推理接入点 ID」，例如 ep-xxxxxxxxxxxxx
  *             （在方舟控制台「在线推理」创建 deepseek-v4-pro 接入点后复制）
  */
 export class DeepSeekProvider implements LLMProvider {
@@ -36,7 +36,7 @@ export class DeepSeekProvider implements LLMProvider {
 
   constructor() {
     if (!config.DEEPSEEK_API_KEY) {
-      throw new Error('DEEPSEEK_API_KEY is not configured')
+      throw new Error('未配置 DEEPSEEK_API_KEY')
     }
 
     this.client = new OpenAI({
@@ -53,7 +53,7 @@ export class DeepSeekProvider implements LLMProvider {
 
     logger.debug(
       { provider: this.name, messageCount: normalizedMessages.length },
-      'LLM complete request',
+      'LLM 完整请求',
     )
 
     const startTime = Date.now()
@@ -73,7 +73,7 @@ export class DeepSeekProvider implements LLMProvider {
 
     logger.info(
       { provider: this.name, duration, tokens: usage?.total_tokens },
-      'LLM complete response',
+      'LLM 完整响应',
     )
 
     return {
@@ -98,7 +98,7 @@ export class DeepSeekProvider implements LLMProvider {
 
     logger.debug(
       { provider: this.name, messageCount: normalizedMessages.length },
-      'LLM stream request',
+      'LLM 流式请求',
     )
 
     const startTime = Date.now()
@@ -129,7 +129,7 @@ export class DeepSeekProvider implements LLMProvider {
     const duration = Date.now() - startTime
     logger.info(
       { provider: this.name, duration, totalTokens },
-      'LLM stream complete',
+      'LLM 流式完成',
     )
 
     yield {

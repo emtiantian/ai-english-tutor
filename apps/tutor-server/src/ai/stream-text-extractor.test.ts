@@ -2,8 +2,8 @@ import assert from 'node:assert'
 import { JsonTextStreamExtractor } from './stream-text-extractor.js'
 
 /**
- * Helper: feed a sequence of chunks and collect everything emitted.
- * Returns one entry per push() (so empty strings are visible).
+ * 辅助函数：输入一系列 chunk 并收集所有输出。
+ * 每次 push() 返回一个条目（因此空字符串也可见）。
  */
 function feed(chunks: string[]): { emitted: string[]; combined: string } {
   const ex = new JsonTextStreamExtractor()
@@ -14,13 +14,13 @@ function feed(chunks: string[]): { emitted: string[]; combined: string } {
 }
 
 async function main(): Promise<void> {
-  // ── 1. Single-shot complete JSON ────────────────────────────
+  // ── 1. 单次完整 JSON ────────────────────────────
   {
     const r = feed(['{"text":"hello"}'])
     assert.strictEqual(r.combined, 'hello', 'simple one-shot text')
   }
 
-  // ── 2. Reasoning prose dumped before the JSON object is dropped ──
+  // ── 2. JSON 对象前的推理文本被丢弃 ──
   {
     const r = feed([
       '让我想想。用户在问候我，所以我应该用同样温暖的方式回应。',
@@ -33,11 +33,11 @@ async function main(): Promise<void> {
       'Hello!',
       'pre-JSON reasoning must be dropped; only the text value is emitted',
     )
-    // The first chunk (reasoning prose) must produce no output
+    // 第一个 chunk（推理文本）必须不产生输出
     assert.strictEqual(r.emitted[0], '', 'reasoning prefix emits nothing')
   }
 
-  // ── 3. Other fields after `text` are silently swallowed ─────
+  // ── 3. `text` 后的其他字段被静默吞掉 ─────
   {
     const r = feed(['{"text":"hi","textZh":"你好","vocabulary":["x"]}'])
     assert.strictEqual(
@@ -47,19 +47,19 @@ async function main(): Promise<void> {
     )
   }
 
-  // ── 4. Other fields BEFORE `text` are also dropped ──────────
+  // ── 4. `text` 前的其他字段也被丢弃 ──────────
   {
     const r = feed(['{"motionId":"wave","text":"hi"}'])
     assert.strictEqual(r.combined, 'hi', 'fields before text are skipped')
   }
 
-  // ── 5. Chunk boundary inside the `"text":"` literal ─────────
+  // ── 5. chunk 边界落在 `"text":"` 字面量内 ─────────
   {
     const r = feed(['{"te', 'xt":', '"hi"}'])
     assert.strictEqual(r.combined, 'hi', 'split key boundary is recoverable')
   }
 
-  // ── 6. Chunk boundary right at a backslash escape ───────────
+  // ── 6. chunk 边界正好位于反斜杠转义处 ───────────
   {
     const r = feed(['{"text":"line1\\', 'nline2"}'])
     assert.strictEqual(
@@ -69,31 +69,31 @@ async function main(): Promise<void> {
     )
   }
 
-  // ── 7. Chunk boundary inside a \uXXXX unicode escape ────────
+  // ── 7. chunk 边界落在 \uXXXX unicode 转义内 ────────
   {
     const r = feed(['{"text":"\\u00', '4Bay"}'])
     assert.strictEqual(r.combined, 'Kay', 'split \\uXXXX must decode correctly')
   }
 
-  // ── 8. Closing quote of text value reached → DONE; further input ignored ──
+  // ── 8. text 值的结束引号到达 → 完成；忽略后续输入 ──
   {
     const r = feed(['{"text":"done"}', '{"text":"again"}', 'trailing junk'])
     assert.strictEqual(r.combined, 'done', 'after text closes, no more output')
   }
 
-  // ── 9. LLM never emits a JSON object → no output (graceful skip) ──
+  // ── 9. LLM 从未输出 JSON 对象 → 无输出（优雅跳过） ──
   {
     const r = feed(['just plain prose, no json here, no braces'])
     assert.strictEqual(r.combined, '', 'no `{` → no output')
   }
 
-  // ── 10. JSON closes without a `text` field → no output ──────
+  // ── 10. JSON 关闭但没有 `text` 字段 → 无输出 ──────
   {
     const r = feed(['{"motionId":"wave","vocabulary":[]}'])
     assert.strictEqual(r.combined, '', 'no `text` key → no output')
   }
 
-  // ── 11. Nested object value (other field) does not confuse the scanner ──
+  // ── 11. 嵌套对象值（其他字段）不会混淆扫描器 ──
   {
     const r = feed([
       '{"meta":{"a":1,"b":[1,2,3]},"text":"after nested","x":"y"}',
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
     assert.strictEqual(r.combined, 'after nested', 'nested values are skipped, text still found')
   }
 
-  // ── 12. String value containing the literal `"text":"` doesn\'t false-match ──
+  // ── 12. 字符串值中包含字面量 `"text":"` 不会误匹配 ──
   {
     const r = feed([
       '{"hint":"the field named \\"text\\" is special","text":"real"}',
@@ -113,13 +113,13 @@ async function main(): Promise<void> {
     )
   }
 
-  // ── 13. Whitespace around `:` and value start ───────────────
+  // ── 13. `:` 与值起始处的空白 ───────────────
   {
     const r = feed(['{ "text" : "spaced" }'])
     assert.strictEqual(r.combined, 'spaced', 'whitespace tolerant')
   }
 
-  // ── 14. Char-by-char streaming ──────────────────────────────
+  // ── 14. 逐字符流式 ──────────────────────────────
   {
     const full = '{"motionId":"wave","text":"hello world"}'
     const chunks = full.split('')
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
     assert.strictEqual(r.combined, 'hello world', 'char-by-char streaming works')
   }
 
-  // ── 15. Multiple emit windows during streaming ──────────────
+  // ── 15. 流式过程中多个输出窗口 ──────────────
   {
     const ex = new JsonTextStreamExtractor()
     const a = ex.push('{"text":"part1 ')
@@ -138,7 +138,7 @@ async function main(): Promise<void> {
     assert.strictEqual(c, 'part3', 'third chunk emits up to the closing quote')
   }
 
-  // ── 16. Reasoning prose containing `{` must not be mistaken for JSON ──
+  // ── 16. 包含 `{` 的推理文本不可被误认为 JSON ──
   {
     const r = feed([
       '让我想想 {这里是思考片段} 用户在问候',
@@ -151,7 +151,7 @@ async function main(): Promise<void> {
     )
   }
 
-  // ── 17. Hybrid: <think> tag containing braces, then real JSON ──
+  // ── 17. 混合：包含花括号的 <think> 标签，然后是真实 JSON ──
   {
     const r = feed([
       '<think>let me think {step 1} and {step 2}</think>',

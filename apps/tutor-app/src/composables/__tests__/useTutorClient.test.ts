@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { useTutorClient } from '../useTutorClient'
 import { useTutorStore } from '../../stores/tutor'
 
-// Mock TutorClient
+// 模拟 TutorClient
 const mockConnect = vi.fn()
 const mockDisconnect = vi.fn()
 const mockOn = vi.fn().mockReturnValue(vi.fn())

@@ -2,7 +2,7 @@ import { LUNA_PERSONA, normalizeMotionId, normalizeExpressionId, type CharacterP
 import type { LLMMessage } from '../llm.js'
 
 /**
- * Build messages for single-sentence English level assessment (legacy)
+ * 为单句英语水平评估构建消息（旧版）
  */
 export function buildLevelAssessMessages(
   sentence: string,
@@ -18,7 +18,7 @@ export function buildLevelAssessMessages(
 }
 
 /**
- * Assessment result from multi-turn evaluation
+ * 多轮评估得出的结果
  */
 export interface AssessmentResult {
   vocabularyScore: number
@@ -31,9 +31,9 @@ export interface AssessmentResult {
 }
 
 /**
- * Build messages for multi-turn assessment (round 1-3)
+ * 为多轮评估（第 1-3 轮）构建消息
  *
- * Evaluates user response and generates next question if needed.
+ * 评估用户回答并在需要时生成下一轮问题。
  */
 export function buildAssessmentTurnMessages(
   round: number,
@@ -93,7 +93,7 @@ OUTPUT ONLY VALID JSON:
 }
 
 /**
- * Build messages for announcing the final assessment result
+ * 为宣布最终评估结果构建消息
  */
 export function buildAssessmentResultMessages(
   finalLevel: number,
@@ -135,7 +135,7 @@ Generate a brief, encouraging announcement of their result.`,
 }
 
 /**
- * Parse assessment turn result from LLM response
+ * 从 LLM 响应中解析评估轮次结果
  */
 export function parseAssessmentResult(content: string): AssessmentResult {
   try {
@@ -153,10 +153,10 @@ export function parseAssessmentResult(content: string): AssessmentResult {
       }
     }
   } catch {
-    // JSON parse failed
+    // JSON 解析失败
   }
 
-  // Fallback: estimate based on text length
+  // 兜底：按文本长度估算
   const length = content.length
   const estimatedLevel = length < 30 ? 1 : length < 80 ? 2 : length < 150 ? 3 : length < 250 ? 4 : 5
 
@@ -172,7 +172,7 @@ export function parseAssessmentResult(content: string): AssessmentResult {
 }
 
 /**
- * Parse the full assessment turn response (includes nextQuestion, motionId, etc.)
+ * 解析完整的评估轮次响应（包含 nextQuestion、motionId 等）
  */
 export function parseAssessmentTurnResponse(content: string): AssessmentResult & {
   nextQuestion?: string
@@ -188,14 +188,14 @@ export function parseAssessmentTurnResponse(content: string): AssessmentResult &
       return {
         ...result,
         nextQuestion: parsed.nextQuestion || undefined,
-        // Clamp to the semantic vocabulary so an off-list hallucination
-        // doesn't silently degrade to Idle/neutral on the frontend.
+        // 将 motionId/expressionId 限制在语义词汇表内，防止出现列表外的幻觉值后
+        // 在前端被静默降级为 Idle/neutral。
         motionId: normalizeMotionId(parsed.motionId, 'wave'),
         expressionId: normalizeExpressionId(parsed.expressionId, 'happy'),
       }
     }
   } catch {
-    // ignore
+    // 忽略
   }
 
   return result
@@ -206,7 +206,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Parse level assessment result from LLM response
+ * 从 LLM 响应中解析水平评估结果
  */
 export function parseLevelResult(content: string): {
   level: number
@@ -215,7 +215,7 @@ export function parseLevelResult(content: string): {
   grammarAnalysis?: string
 } {
   try {
-    // Try to extract JSON from the response
+    // 尝试从响应中提取 JSON
     const jsonMatch = content.match(/\{[\s\S]*?\}/)
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0])
@@ -227,10 +227,10 @@ export function parseLevelResult(content: string): {
       }
     }
   } catch {
-    // JSON parse failed, use fallback
+    // JSON 解析失败，使用降级方案
   }
 
-  // Fallback: estimate based on content length
+  // 降级方案：根据内容长度估算
   const length = content.length
   const level = length < 50 ? 1 : length < 150 ? 2 : length < 300 ? 3 : length < 500 ? 4 : 5
 

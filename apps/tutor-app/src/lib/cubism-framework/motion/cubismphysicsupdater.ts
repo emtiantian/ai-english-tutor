@@ -11,24 +11,24 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismPhysics } from '../physics/cubismphysics';
 
 /**
- * Updater for physics effects.
- * Handles the management of physics simulation through the CubismPhysics class.
+ * 物理效果的更新器。
+ * 通过 CubismPhysics 类管理物理模拟。
  */
 export class CubismPhysicsUpdater extends ICubismUpdater {
   private _physics: CubismPhysics;
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param physics CubismPhysics reference
+   * @param physics CubismPhysics 引用
    */
   constructor(physics: CubismPhysics);
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param physics CubismPhysics reference
-   * @param executionOrder Order of operations
+   * @param physics CubismPhysics 引用
+   * @param executionOrder 执行顺序
    */
   constructor(physics: CubismPhysics, executionOrder: number);
 
@@ -38,10 +38,10 @@ export class CubismPhysicsUpdater extends ICubismUpdater {
   }
 
   /**
-   * Update process.
+   * 更新处理。
    *
-   * @param model Model to update
-   * @param deltaTimeSeconds Delta time in seconds.
+   * @param model 要更新的模型
+   * @param deltaTimeSeconds 增量时间（秒）。
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -52,7 +52,7 @@ export class CubismPhysicsUpdater extends ICubismUpdater {
   }
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismphysicsupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

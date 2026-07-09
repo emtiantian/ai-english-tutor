@@ -15,35 +15,34 @@ import { vocabRepo } from '../db/repositories/vocabulary.js'
 import { tutorEngine } from '../ai/engine.js'
 
 /**
- * In-memory LRU cache for word explanations.
+ * 单词释义的内存 LRU 缓存。
  *
- * Key is normalized lower-case word only (ignoring sentence context) to keep
- * the cache compact; callers lose context-specific ranking on hits, which is an
- * acceptable trade-off for a quick lookup popup.
+ * 缓存键仅归一化为小写单词（忽略句子上下文），以保持缓存紧凑；
+ * 命中时会丢失上下文相关的排序，这对快速查词弹窗来说是可以接受的权衡。
  */
 const explainCache = new LRUCache<string, WordExplanation>({ max: 500 })
 
 /**
- * Vocabulary API routes
+ * 词汇 API 路由
  *
- * GET  /api/vocab/levels              - List all CEFR levels
- * GET  /api/vocab/:level              - Get words for a level (A1-C2)
- * GET  /api/vocab/level/:num          - Get words by level number (1-6)
- * GET  /api/vocab/:level/topics       - Get topics for a level
- * GET  /api/vocab/:level/topic/:topic - Get words by topic
- * GET  /api/vocab/lookup/:word        - Look up a word
- * GET  /api/vocab/random/:level       - Get random words for practice
- * GET  /api/vocab/progress/:userId    - Get user's vocabulary progress
- * POST /api/vocab/track               - Track a word (mark as learning/mastered)
- * POST /api/vocab/explain             - Explain a word for the detail popup
+ * GET  /api/vocab/levels              - 列出所有 CEFR 等级
+ * GET  /api/vocab/:level              - 获取某等级的单词（A1-C2）
+ * GET  /api/vocab/level/:num          - 按等级数字获取单词（1-6）
+ * GET  /api/vocab/:level/topics       - 获取某等级的主题
+ * GET  /api/vocab/:level/topic/:topic - 按主题获取单词
+ * GET  /api/vocab/lookup/:word        - 查词
+ * GET  /api/vocab/random/:level       - 获取随机单词用于练习
+ * GET  /api/vocab/progress/:userId    - 获取用户词汇进度
+ * POST /api/vocab/track               - 跟踪单词（标记为学习中/已掌握）
+ * POST /api/vocab/explain             - 为详情弹窗解释单词
  */
 export async function vocabRoutes(server: FastifyInstance): Promise<void> {
-  // List all levels
+  // 列出所有等级
   server.get('/api/vocab/levels', async (_request, reply) => {
     return reply.send(getLevelsInfo())
   })
 
-  // Get words by CEFR level name (A1, A2, B1, B2, C1, C2)
+  // 按 CEFR 等级名称获取单词（A1, A2, B1, B2, C1, C2）
   server.get('/api/vocab/:level', async (request: FastifyRequest<{ Params: { level: string } }>, reply) => {
     const { level } = request.params
     const vocab = getVocabularyByLevel(level.toUpperCase())
@@ -56,7 +55,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     })
   })
 
-  // Get words by level number (1-6)
+  // 按等级数字获取单词（1-6）
   server.get('/api/vocab/level/:num', async (request: FastifyRequest<{ Params: { num: string } }>, reply) => {
     const num = parseInt(request.params.num, 10)
     if (isNaN(num) || num < 1 || num > 6) {
@@ -72,7 +71,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     })
   })
 
-  // Get cumulative vocabulary up to a level
+  // 获取到某等级为止的累计词汇
   server.get('/api/vocab/up-to/:num', async (request: FastifyRequest<{ Params: { num: string } }>, reply) => {
     const num = parseInt(request.params.num, 10)
     if (isNaN(num) || num < 1 || num > 6) {
@@ -86,7 +85,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     })
   })
 
-  // Get topics for a level
+  // 获取某等级的主题
   server.get('/api/vocab/:level/topics', async (request: FastifyRequest<{ Params: { level: string } }>, reply) => {
     const levelNum = levelToNum(request.params.level)
     if (!levelNum) {
@@ -95,7 +94,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ topics: getTopicsForLevel(levelNum) })
   })
 
-  // Get words by topic
+  // 按主题获取单词
   server.get('/api/vocab/:level/topic/:topic', async (request: FastifyRequest<{ Params: { level: string; topic: string } }>, reply) => {
     const levelNum = levelToNum(request.params.level)
     if (!levelNum) {
@@ -105,7 +104,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ topic: request.params.topic, wordCount: words.length, words })
   })
 
-  // Look up a word
+  // 查词
   server.get('/api/vocab/lookup/:word', async (request: FastifyRequest<{ Params: { word: string } }>, reply) => {
     const result = lookupWord(request.params.word)
     if (!result) {
@@ -114,7 +113,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send(result)
   })
 
-  // Get random words for practice
+  // 获取随机单词用于练习
   server.get('/api/vocab/random/:level', async (request: FastifyRequest<{ Params: { level: string }; Querystring: { count?: string } }>, reply) => {
     const levelNum = levelToNum(request.params.level)
     if (!levelNum) {
@@ -125,13 +124,13 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ level: request.params.level, count: words.length, words })
   })
 
-  // Get user's vocabulary progress
+  // 获取用户词汇进度
   server.get('/api/vocab/progress/:userId', async (request: FastifyRequest<{ Params: { userId: string } }>, reply) => {
     const progress = vocabRepo.getProgress(request.params.userId)
     return reply.send(progress)
   })
 
-  // Track a word
+  // 跟踪单词
   server.post('/api/vocab/track', async (request: FastifyRequest<{
     Body: { userId: string; word: string; level: string; status?: 'learning' | 'mastered' | 'forgotten' }
   }>, reply) => {
@@ -143,7 +142,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ success: true, word, status })
   })
 
-  // Batch sync vocabulary actions from the client
+  // 批量同步客户端的词汇操作
   server.post('/api/vocab/sync', async (request: FastifyRequest<{
     Body: { userId: string; words: Array<{ word: string; action: 'learn' | 'review'; timestamp?: number }> }
   }>, reply) => {
@@ -171,7 +170,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ success: true, synced })
   })
 
-  // Review a word
+  // 复习单词
   server.post('/api/vocab/review', async (request: FastifyRequest<{
     Body: { userId: string; word: string; correct: boolean }
   }>, reply) => {
@@ -183,7 +182,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ success: true, word, correct })
   })
 
-  // Get words due for review
+  // 获取到期复习的单词
   server.get('/api/vocab/review/due/:userId', async (request: FastifyRequest<{
     Params: { userId: string }
     Querystring: { limit?: string }
@@ -193,7 +192,7 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
     return reply.send({ dueCount: words.length, words })
   })
 
-  // Explain a word for the detail popup
+  // 为详情弹窗解释单词
   server.post('/api/vocab/explain', async (request: FastifyRequest<{
     Body: { word: string; sentence?: string }
   }>, reply) => {

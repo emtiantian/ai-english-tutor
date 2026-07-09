@@ -2,55 +2,54 @@ import type { MotionId, ExpressionId } from './types.js'
 import type { MotionConfig, ExpressionConfig } from './motion-registry-json.js'
 
 /**
- * Opening style — a personality preset that gives the teacher a distinct flavor.
+ * 开场风格 —— 一种人格预设，让老师拥有鲜明的个性风味。
  *
- * Each style defines how the teacher greets the student, what voice to use,
- * and what motion/expression fits the tone.
+ * 每种风格定义老师如何问候学生、使用怎样的声音，
+ * 以及符合该调性的动作/表情。
  */
 export interface OpeningStyle {
-  /** Style identifier for logging and persistence */
+  /** 风格标识符，用于日志和持久化 */
   name: string
-  /** Prompt fragment telling the AI how to act */
+  /** 提示词片段，告诉 AI 如何扮演 */
   persona: string
-  /** Suggested motion for the opening greeting */
+  /** 开场问候建议使用的动作 */
   motionHint: MotionId
-  /** Suggested expression for the opening greeting */
+  /** 开场问候建议使用的表情 */
   expressionHint: ExpressionId
-  /** Voice design description for TTS — matches personality to voice tone */
+  /** TTS 音色设计描述，让人格与声线匹配 */
   voiceDesign: string
 }
 
 /**
- * CharacterPersona — bundles everything that defines a virtual character.
+ * CharacterPersona —— 汇总定义虚拟角色所需的一切。
  *
- * Implement this interface to create a new character (different name, voice,
- * personality presets, prompt style). The default `LUNA_PERSONA` is a complete
- * reference implementation for an English teacher.
+ * 实现该接口即可创建新角色（不同名字、声音、人格预设、提示词风格）。
+ * 默认的 `LUNA_PERSONA` 是一位英语老师的完整参考实现。
  *
- * Design notes:
- * - `buildSystemPrompt` owns the full prompt template so each persona can have
- *   different rules, tone, and output format.
- * - `buildLevelAssessPrompt` is separate because level assessment may use a
- *   different evaluator persona than the conversation persona.
- * - `styles` is an array so the server can pick one at random or let the user choose.
+ * 设计说明：
+ * - `buildSystemPrompt` 掌握完整提示词模板，使每个角色可拥有
+ *   不同的规则、语气和输出格式。
+ * - `buildLevelAssessPrompt` 独立出来，因为水平评估可能使用
+ *   与对话角色不同的评估者人格。
+ * - `styles` 使用数组，方便服务器随机选择或让用户自行挑选。
  */
 export interface CharacterPersona {
-  /** Character display name (e.g. "Luna") */
+  /** 角色显示名（如 "Luna"） */
   readonly name: string
 
-  /** Available personality presets for this character */
+  /** 该角色可用的人格预设 */
   readonly styles: OpeningStyle[]
 
   readonly motionConfig?: MotionConfig
   readonly expressionConfig?: ExpressionConfig
 
   /**
-   * Build the system prompt for a teaching conversation.
+   * 构建教学对话的系统提示词。
    *
-   * @param level - Student's English level (1-5)
-   * @param personality - Optional personality/style text to inject
-   * @param motionBlock - Optional motion instruction block to inject
-   * @param expressionBlock - Optional expression instruction block to inject
+   * @param level - 学生英语水平（1-5）
+   * @param personality - 可选，要注入的人格/风格文本
+   * @param motionBlock - 可选，要注入的动作指令块
+   * @param expressionBlock - 可选，要注入的表情指令块
    */
   buildSystemPrompt(
     level: number,
@@ -59,7 +58,7 @@ export interface CharacterPersona {
     expressionBlock?: string,
   ): string
 
-  /** System prompt for level assessment (can share the same evaluator or use a character-specific one) */
+  /** 水平评估的系统提示词（可共用同一评估者，也可使用角色专属评估者） */
   buildLevelAssessPrompt(
     motionBlock?: string,
     expressionBlock?: string,
@@ -67,7 +66,7 @@ export interface CharacterPersona {
 }
 
 // ────────────────────────────────────────────────────────────
-// Default implementation: Luna
+// 默认实现：Luna
 // ────────────────────────────────────────────────────────────
 
 const LUNA_STYLES: OpeningStyle[] = [
@@ -177,8 +176,8 @@ export const LEVEL_DESCRIPTIONS: Record<number, string> = {
 }
 
 /**
- * JSON-serializable persona data structure.
- * Used for runtime loading from persona.json files.
+ * 可 JSON 序列化的人设数据结构。
+ * 用于运行时从 persona.json 文件加载。
  */
 export interface PersonaJson {
   name: string
@@ -191,8 +190,8 @@ export interface PersonaJson {
 }
 
 /**
- * Build a system prompt from a template string and data.
- * Placeholders: {name}, {personaBlock}, {level}, {levelDescription}, {motionBlock}, {expressionBlock}
+ * 根据模板字符串和数据构建系统提示词。
+ * 占位符：{name}、{personaBlock}、{level}、{levelDescription}、{motionBlock}、{expressionBlock}
  */
 export function buildSystemPromptFromTemplate(
   template: string,
@@ -220,8 +219,8 @@ export function buildSystemPromptFromTemplate(
 }
 
 /**
- * Create a CharacterPersona from a JSON config object.
- * The returned object satisfies the CharacterPersona interface.
+ * 从 JSON 配置对象创建 CharacterPersona。
+ * 返回的对象满足 CharacterPersona 接口。
  */
 export function personaFromJson(json: PersonaJson): CharacterPersona {
   return {
@@ -250,9 +249,9 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
       motionBlock?: string,
       expressionBlock?: string,
     ): string {
-      // levelAssessPrompt templates do not use {level} or {levelDescription} placeholders,
-      // so dummy values are safe. We reuse the template builder to support {motionBlock}
-      // and {expressionBlock} substitution.
+      // levelAssessPrompt 模板不使用 {level} 或 {levelDescription} 占位符，
+      // 因此使用虚拟值是安全的。复用模板构建器是为了支持 {motionBlock}
+      // 与 {expressionBlock} 的替换。
       return buildSystemPromptFromTemplate(json.levelAssessPrompt, {
         name: json.name,
         level: 0,
@@ -265,7 +264,7 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
 }
 
 /**
- * Default persona: Luna — a friendly, patient AI English teacher.
+ * 默认人设：Luna —— 一位友好、有耐心的 AI 英语老师。
  */
 export const LUNA_PERSONA: CharacterPersona = {
   name: 'Luna',

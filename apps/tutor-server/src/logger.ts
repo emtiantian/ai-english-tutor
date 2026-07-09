@@ -2,9 +2,9 @@ import pino from 'pino'
 import { config } from './config.js'
 
 /**
- * Application logger instance
- * - Development: pretty-printed output
- * - Production: JSON output for log aggregation
+ * 应用日志实例
+ * - 开发环境：美化输出
+ * - 生产环境：JSON 输出，便于日志聚合
  */
 export const logger = pino({
   level: config.LOG_LEVEL,

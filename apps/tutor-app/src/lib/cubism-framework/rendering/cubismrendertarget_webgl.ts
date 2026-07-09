@@ -9,15 +9,15 @@
 import { CubismLogError } from '../utils/cubismdebug';
 
 /**
- * WebGL用オフスクリーンサーフェス
- * マスクの描画に必要なフレームバッファなどを管理する。
+ * WebGL 离屏表面
+ * 管理绘制遮罩所需的帧缓冲区等。
  */
 export class CubismRenderTarget_WebGL {
   /**
-   * WebGL2RenderingContext.blitFramebuffer() でバッファのコピーを行う。
+   * 使用 WebGL2RenderingContext.blitFramebuffer() 复制缓冲。
    *
-   * @param src コピー元のオフスクリーンサーフェス
-   * @param dst コピー先のオフスクリーンサーフェス
+   * @param src 源离屏表面
+   * @param dst 目标离屏表面
    */
   public static copyBuffer(
     gl: WebGL2RenderingContext,
@@ -36,11 +36,11 @@ export class CubismRenderTarget_WebGL {
       gl.FRAMEBUFFER_BINDING
     ) as WebGLFramebuffer;
 
-    // 各オフスクリーンサーフェスのレンダーテクスチャをバインド
+    // 绑定各离屏表面的渲染纹理
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, src.getRenderTexture());
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst.getRenderTexture());
 
-    // バッファのコピーを実行
+    // 执行缓冲复制
     gl.blitFramebuffer(
       0,
       0,
@@ -54,14 +54,14 @@ export class CubismRenderTarget_WebGL {
       gl.NEAREST
     );
 
-    // コピー後、元のフレームバッファを復元
+    // 复制后恢复原始帧缓冲
     gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
   }
 
   /**
-   * 描画を開始する。
+   * 开始绘制。
    *
-   * @param restoreFbo EndDraw時に復元するFBOを指定する。nullを指定すると、beginDraw時に現在のFBOを記憶しておく。
+   * @param restoreFbo 指定 endDraw 时要恢复的 FBO。传入 null 则会在 beginDraw 时记住当前 FBO。
    */
   public beginDraw(restoreFbo: WebGLFramebuffer = null): void {
     if (this._renderTexture == null) {
@@ -69,49 +69,49 @@ export class CubismRenderTarget_WebGL {
       return;
     }
 
-    // バックバッファのサーフェイスを記憶しておく。
+    // 记住后台缓冲表面。
     if (restoreFbo == null) {
       this._oldFbo = this._gl.getParameter(this._gl.FRAMEBUFFER_BINDING);
     } else {
       this._oldFbo = restoreFbo;
     }
 
-    // RenderTextureをactiveにセット
+    // 激活 RenderTexture
     this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, this._renderTexture);
   }
 
   /**
-   * 描画を終了し、バックバッファのサーフェイスを復元する。
+   * 结束绘制，恢复后台缓冲表面。
    */
   public endDraw(): void {
-    // バックバッファのサーフェイスを復元
+    // 恢复后台缓冲表面
     this._gl.bindFramebuffer(this._gl.FRAMEBUFFER, this._oldFbo);
   }
 
   /**
-   * バインドされているカラーバッファのクリアを行う。
+   * 清除已绑定的颜色缓冲。
    *
-   * @param r 赤の成分 (0.0 - 1.0)
-   * @param g 緑の成分 (0.0 - 1.0)
-   * @param b 青の成分 (0.0 - 1.0)
-   * @param a アルファの成分 (0.0 - 1.0)
+   * @param r 红色分量 (0.0 - 1.0)
+   * @param g 绿色分量 (0.0 - 1.0)
+   * @param b 蓝色分量 (0.0 - 1.0)
+   * @param a 透明分量 (0.0 - 1.0)
    */
   public clear(r: number, g: number, b: number, a: number): void {
-    // クリア処理
+    // 清除处理
     this._gl.clearColor(r, g, b, a);
     this._gl.clear(this._gl.COLOR_BUFFER_BIT);
   }
 
   /**
-   * オフスクリーンサーフェスを作成する。
+   * 创建离屏表面。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   *          NOTE: Cubism 5.3以降のモデルが使用される場合はWebGL2RenderingContextを使用すること。
-   * @param displayBufferWidth オフスクリーンサーフェスの幅
-   * @param displayBufferHeight オフスクリーンサーフェスの高さ
-   * @param previousFramebuffer 前のフレームバッファ
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   *          NOTE: 使用 Cubism 5.3 及以后版本的模型时，请使用 WebGL2RenderingContext。
+   * @param displayBufferWidth 离屏表面宽度
+   * @param displayBufferHeight 离屏表面高度
+   * @param previousFramebuffer 前一个帧缓冲
    *
-   * @return 成功した場合はtrue、失敗した場合はfalse
+   * @return 成功返回 true，失败返回 false
    */
   public createRenderTarget(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -141,14 +141,14 @@ export class CubismRenderTarget_WebGL {
 
     gl.bindTexture(gl.TEXTURE_2D, null);
 
-    // フレームバッファを作成
+    // 创建帧缓冲
     const ret = gl.createFramebuffer();
     if (ret == null) {
       CubismLogError('Failed to create framebuffer');
       return false;
     }
 
-    // 作成したフレームバッファをバインド
+    // 绑定创建的帧缓冲
     gl.bindFramebuffer(gl.FRAMEBUFFER, ret);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
@@ -158,10 +158,10 @@ export class CubismRenderTarget_WebGL {
       0
     );
 
-    // 状態をチェック
+    // 检查状态
     const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
 
-    // フレームバッファが完全でない場合はエラーを出力して以前のフレームバッファを復元
+    // 帧缓冲不完整时输出错误并恢复之前的帧缓冲
     if (status !== gl.FRAMEBUFFER_COMPLETE) {
       CubismLogError('Framebuffer is not complete');
       gl.bindFramebuffer(gl.FRAMEBUFFER, previousFramebuffer);
@@ -182,7 +182,7 @@ export class CubismRenderTarget_WebGL {
   }
 
   /**
-   * レンダーターゲットを破棄する。
+   * 销毁渲染目标。
    */
   public destroyRenderTarget(): void {
     if (this._colorBuffer) {
@@ -199,16 +199,16 @@ export class CubismRenderTarget_WebGL {
   }
 
   /**
-   * WebGLのコンテキストを取得する。
+   * 获取 WebGL 上下文。
    *
-   * @return WebGLRenderingContextまたはWebGL2RenderingContext
+   * @return WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public getGL(): WebGLRenderingContext | WebGL2RenderingContext {
     return this._gl;
   }
 
   /**
-   * レンダーテクスチャを取得する。
+   * 获取渲染纹理。
    *
    * @return WebGLFramebuffer
    */
@@ -217,7 +217,7 @@ export class CubismRenderTarget_WebGL {
   }
 
   /**
-   * カラーバッファを取得する。
+   * 获取颜色缓冲。
    *
    * @return WebGLTexture
    */
@@ -226,43 +226,43 @@ export class CubismRenderTarget_WebGL {
   }
 
   /**
-   * カラーバッファの幅を取得する。
+   * 获取颜色缓冲宽度。
    *
-   * @return カラーバッファの幅
+   * @return 颜色缓冲宽度
    */
   public getBufferWidth(): number {
     return this._bufferWidth;
   }
 
   /**
-   * カラーバッファの高さを取得する。
+   * 获取颜色缓冲高度。
    *
-   * @return カラーバッファの高さ
+   * @return 颜色缓冲高度
    */
   public getBufferHeight(): number {
     return this._bufferHeight;
   }
 
   /**
-   * オフスクリーンサーフェスが有効かどうかを確認する。
+   * 检查离屏表面是否有效。
    *
-   * @return 有効な場合はtrue、無効な場合はfalse
+   * @return 有效返回 true，无效返回 false
    */
   public isValid(): boolean {
     return this._renderTexture != null;
   }
 
   /**
-   * 以前のフレームバッファを取得する。
+   * 获取之前的帧缓冲。
    *
-   * @return 以前のフレームバッファ
+   * @return 之前的帧缓冲
    */
   public getOldFBO(): WebGLFramebuffer {
     return this._oldFbo;
   }
 
   /**
-   * コンストラクタ
+   * 构造函数
    */
   constructor() {
     this._gl = null;
@@ -273,15 +273,15 @@ export class CubismRenderTarget_WebGL {
     this._oldFbo = null;
   }
 
-  protected _gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGLのコンテキスト
-  protected _colorBuffer: WebGLTexture; // カラーバッファ
-  protected _renderTexture: WebGLFramebuffer; // フレームバッファ
-  protected _bufferWidth: number; // カラーバッファの幅
-  protected _bufferHeight: number; // カラーバッファの高さ
-  private _oldFbo: WebGLFramebuffer; // 以前のフレームバッファ
+  protected _gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGL 上下文
+  protected _colorBuffer: WebGLTexture; // 颜色缓冲
+  protected _renderTexture: WebGLFramebuffer; // 帧缓冲
+  protected _bufferWidth: number; // 颜色缓冲宽度
+  protected _bufferHeight: number; // 颜色缓冲高度
+  private _oldFbo: WebGLFramebuffer; // 之前的帧缓冲
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismrendertarget_webgl';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

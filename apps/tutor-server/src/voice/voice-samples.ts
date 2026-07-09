@@ -46,7 +46,7 @@ export async function saveVoiceSample(voiceDesign: string, audio: Buffer): Promi
   await fs.writeFile(path, audio)
   logger.info(
     { hash: hash.slice(0, 12), size: audio.length, path },
-    '[VoiceSample] Reference sample saved',
+    '[音色样本] 参考样本已保存',
   )
 }
 
@@ -60,7 +60,7 @@ export async function loadVoiceSample(voiceDesign: string): Promise<Buffer> {
   const buffer = await fs.readFile(path)
   logger.debug(
     { hash: hash.slice(0, 12), size: buffer.length },
-    '[VoiceSample] Reference sample loaded from disk',
+    '[音色样本] 已从磁盘加载参考样本',
   )
   return buffer
 }
@@ -84,7 +84,7 @@ export async function getOrGenerateVoiceSample(
 
   logger.info(
     { hash: hash.slice(0, 12) },
-    '[VoiceSample] No reference sample found — calibrating via voicedesign...',
+    '[音色样本] 未找到参考样本，通过 voicedesign 标定...',
   )
   const audio = await generator()
   await saveVoiceSample(voiceDesign, audio)

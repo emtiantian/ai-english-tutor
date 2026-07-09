@@ -10,7 +10,7 @@ import {
   saveScenarioState as saveScenarioStateToDb,
 } from '../db/session-store.js'
 
-/** Scenario state within a session */
+/** 会话内的场景状态 */
 export interface ScenarioState {
   id: string
   name: string
@@ -31,20 +31,20 @@ export interface ScenarioState {
   wordsUsed: Set<string>
 }
 
-/** Session data held in memory */
+/** 内存中持有的会话数据 */
 export interface SessionData {
   level: number
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   vocabulary: Set<string>
   openingStyle?: OpeningStyle
   voiceDesign?: string
-  /** User ID for vocabulary tracking (null for anonymous sessions) */
+  /** 用于词汇跟踪的用户 ID（匿名会话为 null） */
   userId?: string
-  /** Scenario state (if in a scenario lesson) */
+  /** 场景状态（若处于场景课程中） */
   scenario?: ScenarioState
 }
 
-/** Reconstruct a ScenarioState from its JSON DB representation. */
+/** 从其 JSON 数据库表示重建 ScenarioState。 */
 function parseScenarioState(json: string): ScenarioState | undefined {
   try {
     const parsed = JSON.parse(json) as Partial<ScenarioState> & { wordsUsed?: string[] }
@@ -61,32 +61,32 @@ function parseScenarioState(json: string): ScenarioState | undefined {
       wordsUsed: new Set(Array.isArray(parsed.wordsUsed) ? parsed.wordsUsed : []),
     }
   } catch (err) {
-    logger.error({ err, jsonPreview: json.slice(0, 200) }, 'Failed to parse scenario_state')
+    logger.error({ err, jsonPreview: json.slice(0, 200) }, '解析 scenario_state 失败')
     return undefined
   }
 }
 
 /**
- * Manages session lifecycle: in-memory cache + SQLite persistence.
+ * 管理会话生命周期：内存缓存 + SQLite 持久化。
  *
- * Reads from cache first, falls back to DB, then populates cache.
+ * 优先读取缓存，回退到数据库，然后回填缓存。
  */
 export class SessionManager {
   private sessions = new LRUCache<string, SessionData>({
     max: 1000,
-    ttl: 1000 * 60 * 60, // 1 hour
+    ttl: 1000 * 60 * 60, // 1 小时
   })
 
   /**
-   * Get an existing session or create a new one.
-   * Tries cache → DB → creates new.
+   * 获取已有会话或创建新会话。
+   * 尝试顺序：缓存 → 数据库 → 新建。
    */
   getOrCreate(sessionId: string, level: number): SessionData {
-    // Cache hit
+    // 缓存命中
     const cached = this.sessions.get(sessionId)
     if (cached) return cached
 
-    // DB fallback
+    // 数据库回退
     const dbSession = getSessionFromDb(sessionId)
     if (dbSession) {
       const dbMessages = getSessionMessages(sessionId)
@@ -101,7 +101,7 @@ export class SessionManager {
       return session
     }
 
-    // Create new
+    // 创建新会话
     const session: SessionData = {
       level,
       history: [],
@@ -112,14 +112,14 @@ export class SessionManager {
   }
 
   /**
-   * Set a session in cache (used when initializing a new lesson).
+   * 在缓存中设置会话（用于初始化新课）。
    */
   set(sessionId: string, session: SessionData): void {
     this.sessions.set(sessionId, session)
   }
 
   /**
-   * Persist session metadata to DB.
+   * 将会话元数据持久化到数据库。
    */
   saveSessionToDb(sessionId: string, level: number, styleName: string, voiceDesign: string): void {
     saveSession({
@@ -132,7 +132,7 @@ export class SessionManager {
   }
 
   /**
-   * Persist the current scenario state to DB.
+   * 将当前场景状态持久化到数据库。
    */
   saveScenarioState(sessionId: string, scenario: ScenarioState): void {
     const serialized: Omit<ScenarioState, 'wordsUsed'> & { wordsUsed: string[] } = {
@@ -143,7 +143,7 @@ export class SessionManager {
   }
 
   /**
-   * Append a message to session history and persist to DB.
+   * 追加一条消息到会话历史并持久化到数据库。
    */
   addMessage(
     sessionId: string,
@@ -154,14 +154,14 @@ export class SessionManager {
   ): void {
     session.history.push({ role, content })
 
-    // Track vocabulary
+    // 跟踪词汇
     if (metadata?.vocabulary) {
       for (const word of metadata.vocabulary) {
         session.vocabulary.add(word.toLowerCase())
       }
     }
 
-    // Persist to DB
+    // 持久化到数据库
     saveMessage({
       sessionId,
       role,
@@ -174,15 +174,15 @@ export class SessionManager {
   }
 
   /**
-   * Get a session from cache only (no DB fallback).
+   * 仅从缓存获取会话（不查数据库）。
    */
   getFromCache(sessionId: string): SessionData | undefined {
     return this.sessions.get(sessionId)
   }
 
   /**
-   * Get session info for API response.
-   * Tries cache first, falls back to DB.
+   * 获取供 API 响应的会话信息。
+   * 优先尝试缓存，否则回退数据库。
    */
   getSessionInfo(sessionId: string): { level: number; historyCount: number; vocabularyCount: number } | undefined {
     const session = this.sessions.get(sessionId)

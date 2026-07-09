@@ -2,15 +2,15 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { getScenariosForLevel, getAllScenarios, getScenarioById } from '@ai-english-tutor/shared'
 
 /**
- * Scenario API routes
+ * 场景 API 路由
  *
- * GET /api/scenarios          - List all scenarios (optional ?level=N filter)
- * GET /api/scenarios/:id      - Get a specific scenario by ID
+ * GET /api/scenarios          - 列出所有场景（可选 ?level=N 过滤）
+ * GET /api/scenarios/:id      - 根据 ID 获取特定场景
  */
 export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
   /**
    * GET /api/scenarios
-   * List available scenarios, optionally filtered by level
+   * 列出可用场景，可按等级过滤
    */
   server.get(
     '/api/scenarios',
@@ -53,7 +53,7 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/scenarios/:id
-   * Get a specific scenario by ID
+   * 根据 ID 获取特定场景
    */
   server.get(
     '/api/scenarios/:id',

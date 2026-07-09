@@ -1,9 +1,8 @@
 /**
- * Fetch with a timeout.
+ * 带超时的 fetch。
  *
- * Rejects with a timeout error if the request does not complete within the
- * specified number of milliseconds. Available in both browser and Node
- * environments.
+ * 若请求在指定毫秒数内未完成，则抛出超时错误。
+ * 可在浏览器和 Node 环境中使用。
  */
 export async function fetchWithTimeout(
   input: RequestInfo | URL,

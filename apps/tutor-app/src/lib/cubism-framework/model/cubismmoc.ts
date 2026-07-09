@@ -151,7 +151,7 @@ export class CubismMoc {
   _mocVersion: number; // 読み込んだモデルの.moc3 Version
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmoc';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

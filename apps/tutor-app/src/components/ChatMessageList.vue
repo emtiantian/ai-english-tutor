@@ -12,15 +12,15 @@
     >
       <span>{{ msg.text }}</span>
       <span v-if="msg.isStreaming" class="animate-blink">▊</span>
-      <!-- Voice transcript -->
+      <!-- 语音转写 -->
       <div v-if="msg.transcript && msg.text === '[语音]'" class="voice-transcript">
         {{ msg.transcript }}
       </div>
-      <!-- Chinese translation (toggled by 中 button) -->
+      <!-- 中文翻译（由「中」按钮切换） -->
       <div v-if="msg.textZh && expandedZh.has(msg.id)" class="zh-translation">
         {{ msg.textZh }}
       </div>
-      <!-- Replay buttons -->
+      <!-- 重听按钮组 -->
       <div v-if="msg.role === 'assistant' && !msg.isStreaming" class="replay-group">
         <button
           class="replay-btn"
@@ -45,7 +45,7 @@
           <span class="zh-text">中</span>
         </button>
       </div>
-      <!-- Vocabulary tags -->
+      <!-- 生词标签 -->
       <div v-if="msg.vocabulary?.length" class="vocab-tags">
         <span class="vocab-label">
           <svg class="vocab-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -111,7 +111,7 @@ function toggleZh(messageId: string) {
   expandedZh.value = next
 }
 
-// Auto-scroll to bottom when new messages arrive
+// 新消息到达时自动滚动到底部
 watch(
   () => props.messages.length,
   async () => {
@@ -140,15 +140,15 @@ watch(
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
-  /* Reserve space for the fixed bottom input bar.
-     Input bar: ~64px base + scenario section ~90px + vocab section ~50px + safe-area ~34px
-     = ~240px worst case. Use padding-bottom so messages scroll above the bar. */
+  /* 为底部固定输入栏预留空间。
+     输入栏：约 64px 基础 + 场景区约 90px + 生词区约 50px + 安全区约 34px
+     最坏情况下约 240px。用 padding-bottom 让消息滚动到输入栏上方。 */
   padding-bottom: 240px;
   box-sizing: border-box;
 }
 .chat-messages-container::-webkit-scrollbar { display: none; }
 
-/* Bubble base */
+/* 气泡基础样式 */
 .bubble-base {
   max-width: 80%;
   min-width: 0;
@@ -170,7 +170,7 @@ watch(
   word-break: break-word;
 }
 
-/* Chinese translation shown below the English text */
+/* 显示在英文下方的中文翻译 */
 .zh-translation {
   margin-top: 6px;
   padding-top: 6px;
@@ -208,7 +208,7 @@ watch(
   }
 }
 
-/* Replay button group */
+/* 重听按钮组 */
 .replay-group {
   display: inline-flex;
   gap: 6px;
@@ -248,7 +248,7 @@ watch(
   pointer-events: none;
 }
 
-/* Chinese translation toggle button */
+/* 中文翻译切换按钮 */
 .replay-btn--zh {
   background: rgba(255, 100, 100, 0.15);
   font-size: 12px;
@@ -275,7 +275,7 @@ watch(
   height: 16px;
 }
 
-/* Vocabulary tags */
+/* 生词标签 */
 .vocab-tags {
   display: flex;
   flex-wrap: wrap;

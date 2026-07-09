@@ -8,17 +8,16 @@ import type { ASRProvider } from './useASRConfig'
 import type { ChatRequestBody, ChatResponse } from '../client/types'
 
 /**
- * Composable that manages voice recording lifecycle,
- * including timer, UI state, and audio-to-backend submission.
+ * 管理录音生命周期的 composable，
+ * 包括计时器、UI 状态以及向后端提交音频。
  *
- * Two ASR paths share the same lifecycle/UI shell:
- *   - 'browser'   → Web Speech API in the browser, transcript-only request
- *   - everything else (xiaomi/whisper/mock) → record audio, send base64
- *     to backend, backend does ASR + LLM + TTS and streams via SSE.
+ * 两条 ASR 路径共享相同的生命周期/UI 外壳：
+ *   - 'browser' → 浏览器内 Web Speech API，仅发送转写文本
+ *   - 其他（xiaomi/whisper/mock）→ 录制音频，将 base64 发给后端，
+ *     后端完成 ASR + LLM + TTS 并通过 SSE 流式返回。
  *
- * Both paths use `stream: true` to /api/chat (user.speak): HTTP only acks 202;
- * the actual teacher response arrives over SSE. This keeps a single delivery
- * path on the client and avoids duplicate processing.
+ * 两条路径都使用 `stream: true` 调用 /api/chat（user.speak）：HTTP 仅返回 202；
+ * 真正的教师回复通过 SSE 到达。这样在客户端保持单一投递路径，避免重复处理。
  */
 export function useAudioRecorder(
   client: TutorClient,
@@ -30,7 +29,7 @@ export function useAudioRecorder(
 
   const isRecording = ref(false)
   const recordingDuration = ref(0)
-  /** Audio request type is fixed to user.speak since assessment flow was removed. */
+  /** 由于评估流程已移除，音频请求类型固定为 user.speak。 */
   const requestType: ChatRequestBody['type'] = 'user.speak'
   let recordingTimer: ReturnType<typeof setInterval> | null = null
   let recorder: AudioRecorder | null = null
@@ -54,7 +53,7 @@ export function useAudioRecorder(
   async function startRecording() {
     if (isRecording.value) return
 
-    // ── Browser ASR path ──
+    // ── 浏览器 ASR 路径 ──
     if (asrProvider() === 'browser') {
       if (!isBrowserASRSupported()) {
         throw new Error('当前浏览器不支持语音识别，请改用 Chrome / Edge / Safari，或在后端切到云端 ASR。')
@@ -87,7 +86,7 @@ export function useAudioRecorder(
       return
     }
 
-    // ── Cloud ASR path (audio-based) ──
+    // ── 云端 ASR 路径（基于音频）──
     try {
       recorder = new AudioRecorder({
         onVolume: (volume) => store.characterProvider?.setMouthOpen(volume),
@@ -109,18 +108,17 @@ export function useAudioRecorder(
   }
 
   /**
-   * Browser-ASR-only: emit the user voice bubble, push transcript to backend
-   * as plain text via the same streaming path used by the cloud-ASR path.
-   * Backend will skip its ASR step and go straight to LLM + TTS, streaming
-   * the response back over SSE.
+   * 仅浏览器 ASR：发送用户语音气泡，并通过与云端 ASR 路径相同的流式通道
+   * 将转写文本以纯文本形式推给后端。
+   * 后端会跳过 ASR 步骤，直接进入 LLM + TTS，并通过 SSE 流式返回回复。
    */
   async function sendBrowserTranscript(transcript: string) {
     client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: false })
     client.emit('message.user', { text: '[语音]', isVoice: true })
     client.emit('state.thinking', undefined)
 
-    // Attach the recognised transcript to the just-emitted user bubble so the
-    // user can see what the browser heard, regardless of how slow the LLM is.
+    // 将识别到的转写文本附加到刚发送的用户气泡上，
+    // 这样无论 LLM 多慢，用户都能看到浏览器听到了什么。
     store.setLastUserTranscript(transcript)
 
     await sendToBackend({
@@ -133,7 +131,7 @@ export function useAudioRecorder(
   async function stopRecording() {
     if (!isRecording.value) return
 
-    // ── Browser ASR path: abort recogniser, lifecycle cleanup runs in startRecording's finally ──
+    // ── 浏览器 ASR 路径：中止识别器，生命周期清理在 startRecording 的 finally 中执行 ──
     if (asrProvider() === 'browser') {
       browserASRAbortController?.abort()
       browserASRAbortController = null
@@ -152,8 +150,8 @@ export function useAudioRecorder(
       isRecording.value = false
       client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: false })
 
-      // Decode recorded Blob into mono PCM on the main thread (Web Audio is main-thread only),
-      // then offload the CPU-heavy resampling + MP3 encoding to the Web Worker.
+      // 在主线程上将录制的 Blob 解码为单声道 PCM（Web Audio 只能在主线程运行），
+      // 然后将耗 CPU 的重采样和 MP3 编码交给 Web Worker。
       decodeAbortController = new AbortController()
       try {
         const { samples, sampleRate } = await decodeToMonoPcm(blob, decodeAbortController.signal)
@@ -173,9 +171,9 @@ export function useAudioRecorder(
           audioFormat,
         }
 
-        // Voice path uses the same streaming delivery as text: HTTP acknowledges
-        // immediately and the full response (text, audio, scenario) arrives via SSE.
-        // This avoids double-processing the same response from both HTTP and SSE.
+        // 语音路径与文本路径使用相同的流式投递：HTTP 立即确认，
+        // 完整回复（文本、音频、场景）通过 SSE 到达。
+        // 这样可以避免同一份回复被 HTTP 和 SSE 同时处理。
         await sendToBackend({ ...payload, stream: true })
       } finally {
         decodeAbortController = null
@@ -184,7 +182,7 @@ export function useAudioRecorder(
       console.error('[useAudioRecorder] Failed to stop recording:', err)
       isRecording.value = false
       store.isThinking = false
-      // Show error to user
+      // 向用户显示错误
       store.messages.push({
         id: `msg-${Date.now()}`,
         role: 'assistant',
@@ -201,7 +199,7 @@ export function useAudioRecorder(
 
     stopTimer()
 
-    // Browser ASR path: abort recogniser
+    // 浏览器 ASR 路径：中止识别器
     if (asrProvider() === 'browser') {
       browserASRAbortController?.abort()
       browserASRAbortController = null
@@ -252,9 +250,9 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 /**
- * Decode an audio Blob into mono PCM samples on the main thread.
- * The async Web Audio API runs this on the browser's audio thread,
- * so it does not block JavaScript event loop as badly as the MP3 encoder loop.
+ * 在主线程上将音频 Blob 解码为单声道 PCM 采样。
+ * 异步 Web Audio API 在浏览器的音频线程中运行，
+ * 因此不会像 MP3 编码循环那样严重阻塞 JavaScript 事件循环。
  */
 async function decodeToMonoPcm(
   blob: Blob,
@@ -268,8 +266,8 @@ async function decodeToMonoPcm(
     }
 
     onAbort = () => {
-      // Closing the context while decoding should cause decodeAudioData to reject,
-      // preventing AudioContext leaks on iOS Safari.
+      // 解码时关闭上下文应会使 decodeAudioData 拒绝，
+      // 从而防止 iOS Safari 上 AudioContext 泄漏。
       audioContext.close().catch(() => {})
     }
     signal?.addEventListener('abort', onAbort, { once: true })
@@ -277,7 +275,7 @@ async function decodeToMonoPcm(
     const arrayBuffer = await blob.arrayBuffer()
     const decoded = await audioContext.decodeAudioData(arrayBuffer)
     const channelData = decoded.getChannelData(0)
-    // Copy into a new Float32Array so we can transfer the underlying buffer to the worker.
+    // 复制到新的 Float32Array，以便将底层 buffer 转移给 worker。
     return { samples: new Float32Array(channelData), sampleRate: decoded.sampleRate }
   } finally {
     if (onAbort) {

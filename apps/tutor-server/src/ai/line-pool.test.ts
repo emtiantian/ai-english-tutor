@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-// Set env BEFORE importing modules that read config.
+// 在导入读取配置的模块之前设置环境变量。
 const tmp = mkdtempSync(join(tmpdir(), 'line-pool-test-'))
 process.env.DATA_DIR = tmp
 process.env.LINE_POOL_DIR = join(tmp, 'line-pool')
@@ -14,10 +14,10 @@ const { lineGroupKey, recordTeacherLine, getReusableLines } = await import('./li
 async function main() {
   const group = lineGroupKey('restaurant-ordering', 'A1', 'voiceA')
 
-  // Empty pool → no lines (cold start).
+  // 空池 → 没有台词（冷启动）。
   assert.deepStrictEqual(await getReusableLines(group), [], 'cold start should be empty')
 
-  // Record a line; it appears.
+  // 记录一句台词；它应出现。
   await recordTeacherLine(group, 'Good evening! Welcome.')
   assert.deepStrictEqual(
     await getReusableLines(group),
@@ -25,20 +25,20 @@ async function main() {
     'recorded line should be returned',
   )
 
-  // Dedup by normalized text (whitespace/case) → no duplicate entry, count bumps.
+  // 按归一化文本去重（空白/大小写）→ 不产生重复条目，计数增加。
   await recordTeacherLine(group, '  good   evening! welcome.  ')
   const afterDedup = await getReusableLines(group)
   assert.strictEqual(afterDedup.length, 1, 'normalized duplicate should not add a new entry')
   assert.strictEqual(afterDedup[0], 'Good evening! Welcome.', 'verbatim original text preserved')
 
-  // Frequency ranking: a line said more often ranks higher.
+  // 频率排序：说得更频繁的台词排名更高。
   await recordTeacherLine(group, 'What would you like to drink?')
   await recordTeacherLine(group, 'What would you like to drink?')
   await recordTeacherLine(group, 'What would you like to drink?')
   const ranked = await getReusableLines(group)
   assert.strictEqual(ranked[0], 'What would you like to drink?', 'most-used line ranks first')
 
-  // Eviction: MAX_LINES=3, push enough distinct lines to force eviction of the lowest-count.
+  // 淘汰：MAX_LINES=3，加入足够多的不同台词以强制淘汰计数最低的。
   await recordTeacherLine(group, 'Here is your table.')
   await recordTeacherLine(group, 'Anything else?')
   const capped = await getReusableLines(group, 100)
@@ -48,11 +48,11 @@ async function main() {
     'highest-frequency line survives eviction',
   )
 
-  // Different voice → different group → isolated pool.
+  // 不同音色 → 不同分组 → 隔离的池。
   const otherVoice = lineGroupKey('restaurant-ordering', 'A1', 'voiceB')
   assert.deepStrictEqual(await getReusableLines(otherVoice), [], 'different voice is a separate pool')
 
-  // Empty/whitespace text is ignored.
+  // 空/纯空白文本被忽略。
   await recordTeacherLine(group, '   ')
   console.log('✅ line-pool test passed')
 }

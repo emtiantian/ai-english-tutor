@@ -6,7 +6,7 @@ import { join } from 'node:path'
 const tmpDir = mkdtempSync(join(tmpdir(), 'tutor-scenario-test-'))
 process.env.DB_PATH = join(tmpDir, 'test.db')
 
-// Dynamic imports so that DB_PATH is set before config/db modules are evaluated.
+// 动态导入，确保在 config/db 模块求值前设置 DB_PATH。
 const { initSchema, closeDb } = await import('../db/index.js')
 const { SessionManager } = await import('./session-manager.js')
 type ScenarioState = import('./session-manager.js').ScenarioState
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   manager.saveSessionToDb(sessionId, session.level, 'lazy-mature', session.voiceDesign)
   manager.saveScenarioState(sessionId, session.scenario)
 
-  // Simulate a new server process with a fresh in-memory cache.
+  // 模拟一个全新内存缓存的新服务端进程。
   const restoredManager = new SessionManager()
   const restored = restoredManager.getOrCreate(sessionId, session.level)
 

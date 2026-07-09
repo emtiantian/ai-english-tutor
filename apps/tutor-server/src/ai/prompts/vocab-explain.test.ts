@@ -5,7 +5,7 @@ import {
 } from './vocab-explain.js'
 
 async function main(): Promise<void> {
-  // ── buildVocabExplainMessages folds sentence + hint into the prompt ──
+  // ── buildVocabExplainMessages 应把句子与提示融入 prompt ──
   const messages = buildVocabExplainMessages('abandon', 'They had to abandon the ship.', {
     level: 'B2',
     meaning: '放弃',
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
   assert(userContent.includes('They had to abandon the ship.'), 'user prompt should include the sentence')
   assert(userContent.includes('B2'), 'user prompt should include known level hint')
 
-  // ── Normal single-JSON response ──
+  // ── 普通单个 JSON 响应 ──
   const normal = parseVocabExplainResponse(
     JSON.stringify({
       word: 'abandon',
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   assert.equal(normal!.senses[0].meaningZh, '放弃；抛弃')
   assert.deepEqual(normal!.synonyms, ['desert', 'forsake'])
 
-  // ── Wrapped in a code fence ──
+  // ── 被代码围栏包裹 ──
   const fenced = parseVocabExplainResponse(
     '```json\n' + JSON.stringify({ word: 'run', senses: [{ pos: 'v.', meaningZh: '跑' }] }) + '\n```',
     'run',
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   assert(fenced, 'code-fenced JSON should parse')
   assert.equal(fenced!.senses[0].meaningZh, '跑')
 
-  // ── Trailing prose after the JSON object ──
+  // ── JSON 对象后带额外文本 ──
   const trailing = parseVocabExplainResponse(
     JSON.stringify({ word: 'book', senses: [{ pos: 'n.', meaningZh: '书' }] }) + '\n\n希望这个解释对你有帮助！',
     'book',
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   assert(trailing, 'JSON with trailing prose should parse')
   assert.equal(trailing!.word, 'book')
 
-  // ── word missing → fall back to fallbackWord ──
+  // ── 缺少 word 字段 → 回退到 fallbackWord ──
   const noWord = parseVocabExplainResponse(
     JSON.stringify({ senses: [{ pos: 'adj.', meaningZh: '快乐的' }] }),
     'happy',
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
   assert(noWord, 'JSON without word should still parse')
   assert.equal(noWord!.word, 'happy', 'should use fallbackWord when word missing')
 
-  // ── No usable senses → null ──
+  // ── 没有可用义项 → null ──
   const empty = parseVocabExplainResponse(JSON.stringify({ word: 'x', senses: [] }), 'x')
   assert.equal(empty, null, 'empty senses should return null')
 
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   )
   assert.equal(sensesMissingMeaning, null, 'senses without meaningZh should return null')
 
-  // ── Non-JSON garbage → null ──
+  // ── 非 JSON 垃圾输入 → null ──
   assert.equal(parseVocabExplainResponse('sorry, I cannot help', 'x'), null, 'no JSON should return null')
 
   console.log('✅ vocab-explain parser test passed')

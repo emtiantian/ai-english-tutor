@@ -11,17 +11,17 @@ import { CubismMotionQueueEntry } from './cubismmotionqueueentry';
 import { CubismModel } from '../model/cubismmodel';
 
 /**
- * モーション再生の管理
+ * 动作播放管理
  *
- * モーション再生の管理用クラス。CubismMotionモーションなどACubismMotionのサブクラスを再生するために使用する。
+ * 动作播放管理类。用于播放 CubismMotion 等 ACubismMotion 子类。
  *
- * @note 再生中に別のモーションが StartMotion()された場合は、新しいモーションに滑らかに変化し旧モーションは中断する。
- *       表情用モーション、体用モーションなどを分けてモーション化した場合など、
- *       複数のモーションを同時に再生させる場合は、複数のCubismMotionQueueManagerインスタンスを使用する。
+ * @note 播放中如果另一个动作调用了 startMotion()，则会平滑过渡到新动作并中断旧动作。
+ *       如果要同时播放表情动作、身体动作等分离后的多个动作，
+ *       请使用多个 CubismMotionQueueManager 实例。
  */
 export class CubismMotionQueueManager {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   public constructor() {
     this._userTimeSeconds = 0.0;
@@ -31,7 +31,7 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * デストラクタ
+   * 析构函数
    */
   public release(): void {
     for (let i = 0; i < this._motions.length; ++i) {
@@ -45,14 +45,14 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * 指定したモーションの開始
+   * 开始指定动作
    *
-   * 指定したモーションを開始する。同じタイプのモーションが既にある場合は、既存のモーションに終了フラグを立て、フェードアウトを開始させる。
+   * 开始指定动作。如果同类型动作已存在，则对已有动作设置结束标志并开始淡出。
    *
-   * @param   motion          開始するモーション
-   * @param   autoDelete      再生が終了したモーションのインスタンスを削除するなら true
-   * @param   userTimeSeconds Deprecated: デルタ時間の積算値[秒] 関数内で参照していないため使用は非推奨。
-   * @return                      開始したモーションの識別番号を返す。個別のモーションが終了したか否かを判定するIsFinished()の引数で使用する。開始できない時は「-1」
+   * @param   motion          要开始的动作
+   * @param   autoDelete      播放结束后是否删除动作实例，true 为删除
+   * @param   userTimeSeconds 已废弃：累计增量时间[秒]，函数内部未引用，不建议使用。
+   * @return                      返回已开始动作的识别编号。用于判断单个动作是否结束的 IsFinished() 参数。无法开始时返回「-1」
    */
   public startMotion(
     motion: ACubismMotion,
@@ -65,17 +65,17 @@ export class CubismMotionQueueManager {
 
     let motionQueueEntry: CubismMotionQueueEntry = null;
 
-    // 既にモーションがあれば終了フラグを立てる
+    // 如果已有动作则设置结束标志
     for (let i = 0; i < this._motions.length; ++i) {
       motionQueueEntry = this._motions[i];
       if (motionQueueEntry == null) {
         continue;
       }
 
-      motionQueueEntry.setFadeOut(motionQueueEntry._motion.getFadeOutTime()); // フェードアウト設定
+      motionQueueEntry.setFadeOut(motionQueueEntry._motion.getFadeOutTime()); // 淡出设置
     }
 
-    motionQueueEntry = new CubismMotionQueueEntry(); // 終了時に破棄する
+    motionQueueEntry = new CubismMotionQueueEntry(); // 播放结束时销毁
     motionQueueEntry._autoDelete = autoDelete;
     motionQueueEntry._motion = motion;
 
@@ -85,19 +85,19 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * 全てのモーションの終了の確認
-   * @return true 全て終了している
-   * @return false 終了していない
+   * 确认所有动作是否结束
+   * @return true 全部结束
+   * @return false 未结束
    */
   public isFinished(): boolean {
-    // ------- 処理を行う -------
-    // 既にモーションがあれば終了フラグを立てる
+    // ------- 执行处理 -------
+    // 如果已有动作则设置结束标志
 
     for (let i = 0; i < this._motions.length; ) {
       let motionQueueEntry: CubismMotionQueueEntry = this._motions[i];
 
       if (motionQueueEntry == null) {
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
         continue;
       }
 
@@ -106,11 +106,11 @@ export class CubismMotionQueueManager {
       if (motion == null) {
         motionQueueEntry.release();
         motionQueueEntry = null;
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
         continue;
       }
 
-      // ----- 終了済みの処理があれば削除する ------
+      // ----- 如果有已结束的处理则删除 ------
       if (!motionQueueEntry.isFinished()) {
         return false;
       } else {
@@ -122,10 +122,10 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * 指定したモーションの終了の確認
-   * @param motionQueueEntryNumber モーションの識別番号
-   * @return true 全て終了している
-   * @return false 終了していない
+   * 确认指定动作是否结束
+   * @param motionQueueEntryNumber 动作识别编号
+   * @return true 全部结束
+   * @return false 未结束
    */
   public isFinishedByHandle(
     motionQueueEntryNumber: CubismMotionQueueEntryHandle
@@ -148,51 +148,51 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * 全てのモーションを停止する
+   * 停止所有动作
    */
   public stopAllMotions(): void {
-    // ------- 処理を行う -------
-    // 既にモーションがあれば終了フラグを立てる
+    // ------- 执行处理 -------
+    // 如果已有动作则设置结束标志
 
     for (let i = 0; i < this._motions.length; i++) {
       const motionQueueEntry: CubismMotionQueueEntry = this._motions[i];
 
       if (motionQueueEntry == null) {
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
 
         continue;
       }
 
-      // ----- 終了済みの処理があれば削除する ------
+      // ----- 如果有已结束的处理则删除 ------
       motionQueueEntry.release();
-      this._motions.splice(i, 1); // 削除
+      this._motions.splice(i, 1); // 删除
       continue;
     }
   }
 
   /**
-   * @brief CubismMotionQueueEntryの配列の取得
+   * @brief 获取 CubismMotionQueueEntry 数组
    *
-   * CubismMotionQueueEntryの配列を取得する。
+   * 获取 CubismMotionQueueEntry 数组。
    *
-   * @return  CubismMotionQueueEntryの配列へのポインタ
-   *          NULL   見つからなかった
+   * @return  CubismMotionQueueEntry 数组指针
+   *          NULL   未找到
    */
   public getCubismMotionQueueEntries(): Array<CubismMotionQueueEntry> {
     return this._motions;
   }
 
   /**
-   * 指定したCubismMotionQueueEntryの取得
+   * 获取指定的 CubismMotionQueueEntry
 
-   * @param   motionQueueEntryNumber  モーションの識別番号
-   * @return  指定したCubismMotionQueueEntry
-   * @return  null   見つからなかった
+   * @param   motionQueueEntryNumber  动作识别编号
+   * @return  指定的 CubismMotionQueueEntry
+   * @return  null   未找到
    */
   public getCubismMotionQueueEntry(
     motionQueueEntryNumber: any
   ): CubismMotionQueueEntry {
-    //------- 処理を行う -------
+    //------- 执行处理 -------
 
     for (let i = 0; i < this._motions.length; i++) {
       const motionQueueEntry: CubismMotionQueueEntry = this._motions[i];
@@ -210,10 +210,10 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * イベントを受け取るCallbackの登録
+   * 注册接收事件的回调
    *
-   * @param callback コールバック関数
-   * @param customData コールバックに返されるデータ
+   * @param callback 回调函数
+   * @param customData 回调返回的数据
    */
   public setEventCallback(
     callback: CubismMotionEventFunction,
@@ -224,24 +224,24 @@ export class CubismMotionQueueManager {
   }
 
   /**
-   * モーションを更新して、モデルにパラメータ値を反映する。
+   * 更新动作并将参数值反映到模型。
    *
-   * @param   model   対象のモデル
-   * @param   userTimeSeconds   デルタ時間の積算値[秒]
-   * @return  true    モデルへパラメータ値の反映あり
-   * @return  false   モデルへパラメータ値の反映なし(モーションの変化なし)
+   * @param   model   目标模型
+   * @param   userTimeSeconds   累计增量时间[秒]
+   * @return  true    有参数值反映到模型
+   * @return  false   没有参数值反映到模型（动作无变化）
    */
   public doUpdateMotion(model: CubismModel, userTimeSeconds: number): boolean {
     let updated = false;
 
-    // ------- 処理を行う --------
-    // 既にモーションがあれば終了フラグを立てる
+    // ------- 执行处理 --------
+    // 如果已有动作则设置结束标志
 
     for (let i = 0; i < this._motions.length; ) {
       let motionQueueEntry: CubismMotionQueueEntry = this._motions[i];
 
       if (motionQueueEntry == null) {
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
         continue;
       }
 
@@ -250,15 +250,15 @@ export class CubismMotionQueueManager {
       if (motion == null) {
         motionQueueEntry.release();
         motionQueueEntry = null;
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
         continue;
       }
 
-      // ------ 値を反映する ------
+      // ------ 反映值 ------
       motion.updateParameters(model, motionQueueEntry, userTimeSeconds);
       updated = true;
 
-      // ------ ユーザトリガーイベントを検査する ----
+      // ------ 检查用户触发事件 ----
       const firedList: Array<string> = motion.getFiredEvent(
         motionQueueEntry.getLastCheckEventSeconds() -
           motionQueueEntry.getStartTime(),
@@ -271,11 +271,11 @@ export class CubismMotionQueueManager {
 
       motionQueueEntry.setLastCheckEventSeconds(userTimeSeconds);
 
-      // ------ 終了済みの処理があれば削除する ------
+      // ------ 如果有已结束的处理则删除 ------
       if (motionQueueEntry.isFinished()) {
         motionQueueEntry.release();
         motionQueueEntry = null;
-        this._motions.splice(i, 1); // 削除
+        this._motions.splice(i, 1); // 删除
       } else {
         if (motionQueueEntry.isTriggeredFadeOut()) {
           motionQueueEntry.startFadeOut(
@@ -289,35 +289,35 @@ export class CubismMotionQueueManager {
 
     return updated;
   }
-  _userTimeSeconds: number; // デルタ時間の積算値[秒]
+  _userTimeSeconds: number; // 累计增量时间[秒]
 
-  _motions: Array<CubismMotionQueueEntry>; // モーション
-  _eventCallBack: CubismMotionEventFunction; // コールバック関数
-  _eventCustomData: any; // コールバックに戻されるデータ
+  _motions: Array<CubismMotionQueueEntry>; // 动作
+  _eventCallBack: CubismMotionEventFunction; // 回调函数
+  _eventCustomData: any; // 回调返回的数据
 }
 
 /**
- * イベントのコールバック関数を定義
+ * 事件回调函数定义
  *
- * イベントのコールバックに登録できる関数の型情報
- * @param caller        発火したイベントを再生させたCubismMotionQueueManager
- * @param eventValue    発火したイベントの文字列データ
- * @param customData   コールバックに返される登録時に指定されたデータ
+ * 可注册到事件回调的函数类型信息
+ * @param caller        触发事件的 CubismMotionQueueManager
+ * @param eventValue    触发事件的字符串数据
+ * @param customData   注册时指定并返回给回调的数据
  */
 export interface CubismMotionEventFunction {
   (caller: CubismMotionQueueManager, eventValue: string, customData: any): void;
 }
 
 /**
- * モーションの識別番号
+ * 动作识别编号
  *
- * モーションの識別番号の定義
+ * 动作识别编号定义
  */
 export declare type CubismMotionQueueEntryHandle = any;
 export const InvalidMotionQueueEntryHandleValue: CubismMotionQueueEntryHandle =
   -1;
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmotionqueuemanager';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

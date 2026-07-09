@@ -1,24 +1,24 @@
 <template>
   <div class="level-result">
-    <!-- Background overlay -->
+    <!-- 背景遮罩 -->
     <div class="overlay" />
 
-    <!-- Result card -->
+    <!-- 结果卡片 -->
     <div class="result-card">
       <h2 class="title">选择你的英语水平</h2>
 
-      <!-- Level display -->
+      <!-- 等级展示 -->
       <div class="level-display animate-scale">
         <span class="level-number">{{ selectedLevel }}</span>
         <span class="level-label">{{ levelName }}</span>
       </div>
 
-      <!-- Level description -->
+      <!-- 等级说明 -->
       <p class="description animate-fade-1">
         {{ levelDescription }}
       </p>
 
-      <!-- Manual adjustment -->
+      <!-- 手动调整 -->
       <div class="adjustment animate-fade-2">
         <div class="level-buttons">
           <button
@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <!-- Confirm button -->
+      <!-- 确认按钮 -->
       <button class="confirm-btn animate-fade-3" @click="handleConfirm">
         开始学习
       </button>
@@ -218,7 +218,7 @@ function handleConfirm() {
   transform: translateY(0);
 }
 
-/* Animations */
+/* 动画 */
 .animate-scale {
   animation: scaleIn 0.5s ease-out;
 }

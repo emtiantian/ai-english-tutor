@@ -5,31 +5,31 @@ import { mkdirSync } from 'fs'
 import { dirname } from 'path'
 
 /**
- * Database connection using SQLite (better-sqlite3)
+ * 使用 SQLite（better-sqlite3）的数据库连接
  *
- * Tables:
- *   - users: User profiles
- *   - sessions: Learning sessions
- *   - user_vocabulary: Word mastery tracking
- *   - conversation_history: Chat history
+ * 表：
+ *   - users: 用户资料
+ *   - sessions: 学习会话
+ *   - user_vocabulary: 单词掌握追踪
+ *   - conversation_history: 聊天历史
  */
 
 let db: Database.Database | null = null
 
 export function getDb(): Database.Database {
   if (!db) {
-    // Ensure data directory exists
+    // 确保数据目录存在
     const dataDir = dirname(config.DB_PATH)
     try {
       mkdirSync(dataDir, { recursive: true })
     } catch {
-      // Directory may already exist
+      // 目录可能已存在
     }
 
     db = new Database(config.DB_PATH)
     db.pragma('journal_mode = WAL')
     db.pragma('foreign_keys = ON')
-    logger.info({ path: config.DB_PATH }, 'SQLite database connected')
+    logger.info({ path: config.DB_PATH }, 'SQLite 数据库已连接')
   }
   return db
 }
@@ -38,21 +38,20 @@ export function closeDb(): void {
   if (db) {
     db.close()
     db = null
-    logger.info('SQLite database closed')
+    logger.info('SQLite 数据库已关闭')
   }
 }
 
 /**
- * Initialize database schema.
+ * 初始化数据库 schema。
  *
- * All DDL is wrapped in a single transaction to avoid partial state and
- * reduce races when multiple processes start concurrently.
+ * 所有 DDL 包装在单个事务中，以避免部分状态，并减少多个进程并发启动时的竞态。
  */
 export function initSchema(): void {
   const database = getDb()
 
   const init = database.transaction(() => {
-    // Users table
+    // 用户表
     database.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -65,7 +64,7 @@ export function initSchema(): void {
       )
     `)
 
-    // Sessions table
+    // 会话表
     database.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -83,7 +82,7 @@ export function initSchema(): void {
       )
     `)
 
-    // User vocabulary tracking
+    // 用户词汇追踪
     database.exec(`
       CREATE TABLE IF NOT EXISTS user_vocabulary (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +104,7 @@ export function initSchema(): void {
       )
     `)
 
-    // Conversation history
+    // 对话历史
     database.exec(`
       CREATE TABLE IF NOT EXISTS conversation_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,8 +119,8 @@ export function initSchema(): void {
       )
     `)
 
-    // Backwards-compatible migrations: add columns that may be missing in older DBs.
-    // Errors are ignored because SQLite throws when the column already exists.
+    // 向后兼容迁移：添加旧数据库可能缺失的列。
+    // 错误被忽略，因为 SQLite 在列已存在时会抛出异常。
     const migrations = [
       `ALTER TABLE sessions ADD COLUMN style_name TEXT`,
       `ALTER TABLE sessions ADD COLUMN voice_design TEXT`,
@@ -137,11 +136,11 @@ export function initSchema(): void {
       try {
         database.exec(sql)
       } catch {
-        // Column already exists or table is already up to date
+        // 列已存在或表已是最新
       }
     }
 
-    // Create indexes
+    // 创建索引
     database.exec(`CREATE INDEX IF NOT EXISTS idx_uv_user ON user_vocabulary(user_id)`)
     database.exec(`CREATE INDEX IF NOT EXISTS idx_uv_word ON user_vocabulary(word)`)
     database.exec(`CREATE INDEX IF NOT EXISTS idx_uv_status ON user_vocabulary(status)`)
@@ -151,5 +150,5 @@ export function initSchema(): void {
   })
 
   init()
-  logger.info('SQLite schema initialized')
+  logger.info('SQLite 数据库结构初始化完成')
 }

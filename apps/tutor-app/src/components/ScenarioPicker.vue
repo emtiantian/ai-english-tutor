@@ -5,7 +5,7 @@
       <p class="scenario-subtitle">在真实情境中练习英语，通关后解锁更高难度</p>
     </div>
 
-    <!-- Style Selector：选人格预设。火山 TTS 用固定音色时仍可选(只作用于 LLM 人格)，标签随之切换。 -->
+    <!-- 风格选择器：挑选人格预设。火山 TTS 使用固定音色时仍可选择（仅影响 LLM 人格），标签会随之切换。 -->
     <div class="style-section">
       <span class="style-label">{{ voiceStyleSelectable === false ? '选择性格风格' : '选择语音风格' }}</span>
       <select v-model="localStyle" class="style-select">
@@ -24,7 +24,7 @@
       </select>
     </div>
 
-    <!-- Scenario Grid -->
+    <!-- 场景网格 -->
     <div class="scenario-grid">
       <div
         v-for="scenario in visibleScenarios"
@@ -33,7 +33,7 @@
         :class="{ 'selected': selectedScenarioId === scenario.id }"
         @click="handleCardClick(scenario)"
       >
-        <!-- Pause badge -->
+        <!-- 暂停徽章 -->
         <span v-if="pausedSnapshots.get(scenario.id)" class="pause-badge">
           ⏸ 可续玩
         </span>
@@ -42,7 +42,7 @@
         <span class="scenario-name">{{ scenario.name }}</span>
         <span class="scenario-name-en">{{ scenario.nameEn }}</span>
 
-        <!-- CEFR progress dots -->
+        <!-- CEFR 进度点 -->
         <div class="level-dots">
           <div
             v-for="level in CEFR_ORDER"
@@ -64,7 +64,7 @@
           </div>
         </div>
 
-        <!-- Start / Confirm button -->
+        <!-- 开始 / 确认按钮 -->
         <button
           class="enter-button"
           :class="buttonState(scenario.id).variant"
@@ -88,7 +88,7 @@
       💬 自由对话模式
     </button>
 
-    <!-- Resume dialog -->
+    <!-- 续玩对话框 -->
     <ScenarioResumeDialog
       v-if="showResumeDialog && activeScenario && activeSnapshot"
       :scenario="activeScenario"

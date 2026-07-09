@@ -12,7 +12,7 @@ const { createServer } = await import('./server.js')
 async function main(): Promise<void> {
   const server = await createServer()
 
-  // Wildcard mode: any origin should be allowed, but credentials must NOT be enabled.
+  // 通配符模式：应允许任意来源，但绝不能启用凭据。
   const wildcardRes = await server.inject({
     method: 'GET',
     url: '/health',
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
 
   await server.close()
 
-  // Explicit whitelist mode: reflect the origin and allow credentials.
+  // 显式白名单模式：回显来源并允许凭据。
   const { config: serverConfig } = await import('./config.js')
   serverConfig.CORS_ORIGIN.length = 0
   serverConfig.CORS_ORIGIN.push('http://localhost:5173', 'http://localhost:4173')

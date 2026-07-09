@@ -20,27 +20,27 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// ── Config directory resolution ──
-// Priority:
-//   CONFIG_DIR env var > DATA_DIR (when populated)
-//   > ~/.ai-english-tutor/ (deploy-only legacy fallback) > compiled defaults
+// ── 配置目录解析 ──
+// 优先级：
+//   CONFIG_DIR 环境变量 > DATA_DIR（当已填充时）
+//   > ~/.ai-english-tutor/（仅部署模式下的旧版兼容）> 编译内置默认值
 function resolveConfigDir(): string | null {
   const envDir = process.env.CONFIG_DIR
   if (envDir && existsSync(envDir)) return envDir
 
-  // Canonical: DATA_DIR (deploy → ~/.ai-english-tutor/data, dev → <repo>/.dev-data)
+  // 规范路径：DATA_DIR（部署 → ~/.ai-english-tutor/data，开发 → <repo>/.dev-data）
   const dataDir = config.DATA_DIR
   if (existsSync(dataDir)) return dataDir
 
-  // Legacy deploy fallback: ~/.ai-english-tutor/ (persona.json/scenarios.json/vocab/
-  // sometimes live one level up from data/). Skipped in dev mode so local development
-  // is never affected by stray files in the user's home directory.
+  // 旧版部署回退：~/.ai-english-tutor/（persona.json/scenarios.json/vocab/
+  // 有时位于 data/ 的上一级）。开发模式跳过，以免本地开发受用户主目录中
+  // 随意文件的影响。
   if (IS_DEPLOY) {
     const legacyDir = join(homedir(), '.ai-english-tutor')
     if (existsSync(legacyDir)) return legacyDir
   }
 
-  // Final fallback: <repo>/config/ shipped with the source tree.
+  // 最终回退：源码树自带的 <repo>/config/
   const defaultDir = join(__dirname, '..', '..', '..', 'config')
   if (existsSync(defaultDir)) return defaultDir
 
@@ -62,13 +62,13 @@ export interface VocabLevel {
   words: VocabWord[]
 }
 
-/** In-memory vocabulary store */
+/** 内存中的词汇存储 */
 const vocabCache = new Map<string, VocabLevel>()
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
 /**
- * Load all vocabulary levels into memory
+ * 将所有 CEFR 等级词汇加载到内存。
  */
 export function loadAllVocabulary(): void {
   for (const level of LEVELS) {
@@ -81,7 +81,7 @@ export function loadAllVocabulary(): void {
 }
 
 /**
- * Load a single vocabulary level
+ * 加载单个 CEFR 等级词汇。
  */
 function loadVocabularyLevel(level: string): VocabLevel {
   if (vocabCache.has(level)) {
@@ -101,7 +101,7 @@ function loadVocabularyLevel(level: string): VocabLevel {
       vocabCache.set(level, vocab)
       return vocab
     } catch {
-      // try next candidate
+      // 尝试下一个候选
     }
   }
 
@@ -116,14 +116,14 @@ function loadVocabularyLevel(level: string): VocabLevel {
 }
 
 /**
- * Get vocabulary for a specific CEFR level
+ * 获取指定 CEFR 等级的词汇。
  */
 export function getVocabularyByLevel(level: string): VocabLevel {
   return vocabCache.get(level) ?? loadVocabularyLevel(level)
 }
 
 /**
- * Get words for a specific CEFR level (1-6 → A1-C2)
+ * 按等级数字获取词汇（1-6 → A1-C2）。
  */
 export function getVocabularyByLevelNum(levelNum: number): VocabLevel {
   const level = LEVELS[Math.min(Math.max(levelNum - 1, 0), 5)]
@@ -131,7 +131,7 @@ export function getVocabularyByLevelNum(levelNum: number): VocabLevel {
 }
 
 /**
- * Get all words across all levels up to a given level
+ * 获取到指定等级为止的所有单词。
  */
 export function getVocabularyUpToLevel(levelNum: number): VocabWord[] {
   const words: VocabWord[] = []
@@ -143,7 +143,7 @@ export function getVocabularyUpToLevel(levelNum: number): VocabWord[] {
 }
 
 /**
- * Look up a word across all levels
+ * 跨所有等级查找某个单词。
  */
 export function lookupWord(word: string): { level: string; data: VocabWord } | undefined {
   const normalized = word.toLowerCase().trim()
@@ -158,7 +158,7 @@ export function lookupWord(word: string): { level: string; data: VocabWord } | u
 }
 
 /**
- * Get words by topic for a specific level
+ * 获取指定等级下某主题的所有单词。
  */
 export function getWordsByTopic(levelNum: number, topic: string): VocabWord[] {
   const vocab = getVocabularyByLevelNum(levelNum)
@@ -166,7 +166,7 @@ export function getWordsByTopic(levelNum: number, topic: string): VocabWord[] {
 }
 
 /**
- * Get all topics for a level
+ * 获取某等级的所有主题。
  */
 export function getTopicsForLevel(levelNum: number): string[] {
   const vocab = getVocabularyByLevelNum(levelNum)
@@ -175,7 +175,7 @@ export function getTopicsForLevel(levelNum: number): string[] {
 }
 
 /**
- * Get total word count across all levels
+ * 获取所有等级的单词总数。
  */
 export function getTotalWordCount(): number {
   let count = 0
@@ -186,12 +186,12 @@ export function getTotalWordCount(): number {
 }
 
 /**
- * Get random words from a level
+ * 从某等级随机获取单词。
  */
 export function getRandomWords(levelNum: number, count: number): VocabWord[] {
   const vocab = getVocabularyByLevelNum(levelNum)
   const words = [...vocab.words]
-  // Shuffle
+  // 洗牌
   for (let i = words.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[words[i], words[j]] = [words[j], words[i]]
@@ -200,7 +200,7 @@ export function getRandomWords(levelNum: number, count: number): VocabWord[] {
 }
 
 /**
- * Get all levels info
+ * 获取所有等级信息。
  */
 export function getLevelsInfo(): Array<{ level: string; levelNum: number; wordCount: number; description: string }> {
   return LEVELS.map((level) => {
@@ -214,15 +214,15 @@ export function getLevelsInfo(): Array<{ level: string; levelNum: number; wordCo
   })
 }
 
-// ── Scenario System ──────────────────────────────────────
+// ── 场景系统 ──────────────────────────────────────
 export type Scenario = SharedScenario
 export type ScenarioObjective = SharedScenarioObjective
 
-/** Runtime-loaded scenarios (from JSON file or compiled defaults) */
+/** 运行时加载的场景（来自 JSON 文件或编译内置默认值） */
 let runtimeScenarios: Scenario[] | null = null
 
 /**
- * Load scenarios from JSON file, fallback to compiled defaults.
+ * 从 JSON 文件加载场景，回退到编译内置默认值。
  */
 export function loadAllScenarios(): void {
   const configDir = resolveConfigDir()
@@ -239,7 +239,7 @@ export function loadAllScenarios(): void {
       logger.error({ err, filePath }, 'Failed to load scenarios.json, using compiled defaults')
     }
   }
-  // Fallback to compiled defaults
+  // 回退到编译内置默认值
   runtimeScenarios = [...sharedScenarios]
   logger.info({ count: runtimeScenarios.length }, 'Scenarios loaded from compiled defaults')
 }
@@ -250,33 +250,33 @@ function ensureScenarios(): Scenario[] {
 }
 
 /**
- * Get all scenarios for a specific level
+ * 获取指定等级的所有场景。
  */
 export function getScenariosForLevel(levelNum: number): Scenario[] {
   return ensureScenarios().filter((s) => s.level === levelNum)
 }
 
 /**
- * Get a scenario by ID
+ * 按 ID 获取场景。
  */
 export function getScenarioById(id: string): Scenario | undefined {
   return ensureScenarios().find((s) => s.id === id)
 }
 
 /**
- * Get all available scenarios
+ * 获取所有可用场景。
  */
 export function getAllScenarios(): Scenario[] {
   return [...ensureScenarios()]
 }
 
-// ── Persona System ──────────────────────────────────────
+// ── 人设系统 ──────────────────────────────────────
 
-/** Runtime-loaded persona (from JSON file or compiled default) */
+/** 运行时加载的人设（来自 JSON 文件或编译内置默认值） */
 let runtimePersona: CharacterPersona | null = null
 
 /**
- * Load persona from JSON file, fallback to compiled default (Luna).
+ * 从 JSON 文件加载人设，回退到编译内置默认值（Luna）。
  */
 export function loadPersona(): CharacterPersona {
   if (runtimePersona) return runtimePersona
@@ -297,7 +297,7 @@ export function loadPersona(): CharacterPersona {
     }
   }
 
-  // Fallback to compiled default
+  // 回退到编译内置默认值
   runtimePersona = LUNA_PERSONA
   logger.info({ name: LUNA_PERSONA.name }, 'Persona loaded from compiled default')
   return runtimePersona

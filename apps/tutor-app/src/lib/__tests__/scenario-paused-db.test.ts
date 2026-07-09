@@ -1,8 +1,8 @@
 /**
- * Tests for scenario-paused-db.ts
+ * scenario-paused-db.ts 的测试
  *
- * 用 fake-indexeddb 提供 IndexedDB；用 vi.spyOn(Date, 'now') 控制时间
- * （不用 vi.useFakeTimers，因为它会 mock setTimeout，与 fake-indexeddb
+ * 使用 fake-indexeddb 提供 IndexedDB；使用 vi.spyOn(Date, 'now') 控制时间
+ *（不用 vi.useFakeTimers，因为它会 mock setTimeout，与 fake-indexeddb
  * 内部的微任务排队相互卡死）。
  */
 import 'fake-indexeddb/auto'

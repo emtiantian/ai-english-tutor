@@ -12,19 +12,19 @@ import type {
 import { normalizeToString } from '../llm.js'
 
 /**
- * Xiaomi MiMo LLM Provider (OpenAI-compatible)
+ * 小米 MiMo LLM Provider（OpenAI 兼容）
  *
- * Supports text and audio-understanding models.
- * Audio input uses the `input_audio` content type per Xiaomi's API spec.
+ * 支持文本和音频理解模型。
+ * 音频输入按照小米 API 规范使用 `input_audio` 内容类型。
  *
- * Configuration:
- *   XIAOMI_API_KEY  - API key
- *   XIAOMI_BASE_URL - API base URL (default: https://api.xiaomimimo.com/v1)
- *   XIAOMI_MODEL    - Model name (default: milm-pro)
+ * 配置：
+ *   XIAOMI_API_KEY  - API 密钥
+ *   XIAOMI_BASE_URL - API 基础地址（默认：https://api.xiaomimimo.com/v1）
+ *   XIAOMI_MODEL    - 模型名称（默认：milm-pro）
  *
- * Voice-capable models:
- *   mimo-v2.5       — audio understanding (accepts input_audio, returns text)
- *   mimo-v2-omni    — omni-modal (same)
+ * 支持语音的模型：
+ *   mimo-v2.5       — 音频理解（接受 input_audio，返回文本）
+ *   mimo-v2-omni    — 全模态（同上）
  */
 export class XiaomiProvider implements LLMProvider {
   private client: OpenAI
@@ -33,7 +33,7 @@ export class XiaomiProvider implements LLMProvider {
 
   constructor() {
     if (!config.XIAOMI_API_KEY) {
-      throw new Error('XIAOMI_API_KEY is not configured')
+      throw new Error('未配置 XIAOMI_API_KEY')
     }
 
     this.client = new OpenAI({
@@ -63,7 +63,7 @@ export class XiaomiProvider implements LLMProvider {
         model: config.XIAOMI_MODEL,
         audioInput: this.capabilities.supportsAudioInput,
       },
-      'Xiaomi provider initialized',
+      '小米提供商初始化完成',
     )
   }
 
@@ -88,15 +88,15 @@ export class XiaomiProvider implements LLMProvider {
     const duration = Date.now() - startTime
 
     const message = response.choices[0]?.message
-    // MiMo may return both content (reply) and reasoning_content (internal thinking).
-    // We must only use content for the assistant reply; reasoning_content is NOT
-    // user-facing and would leak the model's internal monologue into the chat.
+    // MiMo 可能同时返回 content（回复）和 reasoning_content（内部思考）。
+    // 助手回复必须只使用 content；reasoning_content 不是面向用户的，
+    // 否则会泄露模型的内心独白到聊天中。
     const raw = message as unknown as Record<string, unknown> | undefined
     const content = message?.content ?? ''
     if (!content && raw?.reasoning_content) {
       logger.warn(
         { reasoningPreview: String(raw.reasoning_content).slice(0, 80) },
-        'Xiaomi response content is empty but reasoning_content present; ignoring reasoning',
+        '小米返回 content 为空但存在 reasoning_content，已忽略思考内容',
       )
     }
     const usage = response.usage
@@ -147,17 +147,16 @@ export class XiaomiProvider implements LLMProvider {
       if (signal?.aborted) {
         throw new Error('AbortError')
       }
-      // MiMo streaming: delta.content is the reply; delta.reasoning_content is
-      // internal thinking and must NOT be sent to the user.
+      // MiMo 流式：delta.content 是回复；delta.reasoning_content 是
+      // 内部思考，绝不能发送给用户。
       const delta = chunk.choices[0]?.delta as
         | (Record<string, unknown> & { content?: string })
         | undefined
       const content = (delta?.content as string | undefined) ?? ''
       const reasoning = (delta?.reasoning_content as string | undefined) ?? ''
       if (reasoning) {
-        // Track reasoning silently — never yield it. Surface in logs once per
-        // stream completion so we can confirm the field-level filter is working
-        // when investigating "thinking leaked to UI" reports.
+        // 静默统计 reasoning，绝不产出。在每次流式完成时于日志中露面，
+        // 以便排查「思考内容泄露到 UI」问题时确认字段级过滤生效。
         reasoningTokens += reasoning.length
       }
       if (content) {
@@ -169,18 +168,18 @@ export class XiaomiProvider implements LLMProvider {
     const duration = Date.now() - startTime
     logger.info(
       { provider: this.name, duration, totalTokens, reasoningTokens },
-      'LLM stream complete',
+      'LLM 流式完成',
     )
 
     yield { content: '', isEnd: true }
   }
 
   /**
-   * Normalize a message for Xiaomi's API.
+   * 为小米 API 归一化消息。
    *
-   * - String content passes through as-is.
-   * - Multimodal content: text parts kept, audio parts converted to
-   *   Xiaomi's `input_audio` format (data URL).
+   * - 字符串内容原样通过。
+   * - 多模态内容：保留文本部分，音频部分转换为
+   *   小米的 `input_audio` 格式（data URL）。
    */
   private normalizeForXiaomi(msg: LLMMessage): Record<string, unknown> {
     if (typeof msg.content === 'string') {

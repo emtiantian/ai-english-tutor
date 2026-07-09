@@ -7,14 +7,14 @@ export interface AudioBlob {
 export interface AudioRecorderOptions {
   maxDurationMs?: number
   mimeType?: string
-  onVolume?: (volume: number) => void // 0-1, for lip-sync
+  onVolume?: (volume: number) => void // 0-1，用于口型同步
 }
 
 /**
- * Browser audio recorder with real-time volume detection.
+ * 浏览器录音器，支持实时音量检测。
  *
- * Uses native MediaRecorder API for recording and Web Audio API
- * (AnalyserNode) for volume metering.
+ * 使用原生 MediaRecorder API 录音，使用 Web Audio API
+ *（AnalyserNode）进行音量计量。
  */
 export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null
@@ -34,11 +34,11 @@ export class AudioRecorder {
   }
 
   /**
-   * Start recording audio from microphone.
-   * Requests permission if not already granted.
+   * 开始从麦克风录音。
+   * 如果尚未获得权限，会请求权限。
    */
   async start(): Promise<void> {
-    // 1. Get microphone permission
+    // 1. 获取麦克风权限
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
@@ -48,7 +48,7 @@ export class AudioRecorder {
       },
     })
 
-    // 2. Create MediaRecorder with Safari-compatible mimeType
+    // 2. 创建兼容 Safari 的 mimeType 的 MediaRecorder
     const finalMimeType = this.resolveMimeType()
 
     this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: finalMimeType })
@@ -59,18 +59,18 @@ export class AudioRecorder {
       if (e.data.size > 0) this.audioChunks.push(e.data)
     }
 
-    this.mediaRecorder.start(100) // Collect every 100ms
+    this.mediaRecorder.start(100) // 每 100ms 收集一次
 
-    // 3. Set up volume detection for lip-sync
+    // 3. 设置口型同步用的音量检测
     this.setupVolumeDetection()
 
-    // 4. Set max duration limit
+    // 4. 设置最大录音时长限制
     const maxDuration = this.options.maxDurationMs ?? 30000
     this.maxDurationTimer = setTimeout(() => this.stop(), maxDuration)
   }
 
   /**
-   * Stop recording and return the recorded audio.
+   * 停止录音并返回录制好的音频。
    */
   stop(): Promise<AudioBlob> {
     return new Promise((resolve, reject) => {
@@ -96,10 +96,10 @@ export class AudioRecorder {
   }
 
   /**
-   * Cancel recording without returning data.
+   * 取消录音，不返回数据。
    *
-   * Stops the MediaRecorder, then cleans up all resources in the onstop
-   * handler so we don't race with the async event.
+   * 停止 MediaRecorder，然后在 onstop 回调中清理所有资源，
+   * 避免与异步事件竞态。
    */
   cancel(): void {
     if (this.pendingStop) {
@@ -118,7 +118,7 @@ export class AudioRecorder {
     this.clearTimers()
   }
 
-  // --- Internal ---
+  // --- 内部 ---
 
   private setupVolumeDetection(): void {
     if (!this.stream) return
@@ -142,9 +142,9 @@ export class AudioRecorder {
   }
 
   /**
-   * Resolve the best supported mimeType for recording.
-   * Chrome/Firefox: audio/webm;codecs=opus
-   * Safari: audio/mp4
+   * 解析录音最佳支持的 mimeType。
+   * Chrome/Firefox：audio/webm;codecs=opus
+   * Safari：audio/mp4
    */
   private resolveMimeType(): string {
     const candidates = [

@@ -109,7 +109,7 @@ export class CubismModelUserDataJson {
   private _json: CubismJson;
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmodeluserdatajson';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

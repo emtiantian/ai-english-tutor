@@ -14,37 +14,37 @@ import { ICubismClippingManager } from './cubismclippingmanager';
 import { CubismLogInfo } from '../utils/cubismdebug';
 
 /**
- * モデル描画を処理するレンダラ
+ * 处理模型渲染的渲染器
  *
- * サブクラスに環境依存の描画命令を記述する。
+ * 子类实现环境相关的绘制指令。
  */
 export abstract class CubismRenderer {
   /**
-   * レンダラのインスタンスを生成して取得する
+   * 创建并获取渲染器实例
    *
-   * @return レンダラのインスタンス
+   * @return 渲染器实例
    */
   public static create(): CubismRenderer {
     return null;
   }
 
   /**
-   * レンダラのインスタンスを解放する
+   * 释放渲染器实例
    */
   public static delete(renderer: CubismRenderer): void {
     renderer = null;
   }
 
   /**
-   * レンダラの初期化処理を実行する
-   * 引数に渡したモデルからレンダラの初期化処理に必要な情報を取り出すことができる
+   * 执行渲染器初始化
+   * 可从传入的模型中提取初始化所需信息
    *
-   * @param model モデルのインスタンス
+   * @param model 模型实例
    */
   public initialize(model: CubismModel): void {
     this._model = model;
 
-    // ブレンドモード使用時は必ず高精細にする
+    // 使用混合模式时必须使用高精度
     if (model.isBlendModeEnabled()) {
       this.useHighPrecisionMask(true);
       CubismLogInfo(
@@ -54,48 +54,48 @@ export abstract class CubismRenderer {
   }
 
   /**
-   * モデルを描画する
-   * @param shaderPath ブレンドモード用シェーダのパス
+   * 绘制模型
+   * @param shaderPath 混合模式着色器路径
    */
   public drawModel(shaderPath: string = null): void {
     if (this.getModel() == null) return;
 
-    // NOTE: WebGL最適化のため、デフォルトではコメントアウト
+    // NOTE: 为了 WebGL 优化，默认注释掉
     //this.saveProfile();
 
     this.doDrawModel(shaderPath);
 
-    // NOTE: WebGL最適化のため、デフォルトではコメントアウト
+    // NOTE: 为了 WebGL 优化，默认注释掉
     //this.restoreProfile();
   }
 
   /**
-   * Model-View-Projection 行列をセットする
-   * 配列は複製されるので、元の配列は外で破棄して良い
+   * 设置 Model-View-Projection 矩阵
+   * 数组会被复制，原始数组可在外部丢弃
    *
-   * @param matrix44 Model-View-Projection 行列
+   * @param matrix44 Model-View-Projection 矩阵
    */
   public setMvpMatrix(matrix44: CubismMatrix44): void {
     this._mvpMatrix4x4.setMatrix(matrix44.getArray());
   }
 
   /**
-   * Model-View-Projection 行列を取得する
+   * 获取 Model-View-Projection 矩阵
    *
-   * @return Model-View-Projection 行列
+   * @return Model-View-Projection 矩阵
    */
   public getMvpMatrix(): CubismMatrix44 {
     return this._mvpMatrix4x4;
   }
 
   /**
-   * モデルの色をセットする
-   * 各色0.0~1.0の間で指定する（1.0が標準の状態）
+   * 设置模型颜色
+   * 各色在 0.0~1.0 之间指定（1.0 为标准状态）
    *
-   * @param red 赤チャンネルの値
-   * @param green 緑チャンネルの値
-   * @param blue 青チャンネルの値
-   * @param alpha αチャンネルの値
+   * @param red 红色通道值
+   * @param green 绿色通道值
+   * @param blue 蓝色通道值
+   * @param alpha α 通道值
    */
   public setModelColor(
     red: number,
@@ -110,21 +110,21 @@ export abstract class CubismRenderer {
   }
 
   /**
-   * モデルの色を取得する
-   * 各色0.0~1.0の間で指定する(1.0が標準の状態)
+   * 获取模型颜色
+   * 各色在 0.0~1.0 之间指定（1.0 为标准状态）
    *
-   * @return RGBAのカラー情報
+   * @return RGBA 颜色信息
    */
   public getModelColor(): CubismTextureColor {
     return JSON.parse(JSON.stringify(this._modelColor));
   }
 
   /**
-   * 透明度を考慮したモデルの色を計算する。
+   * 计算考虑透明度后的模型颜色。
    *
    * @param opacity 透明度
    *
-   * @return RGBAのカラー情報
+   * @return RGBA 颜色信息
    */
   getModelColorWithOpacity(opacity: number): CubismTextureColor {
     const modelColorRGBA: CubismTextureColor = this.getModelColor();
@@ -138,96 +138,96 @@ export abstract class CubismRenderer {
   }
 
   /**
-   * 乗算済みαの有効・無効をセットする
-   * 有効にするならtrue、無効にするならfalseをセットする
+   * 设置是否启用预乘 Alpha
+   * 启用设为 true，禁用设为 false
    */
   public setIsPremultipliedAlpha(enable: boolean): void {
     this._isPremultipliedAlpha = enable;
   }
 
   /**
-   * 乗算済みαの有効・無効を取得する
-   * @return true 乗算済みのα有効
-   *         false 乗算済みのα無効
+   * 获取是否启用预乘 Alpha
+   * @return true 预乘 Alpha 启用
+   *         false 预乘 Alpha 禁用
    */
   public isPremultipliedAlpha(): boolean {
     return this._isPremultipliedAlpha;
   }
 
   /**
-   * カリング（片面描画）の有効・無効をセットする。
-   * 有効にするならtrue、無効にするならfalseをセットする
+   * 设置是否启用剔除（单面绘制）。
+   * 启用设为 true，禁用设为 false
    */
   public setIsCulling(culling: boolean): void {
     this._isCulling = culling;
   }
 
   /**
-   * カリング（片面描画）の有効・無効を取得する。
+   * 获取是否启用剔除（单面绘制）。
    *
-   * @return true カリング有効
-   *         false カリング無効
+   * @return true 剔除启用
+   *         false 剔除禁用
    */
   public isCulling(): boolean {
     return this._isCulling;
   }
 
   /**
-   * テクスチャの異方性フィルタリングのパラメータをセットする
-   * パラメータ値の影響度はレンダラの実装に依存する
+   * 设置纹理各向异性过滤参数
+   * 参数影响程度取决于渲染器实现
    *
-   * @param n パラメータの値
+   * @param n 参数值
    */
   public setAnisotropy(n: number): void {
     this._anisotropy = n;
   }
 
   /**
-   * テクスチャの異方性フィルタリングのパラメータをセットする
+   * 获取纹理各向异性过滤参数
    *
-   * @return 異方性フィルタリングのパラメータ
+   * @return 各向异性过滤参数
    */
   public getAnisotropy(): number {
     return this._anisotropy;
   }
 
   /**
-   * レンダリングするモデルを取得する
+   * 获取要渲染的模型
    *
-   * @return レンダリングするモデル
+   * @return 要渲染的模型
    */
   public getModel(): CubismModel {
     return this._model;
   }
 
   /**
-   * マスク描画の方式を変更する。
-   * falseの場合、マスクを1枚のテクスチャに分割してレンダリングする（デフォルト）
-   * 高速だが、マスク個数の上限が36に限定され、質も荒くなる
-   * trueの場合、パーツ描画の前にその都度必要なマスクを描き直す
-   * レンダリング品質は高いが描画処理負荷は増す
+   * 更改遮罩绘制方式。
+   * false 时，将遮罩分割绘制到一张纹理上（默认）
+   * 速度快，但遮罩数量上限为 36，质量也较粗糙
+   * true 时，在部件绘制前每次都重绘所需遮罩
+   * 渲染质量高，但绘制负载增加
    *
-   * @param high 高精細マスクに切り替えるか？
+   * @param high 是否切换为高精度遮罩
    */
   public useHighPrecisionMask(high: boolean): void {
     this._useHighPrecisionMask = high;
   }
 
   /**
-   * マスクの描画方式を取得する
+   * 获取遮罩绘制方式
    *
-   * @return true 高精細方式
-   *         false デフォルト
+   * @return true 高精度方式
+   *         false 默认方式
    */
   public isUsingHighPrecisionMask(): boolean {
     return this._useHighPrecisionMask;
   }
 
   /**
-   * モデルを描画したバッファのサイズを設定
+   * 设置绘制模型的缓冲区大小
    *
-   * @param[in]   width  -> モデルを描画したバッファの幅
-   * @param[in]   height -> モデルを描画したバッファの高さ
+   * @param[in]   width  -> 绘制模型的缓冲区宽度
+   * @param[in]   height -> 绘制模型的缓冲区高度
    */
   public setRenderTargetSize(width: number, height: number): void {
     this._modelRenderTargetWidth = width;
@@ -235,7 +235,7 @@ export abstract class CubismRenderer {
   }
 
   /**
-   * コンストラクタ
+   * 构造函数
    */
   protected constructor(width: number, height: number) {
     this._modelRenderTargetWidth = width;
@@ -247,62 +247,62 @@ export abstract class CubismRenderer {
     this._modelColor = new CubismTextureColor();
     this._useHighPrecisionMask = false;
 
-    // 単位行列に初期化
+    // 初始化为单位矩阵
     this._mvpMatrix4x4 = new CubismMatrix44();
     this._mvpMatrix4x4.loadIdentity();
   }
 
   /**
-   * モデル描画直前のオフスクリーン設定を行う
+   * 在模型绘制前设置离屏缓冲
    */
   public abstract beforeDrawModelRenderTarget(): void;
 
   /**
-   * モデル描画直後のオフスクリーン設定を行う
+   * 在模型绘制后设置离屏缓冲
    */
   public abstract afterDrawModelRenderTarget(): void;
 
   /**
-   * モデル描画の実装
-   * @param shaderPath ブレンドモード用シェーダのパス
+   * 模型绘制实现
+   * @param shaderPath 混合模式着色器路径
    */
   public abstract doDrawModel(shaderPath: string): void;
 
   /**
-   * モデル描画直前のレンダラのステートを保持する
+   * 在模型绘制前保存渲染器状态
    */
   protected abstract saveProfile(): void;
 
   /**
-   * モデル描画直前のレンダラのステートを復帰する
+   * 在模型绘制前恢复渲染器状态
    */
   protected abstract restoreProfile(): void;
 
   /**
-   * レンダラが保持する静的なリソースを開放する
+   * 释放渲染器持有的静态资源
    */
   public static staticRelease: any;
 
-  protected _mvpMatrix4x4: CubismMatrix44; // Model-View-Projection 行列
-  protected _modelColor: CubismTextureColor; // モデル自体のカラー（RGBA）
-  protected _isCulling: boolean; // カリングが有効ならtrue
-  protected _isPremultipliedAlpha: boolean; // 乗算済みαならtrue
-  protected _anisotropy: any; // テクスチャの異方性フィルタリングのパラメータ
-  protected _model: CubismModel; // レンダリング対象のモデル
-  protected _useHighPrecisionMask: boolean; // falseの場合、マスクを纏めて描画する trueの場合、マスクはパーツ描画ごとに書き直す
+  protected _mvpMatrix4x4: CubismMatrix44; // Model-View-Projection 矩阵
+  protected _modelColor: CubismTextureColor; // 模型自身的颜色（RGBA）
+  protected _isCulling: boolean; // 剔除启用时为 true
+  protected _isPremultipliedAlpha: boolean; // 预乘 Alpha 时为 true
+  protected _anisotropy: any; // 纹理各向异性过滤参数
+  protected _model: CubismModel; // 渲染目标模型
+  protected _useHighPrecisionMask: boolean; // false 时集中绘制遮罩，true 时每个部件绘制前重绘遮罩
 
   protected _modelRenderTargetWidth: number;
   protected _modelRenderTargetHeight: number;
 }
 
 export enum CubismBlendMode {
-  CubismBlendMode_Normal = 0, // 通常
-  CubismBlendMode_Additive = 1, // 加算
-  CubismBlendMode_Multiplicative = 2 // 乗算
+  CubismBlendMode_Normal = 0, // 正常
+  CubismBlendMode_Additive = 1, // 相加
+  CubismBlendMode_Multiplicative = 2 // 相乘
 }
 
 /**
- * オブジェクトのタイプ
+ * 对象类型
  */
 export enum DrawableObjectType {
   DrawableObjectType_Drawable = 0,
@@ -310,11 +310,11 @@ export enum DrawableObjectType {
 }
 
 /**
- * テクスチャの色をRGBAで扱うためのクラス
+ * 以 RGBA 处理纹理颜色的类
  */
 export class CubismTextureColor {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   constructor(r = 1.0, g = 1.0, b = 1.0, a = 1.0) {
     this.r = r;
@@ -323,24 +323,24 @@ export class CubismTextureColor {
     this.a = a;
   }
 
-  r: number; // 赤チャンネル
-  g: number; // 緑チャンネル
-  b: number; // 青チャンネル
-  a: number; // αチャンネル
+  r: number; // 红色通道
+  g: number; // 绿色通道
+  b: number; // 蓝色通道
+  a: number; // α 通道
 }
 
 /**
- * クリッピングマスクのコンテキスト
+ * 裁剪遮罩上下文
  */
 export abstract class CubismClippingContext {
   /**
-   * 引数付きコンストラクタ
+   * 带参数的构造函数
    */
   public constructor(clippingDrawableIndices: Int32Array, clipCount: number) {
-    // クリップしている（＝マスク用の）Drawableのインデックスリスト
+    // 参与裁剪（即作为遮罩的）Drawable 索引列表
     this._clippingIdList = clippingDrawableIndices;
 
-    // マスクの数
+    // 遮罩数量
     this._clippingIdCount = clipCount;
 
     this._allClippedDrawRect = new csmRect();
@@ -357,13 +357,13 @@ export abstract class CubismClippingContext {
   }
 
   /**
-   * このマスクを管理するマネージャのインスタンスを取得する
-   * @return クリッピングマネージャのインスタンス
+   * 获取管理此遮罩的管理器实例
+   * @return 裁剪管理器实例
    */
   public abstract getClippingManager(): ICubismClippingManager;
 
   /**
-   * デストラクタ相当の処理
+   * 析构等价处理
    */
   public release(): void {
     if (this._layoutBounds != null) {
@@ -383,34 +383,34 @@ export abstract class CubismClippingContext {
   }
 
   /**
-   * このマスクにクリップされる描画オブジェクトを追加する
+   * 添加被此遮罩裁剪的绘制对象
    *
-   * @param drawableIndex クリッピング対象に追加する描画オブジェクトのインデックス
+   * @param drawableIndex 要添加为裁剪目标的绘制对象索引
    */
   public addClippedDrawable(drawableIndex: number) {
     this._clippedDrawableIndexList.push(drawableIndex);
   }
 
   /**
-   * このマスクにクリップされるオフスクリーンオブジェクトを追加する
+   * 添加被此遮罩裁剪的离屏对象
    *
-   * @param offscreenIndex クリッピング対象に追加するオフスクリーンオブジェクトのインデックス
+   * @param offscreenIndex 要添加为裁剪目标的离屏对象索引
    */
   public addClippedOffscreen(offscreenIndex: number) {
     this._clippedOffscreenIndexList.push(offscreenIndex);
   }
 
-  public _isUsing: boolean; // 現在の描画状態でマスクの準備が必要ならtrue
-  public readonly _clippingIdList: Int32Array; // クリッピングマスクのIDリスト
-  public _clippingIdCount: number; // クリッピングマスクの数
-  public _layoutChannelIndex: number; // RGBAのいずれのチャンネルにこのクリップを配置するか（0:R, 1:G, 2:B, 3:A）
-  public _layoutBounds: csmRect; // マスク用チャンネルのどの領域にマスクを入れるか（View座標-1~1, UVは0~1に直す）
-  public _allClippedDrawRect: csmRect; // このクリッピングで、クリッピングされるすべての描画オブジェクトの囲み矩形（毎回更新）
-  public _matrixForMask: CubismMatrix44; // マスクの位置計算結果を保持する行列
-  public _matrixForDraw: CubismMatrix44; // 描画オブジェクトの位置計算結果を保持する行列
-  public _clippedDrawableIndexList: number[]; // このマスクにクリップされる描画オブジェクトのリスト
-  public _clippedOffscreenIndexList: number[]; // このマスクにクリップされるオフスクリーンオブジェクトのリスト
-  public _bufferIndex: number; // このマスクが割り当てられるレンダーテクスチャ（フレームバッファ）やカラーバッファのインデックス
+  public _isUsing: boolean; // 当前绘制状态下需要准备遮罩时为 true
+  public readonly _clippingIdList: Int32Array; // 裁剪遮罩 ID 列表
+  public _clippingIdCount: number; // 裁剪遮罩数量
+  public _layoutChannelIndex: number; // 该裁剪布局到 RGBA 的哪个通道（0:R, 1:G, 2:B, 3:A）
+  public _layoutBounds: csmRect; // 在遮罩通道的哪个区域放置遮罩（View 坐标 -1~1，UV 换算为 0~1）
+  public _allClippedDrawRect: csmRect; // 本次裁剪中所有被裁剪绘制对象的包围矩形（每帧更新）
+  public _matrixForMask: CubismMatrix44; // 保存遮罩位置计算结果的矩阵
+  public _matrixForDraw: CubismMatrix44; // 保存绘制对象位置计算结果的矩阵
+  public _clippedDrawableIndexList: number[]; // 被该遮罩裁剪的绘制对象列表
+  public _clippedOffscreenIndexList: number[]; // 被该遮罩裁剪的离屏对象列表
+  public _bufferIndex: number; // 该遮罩被分配的渲染纹理（帧缓冲）或颜色缓冲索引
 }
 
 // Namespace definition for compatibility.

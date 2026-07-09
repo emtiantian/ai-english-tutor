@@ -13,12 +13,12 @@ import type {
 
 export interface TutorClientOptions {
   baseUrl: string
-  /** Unique session ID for this connection (used to scope SSE events) */
+  /** 本次连接的唯一 session ID（用于限定 SSE 事件作用域） */
   sessionId: string
   autoReconnect?: boolean
   maxReconnectAttempts?: number
   reconnectDelayMs?: number
-  /** HTTP request timeout in milliseconds (default: 30000) */
+  /** HTTP 请求超时时间，单位毫秒（默认 30000） */
   requestTimeoutMs?: number
 }
 
@@ -32,11 +32,11 @@ export class TutorClient {
 
   constructor(private options: TutorClientOptions) {}
 
-  // --- Connection Management ---
+  // --- 连接管理 ---
   connect(): void {
     if (this.isDisposed) this.isDisposed = false
     this.clearReconnect()
-    // readyState: 0=connecting, 1=open, 2=closed
+    // readyState：0=连接中，1=已打开，2=已关闭
     const state = this.eventSource?.readyState
     if (state === 0 || state === 1) return
     this.setupEventSource()
@@ -54,7 +54,7 @@ export class TutorClient {
     return this.isConnectedValue
   }
 
-  // --- HTTP API ---
+  // --- HTTP 接口 ---
   async sendMessage(body: ChatRequestBody & { stream: true }, timeoutMs?: number): Promise<{ accepted: true }>
   async sendMessage(body: ChatRequestBody, timeoutMs?: number): Promise<ChatResponse>
   async sendMessage(
@@ -85,7 +85,7 @@ export class TutorClient {
     return this.fetchJson(`/api/session/${sessionId}`)
   }
 
-  // --- Vocabulary API ---
+  // --- 词汇接口 ---
   async getVocabProgress(userId: string): Promise<VocabProgress> {
     return this.fetchJson(`/api/vocab/progress/${userId}`, { timeout: this.options.requestTimeoutMs ?? 15000 })
   }
@@ -119,7 +119,7 @@ export class TutorClient {
     })
   }
 
-  // --- Internal ---
+  // --- 内部方法 ---
   private async fetchJson<T>(
     path: string,
     init: RequestInit & { timeout?: number } = {},
@@ -147,7 +147,7 @@ export class TutorClient {
     }
   }
 
-  // --- Event System (mitt wrapper) ---
+  // --- 事件系统（mitt 包装） ---
   on<K extends keyof TutorEventMap>(
     event: K,
     handler: (data: TutorEventMap[K]) => void,
@@ -167,9 +167,9 @@ export class TutorClient {
     this.emitter.emit(event, data as any)
   }
 
-  // --- Internal ---
+  // --- 内部方法 ---
   private setupEventSource(): void {
-    // Close any existing connection before creating a new one
+    // 新建连接前关闭已有连接
     this.eventSource?.close()
 
     const url = `${this.options.baseUrl}/api/chat/stream?sessionId=${encodeURIComponent(this.options.sessionId)}`
@@ -182,7 +182,7 @@ export class TutorClient {
       this.emit('connected', undefined)
     }
 
-    // Register all SSE event handlers
+    // 注册所有 SSE 事件处理器
     const sseEvents = [
       'config',
       'teacher.response',
@@ -198,10 +198,10 @@ export class TutorClient {
         try {
           const data = JSON.parse(e.data)
 
-          // Emit the raw SSE event
+          // 触发原始 SSE 事件
           this.emit(eventName, data)
 
-          // Emit derived events for specific cases
+          // 针对特定情况触发派生事件
           if (eventName === 'teacher.response') {
             this.emit('message.assistant', data)
             // 注：state.idle 不再在这里自动触发，改为在 tts.start 时触发
@@ -211,17 +211,17 @@ export class TutorClient {
             }
           }
         } catch {
-          // Silently ignore malformed SSE events
+          // 静默忽略格式错误的 SSE 事件
         }
       })
     }
 
     es.onerror = () => {
-      // Stop the browser's own automatic reconnect so it doesn't race with our
-      // controlled exponential-backoff reconnect loop.
+      // 阻止浏览器自带的自动重连，避免与我们的
+      // 受控指数退避重连循环产生竞态。
       es.close()
 
-      // When auto-reconnect is disabled, the error is terminal: report disconnect.
+      // 自动重连关闭时，该错误是致命的：上报连接断开。
       if (this.options.autoReconnect === false) {
         this.isConnectedValue = false
         this.eventSource = null
@@ -229,8 +229,8 @@ export class TutorClient {
         return
       }
 
-      // Don't flip isConnected to false immediately — treat this as a transient
-      // error and only emit disconnected if we exhaust our retry budget.
+      // 不要立即把 isConnected 置为 false — 将其视为暂时性
+      // 错误，只有在重试次数耗尽后才触发 disconnected。
       this.scheduleReconnect()
     }
   }
@@ -240,7 +240,7 @@ export class TutorClient {
     const opts = this.options
     if (opts.autoReconnect === false) return
 
-    // Prevent multiple concurrent reconnection timers
+    // 防止多个重连定时器并发运行
     this.clearReconnect()
 
     const max = opts.maxReconnectAttempts ?? 5
@@ -256,7 +256,7 @@ export class TutorClient {
 
     const baseDelay = opts.reconnectDelayMs ?? 3000
     const exponentialDelay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt), 30000)
-    // Add random jitter (50%-100% of calculated delay) to prevent thundering herd
+    // 添加随机抖动（计算延迟的 50%-100%），防止惊群效应
     const delay = Math.floor(exponentialDelay * (0.5 + Math.random() * 0.5))
     this.reconnectAttempt++
 

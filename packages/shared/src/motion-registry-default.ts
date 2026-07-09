@@ -3,11 +3,11 @@ import type { MotionId, ExpressionId } from './types.js'
 import type { MotionRegistry, MotionMapping, ExpressionMapping } from './motion-registry.js'
 
 /**
- * Hiyori model motion mapping
+ * Hiyori 模型动作映射
  *
- * Maps semantic motion IDs to the Hiyori Live2D model's Idle group indices.
- * The model has 9 Idle motions (m01-m03, m05-m10) and 1 TapBody motion (m04).
- * We map the 8 semantic IDs to Idle_0 through Idle_7.
+ * 将语义动作 ID 映射到 Hiyori Live2D 模型的 Idle 组下标。
+ * 该模型有 9 个 Idle 动作（m01-m03、m05-m10）和 1 个 TapBody 动作（m04）。
+ * 我们把 8 个语义 ID 映射到 Idle_0 至 Idle_7。
  */
 const HIYORI_MOTION_MAP: Record<MotionId, string> = {
   wave: 'Idle_0',       // Hiyori_m01 — 挥手
@@ -41,10 +41,10 @@ const EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
 }
 
 /**
- * Default MotionRegistry for the Hiyori Live2D model.
+ * Hiyori Live2D 模型的默认 MotionRegistry。
  *
- * Expressions pass through as-is because Hiyori has no .exp3.json files —
- * expressions are implemented as parameter presets in the Live2D provider.
+ * 表情直接透传，因为 Hiyori 没有 .exp3.json 文件 ——
+ * 表情在 Live2D Provider 中通过参数预设实现。
  */
 export const HIYORI_MOTION_REGISTRY: MotionRegistry = {
   characterId: 'hiyori',
@@ -54,8 +54,8 @@ export const HIYORI_MOTION_REGISTRY: MotionRegistry = {
   },
 
   getExpression(semanticId: ExpressionId): string {
-    // Hiyori expressions are parameter presets, not .exp3.json files
-    // The semantic ID is used directly as the preset key
+    // Hiyori 的表情是参数预设，而非 .exp3.json 文件
+    // 语义 ID 直接用作预设 key
     return semanticId
   },
 

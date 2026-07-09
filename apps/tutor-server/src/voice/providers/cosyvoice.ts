@@ -3,32 +3,32 @@ import { logger } from '../../logger.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 
-/** Available built-in voices for CosyVoice */
+/** CosyVoice 可用的内置音色 */
 export const COSYVOICE_VOICES = [
-  '英文女', // Female English voice (default for teaching)
-  '英文男', // Male English voice
-  '中文女', // Female Chinese voice
-  '中文男', // Male Chinese voice
+  '英文女', // 英文女声（教学默认）
+  '英文男', // 英文男声
+  '中文女', // 中文女声
+  '中文男', // 中文男声
 ] as const
 
 export type CosyVoiceId = (typeof COSYVOICE_VOICES)[number]
 
 /**
- * Teaching voice selection strategy based on student level
+ * 基于学生等级的教学音色选择策略
  */
 export function selectTeachingVoice(level?: number): CosyVoiceId {
-  if (!level || level <= 2) return '英文女' // Gentle female voice for beginners
-  if (level <= 4) return '英文男' // Clear male voice for intermediate
-  return '英文女' // Professional female voice for advanced
+  if (!level || level <= 2) return '英文女' // 初学者使用温柔女声
+  if (level <= 4) return '英文男' // 中级使用清晰男声
+  return '英文女' // 高级使用专业女声
 }
 
 /**
- * Wrap raw mono 16-bit little-endian PCM into a minimal WAV (RIFF) container.
+ * 将原始单声道 16 位小端 PCM 打包成最小 WAV（RIFF）容器。
  *
- * The CosyVoice fastapi `server.py` streams *headerless* int16 PCM
- * (`(tts_speech.numpy() * 2**15).astype(np.int16).tobytes()`), so the bytes are
- * not playable by browsers / `decodeAudioData` as-is. Prepending a 44-byte WAV
- * header makes the output a self-describing, universally decodable audio buffer.
+ * CosyVoice fastapi 的 `server.py` 流式输出的是*无头* int16 PCM
+ *（`(tts_speech.numpy() * 2**15).astype(np.int16).tobytes()`），这些字节
+ * 无法直接被浏览器 / `decodeAudioData` 播放。在前面加上 44 字节的 WAV
+ * 头后，输出就是自描述、通用可解码的音频 buffer。
  */
 function pcmToWav(pcm: Buffer, sampleRate: number, channels = 1, bitsPerSample = 16): Buffer {
   const byteRate = (sampleRate * channels * bitsPerSample) / 8
@@ -42,8 +42,8 @@ function pcmToWav(pcm: Buffer, sampleRate: number, channels = 1, bitsPerSample =
   header.write('WAVE', offset); offset += 4
 
   header.write('fmt ', offset); offset += 4
-  header.writeUInt32LE(16, offset); offset += 4 // PCM fmt chunk size
-  header.writeUInt16LE(1, offset); offset += 2 // audio format = PCM
+  header.writeUInt32LE(16, offset); offset += 4 // PCM fmt chunk 大小
+  header.writeUInt16LE(1, offset); offset += 2 // 音频格式 = PCM
   header.writeUInt16LE(channels, offset); offset += 2
   header.writeUInt32LE(sampleRate, offset); offset += 4
   header.writeUInt32LE(byteRate, offset); offset += 4
@@ -57,25 +57,24 @@ function pcmToWav(pcm: Buffer, sampleRate: number, channels = 1, bitsPerSample =
 }
 
 /**
- * CosyVoice TTS Provider
+ * CosyVoice TTS 服务商
  *
- * Connects to a locally or remotely deployed CosyVoice fastapi service
- * (`runtime/python/fastapi/server.py`). Works with the SFT model
- * (CosyVoice-300M-SFT) whose built-in speakers (英文女 / 英文男 / ...) drive
- * the `/inference_sft` endpoint.
+ * 连接本地或远程部署的 CosyVoice fastapi 服务
+ *（`runtime/python/fastapi/server.py`）。配合 SFT 模型
+ *（CosyVoice-300M-SFT）使用，其内置发音人（英文女 / 英文男 / ...）驱动
+ * `/inference_sft` 接口。
  *
- * IMPORTANT — server contract (`server.py`):
- * - Endpoints accept **multipart/form-data** fields, NOT a JSON body.
+ * IMPORTANT — 服务端约定（`server.py`）：
+ * - 接口接受 **multipart/form-data** 字段，而不是 JSON body。
  *   `/inference_sft`      → tts_text, spk_id
  *   `/inference_instruct` → tts_text, spk_id, instruct_text
- * - The response is a raw int16 mono PCM stream (no container), so we wrap it
- *   into WAV here. The PCM sample rate is model-specific (config.COSYVOICE_SAMPLE_RATE;
- *   300M-SFT = 22050, CosyVoice2-0.5B = 24000).
- * - This build of server.py has no `speed` parameter; we still send it as a
- *   form field so newer server builds that support it pick it up (FastAPI
- *   silently ignores unknown form fields).
+ * - 响应是原始 int16 单声道 PCM 流（无容器），因此我们在本地将其包装为
+ *   WAV。PCM 采样率取决于模型（config.COSYVOICE_SAMPLE_RATE；
+ *   300M-SFT = 22050，CosyVoice2-0.5B = 24000）。
+ * - 当前 server.py 版本没有 `speed` 参数；我们仍把它作为 form 字段发送，
+ *   以便支持该参数的新版本服务端能够生效（FastAPI 会静默忽略未知 form 字段）。
  *
- * Docker deployment (SFT model):
+ * Docker 部署（SFT 模型）：
  *   docker run -d --name cosyvoice --gpus all -p 50000:50000 \
  *     -v ~/.cache/modelscope:/root/.cache/modelscope \
  *     -w /workspace/CosyVoice/runtime/python/fastapi \
@@ -88,7 +87,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
   constructor() {
     this.baseUrl = config.COSYVOICE_BASE_URL
-    logger.info({ baseUrl: this.baseUrl }, 'CosyVoice provider initialized')
+    logger.info({ baseUrl: this.baseUrl }, 'CosyVoice 提供商初始化完成')
   }
 
   async synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer> {
@@ -98,7 +97,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
       logger.debug(
         { provider: this.name, voice, speed, textLength: text.length },
-        'CosyVoice synthesize request',
+        'CosyVoice 合成请求',
       )
 
       const startTime = Date.now()
@@ -115,7 +114,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`CosyVoice TTS error: ${response.status} - ${errorText}`)
+        throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
       }
 
       const arrayBuffer = await response.arrayBuffer()
@@ -124,7 +123,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
       logger.info(
         { provider: this.name, duration, size: buffer.length },
-        'CosyVoice synthesize complete',
+        'CosyVoice 合成完成',
       )
 
       return buffer
@@ -135,17 +134,17 @@ export class CosyVoiceProvider implements TTSProvider {
     text: string,
     options?: TTSSynthesizeOptions,
   ): AsyncGenerator<Buffer> {
-    // The server streams headerless PCM; individual chunks are not independently
-    // decodable, so we buffer the whole response, wrap it once in a WAV header,
-    // and yield a single playable buffer.
+    // 服务端流式输出无头 PCM；单个分块无法独立解码，
+    // 因此我们将整个响应缓存后，一次性加上 WAV 头，
+    // 再产出一段可播放的 buffer。
     yield await this.synthesize(text, options)
   }
 
   /**
-   * Synthesize with emotion instruction (unique to CosyVoice)
+   * 使用情感指令合成（CosyVoice 特有）
    *
-   * @param text - Text to synthesize
-   * @param instruct - Emotion instruction in natural language, e.g.:
+   * @param text - 要合成的文本
+   * @param instruct - 自然语言情感指令，例如：
    *   "用温暖鼓励的语气说" (warm and encouraging)
    *   "用耐心但认真的语气说" (patient but serious)
    *   "用清晰缓慢的语气说" (clear and slow)
@@ -160,7 +159,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
     logger.debug(
       { provider: this.name, voice, speed, instruct, textLength: text.length },
-      'CosyVoice synthesize with emotion',
+      'CosyVoice 情感合成',
     )
 
     const startTime = Date.now()
@@ -178,7 +177,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      throw new Error(`CosyVoice instruct error: ${response.status} - ${errorText}`)
+      throw new Error(`CosyVoice 指令合成错误：${response.status} - ${errorText}`)
     }
 
     const arrayBuffer = await response.arrayBuffer()
@@ -187,7 +186,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
     logger.info(
       { provider: this.name, duration, size: buffer.length, instruct },
-      'CosyVoice instruct complete',
+      'CosyVoice 指令合成完成',
     )
 
     return buffer

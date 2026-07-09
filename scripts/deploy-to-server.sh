@@ -3,7 +3,7 @@
 # 用法: ./scripts/deploy-to-server.sh
 #
 # 流程: git clean → ssh 检查 → 交互式 .env → rsync → docker compose up → 健康检查 → 报告
-# 默认最小栈: 浏览器 ASR/TTS + Xiaomi LLM；需要时自动叠加 whisper / cosyvoice compose。
+# 默认最小栈: 浏览器 ASR/TTS + DeepSeek LLM；需要时自动叠加 whisper / cosyvoice compose。
 
 set -euo pipefail
 
@@ -29,7 +29,7 @@ REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
 
-WHISPER_MODEL_FILE="ggml-base.en.bin"
+WHISPER_MODEL_FILE="${WHISPER_MODEL:-ggml-base.en.bin}"
 WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_FILE}"
 
 RSYNC_EXCLUDES=(
@@ -256,9 +256,13 @@ generate_env() {
   prev_tts_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_API_KEY)
   prev_tts_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_BASE_URL)
   prev_tts_mode=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_MODE)
-  prev_volcengine_app_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_APP_ID)
-  prev_volcengine_token=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_ACCESS_TOKEN)
-  prev_volcengine_voice=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_VOICE_TYPE)
+  prev_volcengine_tts_key=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_API_KEY)
+  prev_volcengine_tts_resource_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_RESOURCE_ID)
+  prev_volcengine_tts_speaker=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_SPEAKER)
+  prev_volcengine_tts_format=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_FORMAT)
+  prev_volcengine_tts_sample_rate=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_SAMPLE_RATE)
+  prev_volcengine_asr_key=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_ASR_API_KEY)
+  prev_volcengine_asr_resource_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_ASR_RESOURCE_ID)
   prev_asr_provider=$(env_get "${EXISTING_ENV_FILE}" ASR_PROVIDER)
   prev_asr_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_API_KEY)
   prev_asr_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_BASE_URL)
@@ -274,7 +278,7 @@ generate_env() {
   asr_api_key=""; asr_base_url=""
 
   # ── LLM ──
-  llm_provider=$(prompt "LLM 厂商 (xiaomi/deepseek/mock)" "${prev_llm_provider:-xiaomi}")
+  llm_provider=$(prompt "LLM 厂商 (xiaomi/deepseek/mock)" "${prev_llm_provider:-deepseek}")
   case "${llm_provider}" in
     xiaomi)
       llm_api_key=$(prompt_secret "Xiaomi LLM API Key (输入不回显)" "${prev_xiaomi_key}")
@@ -283,8 +287,8 @@ generate_env() {
       ;;
     deepseek)
       deepseek_api_key=$(prompt_secret "DeepSeek API Key (输入不回显)" "${prev_deepseek_key}")
-      deepseek_base_url=$(prompt "DeepSeek Base URL" "${prev_deepseek_url:-https://api.deepseek.com}")
-      deepseek_model=$(prompt "DeepSeek Model" "${prev_deepseek_model:-deepseek-chat}")
+      deepseek_base_url=$(prompt "DeepSeek Base URL" "${prev_deepseek_url:-https://ark.cn-beijing.volces.com/api/v3}")
+      deepseek_model=$(prompt "DeepSeek Model（火山方舟接入点 ID）" "${prev_deepseek_model}")
       ;;
     mock)
       ;;
@@ -316,13 +320,17 @@ generate_env() {
       fi
       ;;
     volcengine)
-      local volcengine_app_id volcengine_token volcengine_voice
-      volcengine_app_id=$(prompt_secret "Volcengine App ID (输入不回显)" "${prev_volcengine_app_id}")
-      volcengine_token=$(prompt_secret "Volcengine Access Token (输入不回显)" "${prev_volcengine_token}")
-      volcengine_voice=$(prompt "Volcengine Voice Type" "${prev_volcengine_voice:-zh_female_gaolengyujie_moon_bigtts}")
-      VOLCENGINE_TTS_APP_ID="${volcengine_app_id}"
-      VOLCENGINE_TTS_ACCESS_TOKEN="${volcengine_token}"
-      VOLCENGINE_TTS_VOICE_TYPE="${volcengine_voice}"
+      local volcengine_tts_key volcengine_tts_resource_id volcengine_tts_speaker volcengine_tts_format volcengine_tts_sample_rate
+      volcengine_tts_key=$(prompt_secret "Volcengine TTS API Key (输入不回显)" "${prev_volcengine_tts_key}")
+      volcengine_tts_resource_id=$(prompt "Volcengine TTS Resource ID" "${prev_volcengine_tts_resource_id:-seed-tts-2.0}")
+      volcengine_tts_speaker=$(prompt "Volcengine TTS Speaker" "${prev_volcengine_tts_speaker:-zh_female_gaolengyujie_uranus_bigtts}")
+      volcengine_tts_format=$(prompt "Volcengine TTS Format" "${prev_volcengine_tts_format:-mp3}")
+      volcengine_tts_sample_rate=$(prompt "Volcengine TTS Sample Rate" "${prev_volcengine_tts_sample_rate:-24000}")
+      VOLCENGINE_TTS_API_KEY="${volcengine_tts_key}"
+      VOLCENGINE_TTS_RESOURCE_ID="${volcengine_tts_resource_id}"
+      VOLCENGINE_TTS_SPEAKER="${volcengine_tts_speaker}"
+      VOLCENGINE_TTS_FORMAT="${volcengine_tts_format}"
+      VOLCENGINE_TTS_SAMPLE_RATE="${volcengine_tts_sample_rate}"
       ;;
     *)
       log_error "不支持的 TTS 厂商: ${tts_provider}"
@@ -330,8 +338,8 @@ generate_env() {
       ;;
   esac
 
-  # ── ASR ──（browser / xiaomi / whisper）
-  asr_provider=$(prompt "ASR 厂商 (browser/xiaomi/whisper)" "${prev_asr_provider:-browser}")
+  # ── ASR ──（browser / xiaomi / whisper / volcengine）
+  asr_provider=$(prompt "ASR 厂商 (browser/xiaomi/whisper/volcengine)" "${prev_asr_provider:-browser}")
   case "${asr_provider}" in
     browser)
       log_info "ASR=browser：前端浏览器识别，无需 whisper 容器"
@@ -344,6 +352,13 @@ generate_env() {
       asr_base_url="http://whisper:8080"
       ENABLE_WHISPER=true
       log_warn "ASR=whisper：将以 -f docker-compose.whisper.yml 叠加启动 whisper.cpp 容器"
+      ;;
+    volcengine)
+      local volcengine_asr_key volcengine_asr_resource_id
+      volcengine_asr_key=$(prompt_secret "Volcengine ASR API Key（留空则回退到 TTS key，输入不回显）" "${prev_volcengine_asr_key}")
+      volcengine_asr_resource_id=$(prompt "Volcengine ASR Resource ID" "${prev_volcengine_asr_resource_id:-volc.seedasr.sauc.duration}")
+      VOLCENGINE_ASR_API_KEY="${volcengine_asr_key}"
+      VOLCENGINE_ASR_RESOURCE_ID="${volcengine_asr_resource_id}"
       ;;
     *)
       log_error "不支持的 ASR 厂商: ${asr_provider}"
@@ -392,7 +407,6 @@ XIAOMI_TTS_VOICE_DESIGN=成熟知性的御姐，声线低沉磁性、略带沙�
 # 中文翻译音色
 # XIAOMI_TTS_ZH_VOICE_DESIGN=台湾腔温柔女声，语速适中，声音甜美温暖
 # 通用 TTS 参数（按需开启）
-# TTS_VOICE=alloy
 # TTS_FORMAT=mp3
 # TTS_SPEED=1.0
 # CosyVoice（需 GPU + docker-compose.cosyvoice.yml 叠加）
@@ -400,13 +414,19 @@ COSYVOICE_BASE_URL=http://cosyvoice:50000
 COSYVOICE_SPK_ID=英文女
 COSYVOICE_SPEED=0.9
 
-# Volcengine 火山引擎语音合成（纯 TTS，云 API，无需额外容器）
-VOLCENGINE_TTS_APP_ID=${VOLCENGINE_TTS_APP_ID:-}
-VOLCENGINE_TTS_ACCESS_TOKEN=${VOLCENGINE_TTS_ACCESS_TOKEN:-}
-VOLCENGINE_TTS_BASE_URL=https://openspeech.bytedance.com/api/v1/tts
-VOLCENGINE_TTS_CLUSTER=volcano_tts
-VOLCENGINE_TTS_VOICE_TYPE=${VOLCENGINE_TTS_VOICE_TYPE:-zh_female_gaolengyujie_moon_bigtts}
-VOLCENGINE_TTS_ENCODING=mp3
+# Volcengine 火山方舟 Agent Plan 语音合成 TTS
+VOLCENGINE_TTS_API_KEY=${VOLCENGINE_TTS_API_KEY:-}
+VOLCENGINE_TTS_RESOURCE_ID=${VOLCENGINE_TTS_RESOURCE_ID:-seed-tts-2.0}
+# VOLCENGINE_TTS_BASE_URL=https://openspeech.bytedance.com/api/v3/plan/tts/unidirectional
+# VOLCENGINE_TTS_SPEAKER=zh_female_gaolengyujie_uranus_bigtts
+# VOLCENGINE_TTS_FORMAT=mp3
+# VOLCENGINE_TTS_SAMPLE_RATE=24000
+
+# Volcengine 火山方舟 Agent Plan 语音识别 ASR
+VOLCENGINE_ASR_API_KEY=${VOLCENGINE_ASR_API_KEY:-}
+VOLCENGINE_ASR_RESOURCE_ID=${VOLCENGINE_ASR_RESOURCE_ID:-volc.seedasr.sauc.duration}
+# VOLCENGINE_ASR_BASE_URL=wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_nostream
+# VOLCENGINE_ASR_SEGMENT_MS=200
 
 # ── ASR ──（browser=浏览器识别 / xiaomi / whisper）
 ASR_PROVIDER=${asr_provider}
@@ -418,7 +438,7 @@ XIAOMI_ASR_BASE_URL=${asr_base_url}
 # MAX_AUDIO_SIZE_MB=10
 # Whisper（需 docker-compose.whisper.yml 叠加）
 WHISPER_BASE_URL=http://whisper:8080
-WHISPER_MODEL=ggml-base.en.bin
+WHISPER_MODEL=${WHISPER_MODEL_FILE}
 
 # ── Data ──
 DB_PATH=/app/data/tutor.db
@@ -440,7 +460,7 @@ configure_remote_env() {
       EXISTING_ENV_FILE=""
     fi
     local reconfigure=false
-    if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_APP_ID=$' ${REMOTE_ENV_FILE}"; then
+    if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_API_KEY=$' ${REMOTE_ENV_FILE}"; then
       log_warn "检测到 .env 中存在占位符或空 API Key"
       if prompt_yes_no "是否重新交互式配置（默认值=现有配置，API Key 回车保留）"; then
         reconfigure=true

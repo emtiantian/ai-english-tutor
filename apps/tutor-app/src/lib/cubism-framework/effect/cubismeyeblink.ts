@@ -11,16 +11,16 @@ import { CubismIdHandle } from '../id/cubismid';
 import { CubismModel } from '../model/cubismmodel';
 
 /**
- * 自動まばたき機能
+ * 自动眨眼功能
  *
- * 自動まばたき機能を提供する。
+ * 提供自动眨眼功能。
  */
 export class CubismEyeBlink {
   /**
-   * インスタンスを作成する
-   * @param modelSetting モデルの設定情報
-   * @return 作成されたインスタンス
-   * @note 引数がNULLの場合、パラメータIDが設定されていない空のインスタンスを作成する。
+   * 创建实例
+   * @param modelSetting 模型设置信息
+   * @return 创建的实例
+   * @note 参数为 NULL 时，会创建一个参数 ID 未设置的空实例。
    */
   public static create(
     modelSetting: ICubismModelSetting = null
@@ -29,8 +29,8 @@ export class CubismEyeBlink {
   }
 
   /**
-   * インスタンスの破棄
-   * @param eyeBlink 対象のCubismEyeBlink
+   * 销毁实例
+   * @param eyeBlink 目标 CubismEyeBlink
    */
   public static delete(eyeBlink: CubismEyeBlink): void {
     if (eyeBlink != null) {
@@ -39,18 +39,18 @@ export class CubismEyeBlink {
   }
 
   /**
-   * まばたきの間隔の設定
-   * @param blinkingInterval まばたきの間隔の時間[秒]
+   * 设置眨眼间隔
+   * @param blinkingInterval 眨眼间隔时间[秒]
    */
   public setBlinkingInterval(blinkingInterval: number): void {
     this._blinkingIntervalSeconds = blinkingInterval;
   }
 
   /**
-   * まばたきのモーションの詳細設定
-   * @param closing   まぶたを閉じる動作の所要時間[秒]
-   * @param closed    まぶたを閉じている動作の所要時間[秒]
-   * @param opening   まぶたを開く動作の所要時間[秒]
+   * 设置眨眼动作的细节
+   * @param closing   闭眼动作所需时间[秒]
+   * @param closed    闭眼保持动作所需时间[秒]
+   * @param opening   睁眼动作所需时间[秒]
    */
   public setBlinkingSetting(
     closing: number,
@@ -63,25 +63,25 @@ export class CubismEyeBlink {
   }
 
   /**
-   * まばたきさせるパラメータIDのリストの設定
-   * @param parameterIds パラメータのIDのリスト
+   * 设置要眨眼的参数 ID 列表
+   * @param parameterIds 参数 ID 列表
    */
   public setParameterIds(parameterIds: Array<CubismIdHandle>): void {
     this._parameterIds = parameterIds;
   }
 
   /**
-   * まばたきさせるパラメータIDのリストの取得
-   * @return パラメータIDのリスト
+   * 获取要眨眼的参数 ID 列表
+   * @return 参数 ID 列表
    */
   public getParameterIds(): Array<CubismIdHandle> {
     return this._parameterIds;
   }
 
   /**
-   * モデルのパラメータの更新
-   * @param model 対象のモデル
-   * @param deltaTimeSeconds デルタ時間[秒]
+   * 更新模型参数
+   * @param model 目标模型
+   * @param deltaTimeSeconds 增量时间[秒]
    */
   public updateParameters(model: CubismModel, deltaTimeSeconds: number): void {
     this._userTimeSeconds += deltaTimeSeconds;
@@ -159,8 +159,8 @@ export class CubismEyeBlink {
   }
 
   /**
-   * コンストラクタ
-   * @param modelSetting モデルの設定情報
+   * 构造函数
+   * @param modelSetting 模型设置信息
    */
   public constructor(modelSetting: ICubismModelSetting) {
     this._blinkingState = EyeState.EyeState_First;
@@ -184,9 +184,9 @@ export class CubismEyeBlink {
   }
 
   /**
-   * 次の瞬きのタイミングの決定
+   * 决定下次眨眼的时机
    *
-   * @return 次のまばたきを行う時刻[秒]
+   * @return 下次眨眼的时间[秒]
    */
   public determinNextBlinkingTiming(): number {
     const r: number = Math.random();
@@ -195,36 +195,36 @@ export class CubismEyeBlink {
     );
   }
 
-  _blinkingState: number; // 現在の状態
-  _parameterIds: Array<CubismIdHandle>; // 操作対象のパラメータのIDのリスト
-  _nextBlinkingTime: number; // 次のまばたきの時刻[秒]
-  _stateStartTimeSeconds: number; // 現在の状態が開始した時刻[秒]
-  _blinkingIntervalSeconds: number; // まばたきの間隔[秒]
-  _closingSeconds: number; // まぶたを閉じる動作の所要時間[秒]
-  _closedSeconds: number; // まぶたを閉じている動作の所要時間[秒]
-  _openingSeconds: number; // まぶたを開く動作の所要時間[秒]
-  _userTimeSeconds: number; // デルタ時間の積算値[秒]
+  _blinkingState: number; // 当前状态
+  _parameterIds: Array<CubismIdHandle>; // 要操作的参数 ID 列表
+  _nextBlinkingTime: number; // 下次眨眼时间[秒]
+  _stateStartTimeSeconds: number; // 当前状态开始时间[秒]
+  _blinkingIntervalSeconds: number; // 眨眼间隔[秒]
+  _closingSeconds: number; // 闭眼动作所需时间[秒]
+  _closedSeconds: number; // 闭眼保持动作所需时间[秒]
+  _openingSeconds: number; // 睁眼动作所需时间[秒]
+  _userTimeSeconds: number; // 增量时间累计值[秒]
 
   /**
-   * IDで指定された目のパラメータが、0のときに閉じるなら true 、1の時に閉じるなら false 。
+   * 指定的眼睛参数在值为 0 时闭合则为 true，值为 1 时闭合则为 false。
    */
   static readonly CloseIfZero: boolean = true;
 }
 
 /**
- * まばたきの状態
+ * 眨眼状态
  *
- * まばたきの状態を表す列挙型
+ * 表示眨眼状态的枚举
  */
 export enum EyeState {
-  EyeState_First = 0, // 初期状態
-  EyeState_Interval, // まばたきしていない状態
-  EyeState_Closing, // まぶたが閉じていく途中の状態
-  EyeState_Closed, // まぶたが閉じている状態
-  EyeState_Opening // まぶたが開いていく途中の状態
+  EyeState_First = 0, // 初始状态
+  EyeState_Interval, // 未眨眼状态
+  EyeState_Closing, // 眼皮正在闭合的状态
+  EyeState_Closed, // 眼皮闭合的状态
+  EyeState_Opening // 眼皮正在睁开的状态
 }
 
-// Namespace definition for compatibility.
+// 为兼容性定义的命名空间。
 import * as $ from './cubismeyeblink';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

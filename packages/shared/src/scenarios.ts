@@ -1,21 +1,21 @@
 /**
- * Scenario definitions for scenario-based teaching
+ * 场景化教学的场景定义
  *
- * Scenarios are real-world role-play situations where the student
- * practices English with the AI teacher playing a specific role.
+ * 场景是真实世界中的角色扮演情境，学生与扮演特定角色的 AI 老师
+ * 一起练习英语。
  */
 
-/** CEFR level identifier — used for scenario v2 difficulty laddering */
+/** CEFR 等级标识符，用于场景 v2 的难度分级 */
 export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
 
 /**
- * Scenario v2: Act = a stage in the 3-act story (开场 / 主线 / 收尾).
- * Goal is injected into LLM prompt as the act-specific objective.
+ * 场景 v2：Act = 三幕故事（开场 / 主线 / 收尾）中的一个阶段。
+ * goal 会作为该幕的专属目标注入 LLM 提示词。
  */
 export interface ActDef {
-  /** Act display name in Chinese, e.g. "开场" / "主线" / "收尾" */
+  /** Act 在 UI 中显示的中文名，如 "开场" / "主线" / "收尾" */
   name: string
-  /** Goal injected into prompt — what should be accomplished in this act */
+  /** 注入提示词的目标 —— 该幕应完成什么 */
   goal: string
 }
 
@@ -29,7 +29,7 @@ export interface ScenarioObjective {
   description: string
   descriptionEn: string
   keywords: string[]
-  /** Words the student should learn in this phase */
+  /** 学生在该阶段应学习的单词 */
   targetWords: string[]
 }
 
@@ -44,7 +44,7 @@ export interface Scenario {
    * 仅为向后兼容旧 scenarios-default.json 保留。
    */
   level: number
-  /** Topic 标签，v2 用作 vocab/lists/{level}.json 的抽词锚点 */
+  /** 主题标签，v2 用作 vocab/lists/{level}.json 的抽词锚点 */
   topics: string[]
   /**
    * @deprecated v2 起目标词不再静态写在场景里，改由运行时按
@@ -68,7 +68,7 @@ export interface Scenario {
   acts?: ActDef[]
 }
 
-/** All available scenarios */
+/** 所有可用场景 */
 export const scenarios: Scenario[] = [
   {
     id: 'restaurant-ordering',
@@ -487,17 +487,17 @@ export const scenarios: Scenario[] = [
   }
 ]
 
-/** Get scenarios for a specific level */
+/** 获取指定等级的场景 */
 export function getScenariosForLevel(levelNum: number): Scenario[] {
   return scenarios.filter((s) => s.level === levelNum)
 }
 
-/** Get a scenario by ID */
+/** 按 ID 获取场景 */
 export function getScenarioById(id: string): Scenario | undefined {
   return scenarios.find((s) => s.id === id)
 }
 
-/** Get all available scenarios */
+/** 获取所有可用场景 */
 export function getAllScenarios(): Scenario[] {
   return [...scenarios]
 }

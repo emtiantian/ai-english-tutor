@@ -30,13 +30,13 @@ export interface VocabProgress {
 
 export const vocabRepo = {
   /**
-   * Record a word for a user (upsert).
-   * New words get a 10-minute delay before first review.
+   * 为用户记录一个单词（插入或更新）。
+   * 新单词在首次复习前会有 10 分钟延迟。
    */
   recordWord(userId: string, word: string, level: string, status: WordStatus = 'learning'): void {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
-    const nextReview = now + 600 // 10 minutes delay for new words
+    const nextReview = now + 600 // 新单词延迟 10 分钟
 
     const existing = db.prepare(
       'SELECT id FROM user_vocabulary WHERE user_id = ? AND word = ?',
@@ -59,25 +59,25 @@ export const vocabRepo = {
   },
 
   /**
-   * Update word status after review.
+   * 复习后更新单词状态。
    *
-   * Mastery rules:
-   * - correct_count >= 3 AND context_count >= 3 → mastered
-   * - consecutive_incorrect >= 3 → forgotten
-   * - otherwise → learning
+   * 掌握规则：
+   * - correct_count >= 3 且 context_count >= 3 → mastered
+   * - consecutive_incorrect >= 3 → forgotten（连续答错 3 次视为遗忘）
+   * - 其他 → learning
    *
-   * Interval progression (deterministic based on correct_count):
-   *   0 correct → 1 hour
-   *   1 correct → 1 day
-   *   2 correct → 3 days
-   *   3 correct → 7 days
-   *   4+ correct → 14 days
+   * 间隔递进（基于 correct_count 的确定性规则）：
+   *   0 次正确 → 1 小时
+   *   1 次正确 → 1 天
+   *   2 次正确 → 3 天
+   *   3 次正确 → 7 天
+   *   4+ 次正确 → 14 天
    */
   reviewWord(userId: string, word: string, correct: boolean): void {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
 
-    // Get current state
+    // 获取当前状态
     const row = db.prepare(
       `SELECT correct_count, incorrect_count, consecutive_incorrect, context_count
        FROM user_vocabulary WHERE user_id = ? AND word = ?`,
@@ -89,7 +89,7 @@ export const vocabRepo = {
     const newIncorrectCount = correct ? row.incorrect_count : row.incorrect_count + 1
     const newConsecutiveIncorrect = correct ? 0 : row.consecutive_incorrect + 1
 
-    // Determine status
+    // 确定状态
     let status: WordStatus
     if (newConsecutiveIncorrect >= 3) {
       status = 'forgotten'
@@ -99,7 +99,7 @@ export const vocabRepo = {
       status = 'learning'
     }
 
-    // Calculate next review interval
+    // 计算下次复习间隔
     const nextReview = calculateNextReview(correct, newCorrectCount)
 
     db.prepare(
@@ -116,8 +116,8 @@ export const vocabRepo = {
   },
 
   /**
-   * Get words due for review.
-   * Excludes mastered words. Orders by next_review_at ascending.
+   * 获取到期的复习单词。
+   * 排除已掌握单词，按 next_review_at 升序排列。
    */
   getDueForReview(
     userId: string,
@@ -141,8 +141,8 @@ export const vocabRepo = {
   },
 
   /**
-   * Add a context description for a word.
-   * Returns true if the context is new (not a duplicate).
+   * 为单词添加一条语境描述。
+   * 若语境已存在则返回 false。
    */
   addContext(userId: string, word: string, contextDesc: string): boolean {
     const db = getDb()
@@ -156,7 +156,7 @@ export const vocabRepo = {
 
     const contexts: string[] = JSON.parse(row.contexts || '[]')
 
-    // Check for duplicate (simple string match)
+    // 检查重复（简单字符串匹配）
     const normalizedDesc = contextDesc.toLowerCase().trim()
     if (contexts.some((c) => c.toLowerCase().trim() === normalizedDesc)) {
       return false
@@ -173,7 +173,7 @@ export const vocabRepo = {
   },
 
   /**
-   * Get user's progress summary.
+   * 获取用户的词汇进度摘要。
    */
   getProgress(userId: string): VocabProgress {
     const db = getDb()
@@ -203,7 +203,7 @@ export const vocabRepo = {
   },
 
   /**
-   * Get all words for a user.
+   * 获取用户的所有单词。
    */
   getAllWords(userId: string): Array<{ word: string; level: string; status: WordStatus; contextCount: number; contexts: string[] }> {
     const db = getDb()
@@ -222,21 +222,21 @@ export const vocabRepo = {
 }
 
 /**
- * Deterministic spaced repetition intervals based on correct_count.
+ * 基于 correct_count 的确定性间隔重复算法。
  *
- *   correct_count 0 → 1 hour (re-learn)
- *   correct_count 1 → 1 day
- *   correct_count 2 → 3 days
- *   correct_count 3 → 7 days
- *   correct_count 4+ → 14 days
+ *   correct_count 0 → 1 小时（重新学习）
+ *   correct_count 1 → 1 天
+ *   correct_count 2 → 3 天
+ *   correct_count 3 → 7 天
+ *   correct_count 4+ → 14 天
  *
- * On incorrect answer: reset to 1 hour.
+ * 回答错误时：重置为 1 小时。
  */
 function calculateNextReview(correct: boolean, correctCount: number): number {
   const now = Math.floor(Date.now() / 1000)
 
   if (!correct) {
-    return now + 3600 // 1 hour
+    return now + 3600 // 1 小时
   }
 
   const intervals = [3600, 86400, 259200, 604800, 1209600]

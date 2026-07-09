@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   const normalized = normalizeToString(multiMessage)
   assert.strictEqual(normalized.content, 'say')
 
-  // ── createLLMProvider factory ─────────────────────────────
+  // ── createLLMProvider 工厂 ─────────────────────────────
 
   const originalProvider = config.LLM_PROVIDER
 
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   const fallback = createLLMProvider()
   assert.strictEqual(fallback.name, 'mock', 'unknown provider falls back to mock')
 
-  // ── MockProvider abort behavior ───────────────────────────
+  // ── MockProvider abort 行为 ───────────────────────────
 
   const controller = new AbortController()
   controller.abort()
@@ -63,7 +63,7 @@ async function main(): Promise<void> {
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const _ of mockProvider.stream!([{ role: 'user', content: 'hi' }], { signal: streamController.signal })) {
-        // no-op
+        // 空操作
       }
     })(),
     /AbortError/,

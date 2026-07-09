@@ -97,20 +97,20 @@ if (CSM_LOG_LEVEL <= CSM_LOG_LEVEL_VERBOSE) {
 }
 
 /**
- * デバッグ用のユーティリティクラス。
- * ログの出力、バイトのダンプなど
+ * 调试工具类。
+ * 用于日志输出、字节转储等
  */
 export class CubismDebug {
   /**
-   * ログを出力する。第一引数にログレベルを設定する。
-   * CubismFramework.initialize()時にオプションで設定されたログ出力レベルを下回る場合はログに出さない。
+   * 输出日志。第一个参数设置日志级别。
+   * 若低于 CubismFramework.initialize() 时选项设定的日志输出级别，则不输出日志。
    *
-   * @param logLevel ログレベルの設定
-   * @param format 書式付き文字列
-   * @param args 可変長引数
+   * @param logLevel 日志级别设置
+   * @param format 格式化字符串
+   * @param args 可变参数
    */
   public static print(logLevel: LogLevel, format: string, args?: any[]): void {
-    // オプションで設定されたログ出力レベルを下回る場合はログに出さない
+    // 若低于选项设定的日志输出级别，则不输出日志
     if (logLevel < CubismFramework.getLoggingLevel()) {
       return;
     }
@@ -127,12 +127,12 @@ export class CubismDebug {
   }
 
   /**
-   * データから指定した長さだけダンプ出力する。
-   * CubismFramework.initialize()時にオプションで設定されたログ出力レベルを下回る場合はログに出さない。
+   * 从数据中按指定长度输出转储。
+   * 若低于 CubismFramework.initialize() 时选项设定的日志输出级别，则不输出日志。
    *
-   * @param logLevel ログレベルの設定
-   * @param data ダンプするデータ
-   * @param length ダンプする長さ
+   * @param logLevel 日志级别设置
+   * @param data 要转储的数据
+   * @param length 要转储的长度
    */
   public static dumpBytes(
     logLevel: LogLevel,
@@ -149,12 +149,12 @@ export class CubismDebug {
   }
 
   /**
-   * private コンストラクタ
+   * 私有构造函数
    */
   private constructor() {}
 }
 
-// Namespace definition for compatibility.
+// 为兼容性定义的命名空间。
 import * as $ from './cubismdebug';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

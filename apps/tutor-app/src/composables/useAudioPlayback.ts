@@ -4,16 +4,14 @@ import { useTutorStore } from '../stores/tutor'
 import { AudioPlayer } from '../audio/player'
 
 /**
- * Composable that manages AudioPlayer lifecycle and wires events
- * between the TutorClient SSE stream and the player.
+ * 管理 AudioPlayer 生命周期，并将 TutorClient SSE 流与播放器事件连接起来的 composable。
  */
 export function useAudioPlayback(client: TutorClient) {
   const store = useTutorStore()
   const audioPlayer = new AudioPlayer(store.ttsSource)
 
-  // Keep AudioPlayer in sync with server-driven ttsSource (config SSE event may
-  // arrive after the player is created, so the initial 'local' default must be
-  // updated when the real source is known).
+  // 使 AudioPlayer 与服务器驱动的 ttsSource 保持同步（配置 SSE 事件可能在播放器创建后才到达，
+  // 因此当真实来源已知时需要更新初始的 'local' 默认值）。
   watch(
     () => store.ttsSource,
     (source) => {
@@ -22,30 +20,29 @@ export function useAudioPlayback(client: TutorClient) {
     { immediate: true },
   )
 
-  // Wire audio player events → client events
+  // 将播放器事件连接到客户端事件
   audioPlayer.onStart = () => client.emit('tts.start', { text: '', source: store.ttsSource })
   audioPlayer.onEnd = () => client.emit('tts.end', { source: store.ttsSource })
   audioPlayer.onVolume = (volume) => {
     store.characterProvider?.setMouthOpen(volume)
   }
 
-  // Wire remote audio chunks → player
-  // Track chunks per message to avoid cross-contamination between responses
+  // 将远程音频片段连接到播放器
+  // 按消息跟踪片段，避免不同回复之间相互污染
   let pendingAudioChunks: string[] = []
   let audioTargetMsgId: string | null = null
 
-  // Flush pending audio to its target message (helper)
-  // Returns true if audio was saved, false if no message found yet (chunks preserved)
+  // 将待处理音频刷入目标消息（辅助函数）
+  // 若音频已保存则返回 true，若尚未找到消息则返回 false（保留片段）
   function flushPendingAudio(): boolean {
     if (pendingAudioChunks.length === 0) return true
 
-    // Find target message: use captured ID, or fall back to last assistant message
+    // 查找目标消息：使用已捕获的 ID，或回退到最后一条助手消息
     let msg = audioTargetMsgId
       ? store.messages.find(m => m.id === audioTargetMsgId)
       : null
     if (!msg) {
-      // Fallback: find the last assistant message (handles race condition where
-      // audio chunks arrived before the message was created)
+      // 回退：查找最后一条助手消息（处理音频片段比消息更早到达的竞态条件）
       for (let i = store.messages.length - 1; i >= 0; i--) {
         if (store.messages[i].role === 'assistant') {
           msg = store.messages[i]
@@ -61,12 +58,12 @@ export function useAudioPlayback(client: TutorClient) {
       return true
     }
 
-    // No message yet — keep chunks for later (watch will call us again)
+    // 还没有消息——先保留片段，稍后再处理（watch 会再次调用）
     return false
   }
 
-  // When a new assistant message appears (via startAssistantStream),
-  // flush any pending audio from the previous response to prevent cross-contamination.
+  // 当新助手消息出现时（通过 startAssistantStream），
+  // 将前一条回复的待处理音频刷入，以避免相互污染。
   watch(
     () => store.messages.length,
     (newLen, oldLen) => {
@@ -84,7 +81,7 @@ export function useAudioPlayback(client: TutorClient) {
       audioPlayer.feedAudioChunk(chunk)
       pendingAudioChunks.push(chunk.audioBase64)
 
-      // Capture the target message ID on first chunk of a response
+      // 在回复的第一个音频片段上捕获目标消息 ID
       if (!audioTargetMsgId) {
         const msgs = store.messages
         const last = msgs[msgs.length - 1]
@@ -99,7 +96,7 @@ export function useAudioPlayback(client: TutorClient) {
     }
   })
 
-  // Wire assistant messages → local TTS playback
+  // 将助手消息连接到本地 TTS 播放
   client.on('message.assistant', (response) => {
     if (store.ttsSource === 'local') {
       audioPlayer.speak(response.text)
@@ -107,7 +104,7 @@ export function useAudioPlayback(client: TutorClient) {
   })
 
   /**
-   * Unlock audio for iOS Safari. Must be called from a user gesture.
+   * 为 iOS Safari 解锁音频。必须从用户手势中调用。
    */
   async function unlockAudio(): Promise<void> {
     await audioPlayer.unlockAudio()

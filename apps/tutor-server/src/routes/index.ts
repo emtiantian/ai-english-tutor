@@ -7,7 +7,7 @@ import { scenarioRoutes } from './scenarios.js'
 import { configRoutes } from './config.js'
 
 /**
- * Register all API routes
+ * 注册所有 API 路由
  */
 export async function registerRoutes(server: FastifyInstance): Promise<void> {
   await server.register(healthRoutes)

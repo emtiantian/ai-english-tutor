@@ -8,11 +8,11 @@ import {
 } from '@ai-english-tutor/shared'
 import type { ReviewWord } from '../vocab-tracker.js'
 
-// Re-export for consumers that import from this module
+// 为从本模块导入的调用方重新导出
 export type { OpeningStyle }
 
 /**
- * Pick a random opening style from the persona's preset list
+ * 从角色预设列表中随机挑选一个开场风格
  */
 export function pickOpeningStyle(persona: CharacterPersona = LUNA_PERSONA): OpeningStyle {
   const styles = persona.styles
@@ -20,9 +20,9 @@ export function pickOpeningStyle(persona: CharacterPersona = LUNA_PERSONA): Open
 }
 
 /**
- * Build messages for a teaching conversation.
+ * 为教学对话构建消息。
  *
- * @param reviewWords - Words due for review (injected into system prompt)
+ * @param reviewWords - 待复习的单词（注入到 system prompt 中）
  */
 export function buildTeachingMessages(
   userMessage: string,
@@ -35,7 +35,7 @@ export function buildTeachingMessages(
   const personality = style?.persona
   let systemPrompt = persona.buildSystemPrompt(level, personality)
 
-  // Inject vocabulary review instructions if there are words to review
+  // 如果有待复习单词，注入复习指令
   if (reviewWords && reviewWords.length > 0) {
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
     systemPrompt += `
@@ -51,22 +51,21 @@ After using a review word, include it in the "vocabulary" field of your JSON res
     { role: 'system', content: systemPrompt },
   ]
 
-  // Add conversation history (last 10 messages to stay within context limit)
+  // 添加对话历史（取最近 10 条以控制上下文长度）
   for (const h of history.slice(-10)) {
     messages.push({ role: h.role, content: h.content })
   }
 
-  // Add current user message
+  // 添加当前用户消息
   messages.push({ role: 'user', content: userMessage })
 
   return messages
 }
 
 /**
- * Build messages for lesson start.
+ * 为课程开始构建消息。
  *
- * Uses the provided style (or picks a random one from the persona)
- * and injects the personality into the system prompt.
+ * 使用传入的风格（或从角色中随机挑选一个）并将人格注入 system prompt。
  */
 export function buildLessonStartMessages(
   level: number,
@@ -91,9 +90,9 @@ export function buildLessonStartMessages(
 }
 
 /**
- * Build messages for starting a scenario-based lesson.
+ * 为启动场景化课程构建消息。
  *
- * Injects scenario context, role-play setup, and objectives into the prompt.
+ * 向 prompt 注入场景上下文、角色扮演设定和目标。
  */
 export function buildScenarioStartMessages(
   scenario: Scenario,
@@ -105,12 +104,12 @@ export function buildScenarioStartMessages(
   targetWords?: string[],
 ): { messages: LLMMessage[]; style: OpeningStyle } {
   const chosen = style ?? pickOpeningStyle(persona)
-  // Strip base OUTPUT FORMAT — scenario context provides its own
+  // 剥离基础 OUTPUT FORMAT —— 场景上下文会提供自己的格式
   let systemPrompt = stripBaseOutputFormat(persona.buildSystemPrompt(level, chosen.persona))
 
-  // v2: use runtime target words when available; fall back to static scenario.targetWords
+  // v2：优先使用运行时目标词；没有则回退到静态 scenario.targetWords
   const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
-  // Inject scenario context (includes its own OUTPUT FORMAT)
+  // 注入场景上下文（包含它自己的 OUTPUT FORMAT）
   systemPrompt += buildScenarioContext(scenario, targetLevel, words, { currentActIndex: 0 })
   systemPrompt += buildLineReuseBlock(reusableLines)
 
@@ -130,9 +129,9 @@ export function buildScenarioStartMessages(
 }
 
 /**
- * Build messages for an ongoing scenario conversation.
+ * 为进行中的场景对话构建消息。
  *
- * Includes scenario context, current objectives, and review words.
+ * 包含场景上下文、当前目标和复习单词。
  */
 export function buildScenarioTeachingMessages(
   userMessage: string,
@@ -151,16 +150,16 @@ export function buildScenarioTeachingMessages(
   },
 ): LLMMessage[] {
   const personality = style?.persona
-  // Strip base OUTPUT FORMAT — scenario context provides its own
+  // 剥离基础 OUTPUT FORMAT —— 场景上下文会提供自己的格式
   let systemPrompt = stripBaseOutputFormat(persona.buildSystemPrompt(level, personality))
 
-  // v2: use runtime target words when available; fall back to static scenario.targetWords
+  // v2：优先使用运行时目标词，回退到静态 scenario.targetWords
   const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
-  // Inject scenario context (includes its own OUTPUT FORMAT)
+  // 注入场景上下文（包含它自己的 OUTPUT FORMAT）
   systemPrompt += buildScenarioContext(scenario, targetLevel, words, vocabState)
   systemPrompt += buildLineReuseBlock(reusableLines)
 
-  // Inject vocabulary review instructions if there are words to review
+  // 如果有待复习单词，注入复习指令
   if (reviewWords && reviewWords.length > 0) {
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
     systemPrompt += `
@@ -174,34 +173,34 @@ Include any words you use in the "vocabulary" field and provide one example sent
     { role: 'system', content: systemPrompt },
   ]
 
-  // Add conversation history (last 10 messages)
+  // 添加对话历史（最近 10 条）
   for (const h of history.slice(-10)) {
     messages.push({ role: h.role, content: h.content })
   }
 
-  // Add current user message
+  // 添加当前用户消息
   messages.push({ role: 'user', content: userMessage })
 
   return messages
 }
 
 /**
- * Strip the base persona's OUTPUT FORMAT section so the scenario's
- * OUTPUT FORMAT is the only one.
+ * 剥离基础角色人设的 OUTPUT FORMAT 段落，使场景自己的
+ * OUTPUT FORMAT 成为唯一格式。
  */
 function stripBaseOutputFormat(prompt: string): string {
-  // Remove everything from "OUTPUT FORMAT" to the end of the prompt
+  // 移除从 "OUTPUT FORMAT" 到 prompt 末尾的所有内容
   return prompt.replace(/\nOUTPUT FORMAT[\s\S]*$/, '')
 }
 
 /**
- * Build the reusable-line block injected after the scenario context.
+ * 构建注入场景上下文之后的可复用台词块。
  *
- * These are lines Luna has already spoken in this exact scenario + level + voice.
- * Reusing one VERBATIM guarantees a TTS cache hit (zero synthesis cost), so we
- * ask the model to prefer them when one fits — but only the "text" field, and
- * only when natural, so the conversation never feels canned. Returns '' when
- * there are no lines yet (cold start), so savings grow as the scenario is replayed.
+ * 这些台词是 Luna 在当前这个场景 + 等级 + 音色下已经说过的。
+ * 逐字复用其中一句可保证命中 TTS 缓存（零合成成本），因此我们会
+ * 让模型在合适时优先使用——但仅用于 "text" 字段，且只在自然时复用，
+ * 避免对话显得生硬。没有可用台词时返回 ''（冷启动），随着场景反复进行，
+ * 节省的成本会越来越高。
  */
 function buildLineReuseBlock(reusableLines?: string[]): string {
   if (!reusableLines || reusableLines.length === 0) return ''
@@ -215,7 +214,7 @@ ${list}`
 }
 
 /**
- * Build the scenario context block to inject into the system prompt.
+ * 构建要注入 system prompt 的场景上下文块。
  */
 function buildScenarioContext(
   scenario: Scenario,
@@ -226,7 +225,7 @@ function buildScenarioContext(
     wordsUsed?: string[]
   },
 ): string {
-  // v2: split target words across acts so the LLM focuses on a small batch each turn
+  // v2：将目标词汇分到各幕，让 LLM 每轮只关注一小批词
   const actsCount = scenario.acts?.length ?? 3
   const buckets = bucketWordsForActs(targetWords, actsCount)
   const currentActIndex = Math.min(
@@ -242,7 +241,7 @@ function buildScenarioContext(
   const focusWords = currentBucket.words.filter(
     (w) => !usedSet.has(w.toLowerCase()),
   )
-  // If the current act is almost done, start surfacing next-act words too
+  // 如果当前幕即将完成，也开始露出下一幕的词汇
   const currentBucketUsedCount = currentBucket.words.filter((w) =>
     usedSet.has(w.toLowerCase()),
   ).length
@@ -258,7 +257,7 @@ function buildScenarioContext(
     )
   }
 
-  // v2: use 3-act structure if available; otherwise fall back to objectives
+  // v2：有 3 幕结构时优先使用；否则回退到 objectives
   const actsBlock = scenario.acts
     ? buildActsBlock(scenario.acts)
     : buildObjectivesBlock(scenario.objectives)
@@ -320,7 +319,7 @@ OUTPUT FORMAT:
 }
 
 /**
- * Split target words into roughly equal buckets, one per act.
+ * 将目标词汇大致均分到每一幕，每个桶对应一幕。
  */
 function bucketWordsForActs(targetWords: string[], actsCount: number): { actIndex: number; words: string[] }[] {
   const count = Math.max(1, actsCount)

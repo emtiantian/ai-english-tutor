@@ -74,17 +74,17 @@ pnpm install
 ### 2. 配置环境变量
 
 ```bash
-cp .env.example apps/tutor-server/.env
-# 编辑 apps/tutor-server/.env，填入你的 API Key
+cp .env.example .env
+# 编辑 .env，填入你的 API Key
 ```
 
-**最小配置**（DeepSeek + 浏览器 TTS + Whisper ASR）：
+**最小配置**（DeepSeek + 浏览器 TTS/ASR）：
 
 ```env
 LLM_PROVIDER=deepseek
-DEEPSEEK_API_KEY=sk-your-key-here
+DEEPSEEK_API_KEY=your-key-here
 TTS_PROVIDER=browser
-ASR_PROVIDER=whisper
+ASR_PROVIDER=browser
 ```
 
 ### 3. 启动开发服务器
@@ -110,9 +110,8 @@ pnpm build
 
 | 提供商 | `LLM_PROVIDER` | Key | 模型 |
 |--------|----------------|-----|------|
-| DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` |
-| OpenAI | `openai` | `OPENAI_API_KEY` | `gpt-4o-mini` |
-| 小米 MiLM | `xiaomi` | `XIAOMI_API_KEY` | `milm-pro` |
+| DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat`，或火山方舟接入点 ID |
+| 小米 MiLM（已停用） | `xiaomi` | `XIAOMI_API_KEY` | `milm-pro` |
 | Mock（开发用） | `mock` | 无 | — |
 
 ### TTS 语音合成
@@ -120,9 +119,9 @@ pnpm build
 | 引擎 | `TTS_PROVIDER` | 说明 |
 |------|----------------|------|
 | 浏览器 | `browser` | 无需后端，使用系统语音（默认） |
-| 小米 MiMo | `xiaomi` | voicedesign 模式，通过 `voiceDesign` 描述角色音色 |
+| 火山方舟 | `volcengine` | 云 API，需 `VOLCENGINE_TTS_API_KEY` |
 | CosyVoice | `cosyvoice` | 需要 Docker 启动 CosyVoice 服务 |
-| OpenAI | `openai` | 需要 `OPENAI_API_KEY` |
+| 小米 MiMo（已停用） | `xiaomi` | voicedesign 模式，通过 `voiceDesign` 描述角色音色 |
 
 **角色音色系统**：每种风格的 `voiceDesign` 采用结构化格式（【角色】【场景】【指导】），包含语速、气息、音色、情绪四维描述，作为 prompt 发送给小米 TTS voicedesign 模型。默认风格为「慵懒御姐」。
 
@@ -131,9 +130,9 @@ pnpm build
 | 引擎 | `ASR_PROVIDER` | 说明 |
 |------|----------------|------|
 | 浏览器 | `browser` | 前端浏览器识别，无需后端（默认） |
+| 火山方舟 | `volcengine` | 云 API，需 `VOLCENGINE_ASR_API_KEY` |
 | Whisper.cpp | `whisper` | 需要 Docker 启动 Whisper 服务 |
-| 小米 ASR | `xiaomi` | 需要 `XIAOMI_API_KEY`，支持 mp3/wav |
-| OpenAI Whisper | `openai` | 需要 `OPENAI_API_KEY` |
+| 小米 ASR（已停用） | `xiaomi` | 需要 `XIAOMI_API_KEY`，支持 mp3/wav |
 
 > 录音自动转 MP3 (16kHz mono 64kbps) 后上传，兼容所有 ASR 提供商。
 
@@ -146,15 +145,6 @@ pnpm build
 | `live2d` | Live2D Cubism 模型（默认） |
 | `spine` | Spine 骨骼动画 |
 | `svg` | SVG 占位符（无 3D 渲染） |
-
-### TTS 播放模式
-
-通过 `VITE_TTS_SOURCE` 切换：
-
-| 模式 | 说明 |
-|------|------|
-| `local` | 浏览器 SpeechSynthesis（默认，零延迟） |
-| `remote` | 后端生成音频流（音质更好，需配置 TTS 引擎） |
 
 ## Docker 部署
 

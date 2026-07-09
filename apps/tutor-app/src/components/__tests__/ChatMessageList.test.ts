@@ -113,18 +113,18 @@ describe('ChatMessageList', () => {
       ],
     })
 
-    // Initially hidden
+    // 初始隐藏
     expect(wrapper.find('.zh-translation').exists()).toBe(false)
 
-    // Click to show
+    // 点击显示
     await wrapper.find('.replay-btn--zh').trigger('click')
     expect(wrapper.find('.zh-translation').exists()).toBe(true)
     expect(wrapper.find('.zh-translation').text()).toBe('你好！')
     expect(wrapper.find('.replay-btn--zh').attributes('title')).toBe('隐藏中文')
-    // No voice playback is triggered
+    // 不触发语音播放
     expect(wrapper.emitted('replay-chinese')).toBeUndefined()
 
-    // Click again to hide
+    // 再次点击隐藏
     await wrapper.find('.replay-btn--zh').trigger('click')
     expect(wrapper.find('.zh-translation').exists()).toBe(false)
   })
@@ -144,9 +144,9 @@ describe('ChatMessageList', () => {
       isPlaying: true,
     })
 
-    // English replay button is disabled during playback...
+    // 播放期间英文重听按钮被禁用……
     expect(wrapper.find('.replay-btn[title="重听英文"]').attributes('disabled')).toBeDefined()
-    // ...but the Chinese text toggle stays usable (it no longer plays audio).
+    // ……但中文文本切换仍可用（不再播放音频）。
     expect(wrapper.find('.replay-btn--zh').attributes('disabled')).toBeUndefined()
   })
 

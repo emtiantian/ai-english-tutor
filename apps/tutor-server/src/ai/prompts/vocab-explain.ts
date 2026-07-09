@@ -4,21 +4,19 @@ import type { WordExplanation, WordSense } from '@ai-english-tutor/shared'
 export type { WordExplanation, WordSense }
 
 /**
- * Word detail / dictionary explanation
+ * 单词详情 / 词典释义
  *
- * Generates a structured, dictionary-style Chinese explanation for a single
- * English word, optionally grounded in the sentence it appeared in. The LLM is
- * the primary source (covers any contextual word); the static vocab list only
- * provides optional hints (level / known gloss) folded into the prompt.
+ * 为单个英文单词生成结构化、词典风格的中文释义，可选地基于它出现的句子。
+ * LLM 是主要来源（覆盖任何上下文词）；静态词汇表只提供可选提示（等级 / 已知释义），
+ * 将其融入 prompt。
  */
 
 /**
- * Build the LLM messages that request a dictionary-style explanation.
+ * 构建请求词典风格释义的 LLM 消息。
  *
- * @param word     The word to explain.
- * @param sentence Optional sentence the word appeared in (gives the LLM the
- *                 contextual sense to prioritise).
- * @param hint     Optional static-dictionary hints (level / known gloss).
+ * @param word     要解释的单词。
+ * @param sentence 单词出现的可选句子（让 LLM 优先处理该上下文义项）。
+ * @param hint     可选的静态词典提示（等级 / 已知释义 / 词性）。
  */
 export function buildVocabExplainMessages(
   word: string,
@@ -76,11 +74,10 @@ function asString(v: unknown): string | undefined {
 }
 
 /**
- * Parse the LLM output into a {@link WordExplanation}.
+ * 将 LLM 输出解析为 {@link WordExplanation}。
  *
- * Tolerates code fences and trailing prose by extracting the first balanced
- * JSON object. Falls back to `null` when nothing parseable is found, so the
- * caller can degrade to static dictionary data.
+ * 通过提取第一个结构完整的 JSON 对象来兼容代码围栏和尾部额外文本。
+ * 当找不到可解析内容时回退到 `null`，让调用方可以降级为静态词典数据。
  */
 export function parseVocabExplainResponse(
   content: string,

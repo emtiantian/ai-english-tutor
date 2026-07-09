@@ -22,12 +22,12 @@ function getTapFallbackText(): string {
 }
 
 /**
- * Composable that manages CharacterProvider lifecycle.
+ * 管理 CharacterProvider 生命周期的 composable。
  *
- * Reads VITE_CHARACTER_PROVIDER env var to determine which provider to use.
- * Supports: 'live2d' | 'spine' | 'rive' | 'svg'
+ * 读取 VITE_CHARACTER_PROVIDER 环境变量来决定使用哪个 provider。
+ * 支持：'live2d' | 'spine' | 'rive' | 'svg'
  *
- * 当 providerType='live2d' 时,从 localStorage / VITE_LIVE2D_MODEL_ID 读模型 ID,
+ * 当 providerType='live2d' 时，从 localStorage / VITE_LIVE2D_MODEL_ID 读取模型 ID，
  * 并提供 switchLive2DModel(id) 在运行时切换。
  */
 export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, client: TutorClient) {
@@ -45,8 +45,8 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
   const isSwitching = ref(false)
 
   /**
-   * 内部:基于 modelId 创建 provider 并装配事件。
-   * 失败时 createCharacterProviderSafe 会自动降级到 SVG,这里只负责装配 wiring。
+   * 内部：基于 modelId 创建 provider 并装配事件。
+   * 失败时 createCharacterProviderSafe 会自动降级到 SVG，这里只负责事件装配。
    */
   async function buildProvider(modelId: string): Promise<CharacterProvider | null> {
     if (!canvasRef.value) return null
@@ -56,10 +56,9 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
       live2dModelId: providerType === 'live2d' ? modelId : undefined,
     })
 
-    // Wire tap-body interaction.
-    // When LLM has provided studentReplyHints, tapping the character speaks the
-    // best hint for the user ("AI answers for me"). Otherwise we fall back to a
-    // small set of playful, learning-oriented easter-eggs.
+    // 连接点击身体交互。
+    // 当 LLM 提供了 studentReplyHints 时，点击角色会为用户说出最佳提示（“帮我回答”）。
+    // 否则回退到一小套有趣、以学习为导向的彩蛋文案。
     provider.onTapBody?.(() => {
       let replyText: string | undefined
       for (let i = store.messages.length - 1; i >= 0; i--) {
@@ -85,8 +84,8 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
   }
 
   /**
-   * Initialize the character provider.
-   * Call this once after canvas is ready.
+   * 初始化角色 provider。
+   * 在 canvas 准备就绪后调用一次。
    */
   async function init(): Promise<void> {
     if (!canvasRef.value) return
@@ -201,7 +200,7 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
 }
 
 /**
- * Wire TutorClient events to CharacterProvider optional methods.
+ * 将 TutorClient 事件连接到 CharacterProvider 的可选方法。
  */
 function wireCharacterEvents(provider: CharacterProvider, client: TutorClient): (() => void)[] {
   const unsubs: (() => void)[] = []

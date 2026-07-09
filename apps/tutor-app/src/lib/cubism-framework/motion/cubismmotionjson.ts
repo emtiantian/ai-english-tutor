@@ -12,7 +12,7 @@ import { CSM_ASSERT, CubismLogWarning } from '../utils/cubismdebug';
 import { CubismJson, JsonMap } from '../utils/cubismjson';
 import { CubismMotionSegmentType } from './cubismmotioninternal';
 
-// JSON keys
+// JSON 键
 const Meta = 'Meta';
 const Duration = 'Duration';
 const Loop = 'Loop';
@@ -34,28 +34,28 @@ const Time = 'Time';
 const Value = 'Value';
 
 /**
- * motion3.jsonのコンテナ。
+ * motion3.json 容器。
  */
 export class CubismMotionJson {
   /**
-   * コンストラクタ
-   * @param buffer motion3.jsonが読み込まれているバッファ
-   * @param size バッファのサイズ
+   * 构造函数
+   * @param buffer 已加载 motion3.json 的缓冲区
+   * @param size 缓冲区大小
    */
   public constructor(buffer: ArrayBuffer, size: number) {
     this._json = CubismJson.create(buffer, size);
   }
 
   /**
-   * デストラクタ相当の処理
+   * 析构等效处理
    */
   public release(): void {
     CubismJson.delete(this._json);
   }
 
   /**
-   * モーションの長さを取得する
-   * @return モーションの長さ[秒]
+   * 获取动作长度
+   * @return 动作长度[秒]
    */
   public getMotionDuration(): number {
     return this._json
@@ -66,9 +66,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのループ情報の取得
-   * @return true ループする
-   * @return false ループしない
+   * 获取动作循环信息
+   * @return true 循环
+   * @return false 不循环
    */
   public isMotionLoop(): boolean {
     return this._json
@@ -79,9 +79,9 @@ export class CubismMotionJson {
   }
 
   /**
-   *  motion3.jsonファイルの整合性チェック
+   *  motion3.json 文件一致性检查
    *
-   * @return 正常なファイルの場合はtrueを返す。
+   * @return 文件正常时返回 true。
    */
   hasConsistency(): boolean {
     let result = true;
@@ -97,7 +97,7 @@ export class CubismMotionJson {
     let actualTotalSegmentCount = 0;
     let actualTotalPointCount = 0;
 
-    // カウント処理
+    // 计数处理
     for (
       let curvePosition = 0;
       curvePosition < actualCurveListSize;
@@ -143,7 +143,7 @@ export class CubismMotionJson {
       }
     }
 
-    // 個数チェック
+    // 数量检查
     if (actualCurveListSize != this.getMotionCurveCount()) {
       CubismLogWarning('The number of curves does not match the metadata.');
       result = false;
@@ -175,8 +175,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションカーブの個数の取得
-   * @return モーションカーブの個数
+   * 获取动作曲线数量
+   * @return 动作曲线数量
    */
   public getMotionCurveCount(): number {
     return this._json
@@ -187,8 +187,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのフレームレートの取得
-   * @return フレームレート[FPS]
+   * 获取动作帧率
+   * @return 帧率[FPS]
    */
   public getMotionFps(): number {
     return this._json
@@ -199,8 +199,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのセグメントの総合計の取得
-   * @return モーションのセグメントの取得
+   * 获取动作段的总数
+   * @return 动作段的总数
    */
   public getMotionTotalSegmentCount(): number {
     return this._json
@@ -211,8 +211,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブの制御店の総合計の取得
-   * @return モーションのカーブの制御点の総合計
+   * 获取动作曲线控制点的总数
+   * @return 动作曲线控制点的总数
    */
   public getMotionTotalPointCount(): number {
     return this._json
@@ -223,9 +223,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのフェードイン時間の存在
-   * @return true 存在する
-   * @return false 存在しない
+   * 动作淡入时间是否存在
+   * @return true 存在
+   * @return false 不存在
    */
   public isExistMotionFadeInTime(): boolean {
     return !this._json
@@ -236,9 +236,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのフェードアウト時間の存在
-   * @return true 存在する
-   * @return false 存在しない
+   * 动作淡出时间是否存在
+   * @return true 存在
+   * @return false 不存在
    */
   public isExistMotionFadeOutTime(): boolean {
     return !this._json
@@ -249,8 +249,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのフェードイン時間の取得
-   * @return フェードイン時間[秒]
+   * 获取动作淡入时间
+   * @return 淡入时间[秒]
    */
   public getMotionFadeInTime(): number {
     return this._json
@@ -261,8 +261,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのフェードアウト時間の取得
-   * @return フェードアウト時間[秒]
+   * 获取动作淡出时间
+   * @return 淡出时间[秒]
    */
   public getMotionFadeOutTime(): number {
     return this._json
@@ -273,9 +273,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブの種類の取得
-   * @param curveIndex カーブのインデックス
-   * @return カーブの種類
+   * 获取动作曲线目标类型
+   * @param curveIndex 曲线索引
+   * @return 曲线目标类型
    */
   public getMotionCurveTarget(curveIndex: number): string {
     return this._json
@@ -287,9 +287,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのIDの取得
-   * @param curveIndex カーブのインデックス
-   * @return カーブのID
+   * 获取动作曲线 ID
+   * @param curveIndex 曲线索引
+   * @return 曲线 ID
    */
   public getMotionCurveId(curveIndex: number): CubismIdHandle {
     return CubismFramework.getIdManager().getId(
@@ -303,10 +303,10 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのフェードイン時間の存在
-   * @param curveIndex カーブのインデックス
-   * @return true 存在する
-   * @return false 存在しない
+   * 动作曲线淡入时间是否存在
+   * @param curveIndex 曲线索引
+   * @return true 存在
+   * @return false 不存在
    */
   public isExistMotionCurveFadeInTime(curveIndex: number): boolean {
     return !this._json
@@ -318,10 +318,10 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのフェードアウト時間の存在
-   * @param curveIndex カーブのインデックス
-   * @return true 存在する
-   * @return false 存在しない
+   * 动作曲线淡出时间是否存在
+   * @param curveIndex 曲线索引
+   * @return true 存在
+   * @return false 不存在
    */
   public isExistMotionCurveFadeOutTime(curveIndex: number): boolean {
     return !this._json
@@ -333,9 +333,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのフェードイン時間の取得
-   * @param curveIndex カーブのインデックス
-   * @return フェードイン時間[秒]
+   * 获取动作曲线淡入时间
+   * @param curveIndex 曲线索引
+   * @return 淡入时间[秒]
    */
   public getMotionCurveFadeInTime(curveIndex: number): number {
     return this._json
@@ -347,9 +347,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのフェードアウト時間の取得
-   * @param curveIndex カーブのインデックス
-   * @return フェードアウト時間[秒]
+   * 获取动作曲线淡出时间
+   * @param curveIndex 曲线索引
+   * @return 淡出时间[秒]
    */
   public getMotionCurveFadeOutTime(curveIndex: number): number {
     return this._json
@@ -361,9 +361,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのセグメントの個数を取得する
-   * @param curveIndex カーブのインデックス
-   * @return モーションのカーブのセグメントの個数
+   * 获取动作曲线段数量
+   * @param curveIndex 曲线索引
+   * @return 动作曲线段数量
    */
   public getMotionCurveSegmentCount(curveIndex: number): number {
     return this._json
@@ -375,10 +375,10 @@ export class CubismMotionJson {
   }
 
   /**
-   * モーションのカーブのセグメントの値の取得
-   * @param curveIndex カーブのインデックス
-   * @param segmentIndex セグメントのインデックス
-   * @return セグメントの値
+   * 获取动作曲线段的值
+   * @param curveIndex 曲线索引
+   * @param segmentIndex 段索引
+   * @return 段的值
    */
   public getMotionCurveSegment(
     curveIndex: number,
@@ -394,8 +394,8 @@ export class CubismMotionJson {
   }
 
   /**
-   * イベントの個数の取得
-   * @return イベントの個数
+   * 获取事件数量
+   * @return 事件数量
    */
   public getEventCount(): number {
     return this._json
@@ -406,8 +406,8 @@ export class CubismMotionJson {
   }
 
   /**
-   *  イベントの総文字数の取得
-   * @return イベントの総文字数
+   *  获取事件总字符数
+   * @return 事件总字符数
    */
   public getTotalEventValueSize(): number {
     return this._json
@@ -418,9 +418,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * イベントの時間の取得
-   * @param userDataIndex イベントのインデックス
-   * @return イベントの時間[秒]
+   * 获取事件时间
+   * @param userDataIndex 事件索引
+   * @return 事件时间[秒]
    */
   public getEventTime(userDataIndex: number): number {
     return this._json
@@ -432,9 +432,9 @@ export class CubismMotionJson {
   }
 
   /**
-   * イベントの取得
-   * @param userDataIndex イベントのインデックス
-   * @return イベントの文字列
+   * 获取事件
+   * @param userDataIndex 事件索引
+   * @return 事件字符串
    */
   public getEventValue(userDataIndex: number): string {
     return this._json
@@ -445,17 +445,17 @@ export class CubismMotionJson {
       .getRawString();
   }
 
-  _json: CubismJson; // motion3.jsonのデータ
+  _json: CubismJson; // motion3.json 数据
 }
 
 /**
- * @brief ベジェカーブの解釈方法のフラグタイプ
+ * @brief 贝塞尔曲线解释方式的标志类型
  */
 export enum EvaluationOptionFlag {
-  EvaluationOptionFlag_AreBeziersRistricted = 0 ///< ベジェハンドルの規制状態
+  EvaluationOptionFlag_AreBeziersRistricted = 0 ///< 贝塞尔手柄限制状态
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmotionjson';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

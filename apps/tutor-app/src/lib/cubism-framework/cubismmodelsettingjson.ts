@@ -12,14 +12,14 @@ import { CubismFramework } from './live2dcubismframework';
 import { CubismJson, Value } from './utils/cubismjson';
 
 export enum FrequestNode {
-  FrequestNode_Groups, // getRoot().getValueByString(Groups)
-  FrequestNode_Moc, // getRoot().getValueByString(FileReferences).getValueByString(Moc)
-  FrequestNode_Motions, // getRoot().getValueByString(FileReferences).getValueByString(Motions)
-  FrequestNode_Expressions, // getRoot().getValueByString(FileReferences).getValueByString(Expressions)
-  FrequestNode_Textures, // getRoot().getValueByString(FileReferences).getValueByString(Textures)
-  FrequestNode_Physics, // getRoot().getValueByString(FileReferences).getValueByString(Physics)
-  FrequestNode_Pose, // getRoot().getValueByString(FileReferences).getValueByString(Pose)
-  FrequestNode_HitAreas // getRoot().getValueByString(HitAreas)
+  FrequestNode_Groups, // 从根节点读取 Groups
+  FrequestNode_Moc, // 从根节点读取 FileReferences，再读取 Moc
+  FrequestNode_Motions, // 从根节点读取 FileReferences，再读取 Motions
+  FrequestNode_Expressions, // 从根节点读取 FileReferences，再读取 Expressions
+  FrequestNode_Textures, // 从根节点读取 FileReferences，再读取 Textures
+  FrequestNode_Physics, // 从根节点读取 FileReferences，再读取 Physics
+  FrequestNode_Pose, // 从根节点读取 FileReferences，再读取 Pose
+  FrequestNode_HitAreas // 从根节点读取 HitAreas
 }
 
 /**
@@ -780,7 +780,7 @@ export class CubismModelSettingJson extends ICubismModelSetting {
   protected readonly val = 'val';
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmodelsettingjson';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

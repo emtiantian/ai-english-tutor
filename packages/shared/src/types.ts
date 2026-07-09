@@ -1,4 +1,4 @@
-/** Available Live2D / Spine motions for the AI teacher */
+/** AI 老师可用的 Live2D / Spine 动作 */
 export const AVAILABLE_MOTIONS = [
   'wave',        // 挥手打招呼
   'nod',         // 点头
@@ -12,7 +12,7 @@ export const AVAILABLE_MOTIONS = [
 
 export type MotionId = (typeof AVAILABLE_MOTIONS)[number]
 
-/** Available Live2D / Spine expressions */
+/** 可用的 Live2D / Spine 表情 */
 export const AVAILABLE_EXPRESSIONS = [
   'happy',
   'neutral',
@@ -24,26 +24,25 @@ export const AVAILABLE_EXPRESSIONS = [
 
 export type ExpressionId = (typeof AVAILABLE_EXPRESSIONS)[number]
 
-/** Type guard: is `id` a valid semantic motion ID? */
+/** 类型守卫：id 是否为有效的语义动作 ID */
 export function isMotionId(id: unknown): id is MotionId {
   return typeof id === 'string' && (AVAILABLE_MOTIONS as readonly string[]).includes(id)
 }
 
-/** Type guard: is `id` a valid semantic expression ID? */
+/** 类型守卫：id 是否为有效的语义表情 ID */
 export function isExpressionId(id: unknown): id is ExpressionId {
   return typeof id === 'string' && (AVAILABLE_EXPRESSIONS as readonly string[]).includes(id)
 }
 
 /**
- * Clamp an arbitrary value to a valid {@link MotionId}, falling back to
- * `fallback` when it is not one of {@link AVAILABLE_MOTIONS}. Keeps invalid
- * LLM output from reaching the frontend (where it would silently degrade to Idle).
+ * 将任意值限制为有效的 {@link MotionId}；若不在 {@link AVAILABLE_MOTIONS} 中，
+ * 则回退到 `fallback`。防止无效的 LLM 输出到达前端（否则会静默降级为 Idle）。
  */
 export function normalizeMotionId(id: unknown, fallback: MotionId = 'nod'): MotionId {
   return isMotionId(id) ? id : fallback
 }
 
-/** Clamp an arbitrary value to a valid {@link ExpressionId} (fallback `neutral`). */
+/** 将任意值限制为有效的 {@link ExpressionId}（回退 `neutral`）。 */
 export function normalizeExpressionId(id: unknown, fallback: ExpressionId = 'neutral'): ExpressionId {
   return isExpressionId(id) ? id : fallback
 }
@@ -54,13 +53,13 @@ export interface TeachingResponse {
   motionId?: string
   expressionId?: string
   vocabulary?: string[]
-  /** Teaching example sentences — one per vocabulary word, showing usage in context. */
+  /** 教学例句 —— 每个生词一个，展示在语境中的用法。 */
   vocabularySentences?: string[]
   /**
-   * Learner-voiced reply suggestions: 1-3 short replies the student could say
-   * NEXT, in their role's voice. Powers the 💡 hint in `ChatInputBar`.
-   * Distinct from `vocabularySentences`, which are teaching examples.
-   * Not persisted — per-turn ephemeral hints, refreshed each LLM turn.
+   * 学习者视角的回复建议：1-3 句学生接下来可以说的简短回复，
+   * 使用其角色口吻。为 `ChatInputBar` 中的 💡 提示提供内容。
+   * 与 `vocabularySentences`（教学例句）不同。
+   * 不持久化 —— 每轮临时的提示，每次 LLM 回复后刷新。
    */
   studentReplyHints?: string[]
   scenario?: {
@@ -93,7 +92,7 @@ export interface CharacterState {
   mouthOpen: number
 }
 
-/** One sense (词义条目) of a word in a dictionary-style explanation. */
+/** 字典式解释中单词的一个义项（词义条目）。 */
 export interface WordSense {
   /** 词性，如 n. / v. / adj. / adv. / phrase */
   pos: string
@@ -105,7 +104,7 @@ export interface WordSense {
   exampleZh?: string
 }
 
-/** Structured dictionary entry returned by POST /api/vocab/explain. */
+/** POST /api/vocab/explain 返回的结构化词典条目。 */
 export interface WordExplanation {
   /** 单词原形 */
   word: string

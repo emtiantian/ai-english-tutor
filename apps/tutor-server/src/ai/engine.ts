@@ -39,11 +39,10 @@ import { pickScenarioVocabulary } from './scenario-vocab-picker.js'
 import { lineGroupKey, getReusableLines, recordTeacherLine } from './line-pool.js'
 
 /**
- * Warn when LLM response lacks `vocabularySentences`.
+ * 当 LLM 响应缺少 `vocabularySentences` 时发出警告。
  *
- * The 💡 hint UI relies on these per-turn example sentences; absence is not
- * fatal (frontend degrades to showing the vocabulary list, then hides),
- * but is worth recording so we can spot prompt-compliance regressions.
+ * 💡 提示 UI 依赖每轮提供的例句；缺失不会导致崩溃（前端会降级为显示词汇列表，然后隐藏），
+ * 但值得记录下来，以便发现 prompt 遵循度回退。
  */
 function warnIfMissingVocabSentences(
   parsed: { vocabulary?: string[]; vocabularySentences?: string[] },
@@ -53,16 +52,15 @@ function warnIfMissingVocabSentences(
   if (!parsed.vocabularySentences || parsed.vocabularySentences.length === 0) {
     logger.warn(
       { sessionId, origin, vocabulary: parsed.vocabulary },
-      'LLM response missing vocabularySentences',
+      'LLM 响应缺少 vocabularySentences',
     )
   }
 }
 
 /**
- * Generate a stable, unique session ID.
+ * 生成稳定、唯一的 session ID。
  *
- * Uses a timestamp plus a random suffix to avoid collisions when the client
- * does not provide its own sessionId.
+ * 使用时间戳加随机后缀，避免客户端未提供自己的 sessionId 时发生冲突。
  */
 function generateSessionId(): string {
   return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -92,16 +90,14 @@ function isScenarioComplete(turnsCount: number, coverage: number): boolean {
 }
 
 /**
- * Determine which act the scenario conversation is currently in.
+ * 判断场景对话当前处于哪一幕。
  *
- * Target words are split evenly across acts. We stay in an act until at least
- * half of its words have been used, then advance. This keeps the LLM focused
- * on a small, actionable batch of vocabulary each turn.
+ * 目标词汇被均匀分配到三幕中。每一幕至少要使用一半以上词汇才会进入下一幕，
+ * 这样每轮都能让 LLM 专注于一小批可执行的词汇。
  */
 function computeCurrentActIndex(scenarioState: ScenarioState): number {
-  // v2: scenarios are designed around a 3-act structure. When the runtime scenario
-  // does not declare acts, we still split target words into 3 buckets to keep the
-  // LLM focused on a small, actionable batch each turn.
+  // v2: 场景围绕三幕结构设计。运行时场景未声明幕时，仍将目标词汇分成 3 份，
+  // 让 LLM 每轮只关注一小批可执行的词汇。
   const actsCount = 3
   const bucketSize = Math.ceil(scenarioState.targetWords.length / actsCount)
   if (bucketSize <= 0) return 0
@@ -116,12 +112,12 @@ function computeCurrentActIndex(scenarioState: ScenarioState): number {
 }
 
 /**
- * AI Teaching Engine
+ * AI 教学引擎
  *
- * Orchestrates LLM, ASR, and TTS for:
- * - Level assessment
- * - Free-form teaching conversations
- * - Scenario-based role-play lessons
+ * 编排 LLM、ASR 与 TTS，支持：
+ * - 英语水平评估
+ * - 自由对话教学
+ * - 场景化角色扮演教学
  */
 export class TutorEngine {
   private llm = createLLMProvider()
@@ -131,20 +127,20 @@ export class TutorEngine {
   private persona: CharacterPersona = loadPersona()
 
   /**
-   * Assess the user's English level from a sample sentence
+   * 根据示例句子评估用户的英语水平
    */
   async assessLevel(sentence: string): Promise<{ level: number; reason: string }> {
-    logger.info({ sentence: sentence.slice(0, 50) }, 'Assessing English level')
+    logger.info({ sentence: sentence.slice(0, 50) }, '评估英语水平')
 
     try {
       const messages = buildLevelAssessMessages(sentence, this.persona)
       const response = await this.llm.complete(messages)
       const result = parseLevelResult(response.content)
 
-      logger.info({ level: result.level, reason: result.reason }, 'Level assessment complete')
+      logger.info({ level: result.level, reason: result.reason }, '英语水平评估完成')
       return { level: result.level, reason: result.reason }
     } catch (err) {
-      logger.error({ err }, 'Level assessment failed, using fallback')
+      logger.error({ err }, '英语水平评估失败，使用兜底方案')
 
       const length = sentence.length
       const level = length < 20 ? 1 : length < 50 ? 2 : length < 100 ? 3 : length < 150 ? 4 : 5
@@ -156,10 +152,10 @@ export class TutorEngine {
   }
 
   /**
-   * Handle a multi-turn assessment round (1-3)
+   * 处理多轮评估（1-3 轮）
    *
-   * Evaluates user text, returns scores and next question.
-   * Final round computes weighted average for overall level.
+   * 评估用户文本，返回分数与下一个问题。
+   * 最后一轮计算加权平均得出总体水平。
    */
   async handleAssessmentTurn(
     text: string,
@@ -187,7 +183,7 @@ export class TutorEngine {
   }> {
     const { round, previousScores = [], audioBase64, audioFormat, styleName, topicSeed } = options
 
-    // Resolve voiceDesign from styleName for TTS
+    // 根据 styleName 解析 TTS 使用的 voiceDesign
     const voiceDesign = styleName
       ? this.persona.styles.find((s) => s.name === styleName)?.voiceDesign
       : undefined
@@ -199,26 +195,26 @@ export class TutorEngine {
       audioFormat,
       audioSize: audioBase64?.length,
       styleName,
-    }, '[Assessment] Processing turn')
+    }, '[评估] 处理第 {round} 轮')
 
-    // Transcribe audio if provided
+    // 如有音频则进行转录
     const userText = await this.audio.transcribeAudio(text, audioBase64, audioFormat ?? 'webm')
-    logger.info({ userText: userText.slice(0, 100), round }, '[Assessment] User text after transcription')
+    logger.info({ userText: userText.slice(0, 100), round }, '[评估] 转写后用户文本')
 
-    // Detect initial trigger (text === 'start') — generate first question without evaluation
+    // 检测初始触发（text === 'start'）—— 不评估，直接生成第一个问题
     const isInitialTrigger = userText.trim().toLowerCase() === 'start'
     if (isInitialTrigger) {
-      logger.info('[Assessment] Initial trigger detected — generating first question only')
+      logger.info('[评估] 检测到初始触发，仅生成第一个问题')
     }
 
     try {
-      // Build assessment messages for this round
+      // 构建本轮评估消息
       const messages = isInitialTrigger
         ? buildAssessmentTurnMessages(1, '(Assessment just started — generate the first greeting and question only, do not evaluate)', previousScores, this.persona, topicSeed)
         : buildAssessmentTurnMessages(round, userText, previousScores, this.persona, topicSeed)
 
-      // Voice-capable LLM: attach raw audio to the user turn (no standalone ASR ran),
-      // otherwise the CEFR evaluation sees an empty answer.
+      // 支持音频输入的 LLM：把原始音频附加到用户轮次（未跑独立 ASR），
+      // 否则 CEFR 评估会看到一个空答案。
       if (!isInitialTrigger && audioBase64 && this.llm.capabilities.supportsAudioInput) {
         const lastMsg = messages[messages.length - 1]
         if (lastMsg && lastMsg.role === 'user') {
@@ -229,35 +225,35 @@ export class TutorEngine {
           ]
           logger.info(
             { llm: this.llm.name, base64Size: audioBase64.length },
-            '[Assessment] Attached audio to user turn for voice-capable LLM',
+            '[评估] 已为支持语音的 LLM 附加音频到用户轮次',
           )
         }
       }
       logger.info({
         messageCount: messages.length,
         lastUserMsg: messages.filter(m => m.role === 'user').pop()?.content?.toString().slice(0, 100),
-      }, '[Assessment] Sending to LLM')
+      }, '[评估] 发送给 LLM')
 
       const response = await this.llm.complete(messages)
-      logger.info({ responseLength: response.content.length, preview: response.content.slice(0, 200) }, '[Assessment] LLM response')
+      logger.info({ responseLength: response.content.length, preview: response.content.slice(0, 200) }, '[评估] LLM 响应')
 
       const parsed = parseAssessmentTurnResponse(response.content)
 
-      // Initial trigger: return the first question with neutral scores (not a real evaluation)
+      // 初始触发：返回第一个问题，分数为中性（非真正评估）
       if (isInitialTrigger) {
         const firstQuestion = parsed.nextQuestion || 'Hi there! Tell me a little about yourself.'
-        logger.info({ firstQuestion: firstQuestion.slice(0, 80) }, '[Assessment] First question generated')
+        logger.info({ firstQuestion: firstQuestion.slice(0, 80) }, '[评估] 第一个问题已生成')
 
         let audioBase64Result: string | undefined
         try {
           const audioResult = await this.audio.handleOutput(firstQuestion, voiceDesign, options.sessionId)
           audioBase64Result = audioResult.audioBase64
         } catch (err) {
-          logger.warn({ err }, 'Failed to generate assessment audio')
+          logger.warn({ err }, '生成评估音频失败')
         }
 
         return {
-          round: 0, // round 0 = not yet started real evaluation
+          round: 0, // round 0 = 尚未开始真正评估
           scores: { vocabulary: 0, grammar: 0, fluency: 0, comprehension: 0 },
           overallLevel: 0,
           confidence: 'low',
@@ -271,7 +267,7 @@ export class TutorEngine {
         }
       }
 
-      // Normal evaluation: calculate the overall score for this round
+      // 正常评估：计算本轮总分
       const roundScore = Math.round(
         (parsed.vocabularyScore + parsed.grammarScore + parsed.fluencyScore + parsed.comprehensionScore) / 4
       )
@@ -279,17 +275,17 @@ export class TutorEngine {
       const isComplete = round >= 3
       let finalLevel = roundScore
 
-      // If this is the last round, compute weighted average
+      // 若是最后一轮，计算加权平均
       if (isComplete && previousScores.length > 0) {
         const allScores = [...previousScores, roundScore]
-        // Weights: [0.2, 0.3, 0.5] for rounds 1, 2, 3
+        // 权重：[0.2, 0.3, 0.5] 分别对应第 1、2、3 轮
         const weights = [0.2, 0.3, 0.5]
         const weightedSum = allScores.reduce((sum, score, i) => sum + score * (weights[i] || 0.2), 0)
         finalLevel = Math.round(weightedSum)
         finalLevel = Math.min(5, Math.max(1, finalLevel))
       }
 
-      // Generate audio for the response
+      // 为响应生成音频
       const responseText = isComplete
         ? `Based on our conversation, your English level is Level ${finalLevel}!`
         : (parsed.nextQuestion || 'Tell me more about that.')
@@ -321,9 +317,9 @@ export class TutorEngine {
         isComplete,
       }
     } catch (err) {
-      logger.error({ err, round }, 'Assessment turn failed, using fallback')
+      logger.error({ err, round }, '评估轮次失败，使用兜底方案')
 
-      // Fallback: estimate from text length
+      // 降级方案：根据文本长度估算
       const length = userText.length
       const estimatedLevel = length < 30 ? 1 : length < 80 ? 2 : length < 150 ? 3 : length < 250 ? 4 : 5
 
@@ -354,7 +350,7 @@ export class TutorEngine {
   }
 
   /**
-   * Start a new lesson (free-form or scenario-based)
+   * 开始新课（自由对话或场景化）
    */
   async startLesson(
     level: number,
@@ -388,24 +384,24 @@ export class TutorEngine {
     }
   }> {
     const sid = sessionId ?? generateSessionId()
-    logger.info({ sessionId: sid, level, scenarioId, styleName, targetLevel, resumeFrom }, 'Starting lesson')
+    logger.info({ sessionId: sid, level, scenarioId, styleName, targetLevel, resumeFrom }, '开始课程')
 
-    // Resolve style by name (or random if not specified)
+    // 按名称解析风格（未指定则随机）
     const requestedStyle = styleName
       ? this.persona.styles.find((s) => s.name === styleName)
       : undefined
 
-    // If scenarioId is provided, start a scenario-based lesson
+    // 若提供了 scenarioId，则开始场景化课程
     if (scenarioId) {
       return this.startScenarioLesson(scenarioId, level, sid, userId, requestedStyle, targetLevel, resumeFrom)
     }
 
-    // Otherwise, start a free-form lesson
+    // 否则开始自由对话课程
     return this.startFreeFormLesson(level, sid, userId, requestedStyle)
   }
 
   /**
-   * Start a scenario-based lesson
+   * 开始场景化课程
    */
   private async startScenarioLesson(
     scenarioId: string,
@@ -418,37 +414,36 @@ export class TutorEngine {
   ) {
     const scenario = getScenarioById(scenarioId)
     if (!scenario) {
-      throw new Error(`Scenario not found: ${scenarioId}`)
+      throw new Error(`场景不存在：${scenarioId}`)
     }
 
-    logger.info({ sessionId, scenarioId: scenario.id, scenarioName: scenario.name, targetLevel, resumeFrom }, 'Starting scenario lesson')
+    logger.info({ sessionId, scenarioId: scenario.id, scenarioName: scenario.name, targetLevel, resumeFrom }, '开始场景化课程')
 
     try {
-      // v2: determine CEFR target level
+      // v2: 确定 CEFR 目标等级
       const cefrLevel = targetLevel ?? levelNumToCEFR(level)
 
       let scenarioState: ScenarioState
       let isResume = false
 
-      // v2: resume from an existing server session if resumeFrom is provided
+      // v2: 若提供了 resumeFrom，则从已有服务端会话恢复
       if (resumeFrom) {
         const existing = this.sessions.getOrCreate(resumeFrom, level)
         if (existing.scenario) {
           scenarioState = existing.scenario
           isResume = true
-          logger.info({ sessionId, resumeFrom, scenarioId: scenarioState.id }, 'Resuming scenario session')
+          logger.info({ sessionId, resumeFrom, scenarioId: scenarioState.id }, '恢复场景会话')
         } else {
-          logger.warn({ sessionId, resumeFrom }, 'No scenario state found for resume, starting fresh')
+          logger.warn({ sessionId, resumeFrom }, '未找到可恢复的场景状态，重新开始')
           scenarioState = this.createScenarioState(scenario, cefrLevel)
         }
-        // Ensure the current sessionId maps to the same session data
+        // 确保当前 sessionId 指向同一份会话数据
         this.sessions.set(sessionId, this.sessions.getOrCreate(resumeFrom, level))
       } else {
         scenarioState = this.createScenarioState(scenario, cefrLevel)
       }
 
-      // Resolve the style up-front so the reusable-line group (which is keyed
-      // by voice) matches what buildScenarioStartMessages will actually use.
+      // 提前确定风格，使可复用台词组（按音色分组）与 buildScenarioStartMessages 实际使用的音色一致。
       const resolvedStyle = style ?? pickOpeningStyle(this.persona)
       const lineGroup = lineGroupKey(scenario.id, cefrLevel, resolvedStyle.voiceDesign)
       const reusableLines = await getReusableLines(lineGroup)
@@ -464,7 +459,7 @@ export class TutorEngine {
       this.sessions.saveSessionToDb(sessionId, level, chosenStyle.name, chosenStyle.voiceDesign)
       this.sessions.saveScenarioState(sessionId, scenarioState)
 
-      // Generate opening/resume greeting
+      // 生成开场/恢复问候
       const userPrompt = isResume
         ? `The student is returning to the role-play scenario: "${scenario.nameEn}". ` +
           `Welcome them back naturally and continue the conversation as ${scenario.role.teacher}. ` +
@@ -491,10 +486,10 @@ export class TutorEngine {
         vocabularySentences: parsed.vocabularySentences,
       })
 
-      // Remember this spoken line so it can be reused (and TTS-cache-hit) later.
+      // 记住这句台词，便于后续复用（并命中 TTS 缓存）。
       await recordTeacherLine(lineGroup, parsed.text)
 
-      // Track vocabulary
+      // 跟踪词汇
       if (userId && parsed.vocabulary?.length) {
         const levelStr = cefrLevel
         this.vocabTracker.processTurn(
@@ -535,7 +530,7 @@ export class TutorEngine {
   }
 
   /**
-   * v2: create a fresh ScenarioState with CEFR-aware target words.
+   * v2: 创建新的 ScenarioState，目标词汇根据 CEFR 等级筛选。
    */
   private createScenarioState(scenario: ReturnType<typeof getScenarioById>, level: CEFRLevel): ScenarioState {
     const targetWords = scenario ? pickScenarioVocabulary(scenario, level) : []
@@ -559,7 +554,7 @@ export class TutorEngine {
   }
 
   /**
-   * Start a free-form lesson
+   * 开始自由对话课程
    */
   private async startFreeFormLesson(level: number, sessionId: string, userId?: string, style?: OpeningStyle) {
     try {
@@ -577,7 +572,7 @@ export class TutorEngine {
 
       logger.info(
         { sessionId, style: chosenStyle.name },
-        'Lesson personality chosen',
+        '课程人格已选择',
       )
 
       this.sessions.saveSessionToDb(sessionId, level, chosenStyle.name, chosenStyle.voiceDesign)
@@ -608,7 +603,7 @@ export class TutorEngine {
   }
 
   /**
-   * Handle user speech/input and generate teaching response
+   * 处理用户语音/文本输入并生成教学响应
    */
   async handleUserSpeak(
     text: string,
@@ -663,24 +658,24 @@ export class TutorEngine {
         provider: this.llm.name,
         hasScenario: !!sessionId && !!this.sessions.getFromCache(sessionId)?.scenario,
       },
-      'Handling user speak',
+      '处理用户发言',
     )
 
     const sid = sessionId ?? generateSessionId()
     const session = this.sessions.getOrCreate(sid, level)
     session.userId = userId
 
-    // Track if input was audio (for fuzzy vocab matching)
+    // 记录输入是否为音频（用于模糊词汇匹配）
     const isAudioInput = !!audioBase64
 
-    // Transcribe audio if needed
+    // 按需转录音频
     const userText = await this.audio.transcribeAudio(text, audioBase64, audioFormat)
 
-    // Get review words (spaced repetition)
+    // 获取复习词（间隔重复）
     const reviewWords = userId ? this.vocabTracker.getReviewWords(userId) : []
     const levelStr = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'][level - 1] || 'B1'
 
-    // Build messages based on whether we're in a scenario
+    // 根据是否处于场景中构建消息
     let messages: LLMMessage[]
     const scenarioState = session.scenario
     const scenario = scenarioState ? getScenarioById(scenarioState.id) : undefined
@@ -716,10 +711,8 @@ export class TutorEngine {
       )
     }
 
-    // Voice-capable LLMs transcribe + understand audio themselves, so no
-    // standalone ASR ran (transcribeAudio returned early). Attach the raw audio
-    // to the last user turn here, otherwise the model only sees empty/placeholder
-    // text and never actually "hears" the user.
+    // 支持音频输入的 LLM 可自行转录并理解音频，因此没有跑独立 ASR（transcribeAudio 提前返回）。
+    // 在此处把原始音频附加到最后一条用户轮次，否则模型只能看到空/占位文本，无法真正“听到”用户。
     if (isAudioInput && audioBase64 && this.llm.capabilities.supportsAudioInput) {
       const lastMsg = messages[messages.length - 1]
       if (lastMsg && lastMsg.role === 'user') {
@@ -730,12 +723,12 @@ export class TutorEngine {
         ]
         logger.info(
           { llm: this.llm.name, audioFormat, base64Size: audioBase64.length },
-          '[LLM] Attached audio to user turn for voice-capable LLM',
+          '[LLM] 已为支持语音的 LLM 附加音频到用户轮次',
         )
       }
     }
 
-    // Call LLM and finalize
+    // 调用 LLM 并收尾
     if (stream) {
       return this.handleStreamingResponse(messages, session, userText, sid, userId, reviewWords, levelStr, isAudioInput, options.signal)
     } else {
@@ -743,7 +736,7 @@ export class TutorEngine {
     }
   }
 
-  // ── Private helpers ──────────────────────────────────────
+  // ── 私有辅助方法 ──────────────────────────────────────
 
   private async handleCompleteResponse(
     messages: LLMMessage[],
@@ -777,12 +770,11 @@ export class TutorEngine {
     let visibleBytes = 0
 
     if (!this.llm.stream) {
-      // Fallback: provider doesn't support streaming. Skip teacher.chunk
-      // entirely — finalizeResponse will broadcast teacher.response with
-      // the parsed clean text. Sending raw response.content as a chunk
-      // here would leak any pre-JSON reasoning prose into the chat bubble.
+      // 降级方案：provider 不支持流式。完全跳过 teacher.chunk — finalizeResponse 会广播
+      // teacher.response 并附带解析后的干净文本。若在此把原始 response.content 当作 chunk
+      // 发送，会把 JSON 前的推理文本泄漏到聊天气泡中。
       const response = await this.llm.complete(messages, signal)
-      // Still send an end marker so the frontend's streaming-state UI clears.
+      // 仍发送结束标记，让前端的流式状态 UI 清空。
       broadcastToSession(sessionId, {
         event: 'teacher.chunk',
         data: { chunk: '', isEnd: true },
@@ -794,10 +786,8 @@ export class TutorEngine {
       if (chunk.content) {
         chunks.push(chunk.content)
         rawBytes += chunk.content.length
-        // Filter raw stream through the JSON `text` field extractor so
-        // the bubble only ever sees decoded `text` content — never the
-        // model's pre-JSON reasoning prose, the JSON syntax, or other
-        // fields like textZh / vocabulary.
+        // 通过 JSON `text` 字段提取器过滤原始流，使气泡只展示解码后的 `text` 内容 —
+        // 绝不包含模型 JSON 前的推理文本、JSON 语法或其他字段（如 textZh / vocabulary）。
         const visible = extractor.push(chunk.content)
         if (visible) {
           visibleBytes += visible.length
@@ -827,14 +817,14 @@ export class TutorEngine {
 
     logger.debug(
       { sessionId, rawBytes, visibleBytes, droppedBytes: rawBytes - visibleBytes },
-      'Stream filter: dropped reasoning/JSON-syntax bytes before SSE',
+      '流式过滤：在 SSE 前丢弃推理/JSON 语法字节',
     )
 
     return this.finalizeResponse(sessionId, session, userText, chunks.join(''), userId, reviewWords, levelStr, isAudioInput)
   }
 
   /**
-   * Shared finalization: parse → persist → broadcast SSE → handle audio → track vocab → track scenario
+   * 统一收尾：解析 → 持久化 → 广播 SSE → 处理音频 → 跟踪词汇 → 跟踪场景
    */
   private async finalizeResponse(
     sessionId: string,
@@ -849,7 +839,7 @@ export class TutorEngine {
     const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
 
-    // Track user's words in scenario using VocabTracker matching
+    // 在场景中使用 VocabTracker 匹配跟踪用户使用的词汇
     if (session.scenario) {
       session.scenario.turnsCount++
       const { used } = this.vocabTracker.analyzeUserText(
@@ -861,7 +851,7 @@ export class TutorEngine {
         session.scenario.wordsUsed.add(word)
       }
 
-      // Also count LLM-introduced target words as encountered
+      // LLM 引入的目标词汇也视为已遇到
       if (parsed.vocabulary) {
         const targetSet = new Set(session.scenario.targetWords.map(w => w.toLowerCase()))
         for (const word of parsed.vocabulary) {
@@ -869,16 +859,16 @@ export class TutorEngine {
             session.scenario.wordsUsed.add(word.toLowerCase())
           }
         }
-        // Filter vocabulary to only include target words (avoid LLM hallucinations)
+        // 将 vocabulary 过滤为仅保留目标词汇（避免 LLM 幻觉）
         parsed.vocabulary = parsed.vocabulary.filter(w => targetSet.has(w.toLowerCase()))
         if (parsed.vocabulary.length === 0) parsed.vocabulary = undefined
       }
 
-      // Persist updated scenario progress so it survives server restarts.
+      // 持久化更新后的场景进度，使其在服务端重启后仍能保留。
       try {
         this.sessions.saveScenarioState(sessionId, session.scenario)
       } catch (err) {
-        logger.warn({ err, sessionId }, 'Failed to persist scenario state')
+        logger.warn({ err, sessionId }, '持久化场景状态失败')
       }
     }
 
@@ -889,8 +879,7 @@ export class TutorEngine {
       vocabulary: parsed.vocabulary,
     })
 
-    // Remember the spoken line for reuse (only inside a scenario, where the
-    // pool is grouped by scenario/level/voice and the prompt offers it back).
+    // 记住这句台词以复用（仅在场景中生效，台词池按场景/等级/音色分组，并在 prompt 中回传）。
     if (session.scenario) {
       const targetLevel = session.scenario.level ?? levelNumToCEFR(session.level)
       await recordTeacherLine(
@@ -899,7 +888,7 @@ export class TutorEngine {
       )
     }
 
-    // Track vocabulary (spaced repetition)
+    // 跟踪词汇（间隔重复）
     if (userId && reviewWords && levelStr) {
       const vocabAnalysis = this.vocabTracker.processTurn(
         userId, userText, parsed.vocabulary ?? [], reviewWords, levelStr,
@@ -912,7 +901,7 @@ export class TutorEngine {
           used: vocabAnalysis.usedWords,
           missed: vocabAnalysis.missedWords,
           new: vocabAnalysis.newWords,
-        }, 'Vocabulary tracking update')
+        }, '词汇跟踪更新')
       }
     }
 
@@ -923,7 +912,7 @@ export class TutorEngine {
     }
     broadcastToSession(sessionId, completeEvent)
 
-    // Generate English TTS
+    // 生成英文 TTS
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
     return {
@@ -935,7 +924,7 @@ export class TutorEngine {
   }
 
   /**
-   * Build scenario progress response (v2: coverage + turns + maxTurns + stars)
+   * 构建场景进度响应（v2: 覆盖率 + 轮数 + 最大轮数 + 星级）
    */
   private buildScenarioProgress(session: SessionData) {
     if (!session.scenario) return undefined
@@ -981,14 +970,14 @@ export class TutorEngine {
         wordsTotal: scenario.targetWords.length,
         turnsCount: scenario.turnsCount,
       }
-      logger.info({ scenarioId: scenario.id, turnsCount: scenario.turnsCount, coverage, stars }, 'Scenario completed!')
+      logger.info({ scenarioId: scenario.id, turnsCount: scenario.turnsCount, coverage, stars }, '场景完成！')
     }
 
     return result
   }
 
   /**
-   * Build scenario response for lesson start (initial state)
+   * 构建课程开始时的场景响应（初始状态）
    */
   private buildScenarioResponse(scenario: ScenarioState) {
     return {
@@ -1007,11 +996,10 @@ export class TutorEngine {
   }
 
   /**
-   * Explain a single vocabulary word for the dictionary popup.
+   * 解释单个词汇，用于词典弹窗。
    *
-   * LLM-first (covers any conversational word, gives context-aware senses),
-   * with the static vocab DB as offline/failure fallback. Returns null only
-   * when neither source can produce a usable explanation.
+   * 优先使用 LLM（可覆盖任意对话词汇，给出上下文相关的释义），静态词汇库作为离线/失败兜底。
+   * 仅当两者都无法给出可用解释时返回 null。
    */
   async explainWord(word: string, sentence?: string): Promise<WordExplanation | null> {
     const cleaned = word.trim()
@@ -1031,7 +1019,7 @@ export class TutorEngine {
         return parsed
       }
     } catch (err) {
-      logger.error({ err, word: cleaned }, 'explainWord LLM failed, static fallback')
+      logger.error({ err, word: cleaned }, 'explainWord LLM 失败，使用静态词典兜底')
     }
 
     if (staticEntry) {
@@ -1044,16 +1032,16 @@ export class TutorEngine {
     return null
   }
 
-  /** Get session info (for API) */
+  /** 获取会话信息（供 API 使用） */
   getSession(sessionId: string) {
     return this.sessions.getSessionInfo(sessionId)
   }
 
-  /** Get session from cache */
+  /** 从缓存获取会话 */
   getSessionFromCache(sessionId: string) {
     return this.sessions.getFromCache(sessionId)
   }
 }
 
-/** Singleton instance */
+/** 单例实例 */
 export const tutorEngine = new TutorEngine()

@@ -5,7 +5,7 @@ export class SpeechSynthesisTTSProvider implements TTSProvider {
   private currentUtterance: SpeechSynthesisUtterance | null = null
   private _onStart?: () => void
   private _onEnd?: () => void
-  /** Cached voices (iOS getVoices() returns empty on first call) */
+  /** 缓存的语音（iOS 上 getVoices() 首次调用时返回空数组） */
   private voices: SpeechSynthesisVoice[] = []
 
   constructor() {

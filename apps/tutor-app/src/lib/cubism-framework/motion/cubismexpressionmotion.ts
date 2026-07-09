@@ -13,7 +13,7 @@ import { CubismJson, Value } from '../utils/cubismjson';
 import { ACubismMotion } from './acubismmotion';
 import { CubismMotionQueueEntry } from './cubismmotionqueueentry';
 
-// exp3.jsonのキーとデフォルト
+// exp3.json 的键与默认值
 const ExpressionKeyFadeIn = 'FadeInTime';
 const ExpressionKeyFadeOut = 'FadeOutTime';
 const ExpressionKeyParameters = 'Parameters';
@@ -26,19 +26,19 @@ const BlendValueOverwrite = 'Overwrite';
 const DefaultFadeTime = 1.0;
 
 /**
- * 表情のモーション
+ * 表情动作
  *
- * 表情のモーションクラス。
+ * 表情动作类。
  */
 export class CubismExpressionMotion extends ACubismMotion {
-  static readonly DefaultAdditiveValue = 0.0; // 加算適用の初期値
-  static readonly DefaultMultiplyValue = 1.0; // 乗算適用の初期値
+  static readonly DefaultAdditiveValue = 0.0; // 加法应用的初始值
+  static readonly DefaultMultiplyValue = 1.0; // 乘法应用的初始值
 
   /**
-   * インスタンスを作成する。
-   * @param buffer expファイルが読み込まれているバッファ
-   * @param size バッファのサイズ
-   * @return 作成されたインスタンス
+   * 创建实例。
+   * @param buffer 已加载 exp 文件的缓冲区
+   * @param size 缓冲区大小
+   * @return 创建的实例
    */
   public static create(
     buffer: ArrayBuffer,
@@ -50,11 +50,11 @@ export class CubismExpressionMotion extends ACubismMotion {
   }
 
   /**
-   * モデルのパラメータの更新の実行
-   * @param model 対象のモデル
-   * @param userTimeSeconds デルタ時間の積算値[秒]
-   * @param weight モーションの重み
-   * @param motionQueueEntry CubismMotionQueueManagerで管理されているモーション
+   * 执行模型参数更新
+   * @param model 目标模型
+   * @param userTimeSeconds 累计增量时间[秒]
+   * @param weight 动作权重
+   * @param motionQueueEntry CubismMotionQueueManager 中管理的动作
    */
   public doUpdateParameters(
     model: CubismModel,
@@ -91,23 +91,23 @@ export class CubismExpressionMotion extends ACubismMotion {
           break;
         }
         default:
-          // 仕様にない値を設定した時はすでに加算モードになっている
+          // 设置为规格外的值时已经处于加法模式
           break;
       }
     }
   }
 
   /**
-   * @brief 表情によるモデルのパラメータの計算
+   * @brief 计算表情影响的模型参数
    *
-   * モデルの表情に関するパラメータを計算する。
+   * 计算模型表情相关参数。
    *
-   * @param[in]   model                        対象のモデル
-   * @param[in]   userTimeSeconds              デルタ時間の積算値[秒]
-   * @param[in]   motionQueueEntry             CubismMotionQueueManagerで管理されているモーション
-   * @param[in]   expressionParameterValues    モデルに適用する各パラメータの値
-   * @param[in]   expressionIndex              表情のインデックス
-   * @param[in]   fadeWeight                   表情のウェイト
+   * @param[in]   model                        目标模型
+   * @param[in]   userTimeSeconds              累计增量时间[秒]
+   * @param[in]   motionQueueEntry             CubismMotionQueueManager 中管理的动作
+   * @param[in]   expressionParameterValues    要应用到模型的各参数值
+   * @param[in]   expressionIndex              表情索引
+   * @param[in]   fadeWeight                   表情权重
    */
   public calculateExpressionParameters(
     model: CubismModel,
@@ -125,7 +125,7 @@ export class CubismExpressionMotion extends ACubismMotion {
       return;
     }
 
-    // モデルに適用する値を計算
+    // 计算要应用到模型的值
     for (let i = 0; i < expressionParameterValues.length; ++i) {
       const expressionParameterValue = expressionParameterValues[i];
 
@@ -151,7 +151,7 @@ export class CubismExpressionMotion extends ACubismMotion {
         break;
       }
 
-      // 再生中のExpressionが参照していないパラメータは初期値を適用
+      // 对播放中 Expression 未引用的参数应用初始值
       if (parameterIndex < 0) {
         if (expressionIndex == 0) {
           expressionParameterValue.additiveValue =
@@ -179,7 +179,7 @@ export class CubismExpressionMotion extends ACubismMotion {
         continue;
       }
 
-      // 値を計算
+      // 计算值
       const value = expressionParameters[parameterIndex].value;
       let newAdditiveValue, newMultiplyValue, newOverwriteValue;
       switch (expressionParameters[parameterIndex].blendType) {
@@ -224,11 +224,11 @@ export class CubismExpressionMotion extends ACubismMotion {
   }
 
   /**
-   * @brief 表情が参照しているパラメータを取得
+   * @brief 获取表情引用的参数
    *
-   * 表情が参照しているパラメータを取得する
+   * 获取表情引用的参数。
    *
-   * @return 表情パラメータ
+   * @return 表情参数
    */
   public getExpressionParameters() {
     return this._parameters;
@@ -244,12 +244,12 @@ export class CubismExpressionMotion extends ACubismMotion {
 
     this.setFadeInTime(
       root.getValueByString(ExpressionKeyFadeIn).toFloat(DefaultFadeTime)
-    ); // フェードイン
+    ); // 淡入
     this.setFadeOutTime(
       root.getValueByString(ExpressionKeyFadeOut).toFloat(DefaultFadeTime)
-    ); // フェードアウト
+    ); // 淡出
 
-    // 各パラメータについて
+    // 各参数
     const parameterCount = root
       .getValueByString(ExpressionKeyParameters)
       .getSize();
@@ -262,13 +262,13 @@ export class CubismExpressionMotion extends ACubismMotion {
         .getValueByIndex(i);
       const parameterId: CubismIdHandle = CubismFramework.getIdManager().getId(
         param.getValueByString(ExpressionKeyId).getRawString()
-      ); // パラメータID
+      ); // 参数 ID
 
       const value: number = param
         .getValueByString(ExpressionKeyValue)
-        .toFloat(); // 値
+        .toFloat(); // 值
 
-      // 計算方法の設定
+      // 设置计算方式
       let blendType: ExpressionBlendType;
 
       if (
@@ -287,11 +287,11 @@ export class CubismExpressionMotion extends ACubismMotion {
       ) {
         blendType = ExpressionBlendType.Overwrite;
       } else {
-        // その他 仕様にない値を設定した時は加算モードにすることで復旧
+        // 其他设置为规格外的值时，恢复为加法模式
         blendType = ExpressionBlendType.Additive;
       }
 
-      // 設定オブジェクトを作成してリストに追加する
+      // 创建设置对象并添加到列表
       const item: ExpressionParameter = new ExpressionParameter();
 
       item.parameterId = parameterId;
@@ -301,18 +301,18 @@ export class CubismExpressionMotion extends ACubismMotion {
       this._parameters[dstIndex++] = item;
     }
 
-    CubismJson.delete(json); // JSONデータは不要になったら削除する
+    CubismJson.delete(json); // JSON 数据不再需要时删除
   }
 
   /**
-   * @brief ブレンド計算
+   * @brief 混合计算
    *
-   * 入力された値でブレンド計算をする。
+   * 根据输入值进行混合计算。
    *
-   * @param source 現在の値
-   * @param destination 適用する値
-   * @param weight ウェイト
-   * @return 計算結果
+   * @param source 当前值
+   * @param destination 要应用的值
+   * @param weight 权重
+   * @return 计算结果
    */
   public calculateValue(
     source: number,
@@ -323,35 +323,35 @@ export class CubismExpressionMotion extends ACubismMotion {
   }
 
   /**
-   * コンストラクタ
+   * 构造函数
    */
   protected constructor() {
     super();
     this._parameters = new Array<ExpressionParameter>();
   }
 
-  private _parameters: Array<ExpressionParameter>; // 表情のパラメータ情報リスト
+  private _parameters: Array<ExpressionParameter>; // 表情参数信息列表
 }
 
 /**
- * 表情パラメータ値の計算方式
+ * 表情参数值的计算方式
  */
 export enum ExpressionBlendType {
-  Additive = 0, // 加算
-  Multiply = 1, // 乗算
-  Overwrite = 2 // 上書き
+  Additive = 0, // 加法
+  Multiply = 1, // 乘法
+  Overwrite = 2 // 覆盖
 }
 
 /**
- * 表情のパラメータ情報
+ * 表情参数信息
  */
 export class ExpressionParameter {
-  parameterId: CubismIdHandle; // パラメータID
-  blendType: ExpressionBlendType; // パラメータの演算種類
-  value: number; // 値
+  parameterId: CubismIdHandle; // 参数 ID
+  blendType: ExpressionBlendType; // 参数的运算类型
+  value: number; // 值
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismexpressionmotion';
 import { ExpressionParameterValue } from './cubismexpressionmotionmanager';
 import { CubismDefaultParameterId } from '../cubismdefaultparameterid';

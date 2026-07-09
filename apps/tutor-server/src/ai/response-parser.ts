@@ -8,18 +8,16 @@ export interface ParsedResponse {
   expressionId: string
   vocabulary?: string[]
   vocabularySentences?: string[]
-  /** Learner-voiced reply suggestions (powers 💡 hint). Per-turn ephemeral; not persisted. */
+  /** 学习者视角的回复建议（驱动 💡 提示）。每轮临时生成，不持久化。 */
   studentReplyHints?: string[]
   intent: string
 }
 
 /**
- * Parse teaching response from LLM output and determine motion/expression.
+ * 从 LLM 输出解析教学响应，并确定动作/表情。
  *
- * Motion/expression are LLM-driven when the model emits valid `motionId` /
- * `expressionId` in its JSON (clamped to the semantic vocabulary). When absent
- * or invalid, we fall back to the deterministic keyword analyzer so older
- * prompts and non-JSON replies still animate.
+ * 当模型在 JSON 中输出有效的 `motionId` / `expressionId` 时，动作/表情由 LLM 驱动（限制在语义词汇表内）。
+ * 缺失或无效时，回退到确定性关键词分析器，使旧 prompt 和非 JSON 回复仍能播放动画。
  */
 export function parseTeachingResponse(content: string): ParsedResponse {
   let text = content
@@ -44,7 +42,7 @@ export function parseTeachingResponse(content: string): ParsedResponse {
       studentReplyHints = Array.isArray(parsed.studentReplyHints)
         ? parsed.studentReplyHints.filter((s: unknown) => typeof s === 'string' && s.length > 0)
         : undefined
-      // Only adopt LLM motion/expression when they are valid semantic IDs.
+      // 仅在它们是有效语义 ID 时才采用 LLM 的动作/表情。
       if (isMotionId(parsed.motionId)) llmMotionId = parsed.motionId
       if (isExpressionId(parsed.expressionId)) llmExpressionId = parsed.expressionId
       logger.debug(
@@ -59,8 +57,8 @@ export function parseTeachingResponse(content: string): ParsedResponse {
     )
   }
 
-  // If JSON parsing failed, try to extract trailing analysis fields from literal text
-  // (e.g. 'vocabulary: ["word"] vocabularySentences: [...] studentReplyHints: [...]')
+  // 若 JSON 解析失败，尝试从纯文本中提取尾部分析字段
+  // （例如 'vocabulary: ["word"] vocabularySentences: [...] studentReplyHints: [...]'）
   if (!vocabulary && !vocabularySentences && !studentReplyHints) {
     const result = extractLiteralFields(text)
     if (result.stripped !== text) {
@@ -72,7 +70,7 @@ export function parseTeachingResponse(content: string): ParsedResponse {
     }
   }
 
-  // Prefer LLM-chosen motion/expression; fall back to the keyword analyzer.
+  // 优先使用 LLM 选择的动作/表情；否则回退到关键词分析器。
   const analyzed = defaultMotionAnalyzer.analyze(text)
   const motionId = llmMotionId ?? normalizeMotionId(analyzed.motionId)
   const expressionId = llmExpressionId ?? normalizeExpressionId(analyzed.expressionId)
@@ -84,9 +82,9 @@ export function parseTeachingResponse(content: string): ParsedResponse {
 }
 
 /**
- * Extract the first top-level JSON object from text using brace balancing.
- * Ignores braces inside double-quoted strings so nested JSON or text containing
- * braces does not confuse the matcher.
+ * 使用花括号平衡从文本中提取第一个顶层 JSON 对象。
+ *
+ * 忽略双引号字符串内的花括号，使嵌套 JSON 或包含花括号的文本不会干扰匹配器。
  */
 export function extractFirstJson(text: string): string | null {
   let depth = 0
@@ -132,14 +130,14 @@ export function extractFirstJson(text: string): string | null {
 }
 
 /**
- * Extract trailing analysis fields that the LLM may emit as literal text
- * when it fails to produce valid JSON. Matches patterns like:
+ * 提取 LLM 无法生成有效 JSON 时可能以纯文本形式输出的尾部分析字段。
+ * 匹配如下模式：
  *   vocabulary: ["word1", "word2"]
  *   vocabularySentences: ["sentence1"]
  *   studentReplyHints: ["hint1"]
- * at the end of the text (with optional leading whitespace).
+ * 位于文本末尾（前导空白可选）。
  *
- * Returns the stripped text plus parsed field values (undefined if not found).
+ * 返回去除尾部后的文本以及解析出的字段值（未找到则为 undefined）。
  */
 function extractLiteralFields(text: string): {
   stripped: string
@@ -147,14 +145,14 @@ function extractLiteralFields(text: string): {
   vocabularySentences?: string[]
   studentReplyHints?: string[]
 } {
-  // Match all trailing field blocks in one pass
+  // 一次性匹配所有尾部分段
   const fieldPattern =
     /(?:\s+(vocabulary|vocabularySentences|studentReplyHints)\s*:\s*(\[[\s\S]*?\]))+$/
 
   const match = text.match(fieldPattern)
   if (!match) return { stripped: text }
 
-  // Extract the full trailing block and parse individual fields
+  // 提取完整尾部分段并解析各个字段
   const trailingBlock = match[0]
   const stripped = text.slice(0, text.length - trailingBlock.length).trimEnd()
 
@@ -162,7 +160,7 @@ function extractLiteralFields(text: string): {
   let vocabularySentences: string[] | undefined
   let studentReplyHints: string[] | undefined
 
-  // Parse each field from the trailing block
+  // 从尾部分段解析每个字段
   const fieldRegex = /(vocabulary|vocabularySentences|studentReplyHints)\s*:\s*(\[[\s\S]*?\])/g
   let fieldMatch: RegExpExecArray | null
   while ((fieldMatch = fieldRegex.exec(trailingBlock)) !== null) {
@@ -177,7 +175,7 @@ function extractLiteralFields(text: string): {
       else if (key === 'vocabularySentences') vocabularySentences = strings
       else if (key === 'studentReplyHints') studentReplyHints = strings
     } catch {
-      // Skip fields that can't be parsed
+      // 跳过无法解析的字段
     }
   }
 

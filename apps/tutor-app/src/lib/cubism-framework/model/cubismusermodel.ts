@@ -308,19 +308,19 @@ export class CubismUserModel {
       const y = vertices[Constant.vertexOffset + j * Constant.vertexStep + 1];
 
       if (x < left) {
-        left = x; // Min x
+        left = x; // 最小 x
       }
 
       if (x > right) {
-        right = x; // Max x
+        right = x; // 最大 x
       }
 
       if (y < top) {
-        top = y; // Min y
+        top = y; // 最小 y
       }
 
       if (y > bottom) {
-        bottom = y; // Max y
+        bottom = y; // 最大 y
       }
     }
 
@@ -513,7 +513,7 @@ export class CubismUserModel {
   private _renderer: CubismRenderer_WebGL; // レンダラ
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismusermodel';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

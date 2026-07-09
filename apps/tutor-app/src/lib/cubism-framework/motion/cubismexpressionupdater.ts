@@ -11,24 +11,24 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismExpressionMotionManager } from './cubismexpressionmotionmanager';
 
 /**
- * Updater for expression effects.
- * Handles the management of expression motion through the CubismExpressionMotionManager.
+ * 表情效果的更新器。
+ * 通过 CubismExpressionMotionManager 管理表情动作。
  */
 export class CubismExpressionUpdater extends ICubismUpdater {
   private _expressionManager: CubismExpressionMotionManager;
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param expressionManager CubismExpressionMotionManager reference
+   * @param expressionManager CubismExpressionMotionManager 引用
    */
   constructor(expressionManager: CubismExpressionMotionManager);
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param expressionManager CubismExpressionMotionManager reference
-   * @param executionOrder Order of operations
+   * @param expressionManager CubismExpressionMotionManager 引用
+   * @param executionOrder 执行顺序
    */
   constructor(
     expressionManager: CubismExpressionMotionManager,
@@ -44,10 +44,10 @@ export class CubismExpressionUpdater extends ICubismUpdater {
   }
 
   /**
-   * Update process.
+   * 更新处理。
    *
-   * @param model Model to update
-   * @param deltaTimeSeconds Delta time in seconds.
+   * @param model 要更新的模型
+   * @param deltaTimeSeconds 增量时间（秒）。
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -58,7 +58,7 @@ export class CubismExpressionUpdater extends ICubismUpdater {
   }
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismexpressionupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

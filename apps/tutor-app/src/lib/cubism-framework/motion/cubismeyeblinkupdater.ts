@@ -11,27 +11,27 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismEyeBlink } from '../effect/cubismeyeblink';
 
 /**
- * Updater for eye blink effects.
- * Handles the management of eye blink animation through the CubismEyeBlink class.
+ * 眨眼效果的更新器。
+ * 通过 CubismEyeBlink 类管理眨眼动画。
  */
 export class CubismEyeBlinkUpdater extends ICubismUpdater {
   private _motionUpdated: () => boolean;
   private _eyeBlink: CubismEyeBlink;
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param motionUpdated Motion update flag reference
-   * @param eyeBlink CubismEyeBlink reference
+   * @param motionUpdated 动作更新标志引用
+   * @param eyeBlink CubismEyeBlink 引用
    */
   constructor(motionUpdated: () => boolean, eyeBlink: CubismEyeBlink);
 
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param motionUpdated Motion update flag reference
-   * @param eyeBlink CubismEyeBlink reference
-   * @param executionOrder Order of operations
+   * @param motionUpdated 动作更新标志引用
+   * @param eyeBlink CubismEyeBlink 引用
+   * @param executionOrder 执行顺序
    */
   constructor(
     motionUpdated: () => boolean,
@@ -50,10 +50,10 @@ export class CubismEyeBlinkUpdater extends ICubismUpdater {
   }
 
   /**
-   * Update process.
+   * 更新处理。
    *
-   * @param model Model to update
-   * @param deltaTimeSeconds Delta time in seconds.
+   * @param model 要更新的模型
+   * @param deltaTimeSeconds 增量时间（秒）。
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -61,14 +61,14 @@ export class CubismEyeBlinkUpdater extends ICubismUpdater {
     }
 
     if (!this._motionUpdated()) {
-      // メインモーションの更新がないとき
-      // 目パチ
+      // 没有主动作更新时
+      // 眨眼
       this._eyeBlink.updateParameters(model, deltaTimeSeconds);
     }
   }
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismeyeblinkupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

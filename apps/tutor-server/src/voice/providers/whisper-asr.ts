@@ -3,18 +3,18 @@ import { logger } from '../../logger.js'
 import type { ASRProvider, ASRResult } from '../asr.js'
 
 /**
- * Whisper.cpp ASR Provider
+ * Whisper.cpp ASR 服务商
  *
- * Connects to a locally deployed whisper.cpp HTTP server.
- * Free, self-hosted, runs on CPU or GPU.
+ * 连接本地部署的 whisper.cpp HTTP 服务。
+ * 免费、自托管，可在 CPU 或 GPU 上运行。
  *
- * Docker deployment:
+ * Docker 部署：
  *   docker run -d --name whisper -p 8080:8080 \
  *     -v $(pwd)/models:/models \
  *     ghcr.io/ggerganov/whisper.cpp:main \
  *     -m /models/ggml-base.en.bin --host 0.0.0.0 --port 8080
  *
- * Model download:
+ * 模型下载：
  *   curl -L -o models/ggml-base.en.bin \
  *     https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
  */
@@ -24,19 +24,19 @@ export class WhisperASRProvider implements ASRProvider {
 
   constructor() {
     this.baseUrl = config.WHISPER_BASE_URL
-    logger.info({ baseUrl: this.baseUrl }, 'Whisper.cpp ASR provider initialized')
+    logger.info({ baseUrl: this.baseUrl }, 'Whisper.cpp ASR 提供商初始化完成')
   }
 
   async transcribe(audioBuffer: Buffer, mimeType?: string): Promise<ASRResult> {
     logger.debug(
       { provider: this.name, size: audioBuffer.length, mimeType },
-      'Whisper transcribe request',
+      'Whisper 转写请求',
     )
 
     const ext = this.getExtensionFromMimeType(mimeType)
     const filename = `audio.${ext}`
 
-    // Build multipart form-data
+    // 构建 multipart form-data
     const formData = new FormData()
     formData.append(
       'file',
@@ -53,7 +53,7 @@ export class WhisperASRProvider implements ASRProvider {
     const startTime = Date.now()
     const url = `${this.baseUrl}/inference`
 
-    logger.info({ url, audioSize: audioBuffer.length, mimeType }, '[Whisper ASR] Sending request...')
+    logger.info({ url, audioSize: audioBuffer.length, mimeType }, '[Whisper ASR] 发送请求...')
 
     let response: Response
     try {
@@ -63,14 +63,14 @@ export class WhisperASRProvider implements ASRProvider {
       })
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
-      logger.error({ err: errMsg, url }, '[Whisper ASR] Connection failed — is the whisper.cpp server running?')
-      throw new Error(`Whisper ASR connection failed: ${errMsg}. Is the whisper.cpp server running at ${this.baseUrl}?`)
+      logger.error({ err: errMsg, url }, '[Whisper ASR] 连接失败 — whisper.cpp 服务是否已启动？')
+      throw new Error(`Whisper ASR 连接失败：${errMsg}。请确认 whisper.cpp 服务是否已在 ${this.baseUrl} 启动`)
     }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      logger.error({ status: response.status, errorText: errorText.slice(0, 200) }, '[Whisper ASR] Server returned error')
-      throw new Error(`Whisper ASR error: ${response.status} - ${errorText}`)
+      logger.error({ status: response.status, errorText: errorText.slice(0, 200) }, '[Whisper ASR] 服务器返回错误')
+      throw new Error(`Whisper ASR 错误：${response.status} - ${errorText}`)
     }
 
     const result = (await response.json()) as WhisperResponse
@@ -78,7 +78,7 @@ export class WhisperASRProvider implements ASRProvider {
 
     logger.info(
       { provider: this.name, duration, text: result.text?.slice(0, 100), textLength: result.text?.length ?? 0 },
-      '[Whisper ASR] Transcription complete',
+      '[Whisper ASR] 转写完成',
     )
 
     return {
@@ -101,7 +101,7 @@ export class WhisperASRProvider implements ASRProvider {
   }
 }
 
-/** whisper.cpp server response format */
+/** whisper.cpp 服务端响应格式 */
 interface WhisperResponse {
   text?: string
   language?: string

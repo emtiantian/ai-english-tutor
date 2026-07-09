@@ -1,7 +1,7 @@
 /**
- * SSE Event Type Definitions
+ * SSE 事件类型定义
  *
- * All events follow the SSE standard format:
+ * 所有事件遵循 SSE 标准格式：
  *   event: <event-name>\n
  *   data: <json-payload>\n\n
  */
@@ -11,7 +11,7 @@ export interface SSEEventBase {
   data: Record<string, unknown>
 }
 
-/** Teacher's complete response (non-streaming mode) */
+/** 教师的完整回复（非流式模式） */
 export interface TeacherResponseEvent extends SSEEventBase {
   event: 'teacher.response'
   data: {
@@ -21,7 +21,7 @@ export interface TeacherResponseEvent extends SSEEventBase {
     expressionId?: string
     vocabulary?: string[]
     vocabularySentences?: string[]
-    /** Learner-voiced reply suggestions (1-3 short replies the student could say next). Per-turn, not persisted. */
+    /** 学习者可说的回复建议（每轮 1-3 条短回复，不持久化）。 */
     studentReplyHints?: string[]
     scenario?: {
       id: string
@@ -35,7 +35,7 @@ export interface TeacherResponseEvent extends SSEEventBase {
   }
 }
 
-/** Streaming text chunk from LLM (Phase 2) */
+/** LLM 流式文本分片（Phase 2） */
 export interface TeacherChunkEvent extends SSEEventBase {
   event: 'teacher.chunk'
   data: {
@@ -44,7 +44,7 @@ export interface TeacherChunkEvent extends SSEEventBase {
   }
 }
 
-/** English level assessment result */
+/** 英语水平评估结果 */
 export interface LevelResultEvent extends SSEEventBase {
   event: 'level.result'
   data: {
@@ -53,20 +53,20 @@ export interface LevelResultEvent extends SSEEventBase {
   }
 }
 
-/** Teacher's audio response (TTS) */
+/** 教师的音频回复（TTS） */
 export interface TeacherAudioEvent extends SSEEventBase {
   event: 'teacher.audio'
   data: {
-    /** Base64 encoded audio chunk */
+    /** Base64 编码的音频分片 */
     audioBase64: string
-    /** Audio format: mp3 | opus | wav */
+    /** 音频格式：mp3 | opus | wav */
     format: string
-    /** Whether this is the last chunk */
+    /** 是否为最后一个分片 */
     isEnd: boolean
   }
 }
 
-/** Server runtime config pushed to client on connect */
+/** 连接时推送给客户端的服务端运行时配置 */
 export interface ConfigEvent extends SSEEventBase {
   event: 'config'
   data: {
@@ -74,7 +74,7 @@ export interface ConfigEvent extends SSEEventBase {
   }
 }
 
-/** Keep-alive heartbeat */
+/** 保活心跳 */
 export interface HeartbeatEvent extends SSEEventBase {
   event: 'heartbeat'
   data: {
@@ -82,7 +82,7 @@ export interface HeartbeatEvent extends SSEEventBase {
   }
 }
 
-/** Union type of all SSE events */
+/** 所有 SSE 事件的联合类型 */
 export type SSEEvent =
   | ConfigEvent
   | TeacherResponseEvent

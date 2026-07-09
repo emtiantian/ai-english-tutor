@@ -75,7 +75,7 @@ function patchCoreForFramework(): void {
   }
   if (typeof (core.Memory as any).initializeAmountOfMemory !== 'function') {
     (core.Memory as any).initializeAmountOfMemory = (_size?: number) => {
-      // no-op: CDN core handles memory internally
+      // no-op：CDN 版 core 内部管理内存
     }
   }
 }
@@ -285,8 +285,8 @@ class LAppModel extends CubismUserModel {
               motionBuf,
               motionBuf.byteLength,
               name,
-              undefined, // onFinished
-              undefined, // onBegan
+              undefined, // 动画结束回调
+              undefined, // 动画开始回调
               this._modelSetting ?? undefined,
               groupName,
               j,

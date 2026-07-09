@@ -9,14 +9,14 @@ export interface AudioChunk {
 }
 
 /**
- * Dual-mode audio player:
- * - remote: Receives base64 audio chunks from backend, plays via AudioContext
- * - local: Uses browser speechSynthesis API
+ * 双模式音频播放器：
+ * - remote：接收后端 base64 音频块，通过 AudioContext 播放
+ * - local：使用浏览器 speechSynthesis API
  *
- * iOS Safari notes:
- * - AudioContext starts "suspended" and must be resumed via user gesture
- * - speechSynthesis.speak() must be called within a user gesture context
- * - getVoices() returns empty on first call; voices load asynchronously
+ * iOS Safari 注意：
+ * - AudioContext 初始为 "suspended"，需要通过用户手势恢复
+ * - speechSynthesis.speak() 必须在用户手势上下文中调用
+ * - 首次调用 getVoices() 会返回空列表；语音列表异步加载
  */
 export class AudioPlayer {
   private audioContext: AudioContext | null = null
@@ -29,13 +29,13 @@ export class AudioPlayer {
   private _onEnd?: () => void
   private _onVolume?: (volume: number) => void
   private volumeInterval: ReturnType<typeof setInterval> | null = null
-  /** Whether AudioContext has been unlocked by a user gesture (iOS requirement) */
+  /** AudioContext 是否已通过用户手势解锁（iOS 要求） */
   private audioUnlocked = false
-  /** Cached voices for iOS async loading */
+  /** 为 iOS 异步加载缓存的语音列表 */
   private voices: SpeechSynthesisVoice[] = []
 
   constructor(private ttsSource: TTSSource = 'local') {
-    // Pre-load voices asynchronously (iOS returns empty on first getVoices() call)
+    // 异步预加载语音列表（iOS 首次 getVoices() 返回空）
     if (this.synth) {
       this.voices = this.synth.getVoices()
       if (this.voices.length === 0) {
@@ -47,8 +47,8 @@ export class AudioPlayer {
   }
 
   /**
-   * Switch TTS source at runtime (e.g. after server config event).
-   * Does not stop already-playing audio.
+   * 在运行时切换 TTS 来源（例如收到服务端配置事件后）。
+   * 不会停止已在播放的音频。
    */
   setTTSSource(source: TTSSource): void {
     this.ttsSource = source
@@ -71,8 +71,8 @@ export class AudioPlayer {
   }
 
   /**
-   * Unlock audio playback for iOS Safari.
-   * MUST be called from a user gesture (tap/click) before any audio can play.
+   * 为 iOS Safari 解锁音频播放。
+   * 必须在任何音频播放前通过用户手势（点击/轻触）调用。
    */
   async unlockAudio(): Promise<void> {
     if (this.audioUnlocked) return
@@ -82,7 +82,7 @@ export class AudioPlayer {
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume()
     }
-    // Prime speechSynthesis (iOS needs at least one speak() in gesture context)
+    // 预热 speechSynthesis（iOS 需要在手势上下文中至少调用一次 speak()）
     if (this.synth) {
       const prime = new SpeechSynthesisUtterance('')
       prime.volume = 0
@@ -93,7 +93,7 @@ export class AudioPlayer {
   }
 
   /**
-   * Receive audio chunks from backend (remote mode only)
+   * 从后端接收音频块（仅 remote 模式）
    */
   feedAudioChunk(chunk: AudioChunk): void {
     if (this.ttsSource !== 'remote') return
@@ -107,7 +107,7 @@ export class AudioPlayer {
   }
 
   /**
-   * Unified speak interface — auto-selects remote or local based on config
+   * 统一的 speak 接口 — 根据配置自动选择 remote 或 local
    */
   async speak(text: string, options?: { audioChunks?: AudioChunk[]; lang?: string } & SpeakOptions): Promise<void> {
     if (this.ttsSource === 'remote' && options?.audioChunks) {
@@ -122,7 +122,7 @@ export class AudioPlayer {
 
   stop(): void {
     this.stopVolumeDetection()
-    // Don't close AudioContext — reuse it to avoid iOS unlock issues
+    // 不要关闭 AudioContext — 复用它以避免 iOS 解锁问题
     if (this.audioContext?.state === 'running') {
       this.audioContext.suspend()
     }
@@ -133,7 +133,7 @@ export class AudioPlayer {
   }
 
   /**
-   * Replay audio from base64 string (for "replay" button)
+   * 通过 base64 字符串重放音频（用于“重听”按钮）
    */
   async replayAudio(audioBase64: string, format: string = 'mp3'): Promise<void> {
     if (!audioBase64) return
@@ -143,7 +143,7 @@ export class AudioPlayer {
     return this.playRemoteAudio()
   }
 
-  // --- Internal: Remote audio playback ---
+  // --- 内部：远程音频播放 ---
   private async playRemoteAudio(): Promise<void> {
     const fullBase64 = this.audioChunks.join('')
     this.audioChunks = []
@@ -154,7 +154,7 @@ export class AudioPlayer {
       this.isPlayingValue = true
       this._onStart?.()
 
-      // Reuse or create AudioContext; resume if suspended (iOS requirement)
+      // 复用或创建 AudioContext；若处于 suspended 则恢复（iOS 要求）
       if (!this.audioContext) {
         this.audioContext = new AudioContext()
       }
@@ -201,7 +201,7 @@ export class AudioPlayer {
     }
   }
 
-  // --- Internal: Local TTS via speechSynthesis ---
+  // --- 内部：通过 speechSynthesis 播放本地 TTS ---
   private async speakLocal(text: string, options?: SpeakOptions & { lang?: string }): Promise<void> {
     if (!this.synth) return
 
@@ -215,7 +215,7 @@ export class AudioPlayer {
       if (options?.pitch !== undefined) utterance.pitch = options.pitch
       if (options?.volume !== undefined) utterance.volume = options.volume
 
-      // Use cached voices (iOS getVoices() returns empty on first call)
+      // 使用缓存的语音列表（iOS 首次 getVoices() 返回空）
       const voices = this.voices.length > 0 ? this.voices : this.synth!.getVoices()
       const langPrefix = lang.split('-')[0]
       const preferredVoice =
@@ -250,7 +250,7 @@ export class AudioPlayer {
     })
   }
 
-  // --- Volume detection for lip-sync ---
+  // --- 音量检测（用于口型同步） ---
 
   private stopVolumeDetection(): void {
     if (this.volumeInterval) {

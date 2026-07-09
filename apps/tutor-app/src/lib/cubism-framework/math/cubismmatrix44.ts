@@ -9,26 +9,26 @@
 import { CubismMath } from './cubismmath';
 
 /**
- * 4x4の行列
+ * 4x4 矩阵
  *
- * 4x4行列の便利クラス。
+ * 4x4 矩阵的便捷封装类。
  */
 export class CubismMatrix44 {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   public constructor() {
-    this._tr = new Float32Array(16); // 4 * 4のサイズ
+    this._tr = new Float32Array(16); // 4 * 4 大小
     this.loadIdentity();
   }
 
   /**
-   * 受け取った２つの行列の乗算を行う。
+   * 对两个矩阵进行乘法运算。
    *
-   * @param a 行列a
-   * @param b 行列b
+   * @param a 矩阵 a
+   * @param b 矩阵 b
    *
-   * @return 乗算結果の行列
+   * @return 乘法结果的矩阵
    */
   public static multiply(
     a: Float32Array,
@@ -56,7 +56,7 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 単位行列に初期化する
+   * 初始化为单位矩阵
    */
   public loadIdentity(): void {
     const c: Float32Array = new Float32Array([
@@ -68,9 +68,9 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 行列を設定
+   * 设置矩阵
    *
-   * @param tr 16個の浮動小数点数で表される4x4の行列
+   * @param tr 由 16 个浮点数表示的 4x4 矩阵
    */
   public setMatrix(tr: Float32Array): void {
     for (let i = 0; i < 16; ++i) {
@@ -79,93 +79,93 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 行列を浮動小数点数の配列で取得
+   * 以浮点数数组形式获取矩阵
    *
-   * @return 16個の浮動小数点数で表される4x4の行列
+   * @return 由 16 个浮点数表示的 4x4 矩阵
    */
   public getArray(): Float32Array {
     return this._tr;
   }
 
   /**
-   * X軸の拡大率を取得
+   * 获取 X 轴缩放率
    *
-   * @return X軸の拡大率
+   * @return X 轴缩放率
    */
   public getScaleX(): number {
     return this._tr[0];
   }
 
   /**
-   * Y軸の拡大率を取得する
+   * 获取 Y 轴缩放率
    *
-   * @return Y軸の拡大率
+   * @return Y 轴缩放率
    */
   public getScaleY(): number {
     return this._tr[5];
   }
 
   /**
-   * X軸の移動量を取得
+   * 获取 X 轴平移量
    *
-   * @return X軸の移動量
+   * @return X 轴平移量
    */
   public getTranslateX(): number {
     return this._tr[12];
   }
 
   /**
-   * Y軸の移動量を取得
+   * 获取 Y 轴平移量
    *
-   * @return Y軸の移動量
+   * @return Y 轴平移量
    */
   public getTranslateY(): number {
     return this._tr[13];
   }
 
   /**
-   * X軸の値を現在の行列で計算
+   * 用当前矩阵计算 X 轴值
    *
-   * @param src X軸の値
+   * @param src X 轴值
    *
-   * @return 現在の行列で計算されたX軸の値
+   * @return 经当前矩阵计算后的 X 轴值
    */
   public transformX(src: number): number {
     return this._tr[0] * src + this._tr[12];
   }
 
   /**
-   * Y軸の値を現在の行列で計算
+   * 用当前矩阵计算 Y 轴值
    *
-   * @param src Y軸の値
+   * @param src Y 轴值
    *
-   * @return 現在の行列で計算されたY軸の値
+   * @return 经当前矩阵计算后的 Y 轴值
    */
   public transformY(src: number): number {
     return this._tr[5] * src + this._tr[13];
   }
 
   /**
-   * X軸の値を現在の行列で逆計算
+   * 用当前矩阵对 X 轴值做逆运算
    */
   public invertTransformX(src: number): number {
     return (src - this._tr[12]) / this._tr[0];
   }
 
   /**
-   * Y軸の値を現在の行列で逆計算
+   * 用当前矩阵对 Y 轴值做逆运算
    */
   public invertTransformY(src: number): number {
     return (src - this._tr[13]) / this._tr[5];
   }
 
   /**
-   * 現在の行列の位置を起点にして移動
+   * 以当前矩阵位置为起点进行相对平移
    *
-   * 現在の行列の位置を起点にして相対的に移動する。
+   * 以当前矩阵位置为起点做相对移动。
    *
-   * @param x X軸の移動量
-   * @param y Y軸の移動量
+   * @param x X 轴平移量
+   * @param y Y 轴平移量
    */
   public translateRelative(x: number, y: number): void {
     const tr1: Float32Array = new Float32Array([
@@ -191,12 +191,12 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 現在の行列の位置を移動
+   * 将当前矩阵位置移动到指定位置
    *
-   * 現在の行列の位置を指定した位置へ移動する
+   * 将当前矩阵位置移动到指定位置
    *
-   * @param x X軸の移動量
-   * @param y y軸の移動量
+   * @param x X 轴平移量
+   * @param y y 轴平移量
    */
   public translate(x: number, y: number): void {
     this._tr[12] = x;
@@ -204,28 +204,28 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 現在の行列のX軸の位置を指定した位置へ移動する
+   * 将当前矩阵 X 轴位置移动到指定位置
    *
-   * @param x X軸の移動量
+   * @param x X 轴平移量
    */
   public translateX(x: number): void {
     this._tr[12] = x;
   }
 
   /**
-   * 現在の行列のY軸の位置を指定した位置へ移動する
+   * 将当前矩阵 Y 轴位置移动到指定位置
    *
-   * @param y Y軸の移動量
+   * @param y Y 轴平移量
    */
   public translateY(y: number): void {
     this._tr[13] = y;
   }
 
   /**
-   * 現在の行列の拡大率を相対的に設定する
+   * 相对设置当前矩阵的缩放率
    *
-   * @param x X軸の拡大率
-   * @param y Y軸の拡大率
+   * @param x X 轴缩放率
+   * @param y Y 轴缩放率
    */
   public scaleRelative(x: number, y: number): void {
     const tr1: Float32Array = new Float32Array([
@@ -251,10 +251,10 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 現在の行列の拡大率を指定した倍率に設定する
+   * 将当前矩阵的缩放率设置为指定倍数
    *
-   * @param x X軸の拡大率
-   * @param y Y軸の拡大率
+   * @param x X 轴缩放率
+   * @param y Y 轴缩放率
    */
   public scale(x: number, y: number): void {
     this._tr[0] = x;
@@ -262,20 +262,20 @@ export class CubismMatrix44 {
   }
 
   /**
-   * 引数で与えられた行列にこの行列を乗算する。
-   * (引数で与えられた行列) * (この行列)
+   * 将本矩阵乘到参数给出的矩阵上。
+   * (参数给出的矩阵) * (本矩阵)
    *
-   * @note 関数名と実際の計算内容に乖離があるため、今後計算順が修正される可能性があります。
-   * @param m 行列
+   * @note 函数名与实际计算顺序不一致，未来可能会修正计算顺序。
+   * @param m 矩阵
    */
   public multiplyByMatrix(m: CubismMatrix44): void {
     CubismMatrix44.multiply(m.getArray(), this._tr, this._tr);
   }
 
   /**
-   * 現在の行列の逆行列を求める。
+   * 求当前矩阵的逆矩阵。
    *
-   * @return 現在の行列で計算された逆行列の値を返す
+   * @return 返回经当前矩阵计算得到的逆矩阵值
    */
   public getInvert(): CubismMatrix44 {
     const r00 = this._tr[0];
@@ -338,7 +338,7 @@ export class CubismMatrix44 {
   }
 
   /**
-   * オブジェクトのコピーを生成する
+   * 生成对象副本
    */
   public clone(): CubismMatrix44 {
     const cloneMatrix: CubismMatrix44 = new CubismMatrix44();
@@ -350,10 +350,10 @@ export class CubismMatrix44 {
     return cloneMatrix;
   }
 
-  protected _tr: Float32Array; // 4x4行列データ
+  protected _tr: Float32Array; // 4x4 矩阵数据
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmatrix44';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

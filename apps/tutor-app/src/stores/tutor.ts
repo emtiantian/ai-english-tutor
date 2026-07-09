@@ -13,28 +13,27 @@ export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   text: string
-  transcript?: string // ASR transcript shown under voice messages
+  transcript?: string // 显示在语音消息下方的 ASR 识别文本
   textZh?: string
   isStreaming?: boolean
   vocabulary?: string[]
   vocabularySentences?: string[]
-  /** Learner-voiced reply suggestions (powers 💡 hint). Per-turn ephemeral. */
+  /** 学习者口吻的回复建议（用于 💡 提示）。每轮临时有效。 */
   studentReplyHints?: string[]
   timestamp: number
   visible?: boolean // false = 等待语音结束后显示
   audioBase64?: string // 用于重听
-  /** Scenario progress snapshot when this message was sent */
+  /** 发送该消息时的场景进度快照 */
   scenario?: ScenarioProgress
 }
 
 export const useTutorStore = defineStore('tutor', () => {
-  // === State ===
+  // === 状态 ===
   const phase = ref<AppPhase>('loading')
-  // Provider instances wrap WebGL / Cubism / audio objects. They MUST be held in
-  // shallowRef, not ref: a deep `ref` proxies the whole object graph (the Live2D
-  // model, its Maps and CubismMotionManager), and calling playMotion/setExpression
-  // through that Proxy silently no-ops. shallowRef keeps `.value` the raw instance
-  // while still reacting to provider *replacement* (model switch).
+  // Provider 实例包装了 WebGL / Cubism / 音频对象。它们必须用 shallowRef 持有，
+  // 而不是 ref：深层 ref 会代理整个对象图（Live2D 模型、它的 Map 和 CubismMotionManager），
+  // 通过该 Proxy 调用 playMotion/setExpression 会静默无操作。shallowRef 让 .value 保持原始实例，
+  // 同时仍能对 Provider 替换（模型切换）作出响应。
   const characterProvider = shallowRef<CharacterProvider | null>(null)
   const ttsProvider = shallowRef<TTSProvider | null>(null)
   const teacherProvider = shallowRef<AITeacherProvider | null>(null)
@@ -47,7 +46,7 @@ export const useTutorStore = defineStore('tutor', () => {
   const sessionId = ref<string | null>(null)
   const currentLevel = ref<number | null>(null)
 
-  // === User ID (auto-generated, persisted in localStorage) ===
+  // === 用户 ID（自动生成，持久化到 localStorage） ===
   const userId = ref<string>(getOrCreateUserId())
 
   function getOrCreateUserId(): string {
@@ -60,9 +59,9 @@ export const useTutorStore = defineStore('tutor', () => {
     return id
   }
 
-  // === Session ID (per-tab, unique to this browsing session) ===
-  // Persisted in sessionStorage so it survives page refresh (F5) but not tab close.
-  // This is the SSE connection key — NOT the lesson sessionId from the backend.
+  // === Session ID（每个标签页唯一，标识本次浏览会话） ===
+  // 持久化到 sessionStorage，页面刷新（F5）后仍然保留，但关闭标签页后丢失。
+  // 这是 SSE 连接键 — 不是后端返回的课程 sessionId。
   const connectionId = getOrCreateConnectionId()
 
   function getOrCreateConnectionId(): string {
@@ -75,15 +74,15 @@ export const useTutorStore = defineStore('tutor', () => {
     return id
   }
 
-  // === Scenario state ===
+  // === 场景状态 ===
   const currentScenario = ref<ScenarioProgress | null>(null)
 
-  // === v2: Scenario redesign ===
+  // === v2：场景重构 ===
   /** v2: 暂停快照需要的最小轮次门槛（< 6 轮直接放弃） */
   const MIN_TURNS_FOR_PAUSE = 6
   /** v2: 默认硬上限轮次 */
   const DEFAULT_MAX_TURNS = 20
-  /** v2: localStorage key for userScenarioProgress */
+  /** v2：userScenarioProgress 的 localStorage 键 */
   const USER_SCENARIO_PROGRESS_KEY = 'tutor_user_scenario_progress_v2'
 
   /** v2: CEFR 顺序，用于晋级计算 */
@@ -117,7 +116,7 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-  /** Computed: scenario completion percentage (word-based) */
+  /** Computed：场景完成百分比（基于词汇） */
   const scenarioProgress = computed(() => {
     if (!currentScenario.value) return 0
     const { wordsLearned, targetWordsTotal } = currentScenario.value
@@ -125,7 +124,7 @@ export const useTutorStore = defineStore('tutor', () => {
     return Math.round((wordsLearned.length / targetWordsTotal) * 100)
   })
 
-  /** Computed: whether scenario is complete */
+  /** Computed：场景是否已完成 */
   const isScenarioComplete = computed(() => {
     return currentScenario.value?.completed === true
   })
@@ -168,11 +167,11 @@ export const useTutorStore = defineStore('tutor', () => {
     return 0
   })
 
-  // === Text display timing switch ===
+  // === 文字显示时机开关 ===
   const showTextImmediately = ref(true)
   const delayedText = ref('')
 
-  // === Actions with side effects ===
+  // === 带副作用的操作 ===
   function setProviders(providers: {
     character: CharacterProvider
     tts: TTSProvider
@@ -265,7 +264,7 @@ export const useTutorStore = defineStore('tutor', () => {
     showTextImmediately.value = value
   }
 
-  /** Set current scenario */
+  /** 设置当前场景 */
   async function setScenario(scenario: ScenarioProgress | null) {
     const wasComplete = currentScenario.value?.completed === true
     currentScenario.value = scenario
@@ -278,13 +277,13 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-  /** Clear scenario state */
+  /** 清空场景状态 */
   function clearScenario() {
     currentScenario.value = null
     phase.value = 'ready'
   }
 
-  // === v2: Scenario redesign actions ===
+  // === v2：场景重构 actions ===
 
   /**
    * v2: 启动时从 IndexedDB 加载所有未过期的暂停快照到 store，
@@ -346,7 +345,7 @@ export const useTutorStore = defineStore('tutor', () => {
     try {
       await scenarioPausedDB.deletePausedSnapshot(scenarioId)
     } catch {
-      // ignore
+      // 忽略
     }
     if (pausedSnapshots.value.has(scenarioId)) {
       const next = new Map(pausedSnapshots.value)
@@ -500,7 +499,7 @@ export const useTutorStore = defineStore('tutor', () => {
   }
 
   return {
-    // State (refs are directly mutable in Pinia)
+    // 状态（refs 在 Pinia 中可直接修改）
     phase,
     characterProvider,
     ttsProvider,
@@ -514,14 +513,14 @@ export const useTutorStore = defineStore('tutor', () => {
     currentLevel,
     userId,
     connectionId,
-    // Text display timing
+    // 文字显示时机
     showTextImmediately,
     delayedText,
-    // Scenario state
+    // 场景状态
     currentScenario,
     scenarioProgress,
     isScenarioComplete,
-    // v2: scenario redesign
+    // v2：场景重新设计
     pausedSnapshots,
     userScenarioProgress,
     currentScenarioLevel,
@@ -529,7 +528,7 @@ export const useTutorStore = defineStore('tutor', () => {
     maxTurns,
     coverageRate,
     currentStars,
-    // Actions
+    // 操作
     setProviders,
     addUserMessage,
     startAssistantStream,
@@ -542,7 +541,7 @@ export const useTutorStore = defineStore('tutor', () => {
     setMessageAudio,
     setLastUserTranscript,
     confirmLevel,
-    // v2 actions
+    // v2 操作
     loadPausedSnapshots,
     pauseCurrentScenario,
     discardPausedSnapshot,

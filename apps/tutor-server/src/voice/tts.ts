@@ -5,59 +5,59 @@ import { XiaomiTTSProvider } from './providers/xiaomi-tts.js'
 import { VolcengineTTSProvider } from './providers/volcengine-tts.js'
 
 /**
- * TTS (Text-to-Speech) Provider Interface
+ * TTS（文本转语音）Provider 接口
  */
 export interface TTSProvider {
   readonly name: string
 
   /**
-   * Synthesize text to speech audio
-   * Returns the audio data as a Buffer
+   * 将文本合成为语音音频
+   * 返回音频数据 Buffer
    */
   synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer>
 
   /**
-   * Stream synthesize text to speech audio
-   * Yields audio chunks as they are generated
+   * 流式合成文本为语音音频
+   * 按生成顺序产出音频分块
    */
   synthesizeStream?(text: string, options?: TTSSynthesizeOptions): AsyncGenerator<Buffer>
 }
 
 export interface TTSSynthesizeOptions {
-  /** Voice ID */
+  /** 音色 ID */
   voice?: string
 
-  /** Audio format: mp3 | opus | aac | flac | wav | pcm */
+  /** 音频格式：mp3 | opus | aac | flac | wav | pcm */
   format?: string
 
-  /** Speed multiplier: 0.25 ~ 4.0 */
+  /** 语速倍数：0.25 ~ 4.0 */
   speed?: number
 
-  /** Voice design description for TTS providers that support it (e.g. Xiaomi VoiceDesign) */
+  /** 支持 voice design 的 TTS provider 使用的音色设计描述（例如 Xiaomi VoiceDesign） */
   voiceDesign?: string
 }
 
 /**
- * Browser TTS Provider (placeholder / fallback for direct API calls).
+ * 浏览器 TTS Provider（直接调用 API 时的占位 / 兜底）。
  *
- * When TTS_PROVIDER=browser, the real audio output is produced by the frontend
- * via the Web Speech API; the backend does not synthesize. This provider only
- * returns a silent WAV so that standalone `/api/tts` calls do not crash.
+ * 当 TTS_PROVIDER=browser 时，真正的音频输出由前端通过 Web Speech API 生成；
+ * 后端不进行合成。该 provider 仅返回一段静音 WAV，以避免独立的 `/api/tts`
+ * 调用崩溃。
  */
 class BrowserTTSProvider implements TTSProvider {
   readonly name = 'browser'
 
   async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
-    logger.debug({ browser: true }, 'Browser TTS synthesize (silent fallback)')
-    // Return a minimal valid silent WAV so downstream audio decoders don't fail.
+    logger.debug({ browser: true }, '浏览器 TTS 合成（静音兜底）')
+    // 返回一段最小化的有效静音 WAV，防止下游音频解码器失败。
     await new Promise((resolve) => setTimeout(resolve, 300))
     return generateSilentWav()
   }
 }
 
 /**
- * Generate a minimal valid WAV file containing silence.
- * Useful for browser TTS fallback where no real API audio is produced.
+ * 生成一段包含静音的最小有效 WAV 文件。
+ * 用于浏览器 TTS 兜底且没有真实 API 音频产出的场景。
  */
 function generateSilentWav(): Buffer {
   const sampleRate = 16000
@@ -72,22 +72,22 @@ function generateSilentWav(): Buffer {
   const buffer = Buffer.alloc(44 + dataSize)
   let offset = 0
 
-  // RIFF chunk descriptor
+  // RIFF chunk 描述符
   buffer.write('RIFF', offset); offset += 4
   buffer.writeUInt32LE(fileSize, offset); offset += 4
   buffer.write('WAVE', offset); offset += 4
 
-  // fmt sub-chunk
+  // fmt 子 chunk
   buffer.write('fmt ', offset); offset += 4
-  buffer.writeUInt32LE(16, offset); offset += 4 // Subchunk1Size (PCM)
-  buffer.writeUInt16LE(1, offset); offset += 2 // AudioFormat (PCM)
+  buffer.writeUInt32LE(16, offset); offset += 4 // Subchunk1Size（PCM）
+  buffer.writeUInt16LE(1, offset); offset += 2 // AudioFormat（PCM）
   buffer.writeUInt16LE(channels, offset); offset += 2
   buffer.writeUInt32LE(sampleRate, offset); offset += 4
   buffer.writeUInt32LE(byteRate, offset); offset += 4
   buffer.writeUInt16LE(blockAlign, offset); offset += 2
   buffer.writeUInt16LE(bitsPerSample, offset); offset += 2
 
-  // data sub-chunk (silence already zeroed by Buffer.alloc)
+  // data 子 chunk（静音已由 Buffer.alloc 初始化为 0）
   buffer.write('data', offset); offset += 4
   buffer.writeUInt32LE(dataSize, offset); offset += 4
 
@@ -95,7 +95,7 @@ function generateSilentWav(): Buffer {
 }
 
 /**
- * Create TTS provider based on configuration
+ * 根据配置创建 TTS provider
  */
 export function createTTSProvider(): TTSProvider {
   const provider = config.TTS_PROVIDER
@@ -111,7 +111,7 @@ export function createTTSProvider(): TTSProvider {
       // 浏览器输出：前端走 SpeechSynthesis，后端不合成。这里仅作兜底。
       return new BrowserTTSProvider()
     default:
-      logger.warn({ provider }, 'Unknown TTS provider, falling back to browser')
+      logger.warn({ provider }, '未知 TTS 提供商，回退到浏览器')
       return new BrowserTTSProvider()
   }
 }

@@ -5,15 +5,14 @@ import type { TeachingResponse } from '@ai-english-tutor/shared'
 
 export interface TutorClientConfig {
   baseUrl?: string
-  /** Callback to persist learned words to IndexedDB. Called from SSE teacher.response handler. */
+  /** 将学会的单词持久化到 IndexedDB 的回调。由 SSE teacher.response 处理器调用。 */
   onLearnWords?: (words: string[]) => void
 }
 
 /**
- * Vue composable that initializes TutorClient and wires all events to Pinia store.
+ * 初始化 TutorClient 并将所有事件连接到 Pinia store 的 Vue composable。
  *
- * This is the central integration point — every event from the backend
- * flows through here into reactive UI state.
+ * 这是核心集成点——后端的每个事件都从这里流入响应式 UI 状态。
  */
 export function useTutorClient(config?: TutorClientConfig) {
   const store = useTutorStore()
@@ -28,28 +27,28 @@ export function useTutorClient(config?: TutorClientConfig) {
 
   const onLearnWords = config?.onLearnWords
 
-  // Collect all unsubscribe functions for cleanup
+  // 收集所有取消订阅函数以便清理
   const unsubs: (() => void)[] = []
 
-  // --- Server config (ttsSource etc.) ---
+  // --- 服务器配置（ttsSource 等）---
   unsubs.push(
     client.on('config', (serverConfig) => {
       store.ttsSource = serverConfig.ttsSource
     }),
   )
 
-  // --- Connection events ---
+  // --- 连接事件 ---
   unsubs.push(
     client.on('connected', () => store.isConnected = true),
     client.on('disconnected', () => store.isConnected = false),
     client.on('error', ({ code, message }) => {
-      // SSE stream errors (e.g. LLM service interrupted, reconnect exhausted)
-      // can leave the UI stuck in "thinking". Reset state and surface a message.
+      // SSE 流错误（例如 LLM 服务中断、重连耗尽）
+      // 可能让 UI 卡在“思考中”。重置状态并展示一条消息。
       store.isThinking = false
       store.isPlaying = false
 
-      // Only show a chat message for terminal / user-relevant errors to avoid
-      // spamming the chat during transient reconnect attempts.
+      // 仅对终端/用户相关错误显示聊天消息，
+      // 避免在短暂重连尝试期间刷屏。
       if (code === 'RECONNECT_EXHAUSTED') {
         store.messages.push({
           id: `msg-${Date.now()}`,
@@ -61,18 +60,18 @@ export function useTutorClient(config?: TutorClientConfig) {
     }),
   )
 
-  // --- AI state events ---
+  // --- AI 状态事件 ---
   unsubs.push(
     client.on('state.thinking', () => store.isThinking = true),
     client.on('state.idle', () => store.isThinking = false),
   )
 
-  // --- Message events ---
+  // --- 消息事件 ---
   unsubs.push(
     client.on('message.user', ({ text }) => store.addUserMessage(text)),
   )
 
-  // --- Streaming chunks (merged: ensure streaming message exists, then append) ---
+  // --- 流式片段（合并：确保流式消息存在，然后追加）---
   unsubs.push(
     client.on('teacher.chunk', ({ chunk, isEnd }) => {
       if (isEnd) return
@@ -85,10 +84,10 @@ export function useTutorClient(config?: TutorClientConfig) {
     }),
   )
 
-  // --- Complete response event ---
+  // --- 完整回复事件 ---
   unsubs.push(
     client.on('teacher.response', (response: TeachingResponse) => {
-      // Update scenario progress from SSE data (before finalizeStream, so message snapshot is fresh)
+      // 从 SSE 数据更新场景进度（在 finalizeStream 之前，使消息快照保持最新）
       if (response.scenario) {
         store.setScenario(response.scenario)
         if (response.scenario.wordsLearned?.length) {
@@ -98,12 +97,12 @@ export function useTutorClient(config?: TutorClientConfig) {
 
       store.finalizeStream(response)
 
-      // Response is ready; always clear the thinking state. Empty text or
-      // failed TTS won't trigger tts.start, so relying solely on audio events
-      // could leave isThinking stuck forever.
+      // 回复已就绪；始终清除思考状态。空文本或
+      // TTS 失败不会触发 tts.start，因此仅依赖音频事件
+      // 可能让 isThinking 永远卡住。
       store.isThinking = false
 
-      // Trigger character animation
+      // 触发角色动画
       if (response.motionId) {
         store.characterProvider?.playMotion(response.motionId)
       }
@@ -113,12 +112,12 @@ export function useTutorClient(config?: TutorClientConfig) {
     }),
   )
 
-  // --- TTS events ---
+  // --- TTS 事件 ---
   unsubs.push(
     client.on('tts.start', () => {
       store.isPlaying = true
-      // Keep thinking off (already reset on teacher.response); this also covers
-      // any race where audio starts before the response handler runs.
+      // 保持思考状态关闭（已在 teacher.response 时重置）；这也覆盖
+      // 音频在响应处理器运行前就开始的竞态情况。
       store.isThinking = false
     }),
     client.on('tts.end', () => {
@@ -132,12 +131,12 @@ export function useTutorClient(config?: TutorClientConfig) {
     }),
   )
 
-  // --- Level assessment ---
+  // --- 等级评估 ---
   unsubs.push(
     client.on('level.result', ({ level }) => { store.currentLevel = level }),
   )
 
-  // --- Cleanup ---
+  // --- 清理 ---
   function unsubscribeAll() {
     unsubs.forEach((fn) => fn())
     client.disconnect()
@@ -147,7 +146,7 @@ export function useTutorClient(config?: TutorClientConfig) {
     unsubscribeAll()
   })
 
-  // Auto-connect on mount
+  // 挂载时自动连接
   client.connect()
 
   return {

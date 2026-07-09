@@ -9,27 +9,26 @@ export interface ReviewWord {
 }
 
 export interface VocabAnalysis {
-  /** Words from the review list that appeared in user's text */
+  /** 复习列表中出现在用户文本里的词 */
   usedWords: string[]
-  /** Words from the review list that the user struggled with */
+  /** 复习列表中用户未掌握的词 */
   missedWords: string[]
-  /** New vocabulary the AI introduced (from LLM response) */
+  /** AI 引入的新词汇（来自 LLM 响应） */
   newWords: string[]
 }
 
 /**
- * Vocabulary tracker for spaced repetition in conversation.
+ * 对话中用于间隔重复的词汇跟踪器。
  *
- * Tracks which words the user encounters, how many different contexts
- * they've seen them in, and schedules reviews accordingly.
+ * 跟踪用户遇到了哪些词、在多少不同语境中见过，并据此安排复习。
  *
- * Handles:
- * - Text input: exact + stemmed matching
- * - Audio input: fuzzy matching to tolerate ASR errors
+ * 支持：
+ * - 文本输入：精确匹配 + 词干匹配
+ * - 音频输入：模糊匹配以容忍 ASR 错误
  */
 export class VocabTracker {
   /**
-   * Get words due for review for a user.
+   * 获取用户到期需复习的词汇。
    */
   getReviewWords(userId: string, limit: number = 5): ReviewWord[] {
     const dueWords = vocabRepo.getDueForReview(userId, limit)
@@ -40,27 +39,27 @@ export class VocabTracker {
   }
 
   /**
-   * Build a prompt fragment instructing the AI to naturally use review words.
+   * 构建 prompt 片段，指示 AI 自然地使用复习词。
    */
   buildReviewPrompt(reviewWords: ReviewWord[]): string {
     if (reviewWords.length === 0) return ''
 
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
     return `
-VOCABULARY REVIEW — The student needs to practice these words. Naturally incorporate them into your response in a NEW context (different from previous conversations). Don't force them — weave them in organically. If the word doesn't fit naturally, skip it.
+词汇复习 —— 学生需要练习这些单词。请自然地把它们融入你的回复中，使用全新的语境（不同于之前的对话）。不要生硬堆砌，有机地穿插即可；如果某个词不适合当前语境，就跳过它。
 
-Words to review: ${wordList}
+需要复习的单词：${wordList}
 
-After using a review word, include it in the "vocabulary" field of your JSON response.`
+使用到复习词后，请把它们包含在 JSON 响应的 "vocabulary" 字段中。`
   }
 
   /**
-   * Analyze user text to check if they used any target vocabulary words.
+   * 分析用户文本，检查是否使用了目标词汇。
    *
-   * Matching strategy:
-   * 1. Exact match (case-insensitive)
-   * 2. Stemmed match — strip common English suffixes to catch variations
-   * 3. For audio input: also try Levenshtein distance ≤ 2 (tolerates ASR errors)
+   * 匹配策略：
+   * 1. 精确匹配（不区分大小写）
+   * 2. 词干匹配 — 去除常见英文后缀以捕获变体
+   * 3. 音频输入：额外尝试 Levenshtein 距离 ≤ 2（容忍 ASR 错误）
    */
   analyzeUserText(
     userText: string,
@@ -75,28 +74,27 @@ After using a review word, include it in the "vocabulary" field of your JSON res
     for (const word of targetWords) {
       const normalizedWord = word.toLowerCase()
 
-      // Reject words that contain characters outside the safe set to prevent
-      // regex injection and ReDoS from malicious/tampered vocabulary data.
+      // 拒绝包含安全字符集以外字符的词，防止恶意/篡改的词汇数据导致正则注入和 ReDoS。
       if (!isValidWord(normalizedWord)) {
-        logger.warn({ word }, 'Vocab: skipping invalid target word')
+        logger.warn({ word }, '词汇：跳过无效目标词')
         continue
       }
 
       let found = false
 
-      // 1. Exact match
+      // 1. 精确匹配
       const exactRegex = new RegExp(`\\b${escapeRegex(normalizedWord)}\\b`, 'i')
       if (exactRegex.test(normalizedText)) {
         found = true
       }
 
-      // 2. Stemmed match — check if any token shares the same stem
+      // 2. 词干匹配 — 检查是否有 token 共享同一词干
       if (!found) {
         const wordStem = simpleStem(normalizedWord)
         found = tokens.some((token) => simpleStem(token) === wordStem)
       }
 
-      // 3. Audio input: fuzzy match (Levenshtein distance ≤ 2)
+      // 3. 音频输入：模糊匹配（Levenshtein 距离 ≤ 2）
       if (!found && options.isAudioInput) {
         const MAX_FUZZY_LEN = 50
         const clampedWord = normalizedWord.slice(0, MAX_FUZZY_LEN)
@@ -118,7 +116,7 @@ After using a review word, include it in the "vocabulary" field of your JSON res
   }
 
   /**
-   * Process vocabulary after a conversation turn.
+   * 处理一轮对话后的词汇。
    */
   processTurn(
     userId: string,
@@ -131,26 +129,26 @@ After using a review word, include it in the "vocabulary" field of your JSON res
     const targetWords = reviewWords.map((w) => w.word)
     const { used, missed } = this.analyzeUserText(userText, targetWords, options)
 
-    // Mark correctly used words
+    // 标记正确使用的词
     for (const word of used) {
       vocabRepo.reviewWord(userId, word, true)
-      logger.info({ userId, word, isAudio: options.isAudioInput }, 'Vocab: user used review word')
+      logger.info({ userId, word, isAudio: options.isAudioInput }, '词汇：用户使用了复习词')
     }
 
-    // Schedule re-review for missed words
+    // 为未掌握的词安排重新复习
     for (const word of missed) {
       vocabRepo.reviewWord(userId, word, false)
-      logger.debug({ userId, word }, 'Vocab: user missed review word, rescheduled')
+      logger.debug({ userId, word }, '词汇：用户未掌握复习词，已重新安排复习')
     }
 
-    // Record new words from AI response
+    // 记录 AI 响应中的新词
     const newWords: string[] = []
     for (const word of aiResponseWords) {
       const existing = vocabRepo.getAllWords(userId).find((w) => w.word === word.toLowerCase())
       if (!existing) {
         vocabRepo.recordWord(userId, word, level, 'learning')
         newWords.push(word)
-        logger.info({ userId, word, level }, 'Vocab: new word recorded')
+        logger.info({ userId, word, level }, '词汇：已记录新词')
       }
     }
 
@@ -158,31 +156,31 @@ After using a review word, include it in the "vocabulary" field of your JSON res
   }
 
   /**
-   * Get vocabulary progress summary for a user.
+   * 获取用户的词汇进度摘要。
    */
   getProgress(userId: string) {
     return vocabRepo.getProgress(userId)
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────
+// ── 辅助函数 ──────────────────────────────────────────────
 
-/** Escape special regex characters */
+/** 转义特殊正则字符 */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/** Validate that a word only contains safe characters for regex matching. */
+/** 验证单词只包含正则匹配的安全字符。 */
 function isValidWord(word: string): boolean {
   return /^[a-z0-9]+([ '-][a-z0-9]+)*$/i.test(word)
 }
 
 /**
- * Simple English stemmer — strips common suffixes.
- * Not Porter/Snowball quality, but good enough for vocabulary matching.
+ * 简单的英文词干提取器 — 去除常见后缀。
+ * 不如 Porter/Snowball 精确，但足以满足词汇匹配。
  */
 function simpleStem(word: string): string {
-  // Order matters: longer suffixes first
+  // 顺序很重要：长的后缀优先
   const suffixes = [
     'tion', 'sion', 'ment', 'ness', 'able', 'ible', 'ful', 'less',
     'ous', 'ive', 'ing', 'ied', 'ies', 'ers', 'est', 'ly', 'ed',
@@ -200,8 +198,8 @@ function simpleStem(word: string): string {
 }
 
 /**
- * Levenshtein distance between two strings.
- * Used for fuzzy matching when input is from ASR.
+ * 两个字符串之间的 Levenshtein 距离。
+ * 用于输入来自 ASR 时的模糊匹配。
  */
 function levenshtein(a: string, b: string): number {
   const m = a.length

@@ -5,7 +5,7 @@ import { config } from '../config.js'
 async function main(): Promise<void> {
   const originalProvider = config.TTS_PROVIDER
 
-  // ── createTTSProvider factory ─────────────────────────────
+  // ── createTTSProvider 工厂 ─────────────────────────────────
 
   config.TTS_PROVIDER = 'browser'
   const browserProvider = createTTSProvider()
@@ -15,34 +15,25 @@ async function main(): Promise<void> {
   const fallback = createTTSProvider()
   assert.strictEqual(fallback.name, 'browser', 'unknown TTS provider falls back to browser')
 
-  // ── Volcengine provider: requires appid + access token ───────
-  const originalAppId = config.VOLCENGINE_TTS_APP_ID
-  const originalToken = config.VOLCENGINE_TTS_ACCESS_TOKEN
+  // ── Volcengine provider：需要 API Key ────────────────────────
+
+  const originalApiKey = config.VOLCENGINE_TTS_API_KEY
 
   config.TTS_PROVIDER = 'volcengine'
-  config.VOLCENGINE_TTS_APP_ID = ''
-  config.VOLCENGINE_TTS_ACCESS_TOKEN = ''
+  config.VOLCENGINE_TTS_API_KEY = ''
   assert.throws(
     () => createTTSProvider(),
-    /VOLCENGINE_TTS_APP_ID and VOLCENGINE_TTS_ACCESS_TOKEN/,
-    'Volcengine TTS without credentials should throw',
+    /使用火山方舟 TTS 必须配置 VOLCENGINE_TTS_API_KEY/,
+    'Volcengine TTS without API key should throw',
   )
 
-  config.VOLCENGINE_TTS_APP_ID = 'test-app-id'
-  config.VOLCENGINE_TTS_ACCESS_TOKEN = 'test-token'
+  config.VOLCENGINE_TTS_API_KEY = 'test-api-key'
   const volcengineProvider = createTTSProvider()
   assert.strictEqual(volcengineProvider.name, 'volcengine')
 
-  // 可选 model 不应影响 provider 初始化
-  const originalModel = config.VOLCENGINE_TTS_MODEL
-  config.VOLCENGINE_TTS_MODEL = 'seed-tts-1.1'
-  assert.doesNotThrow(() => createTTSProvider(), 'Volcengine TTS with model should initialize')
-  config.VOLCENGINE_TTS_MODEL = originalModel
+  config.VOLCENGINE_TTS_API_KEY = originalApiKey
 
-  config.VOLCENGINE_TTS_APP_ID = originalAppId
-  config.VOLCENGINE_TTS_ACCESS_TOKEN = originalToken
-
-  // ── BrowserTTSProvider output ────────────────────────────────
+  // ── BrowserTTSProvider 输出 ─────────────────────────────────
 
   const audio = await browserProvider.synthesize('hello')
   assert.ok(audio.length >= 44, 'browser TTS should return at least a WAV header')

@@ -5,7 +5,7 @@ export interface Session {
   level: number
   styleName?: string
   voiceDesign?: string
-  /** Serialized JSON of the active scenario state */
+  /** 当前场景状态的序列化 JSON */
   scenarioState?: string
   createdAt: number
 }

@@ -22,12 +22,12 @@ import type { Live2DModelManifest, ExpressionParamPreset } from '../types.js'
  *
  * model3.json 的 motion 顺序(空组 "" 按数组下标对应 key):
  * - `Idle_0` ← motions/mtn_01.motion3.json(idle / 站姿微动)
- * - `_0` ← motions/mtn_02.motion3.json(basic motion 2)
- * - `_1` ← motions/mtn_03.motion3.json(basic motion 3)
- * - `_2` ← motions/mtn_04.motion3.json(basic motion 4)
- * - `_3` ← motions/special_01.motion3.json(special)
- * - `_4` ← motions/special_02.motion3.json(special)
- * - `_5` ← motions/special_03.motion3.json(special)
+ * - `_0` ← motions/mtn_02.motion3.json(基础动作 2)
+ * - `_1` ← motions/mtn_03.motion3.json(基础动作 3)
+ * - `_2` ← motions/mtn_04.motion3.json(基础动作 4)
+ * - `_3` ← motions/special_01.motion3.json(特殊动作)
+ * - `_4` ← motions/special_02.motion3.json(特殊动作)
+ * - `_5` ← motions/special_03.motion3.json(特殊动作)
  *
  * Special 系列通常更夸张(适合 wave/surprised),mtn 系列适合一般手势。
  * 具体动作语义需在 D 阶段联调时看动画确认,这里给一个合理的初始映射。

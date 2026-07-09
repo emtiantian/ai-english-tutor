@@ -40,11 +40,11 @@ const TargetNameModel = 'Model';
 const TargetNameParameter = 'Parameter';
 const TargetNamePartOpacity = 'PartOpacity';
 
-// Id
+// ID
 const IdNameOpacity = 'Opacity';
 
 /**
- * Cubism SDK R2 以前のモーションを再現させるなら true 、アニメータのモーションを正しく再現するなら false 。
+ * 若要还原 Cubism SDK R2 及以前的动作则为 true，若要正确还原动画师的动作则为 false。
  */
 const UseOldBeziersCurveMotion = false;
 
@@ -209,14 +209,14 @@ function evaluateCurve(
   isCorrection: boolean,
   endTime: number
 ): number {
-  // Find segment to evaluate.
+  // 查找要求值的段。
   const curve: CubismMotionCurve = motionData.curves[index];
 
   let target = -1;
   const totalSegmentCount: number = curve.baseSegmentIndex + curve.segmentCount;
   let pointPosition = 0;
   for (let i: number = curve.baseSegmentIndex; i < totalSegmentCount; ++i) {
-    // Get first point of next segment.
+    // 获取下一段的第一个点。
     pointPosition =
       motionData.segments[i].basePointIndex +
       ((motionData.segments[i].segmentType as CubismMotionSegmentType) ==
@@ -224,7 +224,7 @@ function evaluateCurve(
         ? 3
         : 1);
 
-    // Break if time lies within current segment.
+    // 如果时间在当前段内则跳出。
     if (motionData.points[pointPosition].time > time) {
       target = i;
       break;
@@ -254,7 +254,7 @@ function evaluateCurve(
 }
 
 /**
- * 終点から始点への補正処理
+ * 从终点到起点的补正处理
  * @param motionData
  * @param segmentIndex
  * @param beginIndex
@@ -301,8 +301,8 @@ function correctEndPoint(
 }
 
 /**
- * Enumerator for version control of Motion Behavior.
- * For details, see the SDK Manual.
+ * 动作行为版本控制的枚举。
+ * 详情请参见 SDK 手册。
  */
 export enum MotionBehavior {
   MotionBehavior_V1,
@@ -310,20 +310,20 @@ export enum MotionBehavior {
 }
 
 /**
- * モーションクラス
+ * 动作类
  *
- * モーションのクラス。
+ * 动作类。
  */
 export class CubismMotion extends ACubismMotion {
   /**
-   * インスタンスを作成する
+   * 创建实例
    *
-   * @param buffer motion3.jsonが読み込まれているバッファ
-   * @param size バッファのサイズ
-   * @param onFinishedMotionHandler モーション再生終了時に呼び出されるコールバック関数
-   * @param onBeganMotionHandler モーション再生開始時に呼び出されるコールバック関数
-   * @param shouldCheckMotionConsistency motion3.json整合性チェックするかどうか
-   * @return 作成されたインスタンス
+   * @param buffer 已加载 motion3.json 的缓冲区
+   * @param size 缓冲区大小
+   * @param onFinishedMotionHandler 动作播放结束时调用的回调函数
+   * @param onBeganMotionHandler 动作播放开始时调用的回调函数
+   * @param shouldCheckMotionConsistency 是否检查 motion3.json 一致性
+   * @return 创建的实例
    */
   public static create(
     buffer: ArrayBuffer,
@@ -345,17 +345,17 @@ export class CubismMotion extends ACubismMotion {
       return null;
     }
 
-    // NOTE: Editorではループありのモーション書き出しは非対応
+    // NOTE: 编辑器不支持导出带循环的动作
     // ret->_loop = (ret->_motionData->Loop > 0);
     return ret;
   }
 
   /**
-   * モデルのパラメータの更新の実行
-   * @param model             対象のモデル
-   * @param userTimeSeconds   現在の時刻[秒]
-   * @param fadeWeight        モーションの重み
-   * @param motionQueueEntry  CubismMotionQueueManagerで管理されているモーション
+   * 执行模型参数更新
+   * @param model             目标模型
+   * @param userTimeSeconds   当前时刻[秒]
+   * @param fadeWeight        动作权重
+   * @param motionQueueEntry  CubismMotionQueueManager 中管理的动作
    */
   public doUpdateParameters(
     model: CubismModel,
@@ -380,7 +380,7 @@ export class CubismMotion extends ACubismMotion {
 
     if (this._motionBehavior === MotionBehavior.MotionBehavior_V2) {
       if (this._previousLoopState !== this._isLoop) {
-        // 終了時間を計算する
+        // 计算结束时间
         this.adjustEndTime(motionQueueEntry);
         this._previousLoopState = this._isLoop;
       }
@@ -390,18 +390,18 @@ export class CubismMotion extends ACubismMotion {
       userTimeSeconds - motionQueueEntry.getStartTime();
 
     if (timeOffsetSeconds < 0.0) {
-      timeOffsetSeconds = 0.0; // エラー回避
+      timeOffsetSeconds = 0.0; // 避免错误
     }
 
     let lipSyncValue: number = Number.MAX_VALUE;
     let eyeBlinkValue: number = Number.MAX_VALUE;
 
-    //まばたき、リップシンクのうちモーションの適用を検出するためのビット（maxFlagCount個まで
+    // 用于检测眨眼、唇形同步中动作是否应用的位（最多 maxFlagCount 个）
     const maxTargetSize = 64;
     let lipSyncFlags = 0;
     let eyeBlinkFlags = 0;
 
-    //瞬き、リップシンクのターゲット数が上限を超えている場合
+    // 眨眼、唇形同步目标数超过上限时
     if (this._eyeBlinkParameterIds.length > maxTargetSize) {
       CubismLogDebug(
         'too many eye blink targets : {0}',
@@ -433,7 +433,7 @@ export class CubismMotion extends ACubismMotion {
     let value: number;
     let c: number, parameterIndex: number;
 
-    // 'Repeat' time as necessary.
+    // 必要时重复时间。
     let time: number = timeOffsetSeconds;
     let duration: number = this._motionData.duration;
     const isCorrection: boolean =
@@ -450,14 +450,14 @@ export class CubismMotion extends ACubismMotion {
 
     const curves: Array<CubismMotionCurve> = this._motionData.curves;
 
-    // Evaluate model curves.
+    // 求值模型曲线。
     for (
       c = 0;
       c < this._motionData.curveCount &&
       curves[c].type == CubismMotionCurveTarget.CubismMotionCurveTarget_Model;
       ++c
     ) {
-      // Evaluate curve and call handler.
+      // 求值曲线并调用处理器。
       value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
 
       if (curves[c].id == this._modelCurveIdEyeBlink) {
@@ -481,10 +481,10 @@ export class CubismMotion extends ACubismMotion {
     ) {
       parameterMotionCurveCount++;
 
-      // Find parameter index.
+      // 查找参数索引。
       parameterIndex = model.getParameterIndex(curves[c].id);
 
-      // Skip curve evaluation if no value in sink.
+      // 如果接收端没有值则跳过曲线求值。
       if (parameterIndex == -1) {
         continue;
       }
@@ -492,7 +492,7 @@ export class CubismMotion extends ACubismMotion {
       const sourceValue: number =
         model.getParameterValueByIndex(parameterIndex);
 
-      // Evaluate curve and apply value.
+      // 求值曲线并应用值。
       value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
 
       if (eyeBlinkValue != Number.MAX_VALUE) {
@@ -523,19 +523,19 @@ export class CubismMotion extends ACubismMotion {
         }
       }
 
-      // Process "repeats only" for compatibility
+      // 为兼容性仅处理“重复”
       if (model.isRepeat(parameterIndex)) {
         value = model.getParameterRepeatValue(parameterIndex, value);
       }
 
       let v: number;
 
-      // パラメータごとのフェード
+      // 每个参数的淡入淡出
       if (curves[c].fadeInTime < 0.0 && curves[c].fadeOutTime < 0.0) {
-        // モーションのフェードを適用
+        // 应用动作的淡入淡出
         v = sourceValue + (value - sourceValue) * fadeWeight;
       } else {
-        // パラメータに対してフェードインかフェードアウトが設定してある場合はそちらを適用
+        // 如果对参数设置了淡入或淡出，则应用该设置
         let fin: number;
         let fout: number;
 
@@ -565,7 +565,7 @@ export class CubismMotion extends ACubismMotion {
 
         const paramWeight: number = this._weight * fin * fout;
 
-        // パラメータごとのフェードを適用
+        // 应用每个参数的淡入淡出
         v = sourceValue + (value - sourceValue) * paramWeight;
       }
 
@@ -583,7 +583,7 @@ export class CubismMotion extends ACubismMotion {
             this._eyeBlinkParameterIds[i]
           );
 
-          // モーションでの上書きがあった時にはまばたきは適用しない
+          // 如果动作中已覆盖，则不应用眨眼
           if ((eyeBlinkFlags >> i) & 0x01) {
             continue;
           }
@@ -605,7 +605,7 @@ export class CubismMotion extends ACubismMotion {
             this._lipSyncParameterIds[i]
           );
 
-          // モーションでの上書きがあった時にはリップシンクは適用しない
+          // 如果动作中已覆盖，则不应用唇形同步
           if ((lipSyncFlags >> i) & 0x01) {
             continue;
           }
@@ -625,15 +625,15 @@ export class CubismMotion extends ACubismMotion {
         CubismMotionCurveTarget.CubismMotionCurveTarget_PartOpacity;
       ++c
     ) {
-      // Find parameter index.
+      // 查找参数索引。
       parameterIndex = model.getParameterIndex(curves[c].id);
 
-      // Skip curve evaluation if no value in sink.
+      // 如果接收端没有值则跳过曲线求值。
       if (parameterIndex == -1) {
         continue;
       }
 
-      // Evaluate curve and apply value.
+      // 求值曲线并应用值。
       value = evaluateCurve(this._motionData, c, time, isCorrection, duration);
 
       model.setParameterValueByIndex(parameterIndex, value);
@@ -654,46 +654,46 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * Sets the version of the Motion Behavior.
+   * 设置 Motion Behavior 版本。
    *
-   * @param Specifies the version of the Motion Behavior.
+   * @param motionBehavior 指定 Motion Behavior 版本。
    */
   public setMotionBehavior(motionBehavior: MotionBehavior) {
     this._motionBehavior = motionBehavior;
   }
 
   /**
-   * Gets the version of the Motion Behavior.
+   * 获取 Motion Behavior 版本。
    *
-   * @return Returns the version of the Motion Behavior.
+   * @return 返回 Motion Behavior 版本。
    */
   public getMotionBehavior(): MotionBehavior {
     return this._motionBehavior;
   }
 
   /**
-   * モーションの長さを取得する。
+   * 获取动作长度。
    *
-   * @return  モーションの長さ[秒]
+   * @return  动作长度[秒]
    */
   public getDuration(): number {
     return this._isLoop ? -1.0 : this._loopDurationSeconds;
   }
 
   /**
-   * モーションのループ時の長さを取得する。
+   * 获取动作循环时的长度。
    *
-   * @return  モーションのループ時の長さ[秒]
+   * @return  动作循环时的长度[秒]
    */
   public getLoopDuration(): number {
     return this._loopDurationSeconds;
   }
 
   /**
-   * パラメータに対するフェードインの時間を設定する。
+   * 设置参数淡入时间。
    *
-   * @param parameterId     パラメータID
-   * @param value           フェードインにかかる時間[秒]
+   * @param parameterId     参数 ID
+   * @param value           淡入时间[秒]
    */
   public setParameterFadeInTime(
     parameterId: CubismIdHandle,
@@ -710,9 +710,9 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * パラメータに対するフェードアウトの時間の設定
-   * @param parameterId     パラメータID
-   * @param value           フェードアウトにかかる時間[秒]
+   * 设置参数淡出时间
+   * @param parameterId     参数 ID
+   * @param value           淡出时间[秒]
    */
   public setParameterFadeOutTime(
     parameterId: CubismIdHandle,
@@ -729,9 +729,9 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * パラメータに対するフェードインの時間の取得
-   * @param    parameterId     パラメータID
-   * @return   フェードインにかかる時間[秒]
+   * 获取参数淡入时间
+   * @param    parameterId     参数 ID
+   * @return   淡入时间[秒]
    */
   public getParameterFadeInTime(parameterId: CubismIdHandle): number {
     const curves: Array<CubismMotionCurve> = this._motionData.curves;
@@ -746,10 +746,10 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * パラメータに対するフェードアウトの時間を取得
+   * 获取参数淡出时间
    *
-   * @param   parameterId     パラメータID
-   * @return   フェードアウトにかかる時間[秒]
+   * @param   parameterId     参数 ID
+   * @return   淡出时间[秒]
    */
   public getParameterFadeOutTime(parameterId: CubismIdHandle): number {
     const curves: Array<CubismMotionCurve> = this._motionData.curves;
@@ -764,9 +764,9 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * 自動エフェクトがかかっているパラメータIDリストの設定
-   * @param eyeBlinkParameterIds    自動まばたきがかかっているパラメータIDのリスト
-   * @param lipSyncParameterIds     リップシンクがかかっているパラメータIDのリスト
+   * 设置自动效果影响的参数 ID 列表
+   * @param eyeBlinkParameterIds    自动眨眼影响的参数 ID 列表
+   * @param lipSyncParameterIds     唇形同步影响的参数 ID 列表
    */
   public setEffectIds(
     eyeBlinkParameterIds: Array<CubismIdHandle>,
@@ -777,14 +777,14 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * コンストラクタ
+   * 构造函数
    */
   public constructor() {
     super();
     this._sourceFrameRate = 30.0;
     this._loopDurationSeconds = -1.0;
-    this._isLoop = false; // trueから false へデフォルトを変更
-    this._isLoopFadeIn = true; // ループ時にフェードインが有効かどうかのフラグ
+    this._isLoop = false; // 默认值由 true 改为 false
+    this._isLoopFadeIn = true; // 循环时是否启用淡入的标志
     this._lastWeight = 0.0;
     this._motionData = null;
     this._modelCurveIdEyeBlink = null;
@@ -797,7 +797,7 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * デストラクタ相当の処理
+   * 析构等效处理
    */
   public release(): void {
     this._motionData = void 0;
@@ -818,9 +818,9 @@ export class CubismMotion extends ACubismMotion {
     switch (this._motionBehavior) {
       case MotionBehavior.MotionBehavior_V2:
       default:
-        motionQueueEntry.setStartTime(userTimeSeconds - time); // 最初の状態へ
+        motionQueueEntry.setStartTime(userTimeSeconds - time); // 回到初始状态
         if (this._isLoopFadeIn) {
-          // ループ中でループ用フェードインが有効のときは、フェードイン設定し直し
+          // 循环中且循环用淡入有效时，重新设置淡入
           motionQueueEntry.setFadeInStartTime(userTimeSeconds - time);
         }
 
@@ -829,10 +829,10 @@ export class CubismMotion extends ACubismMotion {
         }
         break;
       case MotionBehavior.MotionBehavior_V1:
-        // 旧ループ処理
-        motionQueueEntry.setStartTime(userTimeSeconds); // 最初の状態へ
+        // 旧版循环处理
+        motionQueueEntry.setStartTime(userTimeSeconds); // 回到初始状态
         if (this._isLoopFadeIn) {
-          // ループ中でループ用フェードインが有効のときは、フェードイン設定し直し
+          // 循环中且循环用淡入有效时，重新设置淡入
           motionQueueEntry.setFadeInStartTime(userTimeSeconds);
         }
         break;
@@ -840,11 +840,11 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * motion3.jsonをパースする。
+   * 解析 motion3.json。
    *
-   * @param motionJson  motion3.jsonが読み込まれているバッファ
-   * @param size        バッファのサイズ
-   * @param shouldCheckMotionConsistency motion3.json整合性チェックするかどうか
+   * @param motionJson  已加载 motion3.json 的缓冲区
+   * @param size        缓冲区大小
+   * @param shouldCheckMotionConsistency 是否检查 motion3.json 一致性
    */
   public parse(
     motionJson: ArrayBuffer,
@@ -922,7 +922,7 @@ export class CubismMotion extends ACubismMotion {
     let totalPointCount = 0;
     let totalSegmentCount = 0;
 
-    // Curves
+    // 曲线
     for (
       let curveCount = 0;
       curveCount < this._motionData.curveCount;
@@ -959,7 +959,7 @@ export class CubismMotion extends ACubismMotion {
           ? json.getMotionCurveFadeOutTime(curveCount)
           : -1.0;
 
-      // Segments
+      // 段
       for (
         let segmentPosition = 0;
         segmentPosition < json.getMotionCurveSegmentCount(curveCount);
@@ -1097,13 +1097,13 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * モデルのパラメータ更新
+   * 更新模型参数
    *
-   * イベント発火のチェック。
-   * 入力する時間は呼ばれるモーションタイミングを０とした秒数で行う。
+   * 检查事件触发。
+   * 输入时间以被调用时的动作时间点为 0 的秒数。
    *
-   * @param beforeCheckTimeSeconds   前回のイベントチェック時間[秒]
-   * @param motionTimeSeconds        今回の再生時間[秒]
+   * @param beforeCheckTimeSeconds   上次事件检查时间[秒]
+   * @param motionTimeSeconds        本次播放时间[秒]
    */
   public getFiredEvent(
     beforeCheckTimeSeconds: number,
@@ -1111,7 +1111,7 @@ export class CubismMotion extends ACubismMotion {
   ): Array<string> {
     updateSize(this._firedEventValues, 0);
 
-    // イベントの発火チェック
+    // 检查事件触发
     for (let u = 0; u < this._motionData.eventCount; ++u) {
       if (
         this._motionData.events[u].fireTime > beforeCheckTimeSeconds &&
@@ -1125,10 +1125,10 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * 透明度のカーブが存在するかどうかを確認する
+   * 检查是否存在透明度曲线
    *
-   * @return true  -> キーが存在する
-   *          false -> キーが存在しない
+   * @return true  -> 存在键
+   *          false -> 不存在键
    */
   public isExistModelOpacity(): boolean {
     for (let i = 0; i < this._motionData.curveCount; i++) {
@@ -1147,9 +1147,9 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * 透明度のカーブのインデックスを返す
+   * 返回透明度曲线的索引
    *
-   * @return success:透明度のカーブのインデックス
+   * @return success:透明度曲线的索引
    */
   public getModelOpacityIndex(): number {
     if (this.isExistModelOpacity()) {
@@ -1171,10 +1171,10 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * 透明度のIdを返す
+   * 返回透明度的 Id
    *
-   * @param index モーションカーブのインデックス
-   * @return success:透明度のカーブのインデックス
+   * @param index 动作曲线的索引
+   * @return success:透明度曲线的索引
    */
   public getModelOpacityId(index: number): CubismIdHandle {
     if (index != -1) {
@@ -1191,43 +1191,43 @@ export class CubismMotion extends ACubismMotion {
   }
 
   /**
-   * 現在時間の透明度の値を返す
+   * 返回当前时间的透明度值
    *
-   * @return success:モーションの当該時間におけるOpacityの値
+   * @return success:动作当前时间的 Opacity 值
    */
   public getModelOpacityValue(): number {
     return this._modelOpacity;
   }
 
   /**
-   * デバッグ用フラグを設定する
+   * 设置调试标志
    *
-   * @param debugMode デバッグモードの有効・無効
+   * @param debugMode 是否启用调试模式
    */
   public setDebugMode(debugMode: boolean): void {
     this._debugMode = debugMode;
   }
 
-  public _sourceFrameRate: number; // ロードしたファイルのFPS。記述が無ければデフォルト値15fpsとなる
-  public _loopDurationSeconds: number; // mtnファイルで定義される一連のモーションの長さ
+  public _sourceFrameRate: number; // 加载文件的 FPS。没有描述则默认为 15fps
+  public _loopDurationSeconds: number; // mtn 文件中定义的一系列动作长度
   public _motionBehavior: MotionBehavior = MotionBehavior.MotionBehavior_V2;
-  public _lastWeight: number; // 最後に設定された重み
+  public _lastWeight: number; // 最后设置的权重
 
-  public _motionData: CubismMotionData; // 実際のモーションデータ本体
+  public _motionData: CubismMotionData; // 实际的动作数据本体
 
-  public _eyeBlinkParameterIds: Array<CubismIdHandle>; // 自動まばたきを適用するパラメータIDハンドルのリスト。  モデル（モデルセッティング）とパラメータを対応付ける。
-  public _lipSyncParameterIds: Array<CubismIdHandle>; // リップシンクを適用するパラメータIDハンドルのリスト。  モデル（モデルセッティング）とパラメータを対応付ける。
+  public _eyeBlinkParameterIds: Array<CubismIdHandle>; // 自动眨眼要应用的参数 ID 句柄列表。用于将模型（模型设置）与参数对应。
+  public _lipSyncParameterIds: Array<CubismIdHandle>; // 唇形同步要应用的参数 ID 句柄列表。用于将模型（模型设置）与参数对应。
 
-  public _modelCurveIdEyeBlink: CubismIdHandle; // モデルが持つ自動まばたき用パラメータIDのハンドル。  モデルとモーションを対応付ける。
-  public _modelCurveIdLipSync: CubismIdHandle; // モデルが持つリップシンク用パラメータIDのハンドル。  モデルとモーションを対応付ける。
-  public _modelCurveIdOpacity: CubismIdHandle; // モデルが持つ不透明度用パラメータIDのハンドル。  モデルとモーションを対応付ける。
+  public _modelCurveIdEyeBlink: CubismIdHandle; // 模型拥有的自动眨眼用参数 ID 句柄。用于将模型与动作对应。
+  public _modelCurveIdLipSync: CubismIdHandle; // 模型拥有的唇形同步用参数 ID 句柄。用于将模型与动作对应。
+  public _modelCurveIdOpacity: CubismIdHandle; // 模型拥有的不透明度用参数 ID 句柄。用于将模型与动作对应。
 
-  public _modelOpacity: number; // モーションから取得した不透明度
+  public _modelOpacity: number; // 从动作中获取的不透明度
 
-  private _debugMode: boolean; // デバッグモードかどうか
+  private _debugMode: boolean; // 是否为调试模式
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmotion';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

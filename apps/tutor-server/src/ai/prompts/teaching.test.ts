@@ -9,7 +9,7 @@ const restaurant = scenarios.find((s) => s.id === 'restaurant-ordering')!
 const runtimeWords = Array.from({ length: 30 }, (_, i) => `word${i + 1}`)
 
 async function main(): Promise<void> {
-  // ── Start messages should inject runtime target words, not static scenario words ──
+  // ── 开场消息应注入运行时目标词，而非静态场景词 ──
   const { messages: startMessages } = buildScenarioStartMessages(
     restaurant,
     1,
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
     'start prompt should tell LLM which words to focus on',
   )
 
-  // ── Teaching messages should focus on unused words from the current act ──
+  // ── 教学消息应聚焦当前幕中未使用的词 ──
   const usedWords = ['word1', 'word2', 'word3']
   const teachingMessages = buildScenarioTeachingMessages(
     'I would like to order something.',
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     )
   }
 
-  // Focus words for act 1 should come from the first bucket and exclude used words
+  // 第 1 幕的焦点词应来自第一个桶，并排除已使用的词
   const bucketSize = Math.ceil(runtimeWords.length / 3)
   const firstBucket = runtimeWords.slice(0, bucketSize)
   const firstBucketUnused = firstBucket.filter((w) => !usedWords.includes(w))
@@ -78,7 +78,7 @@ async function main(): Promise<void> {
     'teaching prompt should instruct hints to include target words',
   )
 
-  // ── Fallback to scenario.targetWords when runtime words are missing ──
+  // ── 缺少运行时词汇时回退到 scenario.targetWords ──
   const { messages: fallbackMessages } = buildScenarioStartMessages(
     restaurant,
     1,

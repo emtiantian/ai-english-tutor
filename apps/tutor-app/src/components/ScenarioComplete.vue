@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <!-- Star rating -->
+      <!-- 星级评分 -->
       <div class="stars-row" :title="`${displayStars} / 5 星`">
         <span
           v-for="i in 5"

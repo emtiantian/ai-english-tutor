@@ -24,10 +24,10 @@ interface ASRResponse {
 }
 
 /**
- * Voice API routes
+ * 语音 API 路由
  *
- * POST /api/tts    - Text-to-Speech: returns audio file
- * POST /api/asr    - Speech-to-Text: accepts audio file, returns transcription
+ * POST /api/tts    - 文字转语音：返回音频文件
+ * POST /api/asr    - 语音转文字：接收音频文件并返回转写文本
  */
 export async function voiceRoutes(server: FastifyInstance): Promise<void> {
   const tts = createTTSProvider()
@@ -36,10 +36,10 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
   /**
    * POST /api/tts
-   * Convert text to speech audio
+   * 将文字转换为语音音频
    *
-   * Request body: { text: string, voice?: string, format?: string, speed?: number }
-   * Response: audio file (Content-Type based on format)
+   * 请求体：{ text: string, voice?: string, format?: string, speed?: number }
+   * 响应：音频文件（Content-Type 根据 format 决定）
    */
   server.post(
     '/api/tts',
@@ -84,8 +84,8 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/tts/stats
-   * TTS cache effectiveness: in-process hit/miss counters + on-disk footprint.
-   * Use to gauge how much TTS spend the cache is saving and whether reuse works.
+   * TTS 缓存效果：进程内命中/未命中计数 + 磁盘占用。
+   * 用于衡量缓存节省了多少 TTS 开销，以及复用是否生效。
    */
   server.get('/api/tts/stats', async (_request, reply) => {
     const disk = await getCacheDiskUsage()
@@ -94,10 +94,10 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
   /**
    * POST /api/asr
-   * Convert speech audio to text
+   * 将语音音频转换为文字
    *
-   * Request: multipart/form-data with audio file
-   * Response: { text: string, confidence?: number, language?: string }
+   * 请求：multipart/form-data，包含音频文件
+   * 响应：{ text: string, confidence?: number, language?: string }
    */
   server.post('/api/asr', async (request, reply) => {
     const data = await request.file()
@@ -115,7 +115,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
     )
 
     try {
-      // Accumulate size while reading chunks so we can reject oversized uploads early.
+      // 读取分片时累计大小，以便尽早拒绝过大的上传文件。
       const chunks: Buffer[] = []
       const maxSize = config.MAX_AUDIO_SIZE_MB * 1024 * 1024
       let totalSize = 0
@@ -151,10 +151,10 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
   /**
    * POST /api/translate-tts
-   * Translate English text to Chinese and synthesize with warm Taiwanese female voice.
+   * 将英文文本翻译为中文，并用温暖的台湾女声合成语音。
    *
-   * Request body: { text: string }
-   * Response: { audioBase64: string, translation: string }
+   * 请求体：{ text: string }
+   * 响应：{ audioBase64: string, translation: string }
    */
   server.post(
     '/api/translate-tts',
@@ -168,16 +168,16 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
         })
       }
 
-      logger.info({ textLength: text.length }, 'Translate-TTS request')
+      logger.info({ textLength: text.length }, 'Translate TTS request')
 
       try {
-        // Step 1: Translate English to Chinese using LLM (with timeout)
+        // 步骤 1：使用 LLM 将英文翻译为中文（带超时）
         const translateMessages: LLMMessage[] = [
           {
             role: 'system',
             content:
-              'You are a translator. Translate the given English text to natural Simplified Chinese. ' +
-              'Return ONLY the Chinese translation, no explanations, no quotes, no extra text.',
+              '你是一名翻译助手。请将给定的英文文本翻译成自然的简体中文。' +
+              '只返回中文译文，不要解释、不要引号、不要额外内容。',
           },
           { role: 'user', content: text },
         ]
@@ -197,7 +197,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
           'Translation complete',
         )
 
-        // Step 2: Synthesize Chinese TTS with warm Taiwanese female voice
+        // 步骤 2：用温暖的台湾女声合成中文 TTS
         const zhVoiceDesign = config.XIAOMI_TTS_ZH_VOICE_DESIGN
         logger.info({ zhVoiceDesign: zhVoiceDesign?.slice(0, 50) }, 'Using Chinese voice design')
         const audioBuffer = await tts.synthesize(translation, {
@@ -209,14 +209,14 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
         logger.info(
           { translationLength: translation.length, audioSize: audioBuffer.length },
-          'Translate-TTS complete',
+          'Translate TTS complete',
         )
 
         return reply.send({ audioBase64, translation })
       } catch (err) {
-        logger.error({ err }, 'Translate-TTS failed')
+        logger.error({ err }, 'Translate TTS failed')
         return reply.status(500).send({
-          error: err instanceof Error ? err.message : 'Translate-TTS failed',
+          error: err instanceof Error ? err.message : 'Translate TTS failed',
           code: 'TRANSLATE_TTS_ERROR',
         })
       }

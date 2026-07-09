@@ -1,23 +1,23 @@
 /**
- * Shared logic for picking the best student-reply hint.
+ * 选择最佳学生回复提示的共享逻辑。
  *
- * Used by both the 💡 hint UI and the tap-body "answer for me" interaction,
- * so they always agree on which hint is most valuable in the current scenario.
+ * 💡 提示 UI 和点击身体“帮我回答”交互都会用到它，
+ * 这样两者在当前场景下对“哪个提示最有价值”始终保持一致。
  */
 export interface PickHintOptions {
-  /** Target words for the current scenario. */
+  /** 当前场景的目标词。 */
   targetWords?: string[]
-  /** Words already marked as learned in the current scenario. */
+  /** 当前场景中已标记为掌握的词。 */
   wordsLearned?: string[]
 }
 
 /**
- * Pick the best phrase from a candidate list:
- *   1. Prefer one containing an unlearned target word
- *   2. Then any target word
- *   3. Otherwise fall back to the first candidate
+ * 从候选列表中挑选最佳表达：
+ *   1. 优先包含未掌握目标词的表达
+ *   2. 然后包含任意目标词的表达
+ *   3. 否则回退到第一条候选
  *
- * Returns `undefined` if the candidate list is empty.
+ * 候选列表为空时返回 undefined。
  */
 export function pickBestStudentHint(
   candidates: string[],

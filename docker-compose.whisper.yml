@@ -20,7 +20,7 @@ services:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/whisper-models:/models
     command:
       - "-m"
-      - "/models/ggml-base.en.bin"
+      - "/models/${WHISPER_MODEL:-ggml-base.en.bin}"
       - "--host"
       - "0.0.0.0"
       - "--port"

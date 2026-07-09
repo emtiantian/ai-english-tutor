@@ -1,53 +1,52 @@
 import type { MotionId, ExpressionId } from './types.js'
 
 /**
- * Result of analyzing text for motion/expression selection
+ * 文本动作/表情选择分析结果
  */
 export interface MotionAnalysisResult {
   motionId: MotionId
   expressionId: ExpressionId
-  /** Name of the matched intent (for logging/debugging) */
+  /** 匹配到的意图名称（用于日志/调试） */
   intent: string
 }
 
 /**
- * MotionAnalyzer — maps AI response text to a semantic motion/expression.
+ * MotionAnalyzer —— 将 AI 回复文本映射为语义动作/表情。
  *
- * This is the **text → semantic ID** layer, complementing MotionRegistry
- * which handles **semantic ID → model-specific key**.
+ * 这是 **文本 → 语义 ID** 层，与负责 **语义 ID → 模型专属 key**
+ * 的 MotionRegistry 互补。
  *
- * Implement this interface to customize motion selection per character
- * or per language. The default `KeywordMotionAnalyzer` uses English keyword
- * matching and works for most teaching scenarios.
+ * 实现该接口可按角色或按语言自定义动作选择。
+ * 默认的 `KeywordMotionAnalyzer` 使用英文关键词匹配，适用于大多数教学场景。
  */
 export interface MotionAnalyzer {
-  /** Analyze text and return the best-matching motion/expression */
+  /** 分析文本并返回最匹配的动作/表情 */
   analyze(text: string): MotionAnalysisResult
 }
 
 // ────────────────────────────────────────────────────────────
-// Default implementation: keyword-based intent detection
+// 默认实现：基于关键词的意图识别
 // ────────────────────────────────────────────────────────────
 
 interface IntentRule {
-  /** Unique intent name for logging */
+  /** 唯一意图名称，用于日志 */
   intent: string
-  /** Keywords or regex patterns to match against the text */
+  /** 用于匹配文本的关键词或正则模式 */
   patterns: Array<string | RegExp>
-  /** Motion to play when matched */
+  /** 匹配时播放的动作 */
   motionId: MotionId
-  /** Expression to show when matched */
+  /** 匹配时展示的表情 */
   expressionId: ExpressionId
-  /** Higher = checked first (default 0) */
+  /** 数值越高越先匹配（默认 0） */
   priority?: number
 }
 
 /**
- * Intent detection rules, ordered by priority (highest first).
- * The first matching rule wins.
+ * 意图识别规则，按优先级排序（高的在前）。
+ * 首个匹配的规则生效。
  */
 const INTENT_RULES: IntentRule[] = [
-  // ─── Greeting ────────────────────────────────────────────
+  // ─── 问候 ────────────────────────────────────────────
   {
     intent: 'greeting',
     patterns: [
@@ -60,7 +59,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 10,
   },
 
-  // ─── Farewell ────────────────────────────────────────────
+  // ─── 告别 ────────────────────────────────────────────
   {
     intent: 'farewell',
     patterns: [
@@ -72,7 +71,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 10,
   },
 
-  // ─── Surprise ────────────────────────────────────────────
+  // ─── 惊讶 ────────────────────────────────────────────
   {
     intent: 'surprise',
     patterns: [
@@ -85,7 +84,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 8,
   },
 
-  // ─── Praising / Congratulating ───────────────────────────
+  // ─── 表扬 / 祝贺 ─────────────────────────────────────
   {
     intent: 'praise',
     patterns: [
@@ -100,7 +99,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 7,
   },
 
-  // ─── Correcting a mistake ────────────────────────────────
+  // ─── 纠正错误 ────────────────────────────────────────
   {
     intent: 'correction',
     patterns: [
@@ -115,7 +114,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 6,
   },
 
-  // ─── Asking a question ───────────────────────────────────
+  // ─── 提问 ───────────────────────────────────────────
   {
     intent: 'question',
     patterns: [
@@ -130,7 +129,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 5,
   },
 
-  // ─── Pointing / Example ──────────────────────────────────
+  // ─── 指向 / 示例 ─────────────────────────────────────
   {
     intent: 'pointing',
     patterns: [
@@ -143,7 +142,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 4,
   },
 
-  // ─── Writing / Note-taking ───────────────────────────────
+  // ─── 书写 / 记笔记 ───────────────────────────────────
   {
     intent: 'writing',
     patterns: [
@@ -156,7 +155,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 4,
   },
 
-  // ─── Introducing new content ─────────────────────────────
+  // ─── 引入新内容 ──────────────────────────────────────
   {
     intent: 'introducing',
     patterns: [
@@ -169,7 +168,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 3,
   },
 
-  // ─── Explaining / Teaching ───────────────────────────────
+  // ─── 解释 / 教学 ─────────────────────────────────────
   {
     intent: 'explaining',
     patterns: [
@@ -183,7 +182,7 @@ const INTENT_RULES: IntentRule[] = [
     priority: 2,
   },
 
-  // ─── Student got it wrong (mild) ─────────────────────────
+  // ─── 学生答错（轻微） ────────────────────────────────
   {
     intent: 'mild-wrong',
     patterns: [
@@ -197,16 +196,16 @@ const INTENT_RULES: IntentRule[] = [
 ]
 
 /**
- * Default MotionAnalyzer — uses keyword/regex matching to detect teaching intent.
+ * 默认 MotionAnalyzer —— 使用关键词/正则匹配识别教学意图。
  *
- * Works well for English teaching scenarios. For other languages or domains,
- * implement the `MotionAnalyzer` interface with custom rules.
+ * 在英语教学场景中表现良好。如需支持其他语言或领域，
+ * 可实现 `MotionAnalyzer` 接口并编写自定义规则。
  */
 export class KeywordMotionAnalyzer implements MotionAnalyzer {
   private readonly rules: IntentRule[]
 
   constructor(customRules?: IntentRule[]) {
-    // Sort by priority descending so highest-priority rules are checked first
+    // 按优先级降序排序，确保高优先级规则先被检查
     this.rules = [...(customRules ?? INTENT_RULES)].sort(
       (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
     )
@@ -230,10 +229,10 @@ export class KeywordMotionAnalyzer implements MotionAnalyzer {
       }
     }
 
-    // Default fallback
+    // 默认兜底
     return { motionId: 'nod', expressionId: 'neutral', intent: 'default' }
   }
 }
 
-/** Singleton default instance */
+/** 默认单例实例 */
 export const defaultMotionAnalyzer: MotionAnalyzer = new KeywordMotionAnalyzer()

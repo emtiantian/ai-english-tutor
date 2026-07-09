@@ -9,18 +9,18 @@
 import { CubismVector2 } from './cubismvector2';
 
 /**
- * 数値計算などに使用するユーティリティクラス
+ * 用于数值计算等场景的工具类
  */
 export class CubismMath {
   static readonly Epsilon: number = 0.00001;
 
   /**
-   * 第一引数の値を最小値と最大値の範囲に収めた値を返す
+   * 将第一个参数限制在最小值与最大值之间并返回
    *
-   * @param value 収められる値
-   * @param min   範囲の最小値
-   * @param max   範囲の最大値
-   * @return 最小値と最大値の範囲に収めた値
+   * @param value 待限制的值
+   * @param min   范围最小值
+   * @param max   范围最大值
+   * @return 限制在最小值与最大值之间的值
    */
   static range(value: number, min: number, max: number): number {
     if (value < min) {
@@ -33,48 +33,48 @@ export class CubismMath {
   }
 
   /**
-   * サイン関数の値を求める
+   * 求正弦值
    *
-   * @param x 角度値（ラジアン）
-   * @return サイン関数sin(x)の値
+   * @param x 角度（弧度）
+   * @return 正弦值 sin(x)
    */
   static sin(x: number): number {
     return Math.sin(x);
   }
 
   /**
-   * コサイン関数の値を求める
+   * 求余弦值
    *
-   * @param x 角度値(ラジアン)
-   * @return コサイン関数cos(x)の値
+   * @param x 角度（弧度）
+   * @return 余弦值 cos(x)
    */
   static cos(x: number): number {
     return Math.cos(x);
   }
 
   /**
-   * 値の絶対値を求める
+   * 求绝对值
    *
-   * @param x 絶対値を求める値
-   * @return 値の絶対値
+   * @param x 待求绝对值的值
+   * @return 绝对值
    */
   static abs(x: number): number {
     return Math.abs(x);
   }
 
   /**
-   * 平方根(ルート)を求める
-   * @param x -> 平方根を求める値
-   * @return 値の平方根
+   * 求平方根
+   * @param x -> 待求平方根的值
+   * @return 平方根
    */
   static sqrt(x: number): number {
     return Math.sqrt(x);
   }
 
   /**
-   * 立方根を求める
-   * @param x -> 立方根を求める値
-   * @return 値の立方根
+   * 求立方根
+   * @param x -> 待求立方根的值
+   * @return 立方根
    */
   static cbrt(x: number): number {
     if (x === 0) {
@@ -99,11 +99,11 @@ export class CubismMath {
   }
 
   /**
-   * イージング処理されたサインを求める
-   * フェードイン・アウト時のイージングに利用できる
+   * 求经过缓弦（easing sine）处理后的值
+   * 可用于淡入淡出时的缓动
    *
-   * @param value イージングを行う値
-   * @return イージング処理されたサイン値
+   * @param value 待缓动的值
+   * @return 缓弦处理后的值
    */
   static getEasingSine(value: number): number {
     if (value < 0.0) {
@@ -116,22 +116,22 @@ export class CubismMath {
   }
 
   /**
-   * 大きい方の値を返す
+   * 返回较大值
    *
-   * @param left 左辺の値
-   * @param right 右辺の値
-   * @return 大きい方の値
+   * @param left 左侧值
+   * @param right 右侧值
+   * @return 较大值
    */
   static max(left: number, right: number): number {
     return left > right ? left : right;
   }
 
   /**
-   * 小さい方の値を返す
+   * 返回较小值
    *
-   * @param left  左辺の値
-   * @param right 右辺の値
-   * @return 小さい方の値
+   * @param left  左侧值
+   * @param right 右侧值
+   * @return 较小值
    */
   static min(left: number, right: number): number {
     return left > right ? right : left;
@@ -147,31 +147,31 @@ export class CubismMath {
   }
 
   /**
-   * 角度値をラジアン値に変換する
+   * 将角度转换为弧度
    *
-   * @param degrees   角度値
-   * @return 角度値から変換したラジアン値
+   * @param degrees   角度值
+   * @return 由角度转换得到的弧度值
    */
   static degreesToRadian(degrees: number): number {
     return (degrees / 180.0) * Math.PI;
   }
 
   /**
-   * ラジアン値を角度値に変換する
+   * 将弧度转换为角度
    *
-   * @param radian    ラジアン値
-   * @return ラジアン値から変換した角度値
+   * @param radian    弧度值
+   * @return 由弧度转换得到的角度值
    */
   static radianToDegrees(radian: number): number {
     return (radian * 180.0) / Math.PI;
   }
 
   /**
-   * ２つのベクトルからラジアン値を求める
+   * 由两个向量求弧度方向
    *
-   * @param from  始点ベクトル
-   * @param to    終点ベクトル
-   * @return ラジアン値から求めた方向ベクトル
+   * @param from  起点向量
+   * @param to    终点向量
+   * @return 由弧度得到的方向向量
    */
   static directionToRadian(from: CubismVector2, to: CubismVector2): number {
     const q1: number = Math.atan2(to.y, to.x);
@@ -191,11 +191,11 @@ export class CubismMath {
   }
 
   /**
-   * ２つのベクトルから角度値を求める
+   * 由两个向量求角度方向
    *
-   * @param from  始点ベクトル
-   * @param to    終点ベクトル
-   * @return 角度値から求めた方向ベクトル
+   * @param from  起点向量
+   * @param to    终点向量
+   * @return 由角度得到的方向向量
    */
   static directionToDegrees(from: CubismVector2, to: CubismVector2): number {
     const radian: number = this.directionToRadian(from, to);
@@ -209,10 +209,10 @@ export class CubismMath {
   }
 
   /**
-   * ラジアン値を方向ベクトルに変換する。
+   * 将弧度值转换为方向向量。
    *
-   * @param totalAngle    ラジアン値
-   * @return ラジアン値から変換した方向ベクトル
+   * @param totalAngle    弧度值
+   * @return 由弧度转换得到的方向向量
    */
 
   static radianToDirection(totalAngle: number): CubismVector2 {
@@ -225,13 +225,13 @@ export class CubismMath {
   }
 
   /**
-   * 三次方程式の三次項の係数が0になったときに補欠的に二次方程式の解をもとめる。
+   * 当三次方程三次项系数为 0 时，退而求其次使用二次方程求解。
    * a * x^2 + b * x + c = 0
    *
-   * @param   a -> 二次項の係数値
-   * @param   b -> 一次項の係数値
-   * @param   c -> 定数項の値
-   * @return  二次方程式の解
+   * @param   a -> 二次项系数
+   * @param   b -> 一次项系数
+   * @param   c -> 常数项
+   * @return  二次方程的解
    */
   static quadraticEquation(a: number, b: number, c: number): number {
     if (this.abs(a) < CubismMath.Epsilon) {
@@ -245,16 +245,16 @@ export class CubismMath {
   }
 
   /**
-   * カルダノの公式によってベジェのt値に該当する３次方程式の解を求める。
-   * 重解になったときには0.0～1.0の値になる解を返す。
+   * 使用卡尔达诺（Cardano）公式求解贝塞尔曲线 t 值对应的三次方程。
+   * 出现重根时返回位于 0.0～1.0 范围内的解。
    *
    * a * x^3 + b * x^2 + c * x + d = 0
    *
-   * @param   a -> 三次項の係数値
-   * @param   b -> 二次項の係数値
-   * @param   c -> 一次項の係数値
-   * @param   d -> 定数項の値
-   * @return  0.0～1.0の間にある解
+   * @param   a -> 三次项系数
+   * @param   b -> 二次项系数
+   * @param   c -> 一次项系数
+   * @param   d -> 常数项
+   * @return  位于 0.0～1.0 之间的解
    */
   static cardanoAlgorithmForBezier(
     a: number,
@@ -330,11 +330,11 @@ export class CubismMath {
   }
 
   /**
-   * 浮動小数点の余りを求める。
+   * 求浮点数取模后的余数。
    *
-   * @param dividend 被除数（割られる値）
-   * @param divisor 除数（割る値）
-   * @return 余り
+   * @param dividend 被除数
+   * @param divisor 除数
+   * @return 余数
    */
   static mod(dividend: number, divisor: number): number {
     if (
@@ -349,26 +349,26 @@ export class CubismMath {
       return NaN;
     }
 
-    // 絶対値に変換する。
+    // 转换为绝对值。
     const absDividend = Math.abs(dividend);
     const absDivisor = Math.abs(divisor);
 
-    // 絶対値で割り算する。
+    // 用绝对值做除法。
     let result =
       absDividend - Math.floor(absDividend / absDivisor) * absDivisor;
 
-    // 符号を被除数のものに指定する。
+    // 符号与被除数保持一致。
     result *= Math.sign(dividend);
     return result;
   }
 
   /**
-   * コンストラクタ
+   * 构造函数
    */
   private constructor() {}
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismmath';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

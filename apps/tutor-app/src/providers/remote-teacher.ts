@@ -2,27 +2,26 @@ import type { AITeacherProvider, TeachingInput, TeachingResponse } from '@ai-eng
 import type { TutorClient } from '../client/TutorClient'
 
 /**
- * Remote AI Teacher Provider — communicates with tutor-server backend.
+ * 远程 AI 教师 Provider —— 与 tutor-server 后端通信。
  *
- * Implements the existing AITeacherProvider interface, enabling seamless
- * swapping from local (PresetTeacherProvider) to remote backend.
+ * 实现现有的 AITeacherProvider 接口，可在本地（PresetTeacherProvider）与远程后端之间无缝切换。
  */
 export class RemoteTeacherProvider implements AITeacherProvider {
   constructor(private client: TutorClient) {}
 
   async generateResponse(input: TeachingInput): Promise<TeachingResponse> {
-    // Notify UI: user message sent
+    // 通知 UI：用户消息已发送
     this.client.emit('message.user', {
       text: input.text,
       isVoice: false,
     })
 
-    // Notify UI: AI is thinking
+    // 通知 UI：AI 正在思考
     this.client.emit('state.thinking', undefined)
 
-    // Send HTTP request and wait for the full response.
-    // SSE events are also broadcast by the backend, but this provider path needs
-    // a synchronous TeachingResponse, so we use non-streaming mode.
+    // 发送 HTTP 请求并等待完整响应。
+    // 后端也会广播 SSE 事件，但这条 provider 路径需要同步的 TeachingResponse，
+    // 因此使用非流式模式。
     const response = await this.client.sendMessage({
       type: 'user.speak',
       text: input.text,

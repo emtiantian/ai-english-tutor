@@ -55,7 +55,7 @@ function collectSSE(url: string): Promise<{ events: Array<{ event?: string; data
           }
         }
       })
-      // Resolve once we have some events; caller will destroy request
+      // 一旦收到若干事件就 resolve；由调用方销毁请求
       const timeout = setTimeout(() => resolve({ events, req }), 500)
       res.on('end', () => {
         clearTimeout(timeout)
@@ -75,7 +75,7 @@ function createMockProviders(audioInput = false): {
     tts: {
       name: 'mock-tts',
       async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
-        // Return a 12288-byte buffer so it splits into exactly 2 chunks
+        // 返回 12288 字节的缓冲区，使其正好分成 2 个分片
         return Buffer.alloc(12288, 0xab)
       },
     },
@@ -99,39 +99,39 @@ async function main(): Promise<void> {
   const { tts, asr, llm } = createMockProviders()
   const pipeline = new AudioPipeline(tts, asr, llm)
 
-  // transcribeAudio: no audio returns original text
+  // transcribeAudio: 无音频时返回原始文本
   assert.strictEqual(await pipeline.transcribeAudio('hello', undefined, 'webm'), 'hello')
 
-  // transcribeAudio: LLM supports audio input → skip ASR
+  // transcribeAudio: LLM 支持音频输入 → 跳过 ASR
   const audioLlm = createMockProviders(true).llm
   const audioPipeline = new AudioPipeline(tts, asr, audioLlm)
   assert.strictEqual(await audioPipeline.transcribeAudio('hello', 'base64data', 'webm'), 'hello')
 
-  // transcribeAudio: audio provided, LLM does not support audio → use ASR
+  // transcribeAudio: 提供了音频但 LLM 不支持音频 → 使用 ASR
   const asrResult = await pipeline.transcribeAudio('hello', 'base64data', 'webm')
   assert.strictEqual(asrResult, 'mock transcription')
 
-  // synthesizeDirect returns a buffer
+  // synthesizeDirect 返回一个缓冲区
   const direct = await pipeline.synthesizeDirect('hello')
   assert.strictEqual(direct.length, 12288)
 
-  // handleOutput returns base64 audio
+  // handleOutput 返回 base64 音频
   const output = await pipeline.handleOutput('hello', undefined, undefined)
   assert(output.audioBase64)
   assert.strictEqual(Buffer.from(output.audioBase64, 'base64').length, 12288)
 
-  // ── broadcastAudioChunksDirect ────────────────────────────
+  // ── broadcastAudioChunksDirect 测试 ────────────────────────────
 
   const { server, port } = await createSSEServer()
   const sessionId = 'audio-test-session'
 
   const collector = await collectSSE(`http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`)
 
-  // Skip config + heartbeat events
+  // 跳过 config 和心跳事件
   const audioBuffer = Buffer.alloc(12288, 0xcd)
   pipeline.broadcastAudioChunksDirect(audioBuffer, 'mp3', sessionId, 'teacher.audio')
 
-  // Wait a tick for broadcasts to land
+  // 等待一帧，让广播送达
   await new Promise((resolve) => setTimeout(resolve, 200))
 
   const audioEvents = collector.events.filter((e) => e.event === 'teacher.audio')

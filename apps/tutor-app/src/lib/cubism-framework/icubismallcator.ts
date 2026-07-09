@@ -7,43 +7,43 @@
  */
 
 /**
- * メモリアロケーションを抽象化したクラス
+ * 抽象内存分配类
  *
- * メモリ確保・解放処理をプラットフォーム側で実装して
- * フレームワークから呼び出すためのインターフェース
+ * 由平台侧实现内存分配与释放处理，
+ * 供框架调用的接口。
  */
 export abstract class ICubismAllocator {
   /**
-   * アラインメント制約なしのヒープ・メモリーを確保します
+   * 分配无对齐约束的堆内存
    *
-   * @param size 確保するバイト数
-   * @return 成功すると割り当てられたメモリのアドレス。そうでなければ'0'を返す
+   * @param size 要分配的字节数
+   * @return 成功时返回分配的内存地址，否则返回 '0'
    */
   public abstract allocate(size: number): any;
 
   /**
-   * アラインメント制約なしのヒープ・メモリーを解放します。
+   * 释放无对齐约束的堆内存。
    *
-   * @param memory 解放するメモリのアドレス
+   * @param memory 要释放的内存地址
    */
   public abstract deallocate(memory: any): void;
 
   /**
-   * アラインメント制約有のヒープ・メモリーを確保します。
-   * @param size 確保するバイト数
-   * @param alignment メモリーブロックのアラインメント幅
-   * @return 成功すると割り当てられたメモリのアドレス。そうでなければ'0'を返す
+   * 分配有对齐约束的堆内存。
+   * @param size 要分配的字节数
+   * @param alignment 内存块的对齐宽度
+   * @return 成功时返回分配的内存地址，否则返回 '0'
    */
   public abstract allocateAligned(size: number, alignment: number): any;
 
   /**
-   * アラインメント制約ありのヒープ・メモリーを解放します。
-   * @param alignedMemory 解放するメモリのアドレス
+   * 释放有对齐约束的堆内存。
+   * @param alignedMemory 要释放的内存地址
    */
   public abstract deallocateAligned(alignedMemory: any): void;
 }
 
-// Namespace definition for compatibility.
+// 为兼容性定义的命名空间。
 import * as $ from './icubismallcator';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

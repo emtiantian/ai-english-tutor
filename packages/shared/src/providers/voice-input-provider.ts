@@ -1,18 +1,18 @@
 /**
- * Voice Input Provider Interface
+ * 语音输入 Provider 接口
  *
- * Handles voice input from the user (microphone recording, etc.)
+ * 处理用户的语音输入（麦克风录音等）
  */
 export interface VoiceInputProvider {
-  /** Start recording from microphone */
+  /** 开始从麦克风录音 */
   startRecording(): Promise<void>
 
-  /** Stop recording and return audio data */
+  /** 停止录音并返回音频数据 */
   stopRecording(): Promise<{ data: string; format: string }>
 
-  /** Whether currently recording */
+  /** 是否正在录音 */
   isRecording(): boolean
 
-  /** Clean up resources */
+  /** 清理资源 */
   dispose(): void
 }

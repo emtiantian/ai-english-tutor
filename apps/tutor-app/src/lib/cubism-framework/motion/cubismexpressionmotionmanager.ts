@@ -14,23 +14,23 @@ import { CubismMotionQueueEntry } from './cubismmotionqueueentry';
 import { CubismMotionQueueManager } from './cubismmotionqueuemanager';
 
 /**
- * @brief パラメータに適用する表情の値を持たせる構造体
+ * @brief 保存要应用到参数的表情值的结构体
  */
 export class ExpressionParameterValue {
-  parameterId: CubismIdHandle; // パラメーターID
-  additiveValue: number; // 加算値
-  multiplyValue: number; // 乗算値
-  overwriteValue: number; // 上書き値
+  parameterId: CubismIdHandle; // 参数 ID
+  additiveValue: number; // 加数值
+  multiplyValue: number; // 乘数值
+  overwriteValue: number; // 覆盖值
 }
 
 /**
- * @brief 表情モーションの管理
+ * @brief 表情动作管理
  *
- * 表情モーションの管理をおこなうクラス。
+ * 进行表情动作管理的类。
  */
 export class CubismExpressionMotionManager extends CubismMotionQueueManager {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   public constructor() {
     super();
@@ -39,7 +39,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
   }
 
   /**
-   * デストラクタ相当の処理
+   * 析构等效处理
    */
   public release(): void {
     if (this._expressionParameterValues) {
@@ -54,10 +54,10 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
   }
 
   /**
-   * @brief 再生中のモーションのウェイトを取得する。
+   * @brief 获取播放中动作的权重。
    *
-   * @param[in]    index    表情のインデックス
-   * @return               表情モーションのウェイト
+   * @param[in]    index    表情索引
+   * @return               表情动作的权重
    */
   public getFadeWeight(index: number): number {
     if (
@@ -75,10 +75,10 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
   }
 
   /**
-   * @brief モーションのウェイトの設定。
+   * @brief 设置动作权重。
    *
-   * @param[in]    index    表情のインデックス
-   * @param[in]    index    表情モーションのウェイト
+   * @param[in]    index    表情索引
+   * @param[in]    index    表情动作的权重
    */
   public setFadeWeight(index: number, expressionFadeWeight: number): void {
     if (
@@ -96,14 +96,14 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
   }
 
   /**
-   * @brief モーションの更新
+   * @brief 动作更新
    *
-   * モーションを更新して、モデルにパラメータ値を反映する。
+   * 更新动作并将参数值反映到模型。
    *
-   * @param[in]   model   対象のモデル
-   * @param[in]   deltaTimeSeconds    デルタ時間[秒]
-   * @return  true    更新されている
-   *          false   更新されていない
+   * @param[in]   model   目标模型
+   * @param[in]   deltaTimeSeconds    增量时间[秒]
+   * @return  true    已更新
+   *          false   未更新
    */
   public updateMotion(model: CubismModel, deltaTimeSeconds: number): boolean {
     this._userTimeSeconds += deltaTimeSeconds;
@@ -118,7 +118,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
       let dstIndex: number = this._fadeWeights.length;
       this._fadeWeights.length += difference;
 
-      // TODO:
+      // TODO: 也可以用 Array.fill 将新增元素初始化为 0
       // https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/fill
       // this._fadeWeights.fill(0.0, dstIndex, this._fadeWeights.length)
 
@@ -127,13 +127,13 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
       }
     }
 
-    // ------- 処理を行う --------
-    // 既にモーションがあれば終了フラグを立てる
+    // ------- 执行处理 --------
+    // 如果已有动作则设置结束标志
     for (let i = 0; i < this._motions.length; ) {
       const motionQueueEntry = this._motions[i];
 
       if (motionQueueEntry == null) {
-        motions.splice(i, 1); //削除
+        motions.splice(i, 1); // 删除
         continue;
       }
 
@@ -143,21 +143,21 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
 
       if (expressionMotion == null) {
         csmDelete(motionQueueEntry);
-        motions.splice(i, 1); //削除
+        motions.splice(i, 1); // 删除
         continue;
       }
 
       const expressionParameters = expressionMotion.getExpressionParameters();
 
       if (motionQueueEntry.isAvailable()) {
-        // 再生中のExpressionが参照しているパラメータをすべてリストアップ
+        // 列出播放中 Expression 引用的所有参数
         for (let i = 0; i < expressionParameters.length; ++i) {
           if (expressionParameters[i].parameterId == null) {
             continue;
           }
 
           let index = -1;
-          // リストにパラメータIDが存在するか検索
+          // 搜索列表中是否存在参数 ID
           for (let j = 0; j < this._expressionParameterValues.length; ++j) {
             if (
               this._expressionParameterValues[j].parameterId !=
@@ -174,7 +174,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
             continue;
           }
 
-          // パラメータがリストに存在しないなら新規追加
+          // 如果参数不在列表中则新增
           const item: ExpressionParameterValue = new ExpressionParameterValue();
           item.parameterId = expressionParameters[i].parameterId;
           item.additiveValue = CubismExpressionMotion.DefaultAdditiveValue;
@@ -184,7 +184,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
         }
       }
 
-      // ------ 値を計算する ------
+      // ------ 计算值 ------
       expressionMotion.setupMotionQueueEntry(
         motionQueueEntry,
         this._userTimeSeconds
@@ -216,7 +216,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
       updated = true;
 
       if (motionQueueEntry.isTriggeredFadeOut()) {
-        // フェードアウト開始
+        // 开始淡出
         motionQueueEntry.startFadeOut(
           motionQueueEntry.getFadeOutSeconds(),
           this._userTimeSeconds
@@ -227,13 +227,13 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
       ++expressionIndex;
     }
 
-    // ----- 最新のExpressionのフェードが完了していればそれ以前を削除する ------
+    // ----- 如果最新 Expression 的淡入已完成，则删除之前的 ------
     if (motions.length > 1) {
       const latestFadeWeight: number = this.getFadeWeight(
         this._fadeWeights.length - 1
       );
       if (latestFadeWeight >= 1.0) {
-        // 配列の最後の要素は削除しない
+        // 不删除数组的最后一个元素
         for (let i = motions.length - 2; i >= 0; --i) {
           const motionQueueEntry = motions[i];
           csmDelete(motionQueueEntry);
@@ -247,7 +247,7 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
       expressionWeight = 1.0;
     }
 
-    // モデルに各値を適用
+    // 将各值应用到模型
     for (let i = 0; i < this._expressionParameterValues.length; ++i) {
       const expressionParameterValue = this._expressionParameterValues[i];
       model.setParameterValueById(
@@ -267,12 +267,12 @@ export class CubismExpressionMotionManager extends CubismMotionQueueManager {
     return updated;
   }
 
-  private _expressionParameterValues: Array<ExpressionParameterValue>; ///< モデルに適用する各パラメータの値
-  private _fadeWeights: Array<number>; ///< 再生中の表情のウェイト
-  private _startExpressionTime: number; ///< 表情の再生開始時刻
+  private _expressionParameterValues: Array<ExpressionParameterValue>; ///< 要应用到模型的各参数值
+  private _fadeWeights: Array<number>; ///< 播放中表情的权重
+  private _startExpressionTime: number; ///< 表情播放开始时刻
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './cubismexpressionmotionmanager';
 import { CubismMath } from '../math/cubismmath';
 import { CubismDebug, CubismLogError } from '../utils/cubismdebug';

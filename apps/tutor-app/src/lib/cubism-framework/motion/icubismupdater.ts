@@ -9,13 +9,13 @@
 import { CubismModel } from '../model/cubismmodel';
 
 /**
- * Interface for listening to ICubismUpdater changes.
+ * 用于监听 ICubismUpdater 变化的接口。
  */
 export interface ICubismUpdaterChangeListener {
   /**
-   * Called when an updater's execution order has changed.
+   * 当更新器的执行顺序发生变化时调用。
    *
-   * @param updater The updater that was changed
+   * @param updater 发生变化的更新器
    */
   onUpdaterChanged(updater: ICubismUpdater): void;
 }
@@ -32,24 +32,24 @@ export enum CubismUpdateOrder {
 }
 
 /**
- * Abstract base class for motions.<br>
- * Handles the management of motion playback through the CubismUpdateScheduler.
+ * 动作的抽象基类。<br>
+ * 通过 CubismUpdateScheduler 管理动作播放。
  */
 export abstract class ICubismUpdater {
   /**
-   * Comparison function used when sorting ICubismUpdater objects.
+   * 对 ICubismUpdater 对象排序时使用的比较函数。
    *
-   * @param left The first ICubismUpdater object to be compared.
-   * @param right The second ICubismUpdater object to be compared.
+   * @param left 第一个待比较的 ICubismUpdater 对象。
+   * @param right 第二个待比较的 ICubismUpdater 对象。
    *
-   * @return negative if left should be placed before right,
-   *         positive if right should be placed before left,
-   *         zero if they are equal.
+   * @return 如果 left 应排在 right 前面则为负数，
+   *         如果 right 应排在 left 前面则为正数，
+   *         如果相等则为零。
    */
   static sortFunction(left: ICubismUpdater, right: ICubismUpdater): number {
     if (!left || !right) {
       if (!left && !right) return 0;
-      if (!left) return 1; // null/undefined elements go to end
+      if (!left) return 1; // null/undefined 元素放到末尾
       if (!right) return -1;
     }
     return left.getExecutionOrder() - right.getExecutionOrder();
@@ -59,17 +59,17 @@ export abstract class ICubismUpdater {
   private _changeListeners: ICubismUpdaterChangeListener[] = [];
 
   /**
-   * Constructor
+   * 构造函数
    */
   constructor(executionOrder: number = 0) {
     this._executionOrder = executionOrder;
   }
 
   /**
-   * Update process.
+   * 更新处理。
    *
-   * @param model Model to update
-   * @param deltaTimeSeconds Delta time in seconds.
+   * @param model 要更新的模型
+   * @param deltaTimeSeconds 增量时间（秒）。
    */
   abstract onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void;
 
@@ -85,9 +85,9 @@ export abstract class ICubismUpdater {
   }
 
   /**
-   * Adds a listener to be notified when this updater's properties change.
+   * 添加监听器，当该更新器的属性发生变化时收到通知。
    *
-   * @param listener The listener to add
+   * @param listener 要添加的监听器
    */
   addChangeListener(listener: ICubismUpdaterChangeListener): void {
     if (listener && this._changeListeners.indexOf(listener) === -1) {
@@ -96,9 +96,9 @@ export abstract class ICubismUpdater {
   }
 
   /**
-   * Removes a listener from the notification list.
+   * 从通知列表中移除监听器。
    *
-   * @param listener The listener to remove
+   * @param listener 要移除的监听器
    */
   removeChangeListener(listener: ICubismUpdaterChangeListener): void {
     const index = this._changeListeners.indexOf(listener);
@@ -108,7 +108,7 @@ export abstract class ICubismUpdater {
   }
 
   /**
-   * Notifies all registered listeners that this updater has changed.
+   * 通知所有已注册的监听器该更新器已发生变化。
    */
   private notifyChangeListeners(): void {
     for (const listener of this._changeListeners) {
@@ -117,7 +117,7 @@ export abstract class ICubismUpdater {
   }
 }
 
-// Namespace definition for compatibility.
+// 兼容性命名空间定义。
 import * as $ from './icubismupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

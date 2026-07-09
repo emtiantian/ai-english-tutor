@@ -1,10 +1,10 @@
 <template>
   <div class="word-modal-overlay" @click.self="$emit('close')">
     <div class="word-modal-card" role="dialog" aria-modal="true">
-      <!-- Close -->
+      <!-- 关闭按钮 -->
       <button class="word-modal-close" @click="$emit('close')" title="关闭">×</button>
 
-      <!-- Header -->
+      <!-- 头部 -->
       <div class="word-modal-header">
         <div class="word-modal-title-row">
           <span class="word-modal-word">{{ word }}</span>
@@ -20,19 +20,19 @@
         <div v-if="explanation?.phonetic" class="word-modal-phonetic">/{{ explanation.phonetic }}/</div>
       </div>
 
-      <!-- Loading -->
+      <!-- 加载中 -->
       <div v-if="loading" class="word-modal-body">
         <div class="word-skeleton" />
         <div class="word-skeleton word-skeleton--short" />
         <div class="word-skeleton" />
       </div>
 
-      <!-- Error -->
+      <!-- 错误 -->
       <div v-else-if="error" class="word-modal-error">
         {{ error }}
       </div>
 
-      <!-- Content -->
+      <!-- 内容 -->
       <div v-else-if="explanation" class="word-modal-body">
         <div v-for="(sense, i) in explanation.senses" :key="i" class="word-sense">
           <span class="word-sense-pos">{{ sense.pos }}</span>
@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <!-- Empty fallback -->
+      <!-- 空状态兜底 -->
       <div v-else class="word-modal-error">
         暂无该词的详细说明。
       </div>

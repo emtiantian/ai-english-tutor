@@ -1,5 +1,5 @@
-// Verifies the CosyVoiceProvider against a live server reachable at COSYVOICE_BASE_URL.
-// Run: COSYVOICE_BASE_URL=http://localhost:50000 npx tsx <thisfile>
+// 验证 CosyVoiceProvider，目标服务需可通过 COSYVOICE_BASE_URL 访问。
+// 运行：COSYVOICE_BASE_URL=http://localhost:50000 npx tsx <本文件>
 import assert from 'node:assert'
 
 const { CosyVoiceProvider } = await import('../apps/tutor-server/src/voice/providers/cosyvoice.ts')
@@ -11,10 +11,10 @@ async function main() {
   const buf: Buffer = await provider.synthesize(text, { voice: '英文女' })
   const ms = Date.now() - t0
 
-  // 1) form-data path succeeded and returned bytes
+  // 1) form-data 请求成功并返回音频字节
   assert.ok(buf.length > 1000, `expected non-trivial audio, got ${buf.length} bytes`)
 
-  // 2) result is a valid WAV container
+  // 2) 结果是合法的 WAV 容器
   assert.strictEqual(buf.toString('ascii', 0, 4), 'RIFF', 'missing RIFF magic')
   assert.strictEqual(buf.toString('ascii', 8, 12), 'WAVE', 'missing WAVE magic')
   assert.strictEqual(buf.toString('ascii', 12, 16), 'fmt ', 'missing fmt chunk')

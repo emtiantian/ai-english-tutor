@@ -1,6 +1,6 @@
 <template>
   <div class="absolute inset-0 flex items-center justify-center bg-black overflow-hidden">
-    <!-- Background nebula overlay -->
+    <!-- 背景星云遮罩 -->
     <div class="nebula-bg"></div>
 
     <svg
@@ -10,14 +10,14 @@
       preserveAspectRatio="xMidYMid meet"
     >
       <defs>
-        <!-- Background gradient -->
+        <!-- 背景渐变 -->
         <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stop-color="#0a0015" />
           <stop offset="50%" stop-color="#0f0a2e" />
           <stop offset="100%" stop-color="#000000" />
         </linearGradient>
 
-        <!-- Portal gradients - more vibrant -->
+        <!-- 传送门渐变 - 更鲜艳 -->
         <linearGradient id="portal-grad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="#ff6bd6">
             <animate attributeName="stop-color" values="#ff6bd6;#6366f1;#38bdf8;#ff6bd6" dur="4s" repeatCount="indefinite" />
@@ -50,7 +50,7 @@
           <stop offset="100%" stop-color="#818cf8" />
         </linearGradient>
 
-        <!-- Enhanced glow with color cycle -->
+        <!-- 增强辉光并循环颜色 -->
         <radialGradient id="glow-grad" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.8">
             <animate attributeName="stop-color" values="#22d3ee;#c084fc;#f472b6;#22d3ee" dur="3s" repeatCount="indefinite" />
@@ -59,7 +59,7 @@
           <stop offset="100%" stop-color="#0f0a2e" stop-opacity="0" />
         </radialGradient>
 
-        <!-- Inner portal glow -->
+        <!-- 传送门内部辉光 -->
         <radialGradient id="portal-inner-glow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#fff" stop-opacity="0.4">
             <animate attributeName="stop-opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite" />
@@ -67,7 +67,7 @@
           <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
         </radialGradient>
 
-        <!-- Star glow filter -->
+        <!-- 星光发光滤镜 -->
         <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
           <feMerge>
@@ -76,7 +76,7 @@
           </feMerge>
         </filter>
 
-        <!-- Strong glow for portal -->
+        <!-- 传送门强光辉光 -->
         <filter id="portal-glow" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
           <feMerge>
@@ -86,7 +86,7 @@
           </feMerge>
         </filter>
 
-        <!-- Text gradient -->
+        <!-- 文字渐变 -->
         <linearGradient id="text-grad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="#f472b6">
             <animate attributeName="stop-color" values="#f472b6;#22d3ee;#c084fc;#f472b6" dur="4s" repeatCount="indefinite" />
@@ -99,7 +99,7 @@
           </stop>
         </linearGradient>
 
-        <!-- Aurora gradient -->
+        <!-- 极光渐变 -->
         <linearGradient id="aurora-grad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="#22d3ee" stop-opacity="0" />
           <stop offset="30%" stop-color="#818cf8" stop-opacity="0.3" />
@@ -109,16 +109,16 @@
         </linearGradient>
       </defs>
 
-      <!-- Background -->
+      <!-- 背景 -->
       <rect width="800" height="1000" fill="url(#bg-grad)" />
 
-      <!-- Aurora bands -->
+      <!-- 极光带 -->
       <g class="aurora" opacity="0.4">
         <path d="M0 200 Q200 150 400 200 Q600 250 800 180" fill="none" stroke="url(#aurora-grad)" stroke-width="40" class="aurora-band-1" />
         <path d="M0 250 Q250 200 450 260 Q650 300 800 230" fill="none" stroke="url(#aurora-grad)" stroke-width="30" class="aurora-band-2" />
       </g>
 
-      <!-- Enhanced stars - more and brighter -->
+      <!-- 增强星星 - 更多更亮 -->
       <g id="stars" filter="url(#star-glow)">
         <circle cx="120" cy="150" r="2.5" fill="#fff" class="star" style="animation-delay: 0.2s" />
         <circle cx="250" cy="80" r="3.5" fill="#22d3ee" class="star star-bright" style="animation-delay: 0.7s" />
@@ -132,7 +132,7 @@
         <circle cx="310" cy="180" r="2.5" fill="#22d3ee" class="star" style="animation-delay: 1.8s" />
         <circle cx="620" cy="90" r="2.5" fill="#fff" class="star" style="animation-delay: 0.3s" />
         <circle cx="400" cy="70" r="2" fill="#c084fc" class="star star-bright" style="animation-delay: 1.2s" />
-        <!-- Extra stars -->
+        <!-- 额外星星 -->
         <circle cx="50" cy="300" r="1.5" fill="#f472b6" class="star" style="animation-delay: 0.6s" />
         <circle cx="750" cy="350" r="2" fill="#22d3ee" class="star" style="animation-delay: 1.4s" />
         <circle cx="200" cy="500" r="1.5" fill="#fff" class="star" style="animation-delay: 0.8s" />
@@ -141,7 +141,7 @@
         <circle cx="500" cy="60" r="1.5" fill="#fff" class="star" style="animation-delay: 0.15s" />
       </g>
 
-      <!-- Magic particles - more and varied -->
+      <!-- 魔法粒子 - 更多样 -->
       <g id="particles">
         <circle cx="380" cy="730" r="3" fill="#22d3ee" class="particle p1" />
         <circle cx="420" cy="740" r="4" fill="#c084fc" class="particle p2" />
@@ -153,27 +153,27 @@
         <circle cx="385" cy="725" r="2" fill="#c084fc" class="particle p8" />
       </g>
 
-      <!-- Portal group with enhanced effects -->
+      <!-- 传送门组合（带增强效果） -->
       <g class="portal-group">
-        <!-- Outer glow ring -->
+        <!-- 外圈辉光环 -->
         <ellipse cx="400" cy="750" rx="200" ry="55" fill="none" stroke="url(#portal-grad)" stroke-width="1" opacity="0.3" class="portal-ring-slow" />
 
-        <!-- Wave rings -->
+        <!-- 波纹环 -->
         <ellipse cx="400" cy="750" rx="150" ry="40" fill="none" stroke="url(#portal-grad-2)" stroke-width="2" class="wave" />
         <ellipse cx="400" cy="750" rx="150" ry="40" fill="none" stroke="#22d3ee" stroke-width="1.5" class="wave wave-d1" />
         <ellipse cx="400" cy="750" rx="150" ry="40" fill="none" stroke="#f472b6" stroke-width="1" class="wave wave-d2" />
 
-        <!-- Main portal rings -->
+        <!-- 主传送门环 -->
         <ellipse cx="400" cy="750" rx="180" ry="48" fill="none" stroke="url(#portal-grad)" stroke-width="6" class="portal-ring" stroke-dasharray="30 15 10 10" filter="url(#portal-glow)" />
         <ellipse cx="400" cy="750" rx="140" ry="35" fill="none" stroke="url(#portal-grad-2)" stroke-width="3" class="portal-ring-reverse" stroke-dasharray="20 10 40 10" />
         <ellipse cx="400" cy="750" rx="100" ry="25" fill="none" stroke="#fff" stroke-width="1" class="portal-ring" stroke-dasharray="5 15" opacity="0.5" />
 
-        <!-- Inner glow -->
+        <!-- 内部辉光 -->
         <ellipse cx="400" cy="750" rx="90" ry="22" fill="url(#glow-grad)" opacity="0.9" />
         <ellipse cx="400" cy="750" rx="60" ry="15" fill="url(#portal-inner-glow)" />
       </g>
 
-      <!-- Floating books with glow -->
+      <!-- 带辉光的漂浮书本 -->
       <g id="stage-books">
         <g class="book1">
           <path d="M180 430 Q200 425 220 430 L230 460 Q210 455 190 460 Z" fill="url(#book-grad)" stroke="#22d3ee" stroke-width="2" />
@@ -191,18 +191,18 @@
         </g>
       </g>
 
-      <!-- Character body -->
+      <!-- 角色身体 -->
       <g class="luna-body">
-        <!-- Shadow/glow under character -->
+        <!-- 角色底部阴影/辉光 -->
         <ellipse cx="400" cy="735" rx="55" ry="18" fill="url(#glow-grad)" opacity="0.8" class="shadow-glow" />
 
-        <!-- Cape -->
+        <!-- 披风 -->
         <g class="cape-wave">
           <path d="M360 440 L310 650 Q400 680 490 650 L440 440 Z" fill="#1e1b4b" stroke="#818cf8" stroke-width="2" />
           <path d="M330 480 L290 640 Q340 660 390 640 Z" fill="url(#hair-grad)" opacity="0.3" />
         </g>
 
-        <!-- Torso -->
+        <!-- 躯干 -->
         <g id="luna-torso">
           <rect x="375" y="620" width="16" height="110" rx="8" fill="#fff" opacity="0.9" />
           <rect x="409" y="620" width="16" height="110" rx="8" fill="#fff" opacity="0.9" />
@@ -216,15 +216,15 @@
           </circle>
         </g>
 
-        <!-- Head -->
+        <!-- 头部 -->
         <g id="luna-head">
           <circle cx="400" cy="350" r="55" fill="#fef08a" opacity="0.95" />
 
-          <!-- Blush -->
+          <!-- 腮红 -->
           <ellipse cx="365" cy="370" rx="10" ry="5" fill="#f43f5e" opacity="0.4" />
           <ellipse cx="435" cy="370" rx="10" ry="5" fill="#f43f5e" opacity="0.4" />
 
-          <!-- Eyes -->
+          <!-- 眼睛 -->
           <g class="eye">
             <ellipse cx="370" cy="350" rx="12" ry="16" fill="#0f172a" />
             <circle cx="367" cy="345" r="5" fill="#fff" />
@@ -236,10 +236,10 @@
             <path d="M415 338 Q430 332 445 338" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" />
           </g>
 
-          <!-- Mouth -->
+          <!-- 嘴巴 -->
           <path d="M392 382 Q400 390 408 382" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" />
 
-          <!-- Hair -->
+          <!-- 头发 -->
           <g class="hair-wave">
             <path d="M335 340 Q310 450 320 520 Q350 500 350 420 Z" fill="url(#hair-grad)" />
             <path d="M465 340 Q490 450 480 520 Q450 500 450 420 Z" fill="url(#hair-grad)" />
@@ -248,7 +248,7 @@
           </g>
         </g>
 
-        <!-- Arms -->
+        <!-- 手臂 -->
         <g id="luna-arms">
           <path d="M350 440 Q310 480 330 540" fill="none" stroke="#0f172a" stroke-width="14" stroke-linecap="round" />
           <circle cx="330" cy="545" r="7" fill="#fef08a" />
@@ -257,17 +257,17 @@
         </g>
       </g>
 
-      <!-- Loading text with gradient -->
+      <!-- 带渐变的加载文字 -->
       <text x="400" y="880" class="loading-text" fill="url(#text-grad)">正在召唤你的英语老师...</text>
 
-      <!-- Progress dots -->
+      <!-- 进度点 -->
       <g class="progress-dots">
         <circle cx="370" cy="920" r="4" fill="#f472b6" class="dot dot-1" />
         <circle cx="400" cy="920" r="4" fill="#818cf8" class="dot dot-2" />
         <circle cx="430" cy="920" r="4" fill="#22d3ee" class="dot dot-3" />
       </g>
 
-      <!-- Enhanced meteors with trails -->
+      <!-- 带尾迹的增强流星 -->
       <g class="meteors">
         <line x1="100" y1="200" x2="180" y2="280" stroke="url(#portal-grad)" stroke-width="3" stroke-linecap="round" opacity="0.6" class="meteor">
           <animate attributeName="stroke-dasharray" values="0,300;300,300;300,0" dur="3s" repeatCount="indefinite" />
@@ -275,7 +275,7 @@
         <line x1="650" y1="100" x2="570" y2="180" stroke="url(#portal-grad-2)" stroke-width="2" stroke-linecap="round" opacity="0.5" class="meteor">
           <animate attributeName="stroke-dasharray" values="0,300;300,300;300,0" dur="2.5s" repeatCount="indefinite" />
         </line>
-        <!-- Extra meteors -->
+        <!-- 额外流星 -->
         <line x1="300" y1="50" x2="250" y2="120" stroke="#f472b6" stroke-width="1.5" stroke-linecap="round" opacity="0.4" class="meteor">
           <animate attributeName="stroke-dasharray" values="0,200;200,200;200,0" dur="4s" begin="1s" repeatCount="indefinite" />
         </line>
@@ -284,7 +284,7 @@
         </line>
       </g>
 
-      <!-- Sparkle effects around portal -->
+      <!-- 传送门周围闪烁效果 -->
       <g class="sparkles">
         <circle cx="300" cy="720" r="2" fill="#fff" class="sparkle s1" />
         <circle cx="500" cy="730" r="2" fill="#fff" class="sparkle s2" />
@@ -308,7 +308,7 @@
   z-index: 1;
 }
 
-/* Nebula background effect */
+/* 星云背景效果 */
 .nebula-bg {
   position: absolute;
   inset: 0;
@@ -324,7 +324,7 @@
   50% { opacity: 1; }
 }
 
-/* ========== Aurora ========== */
+/* ========== 极光 ========== */
 .aurora {
   animation: aurora-drift 10s infinite ease-in-out;
 }
@@ -352,7 +352,7 @@
   50% { transform: translateY(10px) scaleY(1.3); opacity: 0.4; }
 }
 
-/* ========== Stars ========== */
+/* ========== 星星 ========== */
 .star {
   animation: blink 2s infinite ease-in-out;
 }
@@ -371,7 +371,7 @@
   50% { opacity: 1; transform: scale(1.3); }
 }
 
-/* ========== Portal ========== */
+/* ========== 传送门 ========== */
 .portal-group {
   transform-origin: 400px 750px;
   animation: portal-intro 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -425,7 +425,7 @@
   100% { transform: scale(1.5); opacity: 0; }
 }
 
-/* ========== Character entrance ========== */
+/* ========== 角色入场 ========== */
 .luna-body {
   transform-origin: 400px 500px;
   animation: luna-entrance 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
@@ -439,7 +439,7 @@
   100% { transform: translate(0, 0) scale(1) rotateY(0deg); filter: brightness(1); }
 }
 
-/* ========== Hair/Cape sway ========== */
+/* ========== 头发/披风摆动 ========== */
 .hair-wave {
   animation: sway 3s infinite ease-in-out 3s;
   transform-origin: 400px 300px;
@@ -460,7 +460,7 @@
   50% { transform: rotate(-4deg); }
 }
 
-/* ========== Eye blink ========== */
+/* ========== 眨眼 ========== */
 .eye {
   animation: blink-eye 4s infinite step-end 3s;
   transform-origin: 400px 350px;
@@ -471,7 +471,7 @@
   97% { transform: scaleY(0.1); }
 }
 
-/* ========== Floating books ========== */
+/* ========== 漂浮书本 ========== */
 .book1 {
   animation: float-b1 3s infinite ease-in-out;
   transform-origin: 220px 450px;
@@ -511,7 +511,7 @@
   50% { opacity: 0.6; transform: scale(1.1); }
 }
 
-/* ========== Particles ========== */
+/* ========== 粒子 ========== */
 .particle {
   animation: particle-up 2.5s infinite linear;
 }
@@ -532,7 +532,7 @@
   100% { transform: translate(var(--mx), var(--my)); opacity: 0; }
 }
 
-/* ========== Sparkles ========== */
+/* ========== 闪烁 ========== */
 .sparkle {
   animation: sparkle-blink 1.5s infinite ease-in-out;
 }
@@ -549,7 +549,7 @@
   50% { opacity: 1; transform: scale(1.5); }
 }
 
-/* ========== Loading text ========== */
+/* ========== 加载文字 ========== */
 .loading-text {
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 26px;
@@ -564,7 +564,7 @@
   50% { opacity: 1; filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.8)); }
 }
 
-/* ========== Progress dots ========== */
+/* ========== 进度点 ========== */
 .dot {
   animation: dot-bounce 1.2s infinite ease-in-out;
 }
@@ -578,7 +578,7 @@
   40% { transform: translateY(-10px); opacity: 1; }
 }
 
-/* ========== Shadow glow ========== */
+/* ========== 阴影辉光 ========== */
 .shadow-glow {
   animation: shadow-pulse 2s infinite ease-in-out;
 }

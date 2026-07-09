@@ -102,10 +102,10 @@ describe('AudioRecorder', () => {
       await recorder.start()
       recorder.cancel()
       expect(mockMediaRecorder.stop).toHaveBeenCalled()
-      // isRecording stays true until onstop fires (async)
+      // 在 onstop 触发前 isRecording 保持为 true（异步）
       expect(recorder.isRecording).toBe(true)
 
-      // Simulate the async onstop event
+      // 模拟异步 onstop 事件
       mockMediaRecorder.onstop()
       expect(recorder.isRecording).toBe(false)
     })
@@ -122,15 +122,15 @@ describe('AudioRecorder', () => {
     it('should be safe to call cancel() twice', async () => {
       await recorder.start()
       recorder.cancel()
-      // Should not throw
+      // 不应抛错
       expect(() => recorder.cancel()).not.toThrow()
-      // Simulate the async onstop event from the first cancel
+      // 模拟第一次 cancel 产生的异步 onstop 事件
       mockMediaRecorder.onstop()
       expect(recorder.isRecording).toBe(false)
     })
 
     it('should be safe to call cancel() when never started', () => {
-      // Should not throw
+      // 不应抛错
       expect(() => recorder.cancel()).not.toThrow()
       expect(recorder.isRecording).toBe(false)
     })

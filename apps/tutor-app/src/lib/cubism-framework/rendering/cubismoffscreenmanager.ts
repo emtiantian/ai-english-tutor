@@ -11,15 +11,15 @@ import { CubismLogError } from '../utils/cubismdebug';
 import { CubismRenderTarget_WebGL } from './cubismrendertarget_webgl';
 
 /**
- * フレームバッファなどのコンテナのクラス
+ * 帧缓冲等容器类
  */
 class CubismRenderTargetContainer {
   /**
-   * Constructor
+   * 构造函数
    *
-   * @param colorBuffer カラーバッファ
-   * @param renderTexture レンダーテクスチャ
-   * @param inUse 使用中かどうか
+   * @param colorBuffer 颜色缓冲
+   * @param renderTexture 渲染纹理
+   * @param inUse 是否正在使用
    */
   public constructor(
     colorBuffer: WebGLTexture = null,
@@ -38,30 +38,30 @@ class CubismRenderTargetContainer {
   }
 
   /**
-   * カラーバッファを取得
+   * 获取颜色缓冲
    *
-   * @returns カラーバッファ
+   * @returns 颜色缓冲
    */
   public getColorBuffer(): WebGLTexture {
     return this.colorBuffer;
   }
 
   /**
-   * レンダーテクスチャを取得
+   * 获取渲染纹理
    *
-   * @returns レンダーテクスチャ
+   * @returns 渲染纹理
    */
   public getRenderTexture(): WebGLFramebuffer {
     return this.renderTexture;
   }
 
-  public colorBuffer: WebGLTexture; // colorBuffer
-  public renderTexture: WebGLFramebuffer; // renderTarget
-  public inUse: boolean; // Whether this container's render target is currently in use
+  public colorBuffer: WebGLTexture; // 颜色缓冲
+  public renderTexture: WebGLFramebuffer; // 渲染目标
+  public inUse: boolean; // 该容器的渲染目标是否正在使用
 }
 
 /**
- * WebGLContextごとのリソース管理を行う内部クラス
+ * 按 WebGL 上下文管理资源的内部类
  */
 class CubismWebGLContextManager {
   constructor(gl: WebGLRenderingContext | WebGL2RenderingContext) {
@@ -91,23 +91,23 @@ class CubismWebGLContextManager {
     }
   }
 
-  public gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGLContext
-  public offscreenRenderTargetContainers: Array<CubismRenderTargetContainer>; // オフスクリーン描画用レンダーターゲットのリスト
-  public previousActiveRenderTextureMaxCount: number; // 直前のアクティブなレンダーターゲットの最大数
-  public currentActiveRenderTextureCount: number; // 現在のアクティブなレンダーターゲットの数
-  public hasResetThisFrame: boolean; // 今フレームでリセットされたかどうか
-  public width: number; // 幅
-  public height: number; // 高さ
+  public gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGL 上下文
+  public offscreenRenderTargetContainers: Array<CubismRenderTargetContainer>; // 离屏绘制渲染目标列表
+  public previousActiveRenderTextureMaxCount: number; // 上一帧活跃渲染目标的最大数量
+  public currentActiveRenderTextureCount: number; // 当前活跃渲染目标的数量
+  public hasResetThisFrame: boolean; // 当前帧是否已重置
+  public width: number; // 宽度
+  public height: number; // 高度
 }
 
 /**
- * WebGL用オフスクリーン描画機能を管理するマネージャ
- * オフスクリーン描画機能に必要なフレームバッファなどを含むコンテナを管理する。
- * 複数のWebGLContextに対応。
+ * 管理 WebGL 离屏绘制功能的管理器
+ * 管理离屏绘制功能所需的帧缓冲等容器。
+ * 支持多个 WebGL 上下文。
  */
 export class CubismWebGLOffscreenManager {
   /**
-   * コンストラクタ
+   * 构造函数
    */
   private constructor() {
     this._contextManagers = new Map<
@@ -117,7 +117,7 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * デストラクタ相当の処理
+   * 相当于析构函数的处理
    */
   public release(): void {
     if (this._contextManagers != null) {
@@ -131,9 +131,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * インスタンスの取得
+   * 获取实例
    *
-   * @return インスタンス
+   * @return 实例
    */
   public static getInstance(): CubismWebGLOffscreenManager {
     if (this._instance == null) {
@@ -144,9 +144,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * WebGLContextに対応するマネージャーを取得または作成
+   * 获取或创建对应 WebGL 上下文的管理器
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    * @return WebGLContextManager
    */
   private getContextManager(
@@ -159,9 +159,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 指定されたWebGLContextのマネージャーを削除
+   * 删除指定 WebGL 上下文的管理器
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public removeContext(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -174,11 +174,11 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 初期化処理
+   * 初始化处理
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @param width 幅
-   * @param height 高さ
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @param width 宽度
+   * @param height 高度
    */
   public initialize(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -187,7 +187,7 @@ export class CubismWebGLOffscreenManager {
   ): void {
     const contextManager = this.getContextManager(gl);
 
-    // initialize offscreenRenderTargetContainers
+    // 初始化离屏渲染目标容器
     if (contextManager.offscreenRenderTargetContainers != null) {
       for (
         let index = 0;
@@ -213,9 +213,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * モデルを描画する前に呼び出すフレーム開始時の処理を行う
+   * 执行绘制模型前帧开始时的处理
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public beginFrameProcess(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -229,9 +229,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * モデルの描画が終わった後に呼び出すフレーム終了時の処理
+   * 执行模型绘制结束后帧结束时的处理
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public endFrameProcess(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -241,9 +241,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * コンテナサイズの取得
+   * 获取容器大小
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public getContainerSize(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -256,13 +256,13 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 使用可能なリソースコンテナの取得
+   * 获取可用的资源容器
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @param width 幅
-   * @param height 高さ
-   * @param previousFramebuffer 前のフレームバッファ
-   * @return 使用可能なリソースコンテナ
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @param width 宽度
+   * @param height 高度
+   * @param previousFramebuffer 前一个帧缓冲
+   * @return 可用的资源容器
    */
   public getOffscreenRenderTargetContainers(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -272,7 +272,7 @@ export class CubismWebGLOffscreenManager {
   ): CubismRenderTargetContainer {
     const contextManager = this.getContextManager(gl);
 
-    // コンテナが初期化されていないか、サイズが変わったら初期化し直す
+    // 容器未初始化或尺寸变化时重新初始化
     if (
       contextManager.width != width ||
       contextManager.height != height ||
@@ -281,16 +281,16 @@ export class CubismWebGLOffscreenManager {
       this.initialize(gl, width, height);
     }
 
-    // 使用数を更新
+    // 更新使用数量
     this.updateRenderTargetContainerCount(gl);
 
-    // 使われていないリソースコンテナがあればそれを返す
+    // 如果有未使用的资源容器，则直接返回
     const container = this.getUnusedOffscreenRenderTargetContainer(gl);
     if (container != null) {
       return container;
     }
 
-    // 使われていないリソースコンテナがなければ新たに作成する
+    // 没有未使用的资源容器，则创建新的
     const offscreenRenderTextureContainer =
       this.createOffscreenRenderTargetContainer(
         gl,
@@ -303,11 +303,11 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * リソースコンテナの使用状態を取得
+   * 获取资源容器的使用状态
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    * @param renderTexture WebGLFramebuffer
-   * @return 使用中はtrue、未使用の場合はfalse
+   * @return 使用中为 true，未使用为 false
    */
   public getUsingRenderTextureState(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -330,9 +330,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * リソースコンテナの使用を開始する。
+   * 开始使用资源容器。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    * @param renderTexture WebGLFramebuffer
    */
   public startUsingRenderTexture(
@@ -361,9 +361,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * リソースコンテナの使用を終了する。
+   * 结束使用资源容器。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    * @param renderTexture WebGLFramebuffer
    */
   public stopUsingRenderTexture(
@@ -394,9 +394,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * リソースコンテナの使用を全て終了する。
+   * 结束所有资源容器的使用。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public stopUsingAllRenderTextures(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -414,9 +414,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 使用されていないリソースコンテナを解放する。
+   * 释放未使用的资源容器。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public releaseStaleRenderTextures(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -425,11 +425,11 @@ export class CubismWebGLOffscreenManager {
     const listSize = contextManager.offscreenRenderTargetContainers.length;
 
     if (contextManager.hasResetThisFrame || listSize === 0) {
-      // 使用する量が変化する場合は開放しない
+      // 如果使用量发生变化，则不释放
       return;
     }
 
-    // 未使用な場所を開放して直前の最大数までリサイズする
+    // 释放未使用的位置，并调整到上一帧最大数量的大小
     let findPos = 0;
     let resize = contextManager.previousActiveRenderTextureMaxCount;
     for (
@@ -439,7 +439,7 @@ export class CubismWebGLOffscreenManager {
     ) {
       const index = i - 1;
       if (contextManager.offscreenRenderTargetContainers[index].inUse) {
-        // 空いている場所探して移動させる
+        // 寻找空闲位置并移动过去
         let isFind = false;
         for (
           ;
@@ -461,7 +461,7 @@ export class CubismWebGLOffscreenManager {
           }
         }
         if (!isFind) {
-          // 空いている場所が見つからなかったら現状のサイズでリサイズする
+          // 如果找不到空闲位置，则按当前大小调整
           resize = i;
           break;
         }
@@ -477,10 +477,10 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 直前のアクティブなレンダーターゲットの最大数を取得
+   * 获取上一帧活跃渲染目标的最大数量
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @returns 直前のアクティブなレンダーターゲットの最大数
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @returns 上一帧活跃渲染目标的最大数量
    */
   public getPreviousActiveRenderTextureCount(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -490,10 +490,10 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 現在のアクティブなレンダーターゲットの数を取得
+   * 获取当前活跃渲染目标的数量
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @returns 現在のアクティブなレンダーターゲットの数
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @returns 当前活跃渲染目标的数量
    */
   public getCurrentActiveRenderTextureCount(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -503,9 +503,9 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 現在のアクティブなレンダーターゲットの数を更新
+   * 更新当前活跃渲染目标的数量
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
    */
   public updateRenderTargetContainerCount(
     gl: WebGLRenderingContext | WebGL2RenderingContext
@@ -513,7 +513,7 @@ export class CubismWebGLOffscreenManager {
     const contextManager = this.getContextManager(gl);
     ++contextManager.currentActiveRenderTextureCount;
 
-    // 最大数更新
+    // 更新最大值
     contextManager.previousActiveRenderTextureMaxCount =
       contextManager.currentActiveRenderTextureCount >
       contextManager.previousActiveRenderTextureMaxCount
@@ -522,16 +522,16 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 使用されていないリソースコンテナの取得
+   * 获取未使用的资源容器
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @return 使用されていないリソースコンテナ
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @return 未使用的资源容器
    */
   public getUnusedOffscreenRenderTargetContainer(
     gl: WebGLRenderingContext | WebGL2RenderingContext
   ): CubismRenderTargetContainer {
     const contextManager = this.getContextManager(gl);
-    // 使われていないリソースコンテナがあればそれを返す
+    // 如果有未使用的资源容器，则直接返回
     for (
       let index = 0;
       index < contextManager.offscreenRenderTargetContainers.length;
@@ -547,13 +547,13 @@ export class CubismWebGLOffscreenManager {
   }
 
   /**
-   * 新たにリソースコンテナを作成する。
+   * 创建新的资源容器。
    *
-   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
-   * @param width 幅
-   * @param height 高さ
-   * @param previousFramebuffer 前のフレームバッファ
-   * @return 作成されたリソースコンテナ
+   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
+   * @param width 宽度
+   * @param height 高度
+   * @param previousFramebuffer 前一个帧缓冲
+   * @return 创建的资源容器
    */
   public createOffscreenRenderTargetContainer(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -584,9 +584,9 @@ export class CubismWebGLOffscreenManager {
     return offscreenRenderTextureContainer;
   }
 
-  private static _instance: CubismWebGLOffscreenManager; // オフスクリーン描画用レンダーターゲットマネージャ
+  private static _instance: CubismWebGLOffscreenManager; // 离屏绘制渲染目标管理器
   private _contextManagers: Map<
     WebGLRenderingContext | WebGL2RenderingContext,
     CubismWebGLContextManager
-  >; // WebGLContextごとのマネージャー
+  >; // 每个 WebGL 上下文对应的管理器
 }

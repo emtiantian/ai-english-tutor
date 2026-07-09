@@ -65,8 +65,8 @@ describe('Live2D model manifests', () => {
     expect(reg.getMotion('wave')).toBe('FlickUp_0')
     expect(reg.getMotion('clap')).toBe('Tap_0')
     expect(reg.getMotion('gesture')).toBe('Flick3_0')
-    expect(reg.getMotion('nod')).toBe('Idle_0')   // fallback
-    expect(reg.getMotion('write')).toBe('Idle_0') // fallback
+    expect(reg.getMotion('nod')).toBe('Idle_0')   // 回退
+    expect(reg.getMotion('write')).toBe('Idle_0') // 回退
   })
 
   it('SHIZUKU_MANIFEST credit points to Open-LLM-VTuber', () => {
@@ -101,7 +101,7 @@ describe('Live2D model manifests', () => {
     expect(reg.getMotion('wave')).toBe('_3')          // special_01
     expect(reg.getMotion('nod')).toBe('_0')           // mtn_02
     expect(reg.getMotion('clap')).toBe('_4')          // special_02
-    expect(reg.getMotion('write')).toBe('Idle_0')     // fallback
+    expect(reg.getMotion('write')).toBe('Idle_0')     // 回退
   })
 
   it('MAO_PRO_MANIFEST credit points to Open-LLM-VTuber', () => {

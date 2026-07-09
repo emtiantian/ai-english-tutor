@@ -1,19 +1,19 @@
 import type { MotionId, ExpressionId } from './types.js'
 
 /**
- * Maps a semantic motion ID to a model-specific motion key
+ * 将语义动作 ID 映射到模型专属的动作 key
  */
 export interface MotionMapping {
-  /** Semantic ID used by the AI engine (e.g. 'wave') */
+  /** AI 引擎使用的语义 ID（如 'wave'） */
   semanticId: MotionId
-  /** Model-specific key (e.g. 'Idle_0' for Hiyori, 'wave' for Spine) */
+  /** 模型专属 key（如 Hiyori 的 'Idle_0'、Spine 的 'wave'） */
   modelMotionKey: string
-  /** Human-readable description for logging/debugging */
+  /** 人类可读的描述，用于日志/调试 */
   description: string
 }
 
 /**
- * Maps a semantic expression ID to a model-specific expression key
+ * 将语义表情 ID 映射到模型专属的表情 key
  */
 export interface ExpressionMapping {
   semanticId: ExpressionId
@@ -21,32 +21,32 @@ export interface ExpressionMapping {
 }
 
 /**
- * MotionRegistry — decouples semantic motion/expression IDs from model-specific implementations.
+ * MotionRegistry —— 将语义动作/表情 ID 与模型专属实现解耦。
  *
- * Each character model (Hiyori, Spine, etc.) provides its own registry that maps
- * the canonical semantic IDs to the model's actual motion/expression keys.
- * This allows the AI engine and frontend to work with any character model
- * without hardcoding model-specific motion file names.
+ * 每个角色模型（Hiyori、Spine 等）提供自己的注册表，
+ * 把规范的语义 ID 映射到模型实际的动作/表情 key。
+ * 这让 AI 引擎和前端无需硬编码模型专属的动作文件名，
+ * 即可适配任意角色模型。
  */
 export interface MotionRegistry {
-  /** Unique identifier for this character's motion set */
+  /** 该角色动作集的唯一标识 */
   readonly characterId: string
 
   /**
-   * Map a semantic motion ID to the model's actual motion key.
-   * Returns a fallback key if the semantic ID is not mapped.
+   * 将语义动作 ID 映射到模型实际的动作 key。
+   * 若语义 ID 未映射，则返回兜底 key。
    */
   getMotion(semanticId: MotionId): string
 
   /**
-   * Map a semantic expression ID to the model's actual expression key.
-   * Returns a fallback key if the semantic ID is not mapped.
+   * 将语义表情 ID 映射到模型实际的表情 key。
+   * 若语义 ID 未映射，则返回兜底 key。
    */
   getExpression(semanticId: ExpressionId): string
 
-  /** List all available motion mappings (for UI/debugging) */
+  /** 列出所有可用的动作映射（用于 UI/调试） */
   getAvailableMotions(): MotionMapping[]
 
-  /** List all available expression mappings (for UI/debugging) */
+  /** 列出所有可用的表情映射（用于 UI/调试） */
   getAvailableExpressions(): ExpressionMapping[]
 }

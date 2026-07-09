@@ -2,7 +2,7 @@ import assert from 'node:assert'
 import { parseTeachingResponse } from './response-parser.js'
 
 async function main(): Promise<void> {
-  // Valid JSON object directly in content
+  // 内容中直接包含有效 JSON 对象
   const validJson = parseTeachingResponse(
     '{"text":"Hello!","textZh":"你好！","vocabulary":["hello"],"vocabularySentences":["Hello there."],"studentReplyHints":["Hi, nice to meet you!"]}',
   )
@@ -14,50 +14,50 @@ async function main(): Promise<void> {
   assert.strictEqual(validJson.motionId, 'wave', 'greeting text maps to wave motion')
   assert.strictEqual(validJson.intent, 'greeting')
 
-  // JSON embedded in markdown code block
+  // JSON 嵌套在 markdown 代码块中
   const markdown = parseTeachingResponse(
     'Here is the response:\n```json\n{"text":"Excellent work!","vocabulary":[]}\n```',
   )
   assert.strictEqual(markdown.text, 'Excellent work!')
   assert.strictEqual(markdown.intent, 'praise')
 
-  // No JSON: fallback to raw text, motion still analyzed
+  // 无 JSON：回退到原始文本，仍分析动作
   const noJson = parseTeachingResponse('What is your name?')
   assert.strictEqual(noJson.text, 'What is your name?')
   assert.strictEqual(noJson.intent, 'question')
 
-  // Malformed JSON: fallback to raw text, no crash
+  // JSON 格式错误：回退到原始文本，不崩溃
   const malformed = parseTeachingResponse('{"text":"broken", "vocabulary":}')
   assert.strictEqual(malformed.text, '{"text":"broken", "vocabulary":}')
   assert.strictEqual(malformed.vocabulary, undefined)
 
-  // Empty content
+  // 空内容
   const empty = parseTeachingResponse('')
   assert.strictEqual(empty.text, '')
   assert.strictEqual(empty.intent, 'empty')
 
-  // vocabularySentences filters out non-string / empty entries
+  // vocabularySentences 过滤掉非字符串 / 空条目
   const mixed = parseTeachingResponse(
     '{"text":"Ok","vocabulary":["a","b"],"vocabularySentences":["Good sentence", 123, "", "Another"]}',
   )
   assert.deepStrictEqual(mixed.vocabulary, ['a', 'b'])
   assert.deepStrictEqual(mixed.vocabularySentences, ['Good sentence', 'Another'])
 
-  // studentReplyHints filters out non-string / empty entries (same rules as vocabularySentences)
+  // studentReplyHints 过滤掉非字符串 / 空条目（规则与 vocabularySentences 相同）
   const hintsMixed = parseTeachingResponse(
     '{"text":"Ok","studentReplyHints":["Hi there", "", null, 42, "Sure!"]}',
   )
   assert.deepStrictEqual(hintsMixed.studentReplyHints, ['Hi there', 'Sure!'])
 
-  // studentReplyHints absent → undefined
+  // studentReplyHints 缺失 → undefined
   const noHints = parseTeachingResponse('{"text":"Hi","vocabulary":["hi"]}')
   assert.strictEqual(noHints.studentReplyHints, undefined)
 
-  // studentReplyHints non-array → undefined (not crash)
+  // studentReplyHints 非数组 → undefined（不崩溃）
   const badHints = parseTeachingResponse('{"text":"Hi","studentReplyHints":"not-an-array"}')
   assert.strictEqual(badHints.studentReplyHints, undefined)
 
-  // LLM-provided valid motion/expression override the keyword analyzer
+  // LLM 提供的有效 motion/expression 覆盖关键词分析器结果
   const llmDriven = parseTeachingResponse(
     '{"text":"What is your name?","motionId":"point","expressionId":"curious"}',
   )
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   assert.strictEqual(llmDriven.expressionId, 'curious', 'valid LLM expressionId is used verbatim')
   assert.strictEqual(llmDriven.intent, 'llm', 'intent marked llm when LLM chose the motion')
 
-  // Invalid LLM motion/expression are ignored → fall back to the analyzer
+  // 无效的 LLM motion/expression 被忽略 → 回退到分析器
   const llmInvalid = parseTeachingResponse(
     '{"text":"What is your name?","motionId":"backflip","expressionId":"angry"}',
   )

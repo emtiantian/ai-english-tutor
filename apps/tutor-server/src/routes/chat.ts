@@ -11,36 +11,36 @@ interface ChatRequestBody {
   level?: number
   sessionId?: string
   stream?: boolean
-  /** User voice audio in base64 (for voice-enabled providers) */
+  /** 用户语音音频，base64 编码（供支持语音的 provider 使用） */
   audioBase64?: string
-  /** Audio format when audioBase64 is provided: webm | mp4 | mp3 | wav */
+  /** 提供 audioBase64 时的音频格式：webm | mp4 | mp3 | wav */
   audioFormat?: string
-  /** User ID for vocabulary tracking (spaced repetition) */
+  /** 用户 ID，用于词汇跟踪（间隔重复） */
   userId?: string
-  /** Personality style name (for lesson.start) */
+  /** 人格风格名称（用于 lesson.start） */
   styleName?: string
-  /** Scenario ID for scenario-based lessons (for lesson.start) */
+  /** 场景化课程 ID（用于 lesson.start） */
   scenarioId?: string
-  /** v2: CEFR target level for scenario-based lessons (for lesson.start) */
+  /** v2：场景化课程的目标 CEFR 等级（用于 lesson.start） */
   targetLevel?: string
-  /** v2: Resume a paused scenario session by its server sessionId (for lesson.start) */
+  /** v2：通过服务端 sessionId 恢复暂停的场景会话（用于 lesson.start） */
   resumeFrom?: string
-  /** Assessment round (1-3) for level.assess */
+  /** level.assess 的评估轮次（1-3） */
   round?: number
-  /** Previous round scores for level.assess */
+  /** level.assess 前几轮的得分 */
   previousScores?: number[]
-  /** Topic seed for diverse assessment questions */
+  /** 评估题目的主题种子，用于生成多样化问题 */
   topicSeed?: string
 }
 
 /**
- * Chat API routes
- * POST /api/chat - Send a message, get AI response
+ * 聊天 API 路由
+ * POST /api/chat - 发送消息，获取 AI 回复
  *
- * Supported types:
- * - user.speak:     User input (text or voice) → AI teaching response
- * - level.check:    English level assessment
- * - lesson.start:   Start a new lesson (optionally with scenarioId)
+ * 支持的类型：
+ * - user.speak:     用户输入（文字或语音）→ AI 教学回复
+ * - level.check:    英语水平评估
+ * - lesson.start:   开始新课程（可选 scenarioId）
  */
 export async function chatRoutes(server: FastifyInstance): Promise<void> {
   server.post(
@@ -68,10 +68,9 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             const controller = new AbortController()
             const onClose = () => controller.abort()
 
-            // For streaming mode the HTTP response closes immediately; bind abort
-            // to the SSE connection lifecycle instead so that LLM generation stops
-            // when the client disconnects from SSE. For non-streaming mode, abort
-            // when the HTTP request itself closes.
+            // 流式模式下 HTTP 响应会立即关闭；改为把 abort 绑定到 SSE 连接
+            // 生命周期，这样客户端断开 SSE 时 LLM 生成也会停止。非流式模式
+            // 则在 HTTP 请求本身关闭时 abort。
             let unsubscribeSSE: (() => void) | undefined
             if (stream && sessionId) {
               unsubscribeSSE = onSessionDisconnect(sessionId, onClose)
@@ -89,11 +88,10 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
               signal: controller.signal,
             })
 
-            // Stream mode: data is delivered via SSE; HTTP only acknowledges acceptance
-            // to avoid duplicate/out-of-order content on the client. Do not await the
-            // engine here — a slow LLM would keep the HTTP request open until generation
-            // finished, causing the frontend to time out and abort, which in turn aborts
-            // the very generation it is waiting for and surfaces as a 500.
+            // 流式模式：数据通过 SSE 推送；HTTP 仅确认接收，避免客户端收到
+            // 重复或乱序内容。不要在这里 await engine——慢 LLM 会让 HTTP 请求
+            // 一直等到生成结束，导致前端超时并 abort，而 abort 又会中断它正在
+            // 等待的生成过程，最终以 500 报错。
             if (stream) {
               enginePromise
                 .catch((err) => {
@@ -105,11 +103,11 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
               return reply.status(202).send({ accepted: true })
             }
 
-            // Non-streaming mode: await the full response and return it.
+            // 非流式模式：等待完整响应并返回。
             try {
               const result = await enginePromise
 
-              // Note: engine already broadcasts via SSE internally
+              // 注意：engine 内部已经通过 SSE 广播
               return reply.send({
                 text: result.text,
                 transcript: result.transcript,
@@ -141,7 +139,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
           }
 
           case 'lesson.start': {
-            // sessionId is required — client must provide it for SSE scoping
+            // sessionId 必填——客户端必须提供，用于 SSE 作用域划分
             if (!sessionId) {
               return reply.status(400).send({ error: 'sessionId is required for lesson.start', code: 'MISSING_SESSION_ID' })
             }
@@ -220,7 +218,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
   )
 
   /**
-   * GET /api/session/:id - Get session info
+   * GET /api/session/:id - 获取会话信息
    */
   server.get('/api/session/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
     const session = tutorEngine.getSession(request.params.id)

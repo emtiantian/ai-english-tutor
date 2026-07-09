@@ -20,7 +20,7 @@ import { CubismBlendMode, CubismTextureColor } from './cubismrenderer';
 import { CubismRenderer_WebGL } from './cubismrenderer_webgl';
 import { Shaders } from './shaders';
 
-// 着色器
+// Shader
 const VertShaderSrcPath = 'vertshadersrc.vert';
 const VertShaderSrcMaskedPath = 'vertshadersrcmasked.vert';
 const VertShaderSrcSetupMaskPath = 'vertshadersrcsetupmask.vert';
@@ -32,7 +32,7 @@ const FragShaderSrcMaskPremultipliedAlphaPath =
 const FragShaderSrcMaskInvertedPremultipliedAlphaPath =
   'fragshadersrcmaskinvertedpremultipliedalpha.frag';
 
-// 复制与混合着色器
+// Copy & Blend Shader
 const VertShaderSrcCopyPath = 'vertshadersrccopy.vert';
 const FragShaderSrcCopyPath = 'fragshadersrccopy.frag';
 const FragShaderSrcColorBlendPath = 'fragshadersrccolorblend.frag';
@@ -40,11 +40,11 @@ const FragShaderSrcAlphaBlendPath = 'fragshadersrcalphablend.frag';
 const VertShaderSrcBlendPath = 'vertshadersrcblend.vert';
 const FragShaderSrcBlendPath = 'fragshadersrcpremultipliedalphablend.frag';
 
-// 混合模式前缀
+// Blend mode Prefix
 const ColorBlendPrefix = 'ColorBlend_';
 const AlphaBlendPrefix = 'AlphaBlend_';
 
-let s_instance: CubismShaderManager_WebGL; // 实例（单例）
+let s_instance: CubismShaderManager_WebGL; // インスタンス（シングルトン）
 
 const s_renderTargetVertexArray: Float32Array = new Float32Array([
   -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0
@@ -57,18 +57,18 @@ const s_renderTargetReverseUvArray = new Float32Array([
 ]);
 
 /**
- * 生成并销毁 WebGL 着色器程序的类
+ * WebGL用のシェーダープログラムを生成・破棄するクラス
  */
 export class CubismShader_WebGL {
   /**
-   * 异步从路径读取着色器
+   * 非同期でシェーダーをパスから読み込む
    *
-   * @param url 着色器 URL
+   * @param url シェーダーのURL
    *
-   * @return 着色器源码
+   * @return シェーダーのソースコード
    */
   private async loadShader(url: string): Promise<string> {
-    // 使用同步 XMLHttpRequest，避免某些环境下 fetch 卡住
+    // Use sync XMLHttpRequest to avoid fetch hanging in some environments
     return new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url, true);
@@ -87,10 +87,10 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 读取混合模式用着色器
+   * ブレンドモード用のシェーダーを読み込む
    */
   private async loadShaders(): Promise<void> {
-    // 使用内联着色器源码，避免异步 fetch 问题
+    // Use inlined shader sources to avoid async fetch issues
     (this as any)['_vertShaderSrc'] = Shaders.vertshadersrc_vert;
     (this as any)['_vertShaderSrcMasked'] = Shaders.vertshadersrcmasked_vert;
     (this as any)['_vertShaderSrcSetupMask'] = Shaders.vertshadersrcsetupmask_vert;
@@ -107,7 +107,7 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._shaderSets = new Array<CubismShaderSet>();
@@ -115,13 +115,13 @@ export class CubismShader_WebGL {
     this._isShaderLoaded = false;
     this._instanceId = ++CubismShader_WebGL._instanceCounter;
 
-    // 颜色混合用映射
+    // カラーブレンド用のマップ
     this._colorBlendMap = new Map<CubismColorBlend, string>();
     this._colorBlendValues = new Array<CubismColorBlend>();
 
     const colorBlendKeys = Object.keys(CubismColorBlend);
 
-    // Object.values() 的 polyfill
+    // Object.values() のポリフィル
     const colorBlendRawValues = Object.keys(CubismColorBlend).map(
       k => CubismColorBlend[k as keyof typeof CubismColorBlend]
     );
@@ -140,13 +140,13 @@ export class CubismShader_WebGL {
       }
     }
 
-    // 透明度混合用映射
+    // アルファブレンド用のマップ
     this._alphaBlendMap = new Map<CubismAlphaBlend, string>();
     this._alphaBlendValues = new Array<CubismAlphaBlend>();
 
     const alphaBlendKeys = Object.keys(CubismAlphaBlend);
 
-    // Object.values() 的 polyfill
+    // Object.values() のポリフィル
     const alphaBlendRawValues = Object.keys(CubismAlphaBlend).map(
       k => CubismAlphaBlend[k as keyof typeof CubismAlphaBlend]
     );
@@ -173,28 +173,28 @@ export class CubismShader_WebGL {
       (this._colorBlendValues.length - 3) *
         (this._alphaBlendValues.length - 1) *
         3;
-    // 着色器数量 =
-    // （遮罩生成用 + (普通 + 加算 + 乘算) * (无遮罩的预乘 alpha 版 + 有遮罩的预乘 alpha 版 + 有遮罩反转的预乘 alpha 版)）
-    // + 1（复制用着色器）
-    // + 颜色混合数量（排除向后兼容和 None） * 透明度混合数量（排除 None） * （普通 + 遮罩 + 反转遮罩）
+    // シェーダーの数 =
+    // (マスク生成用 + (通常用 + 加算 + 乗算) * (マスク無の乗算済アルファ対応版 + マスク有の乗算済アルファ対応版 + マスク有反転の乗算済アルファ対応版))
+    // + 1（コピー用のシェーダー）
+    // + カラーブレンドの数（後方互換とNone除く） * アルファブレンドの数（None除く） * （通常 + マスク + 反転マスク）
 
     this._defaultShaderPath = '/shaders/WebGL/';
     this._shaderPath = this._defaultShaderPath;
   }
 
   /**
-   * 析构对应处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     this.releaseShaderProgram();
   }
 
   /**
-   * 执行绘制用着色器程序的一整套设置
+   * 描画用のシェーダプログラムの一連のセットアップを実行する
    *
-   * @param renderer 渲染器
-   * @param model 绘制对象模型
-   * @param index 绘制对象网格的索引
+   * @param renderer レンダラー
+   * @param model 描画対象のモデル
+   * @param index 描画対象のメッシュのインデックス
    */
   public setupShaderProgramForDrawable(
     renderer: CubismRenderer_WebGL,
@@ -215,20 +215,20 @@ export class CubismShader_WebGL {
       return;
     }
 
-    // 混合
+    // Blending
     let srcColor: number;
     let dstColor: number;
     let srcAlpha: number;
     let dstAlpha: number;
 
-    // 计算 _shaderSets 用的偏移
+    // _shaderSets用のオフセット計算
     const masked: boolean =
-      renderer.getClippingContextBufferForDrawable() != null; // 该绘制对象是否被遮罩
+      renderer.getClippingContextBufferForDrawable() != null; // この描画オブジェクトはマスク対象か
     const invertedMask: boolean = model.getDrawableInvertedMaskBit(index);
     const offset: number = masked ? (invertedMask ? 2 : 1) : 0;
 
     let shaderSet: CubismShaderSet;
-    // 使用 Cubism 5.2 及以前版本着色器时为 true
+    // Cubism 5.2以前のシェーダを使用する場合はtrue
     let isUsingCompatible: boolean = true;
 
     if (model.isBlendModeEnabled()) {
@@ -243,7 +243,7 @@ export class CubismShader_WebGL {
         (colorBlendMode == CubismColorBlend.ColorBlend_Normal &&
           alphaBlendMode == CubismAlphaBlend.AlphaBlend_Over)
       ) {
-        // 使用 Cubism 5.2 及以前版本着色器。
+        // Cubism 5.2以前のシェーダを使用する。
         shaderSet =
           this._shaderSets[
             ShaderNames.ShaderNames_NormalPremultipliedAlpha + offset
@@ -255,7 +255,7 @@ export class CubismShader_WebGL {
         dstAlpha = this.gl.ONE_MINUS_SRC_ALPHA;
       } else {
         switch (colorBlendMode) {
-          // 使用 Cubism 5.2 及以前版本着色器。
+          // Cubism 5.2以前のシェーダを使用する。
           case CubismColorBlend.ColorBlend_AddCompatible:
             shaderSet =
               this._shaderSets[
@@ -266,7 +266,7 @@ export class CubismShader_WebGL {
             srcAlpha = this.gl.ZERO;
             dstAlpha = this.gl.ONE;
             break;
-          // 使用 Cubism 5.2 及以前版本着色器。
+          // Cubism 5.2以前のシェーダを使用する。
           case CubismColorBlend.ColorBlend_MultiplyCompatible:
             shaderSet =
               this._shaderSets[
@@ -277,7 +277,7 @@ export class CubismShader_WebGL {
             srcAlpha = this.gl.ZERO;
             dstAlpha = this.gl.ONE;
             break;
-          // 根据混合模式组合决定着色器
+          // ブレンドモードの組み合わせでシェーダーを決定
           default:
             {
               const srcBuffer =
@@ -285,7 +285,7 @@ export class CubismShader_WebGL {
                   ? renderer._currentOffscreen
                   : renderer.getModelRenderTarget(0);
 
-              // 先执行复制
+              // 先にコピーを行う
               CubismRenderTarget_WebGL.copyBuffer(
                 this.gl as WebGL2RenderingContext,
                 srcBuffer,
@@ -306,7 +306,7 @@ export class CubismShader_WebGL {
         }
       }
     } else {
-      // 使用 Cubism 5.2 及以前版本着色器。
+      // Cubism 5.2以前のシェーダを使用する。
       switch (model.getDrawableBlendMode(index)) {
         case CubismBlendMode.CubismBlendMode_Normal:
         default:
@@ -346,13 +346,13 @@ export class CubismShader_WebGL {
 
     this.gl.useProgram(shaderSet.shaderProgram);
 
-    // 设置顶点数组
+    // 頂点配列の設定
     if (renderer._bufferData.vertex == null) {
       renderer._bufferData.vertex = this.gl.createBuffer();
     }
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, renderer._bufferData.vertex);
 
-    // 设置顶点数组
+    // 頂点配列の設定
     const vertexArray: Float32Array = model.getDrawableVertices(index);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertexArray, this.gl.DYNAMIC_DRAW);
     this.gl.enableVertexAttribArray(shaderSet.attributePositionLocation);
@@ -365,7 +365,7 @@ export class CubismShader_WebGL {
       0
     );
 
-    // 设置纹理顶点
+    // テクスチャ頂点の設定
     if (renderer._bufferData.uv == null) {
       renderer._bufferData.uv = this.gl.createBuffer();
     }
@@ -385,7 +385,7 @@ export class CubismShader_WebGL {
     if (masked) {
       this.gl.activeTexture(this.gl.TEXTURE1);
 
-      // 写入 frameBuffer 的纹理
+      // frameBufferに書かれたテクスチャ
       const tex: WebGLTexture = renderer
         .getDrawableMaskBuffer(
           renderer.getClippingContextBufferForDrawable()._bufferIndex
@@ -394,14 +394,14 @@ export class CubismShader_WebGL {
       this.gl.bindTexture(this.gl.TEXTURE_2D, tex);
       this.gl.uniform1i(shaderSet.samplerTexture1Location, 1);
 
-      // 设置将 view 坐标转换为 ClippingContext 坐标的矩阵
+      // view座標をClippingContextの座標に変換するための行列を設定
       this.gl.uniformMatrix4fv(
         shaderSet.uniformClipMatrixLocation,
         false,
         renderer.getClippingContextBufferForDrawable()._matrixForDraw.getArray()
       );
 
-      // 设置要使用的颜色通道
+      // 使用するカラーチャンネルを設定
       const channelIndex: number =
         renderer.getClippingContextBufferForDrawable()._layoutChannelIndex;
       const colorChannel: CubismTextureColor = renderer
@@ -424,14 +424,14 @@ export class CubismShader_WebGL {
       }
     }
 
-    // 设置纹理
+    // テクスチャ設定
     const textureNo: number = model.getDrawableTextureIndex(index);
     const textureId: WebGLTexture = renderer.getBindedTextures().get(textureNo);
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, textureId);
     this.gl.uniform1i(shaderSet.samplerTexture0Location, 0);
 
-    // 坐标变换
+    //座標変換
     const matrix4x4: CubismMatrix44 = renderer.getMvpMatrix();
     this.gl.uniformMatrix4fv(
       shaderSet.uniformMatrixLocation,
@@ -439,11 +439,11 @@ export class CubismShader_WebGL {
       matrix4x4.getArray()
     );
 
-    // 获取基础色
+    //ベース色の取得
     let baseColor: CubismTextureColor = null;
 
     if (model.isBlendModeEnabled()) {
-      // 混合模式下模型颜色最后处理，因此仅支持不透明度
+      // ブレンドモードではモデルカラーは最後に処理するため不透明度のみ対応させる
       const drawableOpacity = model.getDrawableOpacity(index);
       baseColor = new CubismTextureColor(
         drawableOpacity,
@@ -487,11 +487,11 @@ export class CubismShader_WebGL {
       screenColor.a
     );
 
-    // 使用 Cubism 5.3 及以后版本着色器时
+    // Cubism 5.3以降のシェーダを使用する場合
     if (model.isBlendModeEnabled()) {
       this.gl.activeTexture(this.gl.TEXTURE2);
 
-      // 使用 Cubism 5.2 及以前版本着色器时不需要，跳过此处理
+      // Cubism 5.2以前のシェーダを使用する場合は不要なのでこの処理をスキップ
       if (!isUsingCompatible) {
         const tex: WebGLTexture = renderer
           .getModelRenderTarget(1)
@@ -501,7 +501,7 @@ export class CubismShader_WebGL {
       }
     }
 
-    // 创建 IBO 并传输数据
+    // IBOを作成し、データを転送
     if (renderer._bufferData.index == null) {
       renderer._bufferData.index = this.gl.createBuffer();
     }
@@ -521,11 +521,11 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 执行离屏用着色器程序的一整套设置
+   * オフスクリーン用のシェーダプログラムの一連のセットアップを実行する
    *
-   * @param renderer 渲染器
-   * @param model 绘制对象模型
-   * @param offscreen 绘制对象离屏
+   * @param renderer レンダラー
+   * @param model 描画対象のモデル
+   * @param offscreen 描画対象のオフスクリーン
    */
   public setupShaderProgramForOffscreen(
     renderer: CubismRenderer_WebGL,
@@ -545,22 +545,22 @@ export class CubismShader_WebGL {
       return;
     }
 
-    // 混合
+    // Blending
     let srcColor: number;
     let dstColor: number;
     let srcAlpha: number;
     let dstAlpha: number;
 
     const offscreenIndex: number = offscreen.getOffscreenIndex();
-    // 计算 _shaderSets 用的偏移
+    // _shaderSets用のオフセット計算
     const masked: boolean =
-      renderer.getClippingContextBufferForOffscreen() != null; // 该绘制对象是否被遮罩
+      renderer.getClippingContextBufferForOffscreen() != null; // この描画オブジェクトはマスク対象か
     const invertedMask: boolean =
       model.getOffscreenInvertedMask(offscreenIndex);
     const offset: number = masked ? (invertedMask ? 2 : 1) : 0;
 
     let shaderSet: CubismShaderSet;
-    // 使用 Cubism 5.2 及以前版本着色器时为 true
+    // Cubism 5.2以前のシェーダを使用する場合はtrue
     let isUsingCompatible: boolean = true;
 
     const colorBlendMode: CubismColorBlend =
@@ -574,7 +574,7 @@ export class CubismShader_WebGL {
       (colorBlendMode == CubismColorBlend.ColorBlend_Normal &&
         alphaBlendMode == CubismAlphaBlend.AlphaBlend_Over)
     ) {
-      // 使用 Cubism 5.2 及以前版本着色器。
+      // Cubism 5.2以前のシェーダを使用する。
       shaderSet =
         this._shaderSets[
           ShaderNames.ShaderNames_NormalPremultipliedAlpha + offset
@@ -586,7 +586,7 @@ export class CubismShader_WebGL {
       dstAlpha = this.gl.ONE_MINUS_SRC_ALPHA;
     } else {
       switch (colorBlendMode as CubismColorBlend) {
-        // 使用 Cubism 5.2 及以前版本着色器。
+        // Cubism 5.2以前のシェーダを使用する。
         case CubismColorBlend.ColorBlend_AddCompatible:
           shaderSet =
             this._shaderSets[
@@ -614,7 +614,7 @@ export class CubismShader_WebGL {
                 ? offscreen.getOldOffscreen()
                 : renderer.getModelRenderTarget(0);
 
-            // 先执行复制
+            // 先にコピーを行う
             CubismRenderTarget_WebGL.copyBuffer(
               this.gl as WebGL2RenderingContext,
               srcBuffer,
@@ -637,7 +637,7 @@ export class CubismShader_WebGL {
 
     this.gl.useProgram(shaderSet.shaderProgram);
 
-    // 设置顶点数组
+    // 頂点配列の設定
     CubismRenderTarget_WebGL.copyBuffer(
       this.gl as WebGL2RenderingContext,
       offscreen,
@@ -648,7 +648,7 @@ export class CubismShader_WebGL {
     this.gl.bindTexture(this.gl.TEXTURE_2D, tex0);
     this.gl.uniform1i(shaderSet.samplerTexture0Location, 0);
 
-    // 坐标变换
+    //座標変換
     const matrix4x4: CubismMatrix44 = new CubismMatrix44();
     matrix4x4.loadIdentity();
     this.gl.uniformMatrix4fv(
@@ -657,9 +657,9 @@ export class CubismShader_WebGL {
       matrix4x4.getArray()
     );
 
-    // 获取基础色
+    // ベース色の取得
     const offscreenOpacity = model.getOffscreenOpacity(offscreenIndex);
-    // 使用预乘 alpha，因此将离屏透明度乘以 1.0 的状态
+    // 乗算済みアルファを使用するのでオフスクリーンの透明度を 1.0 に乗算した状態
     const baseColor: CubismTextureColor = new CubismTextureColor(
       offscreenOpacity,
       offscreenOpacity,
@@ -699,7 +699,7 @@ export class CubismShader_WebGL {
 
     this.gl.activeTexture(this.gl.TEXTURE2);
 
-    // 使用 Cubism 5.2 及以前版本着色器时不需要，跳过此处理
+    // Cubism 5.2以前のシェーダを使用する場合は不要なのでこの処理をスキップ
     if (!isUsingCompatible) {
       const tex1: WebGLTexture = renderer
         .getModelRenderTarget(1)
@@ -711,7 +711,7 @@ export class CubismShader_WebGL {
     if (masked) {
       this.gl.activeTexture(this.gl.TEXTURE1);
 
-      // 写入 frameBuffer 的纹理
+      // frameBufferに書かれたテクスチャ
       const tex2: WebGLTexture = renderer
         .getOffscreenMaskBuffer(
           renderer.getClippingContextBufferForOffscreen()._bufferIndex
@@ -720,7 +720,7 @@ export class CubismShader_WebGL {
       this.gl.bindTexture(this.gl.TEXTURE_2D, tex2);
       this.gl.uniform1i(shaderSet.samplerTexture1Location, 1);
 
-      // 设置将 view 坐标转换为 ClippingContext 坐标的矩阵
+      // view座標をClippingContextの座標に変換するための行列を設定
       this.gl.uniformMatrix4fv(
         shaderSet.uniformClipMatrixLocation,
         false,
@@ -729,7 +729,7 @@ export class CubismShader_WebGL {
           ._matrixForDraw.getArray()
       );
 
-      // 设置要使用的颜色通道
+      // 使用するカラーチャンネルを設定
       const channelIndex: number =
         renderer.getClippingContextBufferForOffscreen()._layoutChannelIndex;
       const colorChannel: CubismTextureColor = renderer
@@ -752,7 +752,7 @@ export class CubismShader_WebGL {
       }
     }
 
-    // 设置顶点位置属性
+    // 頂点位置属性の設定
     if (!renderer._bufferData.vertex) {
       renderer._bufferData.vertex = this.gl.createBuffer();
     }
@@ -772,7 +772,7 @@ export class CubismShader_WebGL {
       0
     );
 
-    // 设置纹理坐标属性
+    // テクスチャ座標属性の設定
     if (!renderer._bufferData.uv) {
       renderer._bufferData.uv = this.gl.createBuffer();
     }
@@ -796,11 +796,11 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 执行遮罩用着色器程序的一整套设置
+   * マスク用のシェーダプログラムの一連のセットアップを実行する
    *
-   * @param renderer 渲染器
-   * @param model 绘制对象模型
-   * @param index 绘制对象网格的索引
+   * @param renderer レンダラー
+   * @param model 描画対象のモデル
+   * @param index 描画対象のメッシュのインデックス
    */
   public setupShaderProgramForMask(
     renderer: CubismRenderer_WebGL,
@@ -824,7 +824,7 @@ export class CubismShader_WebGL {
       this._shaderSets[ShaderNames.ShaderNames_SetupMask];
     this.gl.useProgram(shaderSet.shaderProgram);
 
-    // 设置顶点数组
+    // 頂点配列の設定
     if (renderer._bufferData.vertex == null) {
       renderer._bufferData.vertex = this.gl.createBuffer();
     }
@@ -841,7 +841,7 @@ export class CubismShader_WebGL {
       0
     );
 
-    // 设置纹理
+    //テクスチャ設定
     if (renderer._bufferData.uv == null) {
       renderer._bufferData.uv = this.gl.createBuffer();
     }
@@ -852,7 +852,7 @@ export class CubismShader_WebGL {
     this.gl.bindTexture(this.gl.TEXTURE_2D, textureId);
     this.gl.uniform1i(shaderSet.samplerTexture0Location, 0);
 
-    // 设置纹理顶点
+    // テクスチャ頂点の設定
     if (renderer._bufferData.uv == null) {
       renderer._bufferData.uv = this.gl.createBuffer();
     }
@@ -869,7 +869,7 @@ export class CubismShader_WebGL {
       0
     );
 
-    // 通道
+    // チャンネル
     const channelIndex: number =
       renderer.getClippingContextBufferForMask()._layoutChannelIndex;
     const colorChannel: CubismTextureColor = renderer
@@ -901,13 +901,13 @@ export class CubismShader_WebGL {
       rect.getBottom() * 2.0 - 1.0
     );
 
-    // 混合
+    // Blending
     const srcColor: number = this.gl.ZERO;
     const dstColor: number = this.gl.ONE_MINUS_SRC_COLOR;
     const srcAlpha: number = this.gl.ZERO;
     const dstAlpha: number = this.gl.ONE_MINUS_SRC_ALPHA;
 
-    // 创建 IBO 并传输数据
+    // IBOを作成し、データを転送
     if (renderer._bufferData.index == null) {
       renderer._bufferData.index = this.gl.createBuffer();
     }
@@ -927,9 +927,9 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 设置离屏渲染目标用着色器程序
+   * オフスクリーンのレンダリングターゲット用のシェーダープログラムを設定する
    *
-   * @param renderer 渲染器
+   * @param renderer レンダラー
    */
   public setupShaderProgramForOffscreenRenderTarget(
     renderer: CubismRenderer_WebGL
@@ -943,7 +943,7 @@ export class CubismShader_WebGL {
       return;
     }
 
-    // 此时纹理应为 PMA，因此进行计算
+    // この時点のテクスチャはPMAになっているはずなので計算を行う
     const baseColor = renderer.getModelColor();
     baseColor.r *= baseColor.a;
     baseColor.g *= baseColor.a;
@@ -952,16 +952,16 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 复制离屏渲染目标内容
+   * オフスクリーンのレンダリングターゲットの内容をコピーする
    *
-   * @param renderer 渲染器
-   * @param baseColor 基础色
+   * @param renderer レンダラー
+   * @param baseColor ベースカラー
    */
   public copyTexture(
     renderer: CubismRenderer_WebGL,
     baseColor: CubismTextureColor
   ) {
-    // 混合
+    // Blending
     const srcColor = this.gl.ONE;
     const dstColor = this.gl.ONE_MINUS_SRC_ALPHA;
     const srcAlpha = this.gl.ONE;
@@ -979,13 +979,13 @@ export class CubismShader_WebGL {
       baseColor.a
     );
 
-    // 设置离屏内容
+    // オフスクリーンの内容を設定
     this.gl.activeTexture(this.gl.TEXTURE0);
     const tex = renderer.getModelRenderTarget(0).getColorBuffer();
     this.gl.bindTexture(this.gl.TEXTURE_2D, tex);
     this.gl.uniform1i(shaderSet.samplerTexture0Location, 0);
 
-    // 设置顶点位置属性
+    // 頂点位置属性の設定
     if (!renderer._bufferData.vertex) {
       renderer._bufferData.vertex = this.gl.createBuffer();
     }
@@ -1005,7 +1005,7 @@ export class CubismShader_WebGL {
       0
     );
 
-    // 设置纹理坐标属性
+    // テクスチャ座標属性の設定
     if (!renderer._bufferData.uv) {
       renderer._bufferData.uv = this.gl.createBuffer();
     }
@@ -1029,7 +1029,7 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 释放着色器程序
+   * シェーダープログラムを解放する
    */
   public releaseShaderProgram(): void {
     for (let i = 0; i < this._shaderSets.length; i++) {
@@ -1041,10 +1041,10 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 初始化着色器程序
+   * シェーダープログラムを初期化する
    *
-   * @param vertShaderSrc 顶点着色器源码
-   * @param fragShaderSrc 片段着色器源码
+   * @param vertShaderSrc 頂点シェーダのソース
+   * @param fragShaderSrc フラグメントシェーダのソース
    */
   public generateShaders(): void {
     if (this._isShaderLoading) {
@@ -1065,11 +1065,11 @@ export class CubismShader_WebGL {
       this._shaderSets[i] = new CubismShaderSet();
     }
 
-    // 读取着色器源码（同步、内联）
+    // シェーダーのソースの読み込み (sync, inlined)
     try {
       this.loadShaders();
-      this.registerShader(); // 注册普通着色器
-      this.registerBlendShader(); // 注册混合模式着色器
+      this.registerShader(); // 通常シェーダーの登録
+      this.registerBlendShader(); // ブレンドモードシェーダーの登録
       this._isShaderLoading = false;
       this._isShaderLoaded = true;
       console.log('[Shader] instance#' + this._instanceId + ' All shaders registered successfully');
@@ -1080,7 +1080,7 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 注册着色器程序
+   * シェーダープログラムを登録する
    */
   public registerShader(): void {
     const vertexShaderSrc = this._vertShaderSrc;
@@ -1111,12 +1111,12 @@ export class CubismShader_WebGL {
       fragmentShaderSrcMaskInvertedPremultipliedAlpha
     );
 
-    // 加算也与普通使用相同着色器
+    // 加算も通常と同じシェーダーを利用する
     this._shaderSets[4].shaderProgram = this._shaderSets[1].shaderProgram;
     this._shaderSets[5].shaderProgram = this._shaderSets[2].shaderProgram;
     this._shaderSets[6].shaderProgram = this._shaderSets[3].shaderProgram;
 
-    // 乘算也与普通使用相同着色器
+    // 乗算も通常と同じシェーダーを利用する
     this._shaderSets[7].shaderProgram = this._shaderSets[1].shaderProgram;
     this._shaderSets[8].shaderProgram = this._shaderSets[2].shaderProgram;
     this._shaderSets[9].shaderProgram = this._shaderSets[3].shaderProgram;
@@ -1147,7 +1147,7 @@ export class CubismShader_WebGL {
       'u_baseColor'
     );
 
-    // 普通（PremultipliedAlpha）
+    // 通常（PremultipliedAlpha）
     this._shaderSets[1].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[1].shaderProgram,
       'a_position'
@@ -1178,7 +1178,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 普通（裁剪，PremultipliedAlpha）
+    // 通常（クリッピング、PremultipliedAlpha）
     this._shaderSets[2].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[2].shaderProgram,
       'a_position'
@@ -1221,7 +1221,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 普通（裁剪·反转，PremultipliedAlpha）
+    // 通常（クリッピング・反転, PremultipliedAlpha）
     this._shaderSets[3].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[3].shaderProgram,
       'a_position'
@@ -1295,7 +1295,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 加算（裁剪，PremultipliedAlpha）
+    // 加算（クリッピング、PremultipliedAlpha）
     this._shaderSets[5].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[5].shaderProgram,
       'a_position'
@@ -1338,7 +1338,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 加算（裁剪·反转，PremultipliedAlpha）
+    // 加算（クリッピング・反転、PremultipliedAlpha）
     this._shaderSets[6].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[6].shaderProgram,
       'a_position'
@@ -1381,7 +1381,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 乘算（PremultipliedAlpha）
+    // 乗算（PremultipliedAlpha）
     this._shaderSets[7].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[7].shaderProgram,
       'a_position'
@@ -1412,7 +1412,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 乘算（裁剪，PremultipliedAlpha）
+    // 乗算（クリッピング、PremultipliedAlpha）
     this._shaderSets[8].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[8].shaderProgram,
       'a_position'
@@ -1455,7 +1455,7 @@ export class CubismShader_WebGL {
       'u_screenColor'
     );
 
-    // 乘算（裁剪·反转，PremultipliedAlpha）
+    // 乗算（クリッピング・反転、PremultipliedAlpha）
     this._shaderSets[9].attributePositionLocation = this.gl.getAttribLocation(
       this._shaderSets[9].shaderProgram,
       'a_position'
@@ -1500,14 +1500,14 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 注册混合模式用着色器程序
+   * ブレンドモード用のシェーダープログラムを登録する
    */
   public registerBlendShader(): void {
-    // 设置复制用着色器
+    // コピー用シェーダーの設定
     const vertShaderSrcCopy = this._vertShaderSrcCopy;
     const fragShaderSrcCopy = this._fragShaderSrcCopy;
 
-    const copyShaderSet = this._shaderSets[10]; // ShaderNames_Copy = 10
+    const copyShaderSet = this._shaderSets[10]; // ShaderNames.Copy = 10
     copyShaderSet.shaderProgram = this.loadShaderProgram(
       vertShaderSrcCopy,
       fragShaderSrcCopy
@@ -1526,13 +1526,13 @@ export class CubismShader_WebGL {
     );
 
     let shaderSetIndex = 11;
-    // 设置混合模式用着色器
+    // ブレンドモード用シェーダーの設定
     for (
       let colorBlendIndex = 0;
       colorBlendIndex < this._colorBlendValues.length;
       colorBlendIndex++
     ) {
-      // 跳过 NONE 和向后兼容
+      // NONEと後方互換はスキップ
       if (
         this._colorBlendValues[colorBlendIndex] ==
           CubismColorBlend.ColorBlend_None ||
@@ -1544,7 +1544,7 @@ export class CubismShader_WebGL {
         continue;
       }
 
-      // 颜色混合宏
+      // カラーブレンド用のマクロ
       const colorBlendValue = this._colorBlendValues[colorBlendIndex];
       const colorBlendName = this._colorBlendMap
         .get(colorBlendValue)
@@ -1556,7 +1556,7 @@ export class CubismShader_WebGL {
         alphablendIndex < this._alphaBlendValues.length;
         alphablendIndex++
       ) {
-        // 跳过 NONE，以及颜色混合为 Normal 且透明度混合为 Over 的情况
+        // NONEと、カラーブレンド「Normal」かつアルファブレンド「Over」はスキップ
         if (
           this._alphaBlendValues[alphablendIndex] ==
             CubismAlphaBlend.AlphaBlend_None ||
@@ -1568,14 +1568,14 @@ export class CubismShader_WebGL {
           continue;
         }
 
-        // 透明度混合宏
+        // アルファブレンド用のマクロ
         const alphaBlendValue = this._alphaBlendValues[alphablendIndex];
         const alphaBlendName = this._alphaBlendMap
           .get(alphaBlendValue)
           .toUpperCase();
         const alphaBlendMacro = `#define ALPHA_BLEND_${alphaBlendName}\n`;
 
-        // 生成着色器源码
+        // シェーダーのソースを生成
         this.generateBlendShader(
           colorBlendMacro,
           alphaBlendMacro,
@@ -1588,18 +1588,18 @@ export class CubismShader_WebGL {
           shaderSetIndex
         );
 
-        // 一个组合结束时更新着色器索引
+        // 1つの組み合わせが終わるこのタイミングでシェーダーのインデックスを更新
         shaderSetIndex += ShaderType.ShaderType_Count;
       }
     }
   }
 
   /**
-   * 生成混合模式用着色器程序
+   * ブレンドモード用のシェーダープログラムを生成する
    *
-   * @param colorBlendMacro 颜色混合宏
-   * @param alphaBlendMacro 透明度混合宏
-   * @param shaderSetBaseIndex _shaderSets 的索引
+   * @param colorBlendMacro カラーブレンド用のマクロ
+   * @param alphaBlendMacro アルファブレンド用のマクロ
+   * @param shaderSetBaseIndex _shaderSets のインデックス
    */
   private generateBlendShader(
     colorBlendMacro: string,
@@ -1611,22 +1611,22 @@ export class CubismShader_WebGL {
       shaderTypeIndex < ShaderType.ShaderType_Count;
       shaderTypeIndex++
     ) {
-      // 每次循环初始化着色器源码
+      // ループごとにシェーダーのソースを初期化
       let vertexShaderSrc: string = '';
       let fragmentShaderStr: string = 'precision mediump float;\n';
 
-      // 着色器种类变化时更改索引
+      // シェーダの種類が変わるたびにインデックスを変更
       const shaderSetIndex = shaderSetBaseIndex + shaderTypeIndex;
 
-      // 宏定义
+      // マクロの定義
       fragmentShaderStr += colorBlendMacro;
       fragmentShaderStr += alphaBlendMacro;
 
-      // 根据混合模式种类定义宏
+      // ブレンドモードの種類に応じたマクロの定義
       fragmentShaderStr += this._fragShaderSrcColorBlend;
       fragmentShaderStr += this._fragShaderSrcAlphaBlend;
 
-      // 根据着色器种类定义宏
+      // シェーダの種類に応じたマクロの定義
       if (
         shaderTypeIndex == ShaderType.ShaderType_Masked ||
         shaderTypeIndex == ShaderType.ShaderType_MaskedInverted
@@ -1636,17 +1636,17 @@ export class CubismShader_WebGL {
         fragmentShaderStr += clippingMaskMacro;
       }
 
-      // 从文件读取着色器本体源码
+      // シェーダの本体のソースをファイルから読み込み
       vertexShaderSrc += this._vertShaderSrcBlend;
       fragmentShaderStr += this._fragShaderSrcBlend;
 
-      // 生成着色器程序
+      // シェーダープログラムの生成
       this._shaderSets[shaderSetIndex].shaderProgram = this.loadShaderProgram(
         vertexShaderSrc,
         fragmentShaderStr
       );
 
-      // 链接着色器程序变量
+      // シェーダープログラムへの変数のリンク
       this._shaderSets[shaderSetIndex].attributePositionLocation =
         this.gl.getAttribLocation(
           this._shaderSets[shaderSetIndex].shaderProgram,
@@ -1683,40 +1683,40 @@ export class CubismShader_WebGL {
           'u_screenColor'
         );
 
-      // 混合模式用纹理
+      // ブレンドモード用のテクスチャ
       this._shaderSets[shaderSetIndex].samplerFrameBufferTextureLocation =
         this.gl.getUniformLocation(
           this._shaderSets[shaderSetIndex].shaderProgram,
           's_blendTexture'
         );
 
-      // 裁剪对象的情况
+      // クリップ対象の場合
       if (
         shaderTypeIndex == ShaderType.ShaderType_Masked ||
         shaderTypeIndex == ShaderType.ShaderType_MaskedInverted
       ) {
-        // 遮罩用纹理
+        // マスク用テクスチャ
         this._shaderSets[shaderSetIndex].samplerTexture1Location =
           this.gl.getUniformLocation(
             this._shaderSets[shaderSetIndex].shaderProgram,
             's_texture1'
           );
 
-        // 裁剪用矩阵
+        // クリップ用の行列
         this._shaderSets[shaderSetIndex].uniformClipMatrixLocation =
           this.gl.getUniformLocation(
             this._shaderSets[shaderSetIndex].shaderProgram,
             'u_clipMatrix'
           );
 
-        // 通道标志
+        // チャンネルフラグ
         this._shaderSets[shaderSetIndex].uniformChannelFlagLocation =
           this.gl.getUniformLocation(
             this._shaderSets[shaderSetIndex].shaderProgram,
             'u_channelFlag'
           );
 
-        // 反转遮罩用值（反转时赋值为 1.0）
+        // 反転マスク用の値（反転なら 1.0 が代入される）
         this._shaderSets[shaderSetIndex].uniformInvertMaskFlagLocation =
           this.gl.getUniformLocation(
             this._shaderSets[shaderSetIndex].shaderProgram,
@@ -1727,18 +1727,18 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 加载着色器程序并返回地址
+   * シェーダプログラムをロードしてアドレスを返す
    *
-   * @param vertexShaderSource    顶点着色器源码
-   * @param fragmentShaderSource  片段着色器源码
+   * @param vertexShaderSource    頂点シェーダのソース
+   * @param fragmentShaderSource  フラグメントシェーダのソース
    *
-   * @return 着色器程序地址
+   * @return シェーダプログラムのアドレス
    */
   public loadShaderProgram(
     vertexShaderSource: string,
     fragmentShaderSource: string
   ): WebGLProgram {
-    // 创建着色器程序
+    // Create Shader Program
     let shaderProgram: WebGLProgram = this.gl.createProgram();
 
     let vertShader = this.compileShaderSource(
@@ -1760,20 +1760,20 @@ export class CubismShader_WebGL {
       return 0;
     }
 
-    // 将顶点着色器附加到程序
+    // Attach vertex shader to program
     this.gl.attachShader(shaderProgram, vertShader);
 
-    // 将片段着色器附加到程序
+    // Attach fragment shader to program
     this.gl.attachShader(shaderProgram, fragShader);
 
-    // 链接程序
+    // link program
     this.gl.linkProgram(shaderProgram);
     const linkStatus = this.gl.getProgramParameter(
       shaderProgram,
       this.gl.LINK_STATUS
     );
 
-    // 链接失败则删除着色器
+    // リンクに失敗したらシェーダーを削除
     if (!linkStatus) {
       CubismLogError('Failed to link program: {0}', shaderProgram);
 
@@ -1791,7 +1791,7 @@ export class CubismShader_WebGL {
       return 0;
     }
 
-    // 释放顶点和片段着色器
+    // Release vertex and fragment shaders.
     this.gl.deleteShader(vertShader);
     this.gl.deleteShader(fragShader);
 
@@ -1799,12 +1799,12 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 编译着色器程序
+   * シェーダープログラムをコンパイルする
    *
-   * @param shaderType 着色器类型（Vertex/Fragment）
-   * @param shaderSource 着色器源码
+   * @param shaderType シェーダタイプ(Vertex/Fragment)
+   * @param shaderSource シェーダソースコード
    *
-   * @return 编译后的着色器程序
+   * @return コンパイルされたシェーダープログラム
    */
   public compileShaderSource(
     shaderType: GLenum,
@@ -1836,77 +1836,77 @@ export class CubismShader_WebGL {
   }
 
   /**
-   * 设置 WebGL 渲染上下文
+   * WebGLレンダリングコンテキストを設定する
    *
-   * @param gl WebGL 渲染上下文
+   * @param gl WebGLレンダリングコンテキスト
    */
   public setGl(gl: WebGLRenderingContext | WebGL2RenderingContext): void {
     this.gl = gl;
   }
 
   /**
-   * 设置混合模式用着色器路径
+   * ブレンドモード用のシェーダーパスを設定する
    *
-   * @param shaderPath 着色器路径
+   * @param shaderPath シェーダーパス
    */
   public setShaderPath(shaderPath: string): void {
     this._shaderPath = shaderPath;
   }
 
   /**
-   * 获取着色器路径
+   * シェーダーパスを取得する
    *
-   * @return 着色器路径
+   * @return シェーダーパス
    */
   public getShaderPath(): string {
     return this._shaderPath;
   }
 
-  _shaderSets: Array<CubismShaderSet>; // 保存已加载着色器程序的变量
-  gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGL 上下文
+  _shaderSets: Array<CubismShaderSet>; // ロードしたシェーダープログラムを保持する変数
+  gl: WebGLRenderingContext | WebGL2RenderingContext; // webglコンテキスト
 
-  _colorBlendMap: Map<CubismColorBlend, string>; // 颜色混合值与名称的映射变量
-  _alphaBlendMap: Map<CubismAlphaBlend, string>; // 透明度混合值与名称的映射变量
+  _colorBlendMap: Map<CubismColorBlend, string>; // カラーブレンドの値と名称を紐づけする変数
+  _alphaBlendMap: Map<CubismAlphaBlend, string>; // アルファブレンドの値と名称を紐づけする変数
 
-  _colorBlendValues: Array<CubismColorBlend>; // 保存颜色混合值的变量
-  _alphaBlendValues: Array<CubismAlphaBlend>; // 保存透明度混合值的变量
+  _colorBlendValues: Array<CubismColorBlend>; // カラーブレンドの値を保持する変数
+  _alphaBlendValues: Array<CubismAlphaBlend>; // アルファブレンドの値を保持する変数
 
-  _blendShaderSetMap: Map<string, number>; // 混合模式用着色器名称与索引的映射变量
+  _blendShaderSetMap: Map<string, number>; // ブレンドモード用のシェーダーの名称とインデックスを紐づけする変数
 
-  _shaderCount: number; // 着色器程序数量
+  _shaderCount: number; // シェーダープログラムの数
 
-  _vertShaderSrc: string; // 顶点着色器源码
-  _vertShaderSrcMasked: string; // 遮罩用顶点着色器源码
-  _vertShaderSrcSetupMask: string; // 遮罩用顶点着色器源码
-  _fragShaderSrcSetupMask: string; // 遮罩用片段着色器源码
-  _fragShaderSrcPremultipliedAlpha: string; // 预乘 alpha 用片段着色器源码
-  _fragShaderSrcMaskPremultipliedAlpha: string; // 遮罩用预乘 alpha 片段着色器源码
-  _fragShaderSrcMaskInvertedPremultipliedAlpha: string; // 反转遮罩用预乘 alpha 片段着色器源码
+  _vertShaderSrc: string; // 頂点シェーダーのソース
+  _vertShaderSrcMasked: string; // マスク用の頂点シェーダーのソース
+  _vertShaderSrcSetupMask: string; // マスク用の頂点シェーダーのソース
+  _fragShaderSrcSetupMask: string; // マスク用のフラグメントシェーダーのソース
+  _fragShaderSrcPremultipliedAlpha: string; // プレマルチプライドアルファ用のフラグメントシェーダーのソース
+  _fragShaderSrcMaskPremultipliedAlpha: string; // マスク用プレマルチプライドアルファのフラグメントシェーダーのソース
+  _fragShaderSrcMaskInvertedPremultipliedAlpha: string; // 反転マスク用プレマルチプライドアルファのフラグメントシェーダーのソース
 
-  _vertShaderSrcCopy: string; // 复制用顶点着色器源码
-  _fragShaderSrcCopy: string; // 复制用片段着色器源码
+  _vertShaderSrcCopy: string; // 頂点シェーダーのソース
+  _fragShaderSrcCopy: string; // コピー用のフラグメントシェーダーのソース
 
-  _fragShaderSrcColorBlend: string; // 混合模式用着色器源码
-  _fragShaderSrcAlphaBlend: string; // 透明度混合用着色器源码
-  _vertShaderSrcBlend: string; // 混合模式用顶点着色器源码
-  _fragShaderSrcBlend: string; // 混合模式用片段着色器源码
-  _isShaderLoading: boolean; // 是否正在读取着色器
-  _isShaderLoaded: boolean; // 着色器读取是否完成
-  _defaultShaderPath: string; // 默认着色器路径
-  _shaderPath: string; // 着色器路径
-  _instanceId: number; // 调试用的实例 id
+  _fragShaderSrcColorBlend: string; // ブレンドモード用のシェーダーのソース
+  _fragShaderSrcAlphaBlend: string; // アルファブレンド用のシェーダーのソース
+  _vertShaderSrcBlend: string; // 頂点シェーダーのソース
+  _fragShaderSrcBlend: string; // フラグメントシェーダーのソース
+  _isShaderLoading: boolean; // シェーダーの読み込み中かどうか
+  _isShaderLoaded: boolean; // シェーダーの読み込みが完了したかどうか
+  _defaultShaderPath: string; // デフォルトのシェーダーパス
+  _shaderPath: string; // シェーダーパス
+  _instanceId: number; // instance id for debugging
   static _instanceCounter = 0;
 }
 
 /**
- * 为每个 GLContext 分配 CubismShader_WebGL 的类
- * 是单例类，通过 CubismShaderManager_WebGL.getInstance 访问。
+ * GLContextごとにCubismShader_WebGLを確保するためのクラス
+ * シングルトンなクラスであり、CubismShaderManager_WebGL.getInstanceからアクセスする。
  */
 export class CubismShaderManager_WebGL {
   /**
-   * 获取实例（单例）
+   * インスタンスを取得する（シングルトン）
    *
-   * @return 实例
+   * @return インスタンス
    */
   public static getInstance(): CubismShaderManager_WebGL {
     if (s_instance == null) {
@@ -1916,7 +1916,7 @@ export class CubismShaderManager_WebGL {
   }
 
   /**
-   * 释放实例（单例）
+   * インスタンスを開放する（シングルトン）
    */
   public static deleteInstance(): void {
     if (s_instance) {
@@ -1926,14 +1926,14 @@ export class CubismShaderManager_WebGL {
   }
 
   /**
-   * 私有构造函数
+   * Privateなコンストラクタ
    */
   private constructor() {
     this._shaderMap = new Map<WebGLRenderingContext, CubismShader_WebGL>();
   }
 
   /**
-   * 析构对应处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     for (const item of this._shaderMap) {
@@ -1943,20 +1943,20 @@ export class CubismShaderManager_WebGL {
   }
 
   /**
-   * 以 GLContext 为键获取 Shader
+   * GLContextをキーにShaderを取得する
    *
-   * @param gl gl 上下文
+   * @param gl glコンテキスト
    *
-   * @return 返回 shader
+   * @return shaderを返す
    */
   public getShader(gl: WebGLRenderingContext): CubismShader_WebGL {
     return this._shaderMap.get(gl);
   }
 
   /**
-   * 注册 GLContext
+   * GLContextを登録する
    *
-   * @param gl gl 上下文
+   * @param gl glコンテキスト
    */
   public setGlContext(gl: WebGLRenderingContext): void {
     if (!this._shaderMap.has(gl)) {
@@ -1967,58 +1967,58 @@ export class CubismShaderManager_WebGL {
   }
 
   /**
-   * 保存每个 GLContext 对应 Shader 的变量
+   * GLContextごとのShaderを保持する変数
    */
   private _shaderMap: Map<WebGLRenderingContext, CubismShader_WebGL>;
 }
 
 /**
- * CubismShader_WebGL 的内部类
+ * CubismShader_WebGLのインナークラス
  */
 export class CubismShaderSet {
-  shaderProgram: WebGLProgram; // 着色器程序地址
-  attributePositionLocation: GLuint; // 传递给着色器程序的变量地址（Position）
-  attributeTexCoordLocation: GLuint; // 传递给着色器程序的变量地址（TexCoord）
-  uniformMatrixLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（Matrix）
-  uniformClipMatrixLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（ClipMatrix）
-  samplerTexture0Location: WebGLUniformLocation; // 传递给着色器程序的变量地址（Texture0）
-  samplerTexture1Location: WebGLUniformLocation; // 传递给着色器程序的变量地址（Texture1）
-  uniformBaseColorLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（BaseColor）
-  uniformChannelFlagLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（ChannelFlag）
-  uniformMultiplyColorLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（MultiplyColor）
-  uniformScreenColorLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（ScreenColor）
-  samplerFrameBufferTextureLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（BlendTexture）
-  uniformInvertMaskFlagLocation: WebGLUniformLocation; // 传递给着色器程序的变量地址（InvertMask）
+  shaderProgram: WebGLProgram; // シェーダープログラムのアドレス
+  attributePositionLocation: GLuint; // シェーダープログラムに渡す変数のアドレス（Position）
+  attributeTexCoordLocation: GLuint; // シェーダープログラムに渡す変数のアドレス（TexCoord）
+  uniformMatrixLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（Matrix）
+  uniformClipMatrixLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（ClipMatrix）
+  samplerTexture0Location: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（Texture0）
+  samplerTexture1Location: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（Texture1）
+  uniformBaseColorLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（BaseColor）
+  uniformChannelFlagLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（ChannelFlag）
+  uniformMultiplyColorLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（MultiplyColor）
+  uniformScreenColorLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（ScreenColor）
+  samplerFrameBufferTextureLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（BlendTexture）
+  uniformInvertMaskFlagLocation: WebGLUniformLocation; // シェーダープログラムに渡す変数のアドレス（InvertMask）
 }
 
 /**
- * 定义着色器名称的枚举
+ * シェーダーの名前を定義する列挙型
  */
 export enum ShaderNames {
-  // 设置遮罩
+  // SetupMask
   ShaderNames_SetupMask,
 
-  // 普通
+  // Normal
   ShaderNames_NormalPremultipliedAlpha,
   ShaderNames_NormalMaskedPremultipliedAlpha,
   ShaderNames_NomralMaskedInvertedPremultipliedAlpha,
 
-  // 加算
+  // Add
   ShaderNames_AddPremultipliedAlpha,
   ShaderNames_AddMaskedPremultipliedAlpha,
   ShaderNames_AddMaskedPremultipliedAlphaInverted,
 
-  // 乘算
+  // Mult
   ShaderNames_MultPremultipliedAlpha,
   ShaderNames_MultMaskedPremultipliedAlpha,
   ShaderNames_MultMaskedPremultipliedAlphaInverted,
 
-  // 着色器数量
+  // ShaderCount
   ShaderNames_ShaderCount
 }
 
 /**
- * 定义着色器种类的枚举
+ * シェーダーの種類を定義する列挙型
  */
 export enum ShaderType {
   ShaderType_Normal = 0,
@@ -2027,7 +2027,7 @@ export enum ShaderType {
   ShaderType_Count
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismshader_webgl';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

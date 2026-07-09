@@ -7,15 +7,15 @@
  */
 
 /**
- * 定义矩形（坐标与长度为 float 值）的类
+ * 矩形形状（座標・長さはfloat値）を定義するクラス
  */
 export class csmRect {
   /**
-   * 构造函数
-   * @param x 左端 X 坐标
-   * @param y 上端 Y 坐标
-   * @param w 宽度
-   * @param h 高度
+   * コンストラクタ
+   * @param x 左端X座標
+   * @param y 上端Y座標
+   * @param w 幅
+   * @param h 高さ
    */
   public constructor(x?: number, y?: number, w?: number, h?: number) {
     this.x = x;
@@ -25,36 +25,36 @@ export class csmRect {
   }
 
   /**
-   * 获取矩形中央的 X 坐标
+   * 矩形中央のX座標を取得する
    */
   public getCenterX(): number {
     return this.x + 0.5 * this.width;
   }
 
   /**
-   * 获取矩形中央的 Y 坐标
+   * 矩形中央のY座標を取得する
    */
   public getCenterY(): number {
     return this.y + 0.5 * this.height;
   }
 
   /**
-   * 获取右侧的 X 坐标
+   * 右側のX座標を取得する
    */
   public getRight(): number {
     return this.x + this.width;
   }
 
   /**
-   * 获取下端的 Y 坐标
+   * 下端のY座標を取得する
    */
   public getBottom(): number {
     return this.y + this.height;
   }
 
   /**
-   * 向矩形设置值
-   * @param r 矩形实例
+   * 矩形に値をセットする
+   * @param r 矩形のインスタンス
    */
   public setRect(r: csmRect): void {
     this.x = r.x;
@@ -64,9 +64,9 @@ export class csmRect {
   }
 
   /**
-   * 以矩形中央为轴缩放宽高
-   * @param w 宽度方向缩放量
-   * @param h 高度方向缩放量
+   * 矩形中央を軸にして縦横を拡縮する
+   * @param w 幅方向に拡縮する量
+   * @param h 高さ方向に拡縮する量
    */
   public expand(w: number, h: number) {
     this.x -= w;
@@ -75,13 +75,13 @@ export class csmRect {
     this.height += h * 2.0;
   }
 
-  public x: number; // 左端 X 坐标
-  public y: number; // 上端 Y 坐标
-  public width: number; // 宽度
-  public height: number; // 高度
+  public x: number; // 左端X座標
+  public y: number; // 上端Y座標
+  public width: number; // 幅
+  public height: number; // 高さ
 }
 
-// 为兼容性定义的命名空间。
+// Namespace definition for compatibility.
 import * as $ from './csmrectf';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

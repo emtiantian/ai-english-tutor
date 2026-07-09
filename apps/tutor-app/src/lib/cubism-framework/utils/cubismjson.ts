@@ -9,82 +9,82 @@
 import { strtod } from '../live2dcubismframework';
 import { CubismLogInfo } from './cubismdebug';
 
-// 在 StaticInitializeNotForClientCall() 中初始化
+// StaticInitializeNotForClientCall()で初期化する
 const CSM_JSON_ERROR_TYPE_MISMATCH = 'Error: type mismatch';
 const CSM_JSON_ERROR_INDEX_OF_BOUNDS = 'Error: index out of bounds';
 
 /**
- * 解析后的 JSON 元素基类。
+ * パースしたJSONエレメントの要素の基底クラス。
  */
 export abstract class Value {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {}
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列型で返す(string型)
    */
   public abstract getString(defaultValue?: string, indent?: string): string;
 
   /**
-   * 以字符串形式返回元素（string）
+   * 要素を文字列型で返す(string)
    */
   public getRawString(defaultValue?: string, indent?: string): string {
     return this.getString(defaultValue, indent);
   }
 
   /**
-   * 以数值形式返回元素（number）
+   * 要素を数値型で返す(number)
    */
   public toInt(defaultValue = 0): number {
     return defaultValue;
   }
 
   /**
-   * 以数值形式返回元素（number）
+   * 要素を数値型で返す(number)
    */
   public toFloat(defaultValue = 0): number {
     return defaultValue;
   }
 
   /**
-   * 以布尔值形式返回元素（boolean）
+   * 要素を真偽値で返す(boolean)
    */
   public toBoolean(defaultValue = false): boolean {
     return defaultValue;
   }
 
   /**
-   * 返回大小
+   * サイズを返す
    */
   public getSize(): number {
     return 0;
   }
 
   /**
-   * 以数组形式返回元素（Value[]）
+   * 要素を配列で返す(Value[])
    */
   public getArray(defaultValue: Value[] = null): Value[] {
     return defaultValue;
   }
 
   /**
-   * 以容器形式返回元素（array）
+   * 要素をコンテナで返す(array)
    */
   public getVector(defaultValue = new Array<Value>()): Array<Value> {
     return defaultValue;
   }
 
   /**
-   * 以 Map 形式返回元素（Map<String, Value>）
+   * 要素をマップで返す(Map<String, Value>)
    */
   public getMap(defaultValue?: Map<string, Value>): Map<string, Value> {
     return defaultValue;
   }
 
   /**
-   * 下标运算符 [index]
+   * 添字演算子[index]
    */
   public getValueByIndex(index: number): Value {
     return Value.errorValue.setErrorNotForClientCall(
@@ -93,7 +93,7 @@ export abstract class Value {
   }
 
   /**
-   * 下标运算符 [string]
+   * 添字演算子[string]
    */
   public getValueByString(s: string): Value {
     return Value.nullValue.setErrorNotForClientCall(
@@ -102,65 +102,65 @@ export abstract class Value {
   }
 
   /**
-   * 以容器形式返回 Map 的键列表
+   * マップのキー一覧をコンテナで返す
    *
-   * @return Map 的键列表
+   * @return マップのキーの一覧
    */
   public getKeys(): Array<string> {
     return Value.dummyKeys;
   }
 
   /**
-   * 若 Value 类型为错误值则返回 true
+   * Valueの種類がエラー値ならtrue
    */
   public isError(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为 null 则返回 true
+   * Valueの種類がnullならtrue
    */
   public isNull(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为布尔值则返回 true
+   * Valueの種類が真偽値ならtrue
    */
   public isBool(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为数值型则返回 true
+   * Valueの種類が数値型ならtrue
    */
   public isFloat(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为字符串则返回 true
+   * Valueの種類が文字列ならtrue
    */
   public isString(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为数组则返回 true
+   * Valueの種類が配列ならtrue
    */
   public isArray(): boolean {
     return false;
   }
 
   /**
-   * 若 Value 类型为 Map 型则返回 true
+   * Valueの種類がマップ型ならtrue
    */
   public isMap(): boolean {
     return false;
   }
 
   /**
-   * 若与参数值相等则返回 true
+   * 引数の値と等しければtrue
    */
   public equals(value: string): boolean;
   public equals(value: string): boolean;
@@ -171,21 +171,21 @@ export abstract class Value {
   }
 
   /**
-   * 若 Value 值为静态则返回 true，静态值不释放
+   * Valueの値が静的ならtrue、静的なら解放しない
    */
   public isStatic(): boolean {
     return false;
   }
 
   /**
-   * 向 Value 设置错误值
+   * Valueにエラー値をセットする
    */
   public setErrorNotForClientCall(errorStr: string): Value {
     return JsonError.errorValue;
   }
 
   /**
-   * 初始化方法
+   * 初期化用メソッド
    */
   public static staticInitializeNotForClientCall(): void {
     JsonBoolean.trueValue = new JsonBoolean(true);
@@ -196,7 +196,7 @@ export abstract class Value {
   }
 
   /**
-   * 释放方法
+   * リリース用メソッド
    */
   public static staticReleaseNotForClientCall(): void {
     JsonBoolean.trueValue = null;
@@ -206,28 +206,28 @@ export abstract class Value {
     Value.dummyKeys = null;
   }
 
-  protected _stringBuffer: string; // 字符串缓冲区
+  protected _stringBuffer: string; // 文字列バッファ
 
-  private static dummyKeys: Array<string>; // 虚拟键
+  private static dummyKeys: Array<string>; // ダミーキー
 
-  public static errorValue: Value; // 作为临时返回值返回的错误。在 CubismFramework::Dispose 之前不要 delete
-  public static nullValue: Value; // 作为临时返回值返回的 NULL。在 CubismFramework::Dispose 之前不要 delete
+  public static errorValue: Value; // 一時的な返り値として返すエラー。 CubismFramework::Disposeするまではdeleteしない
+  public static nullValue: Value; // 一時的な返り値として返すNULL。   CubismFramework::Disposeするまではdeleteしない
 
-  [key: string]: any; // 显式将关联数组指定为 any 类型
+  [key: string]: any; // 明示的に連想配列をany型で指定
 }
 
 /**
- * 仅支持 ASCII 字符的最小轻量 JSON 解析器。
- * 规格为 JSON 的子集。
- * 用于加载配置文件（model3.json）等。
+ * Ascii文字のみ対応した最小限の軽量JSONパーサ。
+ * 仕様はJSONのサブセットとなる。
+ * 設定ファイル(model3.json)などのロード用
  *
- * [未支持项]
- * · 日语等非 ASCII 字符
- * · e 表示的指数
+ * [未対応項目]
+ * ・日本語などの非ASCII文字
+ * ・eによる指数表現
  */
 export class CubismJson {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor(buffer?: ArrayBuffer, length?: number) {
     this._error = null;
@@ -240,11 +240,11 @@ export class CubismJson {
   }
 
   /**
-   * 直接从字节数据加载并解析
+   * バイトデータから直接ロードしてパースする
    *
-   * @param buffer 缓冲区
-   * @param size 缓冲区大小
-   * @return CubismJson 类的实例。失败则返回 NULL
+   * @param buffer バッファ
+   * @param size バッファサイズ
+   * @return CubismJsonクラスのインスタンス。失敗したらNULL
    */
   public static create(buffer: ArrayBuffer, size: number) {
     const json = new CubismJson();
@@ -263,26 +263,26 @@ export class CubismJson {
   }
 
   /**
-   * 释放解析后的 JSON 对象
+   * パースしたJSONオブジェクトの解放処理
    *
-   * @param instance CubismJson 类的实例
+   * @param instance CubismJsonクラスのインスタンス
    */
   public static delete(instance: CubismJson) {
     instance = null;
   }
 
   /**
-   * 返回解析后的 JSON 根元素
+   * パースしたJSONのルート要素を返す
    */
   public getRoot(): Value {
     return this._root;
   }
 
   /**
-   * 将 Unicode 二进制转换为 String
+   *  UnicodeのバイナリをStringに変換
    *
-   * @param buffer 要转换的二进制数据
-   * @return 转换后的字符串
+   * @param buffer 変換するバイナリデータ
+   * @return 変換後の文字列
    */
   public static arrayBufferToString(buffer: ArrayBuffer): string {
     const uint8Array: Uint8Array = new Uint8Array(buffer);
@@ -297,31 +297,31 @@ export class CubismJson {
   }
 
   /**
-   * 编码、填充
+   * エンコード、パディング
    */
   private static pad(n: string): string {
     return n.length < 2 ? '0' + n : n;
   }
 
   /**
-   * 执行 JSON 解析
-   * @param buffer    要解析的数据字节
-   * @param size      数据字节大小
+   * JSONのパースを実行する
+   * @param buffer    パース対象のデータバイト
+   * @param size      データバイトのサイズ
    * return true : 成功
-   * return false: 失败
+   * return false: 失敗
    */
   public parseBytes(
     buffer: ArrayBuffer,
     size: number,
     parseCallback?: parseJsonObject
   ): boolean {
-    const endPos: number[] = new Array<number>(1); // 为按引用传递使用数组
+    const endPos: number[] = new Array<number>(1); // 参照渡しにするため配列
     const decodeBuffer: string = CubismJson.arrayBufferToString(buffer);
 
     if (parseCallback == undefined) {
       this._root = this.parseValue(decodeBuffer, size, 0, endPos);
     } else {
-      // 使用 TypeScript 标准 JSON 解析器
+      // TypeScript標準のJSONパーサを使う
       this._root = parseCallback(JSON.parse(decodeBuffer), new JsonMap());
     }
 
@@ -333,35 +333,35 @@ export class CubismJson {
       CubismLogInfo('{0}', this._root.getRawString());
       return false;
     } else if (this._root == null) {
-      this._root = new JsonError(this._error, false); // root 会被释放，因此单独创建错误对象
+      this._root = new JsonError(this._error, false); // rootは解放されるのでエラーオブジェクトを別途作成する
       return false;
     }
     return true;
   }
 
   /**
-   * 返回解析时的错误值
+   * パース時のエラー値を返す
    */
   public getParseError(): string {
     return this._error;
   }
 
   /**
-   * 若根元素的下一个元素是文件结尾则返回 true
+   * ルート要素の次の要素がファイルの終端だったらtrueを返す
    */
   public checkEndOfFile(): boolean {
     return this._root.getArray()[1].equals('EOF');
   }
 
   /**
-   * 从 JSON 元素解析 Value(float, String, Value*, Array, null, true, false)
-   * 根据元素格式内部调用 ParseString()、ParseObject()、ParseArray()
+   * JSONエレメントからValue(float,String,Value*,Array,null,true,false)をパースする
+   * エレメントの書式に応じて内部でParseString(), ParseObject(), ParseArray()を呼ぶ
    *
-   * @param   buffer      JSON 元素的缓冲区
-   * @param   length      要解析的长度
-   * @param   begin       开始解析的位置
-   * @param   outEndPos   解析结束时的位置
-   * @return      从解析中获取的 Value 对象
+   * @param   buffer      JSONエレメントのバッファ
+   * @param   length      パースする長さ
+   * @param   begin       パースを開始する位置
+   * @param   outEndPos   パース終了時の位置
+   * @return      パースから取得したValueオブジェクト
    */
   protected parseValue(
     buffer: string,
@@ -390,7 +390,7 @@ export class CubismJson {
         case '7':
         case '8':
         case '9': {
-          const afterString: string[] = new Array(1); // 为按引用传递
+          const afterString: string[] = new Array(1); // 参照渡しにするため
           f = strtod(buffer.slice(i), afterString);
           outEndPos[0] = buffer.indexOf(afterString[0]);
           return new JsonFloat(f);
@@ -398,22 +398,22 @@ export class CubismJson {
         case '"':
           return new JsonString(
             this.parseString(buffer, length, i + 1, outEndPos)
-          ); // 从 \" 的下一个字符开始
+          ); // \"の次の文字から
         case '[':
           o = this.parseArray(buffer, length, i + 1, outEndPos);
           return o;
         case '{':
           o = this.parseObject(buffer, length, i + 1, outEndPos);
           return o;
-        case 'n': // 只可能是 null
+        case 'n': // null以外にない
           if (i + 3 < length) {
-            o = new JsonNullvalue(); // 使其可以被释放
+            o = new JsonNullvalue(); // 解放できるようにする
             outEndPos[0] = i + 4;
           } else {
             this._error = 'parse null';
           }
           return o;
-        case 't': // 只可能是 true
+        case 't': // true以外にない
           if (i + 3 < length) {
             o = JsonBoolean.trueValue;
             outEndPos[0] = i + 4;
@@ -421,7 +421,7 @@ export class CubismJson {
             this._error = 'parse true';
           }
           return o;
-        case 'f': // 只可能是 false
+        case 'f': // false以外にない
           if (i + 4 < length) {
             o = JsonBoolean.falseValue;
             outEndPos[0] = i + 5;
@@ -429,20 +429,20 @@ export class CubismJson {
             this._error = "illegal ',' position";
           }
           return o;
-        case ',': // 数组分隔符
+        case ',': // Array separator
           this._error = "illegal ',' position";
           return null;
-        case ']': // 虽然是非法的 }，但跳过。推测数组末尾有多余的 ,
-          outEndPos[0] = i; // 重新处理同一字符
+        case ']': // 不正な｝だがスキップする。配列の最後に不要な , があると思われる
+          outEndPos[0] = i; // 同じ文字を再処理
           return null;
         case '\n':
           this._lineCount++;
-        // 继续进入下一个 case
+        // falls through
         case ' ':
         case '\t':
         case '\r':
         default:
-          // 跳过
+          // スキップ
           break;
       }
     }
@@ -452,13 +452,13 @@ export class CubismJson {
   }
 
   /**
-   * 解析到下一个「\"」为止的字符串。
+   * 次の「"」までの文字列をパースする。
    *
-   * @param   string  ->  要解析的字符串
-   * @param   length  ->  要解析的长度
-   * @param   begin   ->  开始解析的位置
-   * @param  outEndPos   ->  解析结束时的位置
-   * @return      解析后的字符串元素
+   * @param   string  ->  パース対象の文字列
+   * @param   length  ->  パースする長さ
+   * @param   begin   ->  パースを開始する位置
+   * @param  outEndPos   ->  パース終了時の位置
+   * @return      パースした文F字列要素
    */
   protected parseString(
     string: string,
@@ -478,27 +478,27 @@ export class CubismJson {
     let i = begin;
     let c: string, c2: string;
     let ret: string = '';
-    let bufStart: number = begin; // 未写入 sbuf 的字符的起始位置
+    let bufStart: number = begin; // sbufに登録されていない文字の開始位置
 
     for (; i < length; i++) {
       c = string[i];
 
       switch (c) {
         case '"': {
-          // 这是结束引号，转义字符会另外处理，所以不会进入这里
-          outEndPos[0] = i + 1; // \" 的下一个字符
-          ret += string.substr(bufStart, i - bufStart); // 将之前的字符注册进去
+          // 終端の”、エスケープ文字は別に処理されるのでここに来ない
+          outEndPos[0] = i + 1; // ”の次の文字
+          ret += string.substr(bufStart, i - bufStart); // 前の文字までを登録する
           return ret;
         }
-        // 继续进入下一个 case
+        // falls through
         case '//': {
-          // 转义的情况
-          i++; // 将两个字符作为一组处理
+          // エスケープの場合
+          i++; // ２文字をセットで扱う
 
           if (i - 1 > bufStart) {
-            ret += string.substr(bufStart, i - bufStart); // 将之前的字符注册进去
+            ret += string.substr(bufStart, i - bufStart); // 前の文字までを登録する
           }
-          bufStart = i + 1; // 从转义（两个字符）的下一个字符开始
+          bufStart = i + 1; // エスケープ（２文字)の次の文字から
 
           if (i < length) {
             c2 = string[i];
@@ -538,7 +538,7 @@ export class CubismJson {
             this._error = 'parse string/escape error';
           }
         }
-        // 继续进入下一个 case
+        // falls through
         default: {
           break;
         }
@@ -550,13 +550,13 @@ export class CubismJson {
   }
 
   /**
-   * 解析 JSON 对象元素并返回 Value 对象
+   * JSONのオブジェクトエレメントをパースしてValueオブジェクトを返す
    *
-   * @param buffer    JSON 元素的缓冲区
-   * @param length    要解析的长度
-   * @param begin     开始解析的位置
-   * @param outEndPos 解析结束时的位置
-   * @return 从解析中获取的 Value 对象
+   * @param buffer    JSONエレメントのバッファ
+   * @param length    パースする長さ
+   * @param begin     パースを開始する位置
+   * @param outEndPos パース終了時の位置
+   * @return パースから取得したValueオブジェクト
    */
   protected parseObject(
     buffer: string,
@@ -575,14 +575,14 @@ export class CubismJson {
 
     const ret: JsonMap = new JsonMap();
 
-    // 键：值
+    // Key: Value
     let key = '';
     let i: number = begin;
     let c = '';
     const localRetEndPos2: number[] = Array(1);
     let ok = false;
 
-    // 只要还有 , 就继续循环
+    // , が続く限りループ
     for (; i < length; i++) {
       FOR_LOOP: for (; i < length; i++) {
         c = buffer[i];
@@ -596,18 +596,18 @@ export class CubismJson {
 
             i = localRetEndPos2[0];
             ok = true;
-            break FOR_LOOP; // 跳出循环
-          case '}': // 闭括号
+            break FOR_LOOP; //-- loopから出る
+          case '}': // 閉じカッコ
             outEndPos[0] = i + 1;
-            return ret; // 为空
+            return ret; // 空
           case ':':
             this._error = "illegal ':' position";
             break;
           case '\n':
             this._lineCount++;
-          // 继续进入下一个 case
+          // falls through
           default:
-            break; // 要跳过的字符
+            break; // スキップする文字
         }
       }
       if (!ok) {
@@ -617,7 +617,7 @@ export class CubismJson {
 
       ok = false;
 
-      // 检查 :
+      // : をチェック
       FOR_LOOP2: for (; i < length; i++) {
         c = buffer[i];
 
@@ -629,13 +629,13 @@ export class CubismJson {
           case '}':
             this._error = "illegal '}' position";
             break;
-          // 继续进入下一个 case
+          // falls through
           case '\n':
             this._lineCount++;
           // case ' ': case '\t' : case '\r':
-          // 继续进入下一个 case
+          // falls through
           default:
-            break; // 要跳过的字符
+            break; // スキップする文字
         }
       }
 
@@ -644,7 +644,7 @@ export class CubismJson {
         return null;
       }
 
-      // 检查值
+      // 値をチェック
       const value: Value = this.parseValue(buffer, length, i, localRetEndPos2);
       if (this._error) {
         return null;
@@ -663,12 +663,12 @@ export class CubismJson {
             break FOR_LOOP3;
           case '}':
             outEndPos[0] = i + 1;
-            return ret; // 正常结束
+            return ret; // 正常終了
           case '\n':
             this._lineCount++;
-          // 继续进入下一个 case
+          // falls through
           default:
-            break; // 跳过
+            break; // スキップ
         }
       }
     }
@@ -678,12 +678,12 @@ export class CubismJson {
   }
 
   /**
-   * 解析到下一个「\"」为止的字符串。
-   * @param buffer    JSON 元素的缓冲区
-   * @param length    要解析的长度
-   * @param begin     开始解析的位置
-   * @param outEndPos 解析结束时的位置
-   * @return 从解析中获取的 Value 对象
+   * 次の「"」までの文字列をパースする。
+   * @param buffer    JSONエレメントのバッファ
+   * @param length    パースする長さ
+   * @param begin     パースを開始する位置
+   * @param outEndPos パース終了時の位置
+   * @return パースから取得したValueオブジェクト
    */
   protected parseArray(
     buffer: string,
@@ -702,14 +702,14 @@ export class CubismJson {
 
     let ret: JsonArray = new JsonArray();
 
-    // 键 : 值
+    // key : value
     let i: number = begin;
     let c: string;
     const localRetEndpos2: number[] = new Array(1);
 
-    // 只要还有 , 就继续循环
+    // , が続く限りループ
     for (; i < length; i++) {
-      // 检查 :
+      // : をチェック
       const value: Value = this.parseValue(buffer, length, i, localRetEndpos2);
 
       if (this._error) {
@@ -737,9 +737,9 @@ export class CubismJson {
           case '\n':
             ++this._lineCount;
           //case ' ': case '\t': case '\r':
-          // 继续进入下一个 case
+          // falls through
           default:
-            break; // 跳过
+            break; // スキップ
         }
       }
     }
@@ -749,11 +749,11 @@ export class CubismJson {
     return null;
   }
 
-  _parseCallback: parseJsonObject = CubismJsonExtension.parseJsonObject; // 解析时使用的处理回调函数
+  _parseCallback: parseJsonObject = CubismJsonExtension.parseJsonObject; // パース時に使う処理のコールバック関数
 
-  _error: string; // 解析时的错误
-  _lineCount: number; // 用于错误报告的行数计数
-  _root: Value; // 解析后的根元素
+  _error: string; // パース時のエラー
+  _lineCount: number; // エラー報告に用いる行数カウント
+  _root: Value; // パースされたルート要素
 }
 
 interface parseJsonObject {
@@ -761,11 +761,11 @@ interface parseJsonObject {
 }
 
 /**
- * 将解析后的 JSON 元素作为 float 值处理
+ * パースしたJSONの要素をfloat値として扱う
  */
 export class JsonFloat extends Value {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   constructor(v: number) {
     super();
@@ -774,14 +774,14 @@ export class JsonFloat extends Value {
   }
 
   /**
-   * 若 Value 类型为数值型则返回 true
+   * Valueの種類が数値型ならtrue
    */
   public isFloat(): boolean {
     return true;
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string): string {
     const strbuf = '\0';
@@ -792,21 +792,21 @@ export class JsonFloat extends Value {
   }
 
   /**
-   * 以数值形式返回元素（number）
+   * 要素を数値型で返す(number)
    */
   public toInt(defaultValue = 0): number {
     return parseInt(this._value.toString());
   }
 
   /**
-   * 以数值形式返回元素（number）
+   * 要素を数値型で返す(number)
    */
   public toFloat(defaultValue = 0.0): number {
     return this._value;
   }
 
   /**
-   * 若与参数值相等则返回 true
+   * 引数の値と等しければtrue
    */
   public equals(value: string): boolean;
   public equals(value: string): boolean;
@@ -814,11 +814,11 @@ export class JsonFloat extends Value {
   public equals(value: boolean): boolean;
   public equals(value: any): boolean {
     if ('number' === typeof value) {
-      // 整数
+      // int
       if (Math.round(value)) {
         return false;
       }
-      // 浮点数
+      // float
       else {
         return value == this._value;
       }
@@ -826,29 +826,29 @@ export class JsonFloat extends Value {
     return false;
   }
 
-  private _value: number; // JSON 元素的值
+  private _value: number; // JSON要素の値
 }
 
 /**
- * 将解析后的 JSON 元素作为布尔值处理
+ * パースしたJSONの要素を真偽値として扱う
  */
 export class JsonBoolean extends Value {
   /**
-   * 若 Value 类型为布尔值则返回 true
+   * Valueの種類が真偽値ならtrue
    */
   public isBool(): boolean {
     return true;
   }
 
   /**
-   * 以布尔值形式返回元素（boolean）
+   * 要素を真偽値で返す(boolean)
    */
   public toBoolean(defaultValue = false): boolean {
     return this._boolValue;
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string): string {
     this._stringBuffer = this._boolValue ? 'true' : 'false';
@@ -857,7 +857,7 @@ export class JsonBoolean extends Value {
   }
 
   /**
-   * 若与参数值相等则返回 true
+   * 引数の値と等しければtrue
    */
   public equals(value: string): boolean;
   public equals(value: string): boolean;
@@ -878,7 +878,7 @@ export class JsonBoolean extends Value {
   }
 
   /**
-   * 带参数的构造函数
+   * 引数付きコンストラクタ
    */
   public constructor(v: boolean) {
     super();
@@ -889,15 +889,15 @@ export class JsonBoolean extends Value {
   static trueValue: JsonBoolean; // true
   static falseValue: JsonBoolean; // false
 
-  private _boolValue: boolean; // JSON 元素的值
+  private _boolValue: boolean; // JSON要素の値
 }
 
 /**
- * 将解析后的 JSON 元素作为字符串处理
+ * パースしたJSONの要素を文字列として扱う
  */
 export class JsonString extends Value {
   /**
-   * 带参数的构造函数
+   * 引数付きコンストラクタ
    */
   public constructor(s: string) {
     super();
@@ -905,21 +905,21 @@ export class JsonString extends Value {
   }
 
   /**
-   * 若 Value 类型为字符串则返回 true
+   * Valueの種類が文字列ならtrue
    */
   public isString(): boolean {
     return true;
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string): string {
     return this._stringBuffer;
   }
 
   /**
-   * 若与参数值相等则返回 true
+   * 引数の値と等しければtrue
    */
   public equals(value: string): boolean;
   public equals(value: string): boolean;
@@ -935,18 +935,18 @@ export class JsonString extends Value {
 }
 
 /**
- * JSON 解析时的错误结果。行为类似于字符串类型
+ * JSONパース時のエラー結果。文字列型のようにふるまう
  */
 export class JsonError extends JsonString {
   /**
-   * 若 Value 值为静态则返回 true，静态值不释放
+   * Valueの値が静的ならtrue、静的なら解放しない
    */
   public isStatic(): boolean {
     return this._isStatic;
   }
 
   /**
-   * 设置错误信息
+   * エラー情報をセットする
    */
   public setErrorNotForClientCall(s: string): Value {
     this._stringBuffer = s;
@@ -954,7 +954,7 @@ export class JsonError extends JsonString {
   }
 
   /**
-   * 带参数的构造函数
+   * 引数付きコンストラクタ
    */
   public constructor(s: string, isStatic: boolean) {
     if ('string' === typeof s) {
@@ -966,28 +966,28 @@ export class JsonError extends JsonString {
   }
 
   /**
-   * 若 Value 类型为错误值则返回 true
+   * Valueの種類がエラー値ならtrue
    */
   public isError(): boolean {
     return true;
   }
 
-  protected _isStatic: boolean; // 是否为静态 Value
+  protected _isStatic: boolean; // 静的なValueかどうか
 }
 
 /**
- * 将解析后的 JSON 元素作为 NULL 值持有
+ * パースしたJSONの要素をNULL値として持つ
  */
 export class JsonNullvalue extends Value {
   /**
-   * 若 Value 类型为 NULL 值则返回 true
+   * Valueの種類がNULL値ならtrue
    */
   public isNull(): boolean {
     return true;
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string): string {
     return this._stringBuffer;
@@ -1001,7 +1001,7 @@ export class JsonNullvalue extends Value {
   }
 
   /**
-   * 向 Value 设置错误值
+   * Valueにエラー値をセットする
    */
   public setErrorNotForClientCall(s: string): Value {
     this._stringBuffer = s;
@@ -1009,7 +1009,7 @@ export class JsonNullvalue extends Value {
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     super();
@@ -1019,11 +1019,11 @@ export class JsonNullvalue extends Value {
 }
 
 /**
- * 将解析后的 JSON 元素作为数组持有
+ * パースしたJSONの要素を配列として持つ
  */
 export class JsonArray extends Value {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     super();
@@ -1031,7 +1031,7 @@ export class JsonArray extends Value {
   }
 
   /**
-   * 相当于析构函数的处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     for (let i = 0; i < this._array.length; i++) {
@@ -1044,14 +1044,14 @@ export class JsonArray extends Value {
   }
 
   /**
-   * 若 Value 类型为数组则返回 true
+   * Valueの種類が配列ならtrue
    */
   public isArray(): boolean {
     return true;
   }
 
   /**
-   * 下标运算符 [index]
+   * 添字演算子[index]
    */
   public getValueByIndex(index: number): Value {
     if (index < 0 || this._array.length <= index) {
@@ -1070,7 +1070,7 @@ export class JsonArray extends Value {
   }
 
   /**
-   * 下标运算符 [string]
+   * 添字演算子[string]
    */
   public getValueByString(s: string): Value {
     return Value.errorValue.setErrorNotForClientCall(
@@ -1079,7 +1079,7 @@ export class JsonArray extends Value {
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string): string {
     const stringBuffer: string = indent + '[\n';
@@ -1095,36 +1095,36 @@ export class JsonArray extends Value {
   }
 
   /**
-   * 添加数组元素
-   * @param v 要添加的元素
+   * 配列要素を追加する
+   * @param v 追加する要素
    */
   public add(v: Value): void {
     this._array.push(v);
   }
 
   /**
-   * 以容器形式返回元素（Array<Value>）
+   * 要素をコンテナで返す(Array<Value>)
    */
   public getVector(defaultValue: Array<Value> = null): Array<Value> {
     return this._array;
   }
 
   /**
-   * 返回元素数量
+   * 要素の数を返す
    */
   public getSize(): number {
     return this._array.length;
   }
 
-  private _array: Array<Value>; // JSON 元素的值
+  private _array: Array<Value>; // JSON要素の値
 }
 
 /**
- * 将解析后的 JSON 元素作为 Map 持有
+ * パースしたJSONの要素をマップとして持つ
  */
 export class JsonMap extends Value {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     super();
@@ -1132,21 +1132,21 @@ export class JsonMap extends Value {
   }
 
   /**
-   * 相当于析构函数的处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     this._map.clear();
   }
 
   /**
-   * 若 Value 值为 Map 型则返回 true
+   * Valueの値がMap型ならtrue
    */
   public isMap(): boolean {
     return true;
   }
 
   /**
-   * 下标运算符 [string]
+   * 添字演算子[string]
    */
   public getValueByString(s: string): Value {
     const ret = this._map.get(s);
@@ -1157,7 +1157,7 @@ export class JsonMap extends Value {
   }
 
   /**
-   * 下标运算符 [index]
+   * 添字演算子[index]
    */
   public getValueByIndex(index: number): Value {
     return Value.errorValue.setErrorNotForClientCall(
@@ -1166,7 +1166,7 @@ export class JsonMap extends Value {
   }
 
   /**
-   * 以字符串形式返回元素（string 类型）
+   * 要素を文字列で返す(string型)
    */
   public getString(defaultValue: string, indent: string) {
     this._stringBuffer = indent + '{\n';
@@ -1185,21 +1185,21 @@ export class JsonMap extends Value {
   }
 
   /**
-   * 以 Map 型返回元素
+   * 要素をMap型で返す
    */
   public getMap(defaultValue?: Map<string, Value>): Map<string, Value> {
     return this._map;
   }
 
   /**
-   * 向 Map 添加元素
+   * Mapに要素を追加する
    */
   public put(key: string, v: Value): void {
     this._map.set(key, v);
   }
 
   /**
-   * 从 Map 获取键的列表
+   * Mapからキーのリストを取得する
    */
   public getKeys(): Array<string> {
     if (!this._keys) {
@@ -1209,17 +1209,17 @@ export class JsonMap extends Value {
   }
 
   /**
-   * 获取 Map 的元素数量
+   * Mapの要素数を取得する
    */
   public getSize(): number {
     return this._keys.length;
   }
 
-  private _map: Map<string, Value>; // JSON 元素的值
-  private _keys: Array<string>; // JSON 元素的值
+  private _map: Map<string, Value>; // JSON要素の値
+  private _keys: Array<string>; // JSON要素の値
 }
 
-// 为兼容性定义的命名空间。
+// Namespace definition for compatibility.
 import * as $ from './cubismjson';
 import { CubismJsonExtension } from './cubismjsonextension';
 // eslint-disable-next-line @typescript-eslint/no-namespace

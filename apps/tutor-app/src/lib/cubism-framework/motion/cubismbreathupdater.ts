@@ -11,24 +11,24 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismBreath } from '../effect/cubismbreath';
 
 /**
- * 呼吸效果的更新器。
- * 通过 CubismBreath 类管理呼吸动画。
+ * Updater for breath effects.
+ * Handles the management of breath animation through the CubismBreath class.
  */
 export class CubismBreathUpdater extends ICubismUpdater {
   private _breath: CubismBreath;
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param breath CubismBreath 引用
+   * @param breath CubismBreath reference
    */
   constructor(breath: CubismBreath);
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param breath CubismBreath 引用
-   * @param executionOrder 执行顺序
+   * @param breath CubismBreath reference
+   * @param executionOrder Order of operations
    */
   constructor(breath: CubismBreath, executionOrder: number);
 
@@ -38,10 +38,10 @@ export class CubismBreathUpdater extends ICubismUpdater {
   }
 
   /**
-   * 更新处理。
+   * Update process.
    *
-   * @param model 要更新的模型
-   * @param deltaTimeSeconds 增量时间（秒）。
+   * @param model Model to update
+   * @param deltaTimeSeconds Delta time in seconds.
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -52,7 +52,7 @@ export class CubismBreathUpdater extends ICubismUpdater {
   }
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismbreathupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

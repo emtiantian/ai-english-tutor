@@ -1,6 +1,6 @@
 // @ts-nocheck
-// 从 Live2D Cubism SDK 着色器文件自动生成
-// 内联以避免异步 fetch 问题
+// Auto-generated from Live2D Cubism SDK shader files
+// Inlined to avoid async fetch issues
 
 export const Shaders = {
   vertshadersrc_vert: `

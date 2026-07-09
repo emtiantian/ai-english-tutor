@@ -13,9 +13,9 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismClippingContext, CubismTextureColor } from './cubismrenderer';
 import { CubismLogError, CubismLogWarning } from '../utils/cubismdebug';
 
-const ColorChannelCount = 4; // 实验时单通道为1，仅RGB为3，包含Alpha则为4
-const ClippingMaskMaxCountOnDefault = 36; // 普通帧缓冲单张的最大遮罩数
-const ClippingMaskMaxCountOnMultiRenderTexture = 32; // 存在2张以上帧缓冲时单张的最大遮罩数
+const ColorChannelCount = 4; // 実験時に1チャンネルの場合は1、RGBだけの場合は3、アルファも含める場合は4
+const ClippingMaskMaxCountOnDefault = 36; // 通常のフレームバッファ一枚あたりのマスク最大数
+const ClippingMaskMaxCountOnMultiRenderTexture = 32; // フレームバッファが2枚以上ある場合のフレームバッファ一枚あたりのマスク最大数
 
 export type ClippingContextConstructor<
   T_ClippingContext extends CubismClippingContext
@@ -33,7 +33,7 @@ export abstract class CubismClippingManager<
   T_ClippingContext extends CubismClippingContext
 > implements ICubismClippingManager {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor(
     clippingContextFactory: ClippingContextConstructor<T_ClippingContext>
@@ -60,7 +60,7 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 相当于析构函数的处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     for (let i = 0; i < this._clippingContextListForMask.length; i++) {
@@ -72,7 +72,7 @@ export abstract class CubismClippingManager<
     }
     this._clippingContextListForMask = null;
 
-    // _clippingContextListForDraw 指向 _clippingContextListForMask 中的实例，因此上述处理后无需逐个 DELETE 元素。
+    // _clippingContextListForDrawは_clippingContextListForMaskにあるインスタンスを指している。上記の処理により要素ごとのDELETEは不要。
     for (let i = 0; i < this._clippingContextListForDraw.length; i++) {
       this._clippingContextListForDraw[i] = null;
     }
@@ -91,22 +91,22 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 管理器的初始化处理
-   * 注册使用裁剪遮罩的绘制对象
-   * @param model 模型实例
-   * @param renderTextureCount 缓冲的生成数量
+   * マネージャの初期化処理
+   * クリッピングマスクを使う描画オブジェクトの登録を行う
+   * @param model モデルのインスタンス
+   * @param renderTextureCount バッファの生成数
    */
   public initializeForDrawable(
     model: CubismModel,
     renderTextureCount: number
   ): void {
-    // 设置渲染纹理的总数
-    // 若非大于等于1的整数则分别发出警告
+    // レンダーテクスチャの合計枚数の設定
+    // 1以上の整数でない場合はそれぞれ警告を出す
     if (renderTextureCount % 1 != 0) {
       CubismLogWarning(
         'The number of render textures must be specified as an integer. The decimal point is rounded down and corrected to an integer.'
       );
-      // 去除小数部分
+      // 小数点以下を除去
       renderTextureCount = ~~renderTextureCount;
     }
     if (renderTextureCount < 1) {
@@ -114,28 +114,28 @@ export abstract class CubismClippingManager<
         'The number of render textures must be an integer greater than or equal to 1. Set the number of render textures to 1.'
       );
     }
-    // 若使用了负值则强制设为1张
+    // 負の値が使われている場合は強制的に1枚と設定する
     this._renderTextureCount = renderTextureCount < 1 ? 1 : renderTextureCount;
 
     this._clearedMaskBufferFlags = new Array<boolean>(this._renderTextureCount);
 
-    // 注册所有使用裁剪遮罩的绘制对象
-    // 裁剪遮罩通常应限制在数个以内使用
+    // クリッピングマスクを使う描画オブジェクトをすべて登録する
+    // クリッピングマスクは、通常数個程度に限定して使うものとする
     this._clippingContextListForDraw.length = model.getDrawableCount();
     for (let i = 0; i < model.getDrawableCount(); i++) {
       if (model.getDrawableMaskCounts()[i] <= 0) {
-        // 未使用裁剪遮罩的 ArtMesh（多数情况下不使用）
+        // クリッピングマスクが使用されていないアートメッシュ（多くの場合使用しない）
         this._clippingContextListForDraw[i] = null;
         continue;
       }
 
-      // 检查是否与已有的 ClipContext 相同
+      // 既にあるClipContextと同じかチェックする
       let clippingContext: T_ClippingContext = this.findSameClip(
         model.getDrawableMasks()[i],
         model.getDrawableMaskCounts()[i]
       );
       if (clippingContext == null) {
-        // 不存在相同遮罩时则创建
+        // 同一のマスクが存在していない場合は生成する
 
         clippingContext = new this._clippingContexttConstructor(
           this,
@@ -152,10 +152,10 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 离屏用初始化处理
+   * オフスクリーン用の初期化処理
    *
-   * @param model 模型实例
-   * @param maskBufferCount 离屏用遮罩缓冲数量
+   * @param model モデルのインスタンス
+   * @param maskBufferCount オフスクリーン用のマスクバッファの数
    */
   public initializeForOffscreen(
     model: CubismModel,
@@ -163,29 +163,29 @@ export abstract class CubismClippingManager<
   ): void {
     this._renderTextureCount = maskBufferCount;
 
-    // 设置渲染纹理的清除标志
+    // レンダーテクスチャのクリアフラグの設定
     this._clearedMaskBufferFlags.length = this._renderTextureCount;
     for (let i = 0; i < this._renderTextureCount; ++i) {
       this._clearedMaskBufferFlags[i] = false;
     }
 
-    //注册所有使用裁剪遮罩的绘制对象
-    //裁剪遮罩通常应限制在数个以内使用
+    //クリッピングマスクを使う描画オブジェクトを全て登録する
+    //クリッピングマスクは、通常数個程度に限定して使うものとする
     this._clippingContextListForOffscreen.length = model.getOffscreenCount();
     for (let i = 0; i < model.getOffscreenCount(); ++i) {
       if (model.getOffscreenMaskCounts()[i] <= 0) {
-        //未使用裁剪遮罩的离屏对象（多数情况下不使用）
+        //クリッピングマスクが使用されていないオフスクリーン（多くの場合使用しない）
         this._clippingContextListForOffscreen.push(null);
         continue;
       }
 
-      // 检查是否与已有的 ClipContext 相同
+      // 既にあるClipContextと同じかチェックする
       let cc = this.findSameClip(
         model.getOffscreenMasks()[i],
         model.getOffscreenMaskCounts()[i]
       );
       if (cc == null) {
-        // 不存在相同遮罩时则创建
+        // 同一のマスクが存在していない場合は生成する
         cc = new this._clippingContexttConstructor(
           this,
           model.getOffscreenMasks()[i],
@@ -201,31 +201,31 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 确认是否已创建遮罩
-   * 若已创建则返回对应的裁剪遮罩实例
-   * 未创建则返回 NULL
-   * @param drawableMasks 用于遮罩绘制对象的绘制对象列表
-   * @param drawableMaskCounts 用于遮罩绘制对象的绘制对象数量
-   * @return 存在对应裁剪遮罩则返回实例，否则返回 NULL
+   * 既にマスクを作っているかを確認
+   * 作っている様であれば該当するクリッピングマスクのインスタンスを返す
+   * 作っていなければNULLを返す
+   * @param drawableMasks 描画オブジェクトをマスクする描画オブジェクトのリスト
+   * @param drawableMaskCounts 描画オブジェクトをマスクする描画オブジェクトの数
+   * @return 該当するクリッピングマスクが存在すればインスタンスを返し、なければNULLを返す
    */
   public findSameClip(
     drawableMasks: Int32Array,
     drawableMaskCounts: number
   ): T_ClippingContext {
-    // 确认是否与已创建的 ClippingContext 一致
+    // 作成済みClippingContextと一致するか確認
     for (let i = 0; i < this._clippingContextListForMask.length; i++) {
       const clippingContext: T_ClippingContext =
         this._clippingContextListForMask[i];
       const count: number = clippingContext._clippingIdCount;
 
-      // 数量不同则为不同对象
+      // 個数が違う場合は別物
       if (count != drawableMaskCounts) {
         continue;
       }
 
       let sameCount = 0;
 
-      // 确认是否持有相同 ID。数组数量相同，因此若匹配数量相同则认为持有相同对象
+      // 同じIDを持つか確認。配列の数が同じなので、一致した個数が同じなら同じ物を持つとする
       for (let j = 0; j < count; j++) {
         const clipId: number = clippingContext._clippingIdList[j];
 
@@ -242,66 +242,66 @@ export abstract class CubismClippingManager<
       }
     }
 
-    return null; // 未找到
+    return null; // 見つからなかった
   }
 
   /**
-   * 计算高精度遮罩处理用的矩阵
-   * @param model 模型实例
-   * @param isRightHanded 处理是否为右手坐标系
+   * 高精細マスク処理用の行列を計算する
+   * @param model モデルのインスタンス
+   * @param isRightHanded 処理が右手系であるか
    */
   public setupMatrixForHighPrecision(
     model: CubismModel,
     isRightHanded: boolean
   ): void {
-    // 准备所有裁剪
-    // 使用相同裁剪（多个时合并为一个裁剪）时只设置一次
+    // 全てのクリッピングを用意する
+    // 同じクリップ（複数の場合はまとめて一つのクリップ）を使う場合は1度だけ設定する
     let usingClipCount = 0;
     for (
       let clipIndex = 0;
       clipIndex < this._clippingContextListForMask.length;
       clipIndex++
     ) {
-      // 针对单个裁剪遮罩
+      // １つのクリッピングマスクに関して
       const cc: T_ClippingContext = this._clippingContextListForMask[clipIndex];
 
-      // 计算围绕使用该裁剪的绘制对象群的矩形
+      // このクリップを利用する描画オブジェクト群全体を囲む矩形を計算
       this.calcClippedDrawableTotalBounds(model, cc);
 
       if (cc._isUsing) {
-        usingClipCount++; // 按使用中计数
+        usingClipCount++; // 使用中としてカウント
       }
     }
 
-    // 遮罩矩阵创建处理
+    // マスク行列作成処理
     if (usingClipCount > 0) {
       this.setupLayoutBounds(0);
 
-      // 若大小与渲染纹理数量不一致则对齐
+      // サイズがレンダーテクスチャの枚数と合わない場合は合わせる
       if (this._clearedMaskBufferFlags.length != this._renderTextureCount) {
         this._clearedMaskBufferFlags.length = this._renderTextureCount;
         for (let i = 0; i < this._renderTextureCount; i++) {
           this._clearedMaskBufferFlags[i] = false;
         }
       } else {
-        // 在每帧开始时初始化遮罩清除标志
+        // マスクのクリアフラグを毎フレーム開始時に初期化
         for (let i = 0; i < this._renderTextureCount; i++) {
           this._clearedMaskBufferFlags[i] = false;
         }
       }
 
-      // 实际生成遮罩
-      // 决定所有遮罩如何布局绘制，并记录到 ClipContext、ClippedDrawContext 中
+      // 実際にマスクを生成する
+      // 全てのマスクをどの様にレイアウトして描くかを決定し、ClipContext , ClippedDrawContext に記憶する
       for (
         let clipIndex = 0;
         clipIndex < this._clippingContextListForMask.length;
         clipIndex++
       ) {
-        // --- 实际绘制单个遮罩 ---
+        // --- 実際に１つのマスクを描く ---
         const clipContext: T_ClippingContext =
           this._clippingContextListForMask[clipIndex];
-        const allClippedDrawRect: csmRect = clipContext._allClippedDrawRect; // 使用该遮罩的所有绘制对象在逻辑坐标上的包围矩形
-        const layoutBoundsOnTex01 = clipContext._layoutBounds; // 将遮罩收纳于此区域内
+        const allClippedDrawRect: csmRect = clipContext._allClippedDrawRect; //このマスクを使う、全ての描画オブジェクトの論理座標上の囲み矩形
+        const layoutBoundsOnTex01 = clipContext._layoutBounds; //この中にマスクを収める
         const margin = 0.05;
         let scaleX = 0.0;
         let scaleY = 0.0;
@@ -332,7 +332,7 @@ export abstract class CubismClippingManager<
           scaleY = ppu / physicalMaskHeight;
         }
 
-        // 计算生成遮罩时使用的矩阵
+        // マスク生成時に使う行列を求める
         this.createMatrixForMask(
           isRightHanded,
           layoutBoundsOnTex01,
@@ -347,43 +347,43 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 计算离屏高精度遮罩处理用的矩阵
+   * オフスクリーンの高精細マスク処理用の行列を計算する
    *
-   * @param model 模型实例
-   * @param isRightHanded 处理是否为右手坐标系
-   * @param mvp 模型视图投影矩阵
+   * @param model モデルのインスタンス
+   * @param isRightHanded 処理が右手系であるか
+   * @param mvp モデルビュー投影行列
    */
   public setupMatrixForOffscreenHighPrecision(
     model: CubismModel,
     isRightHanded: boolean,
     mvp: CubismMatrix44
   ): void {
-    // 准备所有裁剪
-    // 使用相同裁剪（多个时合并为一个裁剪）时只设置一次
+    // 全てのクリッピングを用意する
+    // 同じクリップ（複数の場合はまとめて１つのクリップ）を使う場合は１度だけ設定する
     let usingClipCount = 0;
     for (
       let clipIndex = 0;
       clipIndex < this._clippingContextListForMask.length;
       clipIndex++
     ) {
-      // 针对单个裁剪遮罩
+      // １つのクリッピングマスクに関して
       const cc: T_ClippingContext = this._clippingContextListForMask[clipIndex];
 
-      // 计算围绕使用该裁剪的绘制对象群的矩形
+      // このクリップを利用する描画オブジェクト群全体を囲む矩形を計算
       this.calcClippedOffscreenTotalBounds(model, cc);
 
       if (cc._isUsing) {
-        usingClipCount++; //按使用中计数
+        usingClipCount++; //使用中としてカウント
       }
     }
 
     if (usingClipCount <= 0) {
       return;
     }
-    // 遮罩矩阵创建处理
+    // マスク行列作成処理
     this.setupLayoutBounds(0);
 
-    // 若大小与渲染纹理数量不一致则对齐
+    // サイズがレンダーテクスチャの枚数と合わない場合は合わせる
     if (this._clearedMaskBufferFlags.length != this._renderTextureCount) {
       this._clearedMaskBufferFlags.length = this._renderTextureCount;
 
@@ -391,23 +391,23 @@ export abstract class CubismClippingManager<
         this._clearedMaskBufferFlags[i] = false;
       }
     } else {
-      // 在每帧开始时初始化遮罩清除标志
+      // マスクのクリアフラグを毎フレーム開始時に初期化
       for (let i = 0; i < this._renderTextureCount; ++i) {
         this._clearedMaskBufferFlags[i] = false;
       }
     }
 
-    // 实际生成遮罩
-    // 决定所有遮罩如何布局绘制，并记录到 ClipContext、ClippedDrawContext 中
+    // 実際にマスクを生成する
+    // 全てのマスクをどの様にレイアウトして描くかを決定し、ClipContext , ClippedDrawContext に記憶する
     for (
       let clipIndex = 0;
       clipIndex < this._clippingContextListForMask.length;
       clipIndex++
     ) {
-      // --- 实际绘制单个遮罩 ---
+      // --- 実際に１つのマスクを描く ---
       const clipContext = this._clippingContextListForMask[clipIndex];
-      const allClippedDrawRect = clipContext._allClippedDrawRect; //使用该遮罩的所有绘制对象在逻辑坐标上的包围矩形
-      const layoutBoundsOnTex01 = clipContext._layoutBounds; //将遮罩收纳于此区域内
+      const allClippedDrawRect = clipContext._allClippedDrawRect; //このマスクを使う、全ての描画オブジェクトの論理座標上の囲み矩形
+      const layoutBoundsOnTex01 = clipContext._layoutBounds; //この中にマスクを収める
       const margin = 0.05;
       let scaleX = 0.0;
       let scaleY = 0.0;
@@ -433,7 +433,7 @@ export abstract class CubismClippingManager<
         scaleY = ppu / physicalMaskHeight;
       }
 
-      // 计算生成遮罩时使用的矩阵
+      // マスク生成時に使う行列を求める
       this.createMatrixForMask(
         isRightHanded,
         layoutBoundsOnTex01,
@@ -451,23 +451,23 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 计算使用遮罩的绘制对象群的整体矩形。
+   * マスクを使う描画オブジェクトの全体の矩形を計算する。
    *
-   * @param model 模型实例
-   * @param clippingContext 裁剪上下文
+   * @param model モデルのインスタンス
+   * @param clippingContext クリッピングコンテキスト
    */
   public calcClippedOffscreenTotalBounds(
     model: CubismModel,
     clippingContext: T_ClippingContext
   ): void {
-    // 被裁剪遮罩（即被遮罩的绘制对象）的整体矩形
+    // 被クリッピングマスク（マスクされる描画オブジェクト）の全体の矩形
     let clippedDrawTotalMinX = Number.MAX_VALUE,
       clippedDrawTotalMinY = Number.MAX_VALUE;
     let clippedDrawTotalMaxX = -Number.MAX_VALUE,
       clippedDrawTotalMaxY = -Number.MAX_VALUE;
 
-    // 判断该遮罩是否实际需要
-    // 只要有一个使用该裁剪的「绘制对象」可用，就需要生成遮罩
+    // このマスクが実際に必要か判定する
+    // このクリッピングを利用する「描画オブジェクト」がひとつでも使用可能であればマスクを生成する必要がある
     const clippedOffscreenCount =
       clippingContext._clippedOffscreenIndexList.length;
 
@@ -477,7 +477,7 @@ export abstract class CubismClippingManager<
       clippedOffscreenIndex < clippedOffscreenCount;
       clippedOffscreenIndex++
     ) {
-      // 求使用遮罩的绘制对象的绘制矩形
+      // マスクを使用する描画オブジェクトの描画される矩形を求める
       const offscreenIndex =
         clippingContext._clippedOffscreenIndexList[clippedOffscreenIndex];
 
@@ -520,9 +520,9 @@ export abstract class CubismClippingManager<
         if (y > maxY) maxY = y;
       }
 
-      if (minX == Number.MAX_VALUE) continue; // 未取到任何有效点，跳过
+      if (minX == Number.MAX_VALUE) continue; //有効な点がひとつも取れなかったのでスキップする
 
-      // 反映到整体矩形
+      // 全体の矩形に反映
       if (minX < clippedDrawTotalMinX) clippedDrawTotalMinX = minX;
       if (minY < clippedDrawTotalMinY) clippedDrawTotalMinY = minY;
       if (maxX > clippedDrawTotalMaxX) clippedDrawTotalMaxX = maxX;
@@ -547,21 +547,21 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 计算使用遮罩的绘制对象群的整体矩形。
+   * マスクを使う描画オブジェクトの全体の矩形を計算する。
    *
-   * @param model 模型实例
-   * @param offscreenIndex 离屏索引
-   * @param childDrawableIndexList 离屏子 Drawable 的索引列表
+   * @param model モデルのインスタンス
+   * @param offscreenIndex オフスクリーンのインデックス
+   * @param childDrawableIndexList オフスクリーンの子Drawableのインデックスリスト
    */
   public getOffscreenChildDrawableIndexList(
     model: CubismModel,
     offscreenIndex: number,
     childDrawableIndexList: Array<number>
   ): void {
-    // 获取父对象
+    // 親オブジェクトを取得
     const ownerIndex = model.getOffscreenOwnerIndices()[offscreenIndex];
 
-    // 仅部件
+    // パーツのみ
     this.getPartChildDrawableIndexList(
       model,
       ownerIndex,
@@ -570,11 +570,11 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 获取部件子 Drawable 的索引列表。
+   * パーツの子Drawableのインデックスリストを取得する。
    *
-   * @param model 模型实例
-   * @param partIndex 部件索引
-   * @param childDrawableIndexList 部件子 Drawable 的索引列表
+   * @param model モデルのインスタンス
+   * @param partIndex パーツのインデックス
+   * @param childDrawableIndexList パーツの子Drawableのインデックスリスト
    */
   public getPartChildDrawableIndexList(
     model: CubismModel,
@@ -595,11 +595,11 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 创建遮罩生成与绘制用的矩阵。
-   * @param isRightHanded 指定是否将坐标作为右手系处理
-   * @param layoutBoundsOnTex01 收纳遮罩的区域
-   * @param scaleX 绘制对象的伸缩率
-   * @param scaleY 绘制对象的伸缩率
+   * マスク作成・描画用の行列を作成する。
+   * @param isRightHanded 座標を右手系として扱うかを指定
+   * @param layoutBoundsOnTex01 マスクを収める領域
+   * @param scaleX 描画オブジェクトの伸縮率
+   * @param scaleY 描画オブジェクトの伸縮率
    */
   public createMatrixForMask(
     isRightHanded: boolean,
@@ -609,23 +609,23 @@ export abstract class CubismClippingManager<
   ): void {
     this._tmpMatrix.loadIdentity();
     {
-      // 将 Layout0..1 转换到 -1..1
+      // Layout0..1 を -1..1に変換
       this._tmpMatrix.translateRelative(-1.0, -1.0);
       this._tmpMatrix.scaleRelative(2.0, 2.0);
     }
     {
-      // view 转换到 Layout0..1
+      // view to Layout0..1
       this._tmpMatrix.translateRelative(
         layoutBoundsOnTex01.x,
         layoutBoundsOnTex01.y
-      ); //new = [平移]
-      this._tmpMatrix.scaleRelative(scaleX, scaleY); //new = [平移][缩放]
+      ); //new = [translate]
+      this._tmpMatrix.scaleRelative(scaleX, scaleY); //new = [translate][scale]
       this._tmpMatrix.translateRelative(
         -this._tmpBoundsOnModel.x,
         -this._tmpBoundsOnModel.y
-      ); //new = [平移][缩放][平移]
+      ); //new = [translate][scale][translate]
     }
-    // tmpMatrixForMask 为计算结果
+    // tmpMatrixForMask が計算結果
     this._tmpMatrixForMask.setMatrix(this._tmpMatrix.getArray());
 
     this._tmpMatrix.loadIdentity();
@@ -633,26 +633,26 @@ export abstract class CubismClippingManager<
       this._tmpMatrix.translateRelative(
         layoutBoundsOnTex01.x,
         layoutBoundsOnTex01.y * (isRightHanded ? -1.0 : 1.0)
-      ); //new = [平移]
+      ); //new = [translate]
       this._tmpMatrix.scaleRelative(
         scaleX,
         scaleY * (isRightHanded ? -1.0 : 1.0)
-      ); //new = [平移][缩放]
+      ); //new = [translate][scale]
       this._tmpMatrix.translateRelative(
         -this._tmpBoundsOnModel.x,
         -this._tmpBoundsOnModel.y
-      ); //new = [平移][缩放][平移]
+      ); //new = [translate][scale][translate]
     }
 
     this._tmpMatrixForDraw.setMatrix(this._tmpMatrix.getArray());
   }
 
   /**
-   * 裁剪上下文的布局
-   * 尽量充分利用指定数量的渲染纹理来布局遮罩
-   * 遮罩组数量为4及以下时，RGBA 各通道各放一个遮罩；5到6时按 2,2,1,1 分配到 RGBA。
+   * クリッピングコンテキストを配置するレイアウト
+   * 指定された数のレンダーテクスチャを極力いっぱいに使ってマスクをレイアウトする
+   * マスクグループの数が4以下ならRGBA各チャンネルに一つずつマスクを配置し、5以上6以下ならRGBAを2,2,1,1と配置する。
    *
-   * @param usingClipCount 要布局的裁剪上下文数量
+   * @param usingClipCount 配置するクリッピングコンテキストの数
    */
   public setupLayoutBounds(usingClipCount: number): void {
     const useClippingMaskMaxCount =
@@ -662,7 +662,7 @@ export abstract class CubismClippingManager<
 
     if (usingClipCount <= 0 || usingClipCount > useClippingMaskMaxCount) {
       if (usingClipCount > useClippingMaskMaxCount) {
-        // 发出遮罩限制数量的警告
+        // マスクの制限数の警告を出す
         CubismLogError(
           'not supported mask count : {0}\n[Details] render texture count : {1}, mask count : {2}',
           usingClipCount - useClippingMaskMaxCount,
@@ -670,7 +670,7 @@ export abstract class CubismClippingManager<
           usingClipCount
         );
       }
-      // 此种情况下每次都清除一个遮罩目标再使用
+      // この場合は一つのマスクターゲットを毎回クリアして使用する
       for (
         let index = 0;
         index < this._clippingContextListForMask.length;
@@ -678,7 +678,7 @@ export abstract class CubismClippingManager<
       ) {
         const clipContext: T_ClippingContext =
           this._clippingContextListForMask[index];
-        clipContext._layoutChannelIndex = 0; // 反正每次都会清除，固定即可
+        clipContext._layoutChannelIndex = 0; // どうせ毎回消すので固定
         clipContext._layoutBounds.x = 0.0;
         clipContext._layoutBounds.y = 0.0;
         clipContext._layoutBounds.width = 1.0;
@@ -688,27 +688,27 @@ export abstract class CubismClippingManager<
       return;
     }
 
-    // 若渲染纹理为1张则9分割（最多36张）
+    // レンダーテクスチャが1枚なら9分割する（最大36枚）
     const layoutCountMaxValue = this._renderTextureCount <= 1 ? 9 : 8;
 
-    // 尽量充分利用指定数量的渲染纹理来布局遮罩（默认为1）。
-    // 遮罩组数量为4及以下时，RGBA 各通道各放一个遮罩；5到6时按 2,2,1,1 分配到 RGBA。
-    let countPerSheetDiv: number = usingClipCount / this._renderTextureCount; // 每张渲染纹理分配多少张遮罩。
+    // 指定された数のレンダーテクスチャを極力いっぱいに使ってマスクをレイアウトする（デフォルトなら1）。
+    // マスクグループの数が4以下ならRGBA各チャンネルに1つずつマスクを配置し、5以上6以下ならRGBAを2,2,1,1と配置する。
+    let countPerSheetDiv: number = usingClipCount / this._renderTextureCount; // レンダーテクスチャ1枚あたり何枚割り当てるか。
     const reduceLayoutTextureCount: number =
-      usingClipCount % this._renderTextureCount; // 减少布局数量的渲染纹理数量（仅有相应数量的渲染纹理会受影响）。
+      usingClipCount % this._renderTextureCount; // レイアウトの数を1枚減らすレンダーテクスチャの数（この数だけのレンダーテクスチャが対象）。
 
-    // 因为要取每张渲染纹理分配的遮罩分割数，所以小数向上取整
+    // 1枚に割り当てるマスクの分割数を取りたいため、小数点は切り上げる
     countPerSheetDiv = Math.ceil(countPerSheetDiv);
 
-    // 依次使用 RGBA
-    let divCount: number = countPerSheetDiv / ColorChannelCount; // 单个通道配置的基本遮罩数
-    const modCount: number = countPerSheetDiv % ColorChannelCount; // 余数，会分配到该序号之前的通道各一个（不是索引）
+    // RGBAを順番に使っていく
+    let divCount: number = countPerSheetDiv / ColorChannelCount; // 1チャンネルに配置する基本のマスク
+    const modCount: number = countPerSheetDiv % ColorChannelCount; // 余り、この番号のチャンネルまでに一つずつ配分する（インデックスではない）
 
-    // 小数部分舍去
+    // 小数点は切り捨てる
     divCount = ~~divCount;
 
-    // 依次准备 RGBA 各通道（0:R, 1:G, 2:B, 3:A）
-    let curClipIndex = 0; // 按顺序设置
+    // RGBAそれぞれのチャンネルを用意していく（0:R, 1:G, 2:B, 3:A）
+    let curClipIndex = 0; // 順番に設定していく
 
     for (
       let renderTextureIndex = 0;
@@ -720,27 +720,27 @@ export abstract class CubismClippingManager<
         channelIndex < ColorChannelCount;
         channelIndex++
       ) {
-        // 该通道要布局的数量
-        // NOTE: 布局数 = 单个通道配置的基本遮罩数 + 若该通道要放置余数遮罩则再加1个
+        // このチャンネルにレイアウトする数
+        // NOTE: レイアウト数 = 1チャンネルに配置する基本のマスク + 余りのマスクを置くチャンネルなら1つ追加
         let layoutCount: number = divCount + (channelIndex < modCount ? 1 : 0);
 
-        // 决定减少布局数量时执行该操作的通道
-        // div 为0时调整为处于正常索引范围内
+        // レイアウトの数を1枚減らす場合にそれを行うチャンネルを決定
+        // divが0の時は正常なインデックスの範囲内になるように調整
         const checkChannelIndex = modCount + (divCount < 1 ? -1 : 0);
 
-        // 当前为对象通道且存在要减少布局数量的渲染纹理时
+        // 今回が対象のチャンネルかつ、レイアウトの数を1枚減らすレンダーテクスチャが存在する場合
         if (channelIndex == checkChannelIndex && reduceLayoutTextureCount > 0) {
-          // 若当前渲染纹理为目标渲染纹理，则减少布局数量。
+          // 現在のレンダーテクスチャが、対象のレンダーテクスチャであればレイアウトの数を1枚減らす。
           layoutCount -= !(renderTextureIndex < reduceLayoutTextureCount)
             ? 1
             : 0;
         }
 
-        // 决定分割方式
+        // 分割方法を決定する
         if (layoutCount == 0) {
-          // 什么都不做
+          // 何もしない
         } else if (layoutCount == 1) {
-          // 整体直接使用
+          // 全てをそのまま使う
           const clipContext: T_ClippingContext =
             this._clippingContextListForMask[curClipIndex++];
           clipContext._layoutChannelIndex = channelIndex;
@@ -753,14 +753,14 @@ export abstract class CubismClippingManager<
           for (let i = 0; i < layoutCount; i++) {
             let xpos: number = i % 2;
 
-            // 小数部分舍去
+            // 小数点は切り捨てる
             xpos = ~~xpos;
 
             const cc: T_ClippingContext =
               this._clippingContextListForMask[curClipIndex++];
             cc._layoutChannelIndex = channelIndex;
 
-            // 将 UV 拆成两份使用
+            // UVを2つに分解して使う
             cc._layoutBounds.x = xpos * 0.5;
             cc._layoutBounds.y = 0.0;
             cc._layoutBounds.width = 0.5;
@@ -768,12 +768,12 @@ export abstract class CubismClippingManager<
             cc._bufferIndex = renderTextureIndex;
           }
         } else if (layoutCount <= 4) {
-          // 4 分割使用
+          // 4分割して使う
           for (let i = 0; i < layoutCount; i++) {
             let xpos: number = i % 2;
             let ypos: number = i / 2;
 
-            // 小数部分舍去
+            // 小数点は切り捨てる
             xpos = ~~xpos;
             ypos = ~~ypos;
 
@@ -787,12 +787,12 @@ export abstract class CubismClippingManager<
             cc._bufferIndex = renderTextureIndex;
           }
         } else if (layoutCount <= layoutCountMaxValue) {
-          // 9 分割使用
+          // 9分割して使う
           for (let i = 0; i < layoutCount; i++) {
             let xpos = i % 3;
             let ypos = i / 3;
 
-            // 小数部分舍去
+            // 小数点は切り捨てる
             xpos = ~~xpos;
             ypos = ~~ypos;
 
@@ -807,7 +807,7 @@ export abstract class CubismClippingManager<
             cc._bufferIndex = renderTextureIndex;
           }
         } else {
-          // 超过遮罩限制数量时的处理
+          // マスクの制限枚数を超えた場合の処理
           CubismLogError(
             'not supported mask count : {0}\n[Details] render texture count : {1}, mask count : {2}',
             usingClipCount - useClippingMaskMaxCount,
@@ -815,8 +815,8 @@ export abstract class CubismClippingManager<
             usingClipCount
           );
 
-          // 为避免在 SetupShaderProgram 中发生越界访问，临时填入数值
-          // 当然绘制结果将不再正确
+          // SetupShaderProgramでオーバーアクセスが発生するので仮で数値を入れる
+          // もちろん描画結果は正しいものではなくなる
           for (let index = 0; index < layoutCount; index++) {
             const cc: T_ClippingContext =
               this._clippingContextListForMask[curClipIndex++];
@@ -835,22 +835,22 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 计算被遮罩绘制对象群整体的包围矩形（模型坐标系）
-   * @param model 模型实例
-   * @param clippingContext 裁剪遮罩上下文
+   * マスクされる描画オブジェクト群全体を囲む矩形（モデル座標系）を計算する
+   * @param model モデルのインスタンス
+   * @param clippingContext クリッピングマスクのコンテキスト
    */
   public calcClippedDrawableTotalBounds(
     model: CubismModel,
     clippingContext: T_ClippingContext
   ): void {
-    // 被裁剪遮罩（即被遮罩的绘制对象）的整体矩形
+    // 被クリッピングマスク（マスクされる描画オブジェクト）の全体の矩形
     let clippedDrawTotalMinX: number = Number.MAX_VALUE;
     let clippedDrawTotalMinY: number = Number.MAX_VALUE;
     let clippedDrawTotalMaxX: number = Number.MIN_VALUE;
     let clippedDrawTotalMaxY: number = Number.MIN_VALUE;
 
-    // 判断该遮罩是否实际需要
-    // 只要有一个使用该裁剪的「绘制对象」可用，就需要生成遮罩
+    // このマスクが実際に必要か判定する
+    // このクリッピングを利用する「描画オブジェクト」がひとつでも使用可能であればマスクを生成する必要がある
     const clippedDrawCount: number =
       clippingContext._clippedDrawableIndexList.length;
 
@@ -859,7 +859,7 @@ export abstract class CubismClippingManager<
       clippedDrawableIndex < clippedDrawCount;
       clippedDrawableIndex++
     ) {
-      // 求使用遮罩的绘制对象的绘制矩形
+      // マスクを使用する描画オブジェクトの描画される矩形を求める
       const drawableIndex: number =
         clippingContext._clippedDrawableIndexList[clippedDrawableIndex];
 
@@ -896,12 +896,12 @@ export abstract class CubismClippingManager<
         }
       }
 
-      // 未取到任何有效点，跳过
+      // 有効な点が一つも取れなかったのでスキップ
       if (minX == Number.MAX_VALUE) {
         continue;
       }
 
-      // 反映到整体矩形
+      // 全体の矩形に反映
       if (minX < clippedDrawTotalMinX) {
         clippedDrawTotalMinX = minX;
       }
@@ -934,8 +934,8 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 获取画面绘制使用的裁剪遮罩列表
-   * @return 画面绘制使用的裁剪遮罩列表
+   * 画面描画に使用するクリッピングマスクのリストを取得する
+   * @return 画面描画に使用するクリッピングマスクのリスト
    */
   public getClippingContextListForDraw(): Array<T_ClippingContext> {
     return this._clippingContextListForDraw;
@@ -946,50 +946,50 @@ export abstract class CubismClippingManager<
   }
 
   /**
-   * 获取裁剪遮罩缓冲大小
-   * @return 裁剪遮罩缓冲大小
+   * クリッピングマスクバッファのサイズを取得する
+   * @return クリッピングマスクバッファのサイズ
    */
   public getClippingMaskBufferSize(): number {
     return this._clippingMaskBufferSize;
   }
 
   /**
-   * 获取该缓冲的渲染纹理数量
-   * @return 该缓冲的渲染纹理数量
+   * このバッファのレンダーテクスチャの枚数を取得する
+   * @return このバッファのレンダーテクスチャの枚数
    */
   public getRenderTextureCount(): number {
     return this._renderTextureCount;
   }
 
   /**
-   * 获取颜色通道（RGBA）标志
-   * @param channelNo 颜色通道（RGBA）编号（0:R, 1:G, 2:B, 3:A）
+   * カラーチャンネル（RGBA）のフラグを取得する
+   * @param channelNo カラーチャンネル（RGBA）の番号（0:R, 1:G, 2:B, 3:A）
    */
   public getChannelFlagAsColor(channelNo: number): CubismTextureColor {
     return this._channelColors[channelNo];
   }
 
   /**
-   * 设置裁剪遮罩缓冲大小
-   * @param size 裁剪遮罩缓冲大小
+   * クリッピングマスクバッファのサイズを設定する
+   * @param size クリッピングマスクバッファのサイズ
    */
   public setClippingMaskBufferSize(size: number): void {
     this._clippingMaskBufferSize = size;
   }
 
-  protected _clearedMaskBufferFlags: Array<boolean>; //遮罩清除标志数组
+  protected _clearedMaskBufferFlags: Array<boolean>; //マスクのクリアフラグの配列
 
   protected _channelColors: Array<CubismTextureColor>;
-  protected _clippingContextListForMask: Array<T_ClippingContext>; // 遮罩用裁剪上下文列表
-  protected _clippingContextListForDraw: Array<T_ClippingContext>; // 绘制用裁剪上下文列表
-  protected _clippingContextListForOffscreen: Array<T_ClippingContext>; // 离屏用裁剪上下文列表
-  protected _clippingMaskBufferSize: number; // 裁剪遮罩缓冲大小（初始值:256）
-  protected _renderTextureCount: number; // 要生成的渲染纹理数量
+  protected _clippingContextListForMask: Array<T_ClippingContext>; // マスク用クリッピングコンテキストのリスト
+  protected _clippingContextListForDraw: Array<T_ClippingContext>; // 描画用クリッピングコンテキストのリスト
+  protected _clippingContextListForOffscreen: Array<T_ClippingContext>; // オフスクリーン用クリッピングコンテキストのリスト
+  protected _clippingMaskBufferSize: number; // クリッピングマスクのバッファサイズ（初期値:256）
+  protected _renderTextureCount: number; // 生成するレンダーテクスチャの枚数
 
-  protected _tmpMatrix: CubismMatrix44; // 遮罩计算用矩阵
-  protected _tmpMatrixForMask: CubismMatrix44; // 遮罩计算用矩阵
-  protected _tmpMatrixForDraw: CubismMatrix44; // 遮罩计算用矩阵
-  protected _tmpBoundsOnModel: csmRect; // 遮罩布局计算用矩形
+  protected _tmpMatrix: CubismMatrix44; // マスク計算用の行列
+  protected _tmpMatrixForMask: CubismMatrix44; // マスク計算用の行列
+  protected _tmpMatrixForDraw: CubismMatrix44; // マスク計算用の行列
+  protected _tmpBoundsOnModel: csmRect; // マスク配置計算用の矩形
 
   protected _clippingContexttConstructor: ClippingContextConstructor<T_ClippingContext>;
 }

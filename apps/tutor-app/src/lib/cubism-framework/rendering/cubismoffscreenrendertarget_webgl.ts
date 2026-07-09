@@ -11,15 +11,15 @@ import { CubismWebGLOffscreenManager } from './cubismoffscreenmanager';
 import { CubismLogError } from '../utils/cubismdebug';
 
 /**
- * WebGL 离屏表面
- * 管理遮罩绘制及离屏功能所需的帧缓冲等。
+ * WebGL用オフスクリーンサーフェス
+ * マスクの描画及びオフスクリーン機能に必要なフレームバッファなどを管理する。
  */
 export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL {
   /**
-   * 初始化资源容器管理器。
+   * リソースコンテナマネージャを初期化する。
    *
-   * @param displayBufferWidth 渲染目标宽度
-   * @param displayBufferHeight 渲染目标高度
+   * @param displayBufferWidth レンダーターゲットの幅
+   * @param displayBufferHeight レンダーターゲットの高さ
    */
   private initializeOffscreenManager(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -38,13 +38,13 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 设置离屏绘制渲染目标。
+   * オフスクリーン描画用レンダーターゲットをセットする。
    *
-   * @param gl WebGLRenderingContext 或 WebGL2RenderingContext
-   *          NOTE: 使用 Cubism 5.3 及以后版本的模型时，请使用 WebGL2RenderingContext。
-   * @param displayBufferWidth 渲染目标宽度
-   * @param displayBufferHeight 渲染目标高度
-   * @param previousFramebuffer 前一个帧缓冲
+   * @param gl WebGLRenderingContextまたはWebGL2RenderingContext
+   *          NOTE: Cubism 5.3以降のモデルが使用される場合はWebGL2RenderingContextを使用すること。
+   * @param displayBufferWidth レンダーターゲットの幅
+   * @param displayBufferHeight レンダーターゲットの高さ
+   * @param previousFramebuffer 前のフレームバッファ
    */
   public setOffscreenRenderTarget(
     gl: WebGLRenderingContext | WebGL2RenderingContext,
@@ -52,7 +52,7 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
     displayBufferHeight: number,
     previousFramebuffer: WebGLFramebuffer
   ): void {
-    // 若管理器不存在则初始化
+    // マネージャがなければ初期化
     if (this._webGLOffscreenManager == null) {
       this.initializeOffscreenManager(
         gl,
@@ -61,7 +61,7 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
       );
     }
 
-    // 获取可用的资源容器
+    // 使用可能なリソースコンテナを取得する
     const offscreenRenderTargetContainer =
       this._webGLOffscreenManager.getOffscreenRenderTargetContainers(
         gl,
@@ -92,9 +92,9 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 获取资源容器的使用状态
+   * リソースコンテナの使用状態を取得
    *
-   * @return 使用中为 true，未使用为 false
+   * @return 使用中はtrue、未使用の場合はfalse
    */
   public getUsingRenderTextureState(): boolean {
     if (this._webGLOffscreenManager == null || this._gl == null) {
@@ -108,7 +108,7 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 开始使用资源容器。
+   * リソースコンテナの使用を開始する。
    */
   public startUsingRenderTexture(): void {
     if (this._webGLOffscreenManager == null || this._gl == null) {
@@ -122,7 +122,7 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 结束使用资源容器。
+   * リソースコンテナの使用を終了する。
    */
   public stopUsingRenderTexture(): void {
     if (this._webGLOffscreenManager == null || this._gl == null) {
@@ -136,27 +136,27 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 设置离屏索引。
+   * オフスクリーンのインデックスを設定する。
    *
-   * @param offscreenIndex 离屏索引
+   * @param offscreenIndex オフスクリーンのインデックス
    */
   public setOffscreenIndex(offscreenIndex: number): void {
     this._offscreenIndex = offscreenIndex;
   }
 
   /**
-   * 获取离屏索引。
+   * オフスクリーンのインデックスを取得する。
    *
-   * @return 离屏索引
+   * @return オフスクリーンのインデックス
    */
   public getOffscreenIndex(): number {
     return this._offscreenIndex;
   }
 
   /**
-   * 设置之前的离屏绘制渲染目标。
+   * 以前のオフスクリーン描画用レンダーターゲットを設定する。
    *
-   * @param oldOffscreen 之前的离屏绘制渲染目标
+   * @param oldOffscreen 以前のオフスクリーン描画用レンダーターゲット
    */
   public setOldOffscreen(
     oldOffscreen: CubismOffscreenRenderTarget_WebGL
@@ -165,18 +165,18 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 获取之前的离屏绘制渲染目标。
+   * 以前のオフスクリーン描画用レンダーターゲットを取得する。
    *
-   * @return 之前的离屏绘制渲染目标
+   * @return 以前のオフスクリーン描画用レンダーターゲット
    */
   public getOldOffscreen(): CubismOffscreenRenderTarget_WebGL {
     return this._oldOffscreen;
   }
 
   /**
-   * 设置父级离屏绘制渲染目标。
+   * 親のオフスクリーン描画用レンダーターゲットを設定する。
    *
-   * @param parentOffscreenRenderTarget 父级离屏绘制渲染目标
+   * @param parentOffscreenRenderTarget 親のオフスクリーン描画用レンダーターゲット
    */
   public setParentPartOffscreen(
     parentOffscreenRenderTarget: CubismOffscreenRenderTarget_WebGL
@@ -185,16 +185,16 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
   }
 
   /**
-   * 获取父级离屏绘制渲染目标。
+   * 親のオフスクリーン描画用レンダーターゲットを取得する。
    *
-   * @return 父级离屏绘制渲染目标
+   * @return 親のオフスクリーン描画用レンダーターゲット
    */
   public getParentPartOffscreen(): CubismOffscreenRenderTarget_WebGL {
     return this._parentOffscreenRenderTarget;
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   constructor() {
     super();
@@ -233,9 +233,9 @@ export class CubismOffscreenRenderTarget_WebGL extends CubismRenderTarget_WebGL 
     this._parentOffscreenRenderTarget = null;
   }
 
-  private _offscreenIndex: number; // 离屏索引
-  private _parentOffscreenRenderTarget: CubismOffscreenRenderTarget_WebGL; // 父级离屏绘制渲染目标
-  private _oldOffscreen: CubismOffscreenRenderTarget_WebGL; // 之前的离屏绘制渲染目标
-  private _webGLOffscreenManager: CubismWebGLOffscreenManager; // 离屏绘制渲染目标管理器
-  protected _gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGL 上下文
+  private _offscreenIndex: number; // オフスクリーンのインデックス
+  private _parentOffscreenRenderTarget: CubismOffscreenRenderTarget_WebGL; // 親のオフスクリーン描画用レンダーターゲット
+  private _oldOffscreen: CubismOffscreenRenderTarget_WebGL; // 以前のオフスクリーン描画用レンダーターゲット
+  private _webGLOffscreenManager: CubismWebGLOffscreenManager; // オフスクリーン描画用レンダーターゲットマネージャ
+  protected _gl: WebGLRenderingContext | WebGL2RenderingContext; // WebGLコンテキスト
 }

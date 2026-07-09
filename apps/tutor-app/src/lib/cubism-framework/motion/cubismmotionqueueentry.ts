@@ -10,11 +10,11 @@ import { ACubismMotion } from './acubismmotion';
 import { CubismMotionQueueEntryHandle } from './cubismmotionqueuemanager';
 
 /**
- * 管理 CubismMotionQueueManager 中播放的各个动作的类。
+ * CubismMotionQueueManagerで再生している各モーションの管理クラス。
  */
 export class CubismMotionQueueEntry {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._autoDelete = false;
@@ -34,7 +34,7 @@ export class CubismMotionQueueEntry {
   }
 
   /**
-   * 析构等效处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     if (this._autoDelete && this._motion) {
@@ -43,8 +43,8 @@ export class CubismMotionQueueEntry {
   }
 
   /**
-   * 设置淡出时间和开始判定
-   * @param fadeOutSeconds 淡出所需时间[秒]
+   * フェードアウト時間と開始判定の設定
+   * @param fadeOutSeconds フェードアウトにかかる時間[秒]
    */
   public setFadeOut(fadeOutSeconds: number): void {
     this._fadeOutSeconds = fadeOutSeconds;
@@ -52,9 +52,9 @@ export class CubismMotionQueueEntry {
   }
 
   /**
-   * 开始淡出
-   * @param fadeOutSeconds 淡出所需时间[秒]
-   * @param userTimeSeconds 累计增量时间[秒]
+   * フェードアウトの開始
+   * @param fadeOutSeconds フェードアウトにかかる時間[秒]
+   * @param userTimeSeconds デルタ時間の積算値[秒]
    */
   public startFadeOut(fadeOutSeconds: number, userTimeSeconds: number): void {
     const newEndTimeSeconds: number = userTimeSeconds + fadeOutSeconds;
@@ -69,109 +69,109 @@ export class CubismMotionQueueEntry {
   }
 
   /**
-   * 确认动作是否结束
+   * モーションの終了の確認
    *
-   * @return true 动作已结束
-   * @return false 未结束
+   * @return true モーションが終了した
+   * @return false 終了していない
    */
   public isFinished(): boolean {
     return this._finished;
   }
 
   /**
-   * 确认动作是否开始
-   * @return true 动作已开始
-   * @return false 未开始
+   * モーションの開始の確認
+   * @return true モーションが開始した
+   * @return false 開始していない
    */
   public isStarted(): boolean {
     return this._started;
   }
 
   /**
-   * 获取动作开始时刻
-   * @return 动作开始时刻[秒]
+   * モーションの開始時刻の取得
+   * @return モーションの開始時刻[秒]
    */
   public getStartTime(): number {
     return this._startTimeSeconds;
   }
 
   /**
-   * 获取淡入开始时刻
-   * @return 淡入开始时刻[秒]
+   * フェードインの開始時刻の取得
+   * @return フェードインの開始時刻[秒]
    */
   public getFadeInStartTime(): number {
     return this._fadeInStartTimeSeconds;
   }
 
   /**
-   * 获取淡入结束时刻
-   * @return 获取淡入结束时刻
+   * フェードインの終了時刻の取得
+   * @return フェードインの終了時刻の取得
    */
   public getEndTime(): number {
     return this._endTimeSeconds;
   }
 
   /**
-   * 设置动作开始时刻
-   * @param startTime 动作开始时刻
+   * モーションの開始時刻の設定
+   * @param startTime モーションの開始時刻
    */
   public setStartTime(startTime: number): void {
     this._startTimeSeconds = startTime;
   }
 
   /**
-   * 设置淡入开始时刻
-   * @param startTime 淡入开始时刻[秒]
+   * フェードインの開始時刻の設定
+   * @param startTime フェードインの開始時刻[秒]
    */
   public setFadeInStartTime(startTime: number): void {
     this._fadeInStartTimeSeconds = startTime;
   }
 
   /**
-   * 设置淡入结束时刻
-   * @param endTime 淡入结束时刻[秒]
+   * フェードインの終了時刻の設定
+   * @param endTime フェードインの終了時刻[秒]
    */
   public setEndTime(endTime: number): void {
     this._endTimeSeconds = endTime;
   }
 
   /**
-   * 设置动作结束
-   * @param f true 则动作结束
+   * モーションの終了の設定
+   * @param f trueならモーションの終了
    */
   public setIsFinished(f: boolean): void {
     this._finished = f;
   }
 
   /**
-   * 设置动作开始
-   * @param f true 则动作开始
+   * モーション開始の設定
+   * @param f trueならモーションの開始
    */
   public setIsStarted(f: boolean): void {
     this._started = f;
   }
 
   /**
-   * 确认动作是否有效
-   * @return true 动作有效
-   * @return false 动作无效
+   * モーションの有効性の確認
+   * @return true モーションは有効
+   * @return false モーションは無効
    */
   public isAvailable(): boolean {
     return this._available;
   }
 
   /**
-   * 设置动作是否有效
-   * @param v true 则动作有效
+   * モーションの有効性の設定
+   * @param v trueならモーションは有効
    */
   public setIsAvailable(v: boolean): void {
     this._available = v;
   }
 
   /**
-   * 设置动作状态
-   * @param timeSeconds 当前时刻[秒]
-   * @param weight 动作权重
+   * モーションの状態の設定
+   * @param timeSeconds 現在時刻[秒]
+   * @param weight モーション尾重み
    */
   public setState(timeSeconds: number, weight: number): void {
     this._stateTimeSeconds = timeSeconds;
@@ -179,82 +179,82 @@ export class CubismMotionQueueEntry {
   }
 
   /**
-   * 获取动作当前时刻
-   * @return 动作当前时刻[秒]
+   * モーションの現在時刻の取得
+   * @return モーションの現在時刻[秒]
    */
   public getStateTime(): number {
     return this._stateTimeSeconds;
   }
 
   /**
-   * 获取动作权重
-   * @return 动作权重
+   * モーションの重みの取得
+   * @return モーションの重み
    */
   public getStateWeight(): number {
     return this._stateWeight;
   }
 
   /**
-   * 获取最后检查事件触发的时间
+   * 最後にイベントの発火をチェックした時間を取得
    *
-   * @return 最后检查事件触发的时间[秒]
+   * @return 最後にイベントの発火をチェックした時間[秒]
    */
   public getLastCheckEventSeconds(): number {
     return this._lastEventCheckSeconds;
   }
 
   /**
-   * 设置最后检查事件的时间
-   * @param checkSeconds 最后检查事件的时间[秒]
+   * 最後にイベントをチェックした時間を設定
+   * @param checkSeconds 最後にイベントをチェックした時間[秒]
    */
   public setLastCheckEventSeconds(checkSeconds: number): void {
     this._lastEventCheckSeconds = checkSeconds;
   }
 
   /**
-   * 获取淡出开始判定
-   * @return 是否开始淡出
+   * フェードアウト開始判定の取得
+   * @return フェードアウト開始するかどうか
    */
   public isTriggeredFadeOut(): boolean {
     return this._isTriggeredFadeOut;
   }
 
   /**
-   * 获取淡出时间
-   * @return 淡出时间[秒]
+   * フェードアウト時間の取得
+   * @return フェードアウト時間[秒]
    */
   public getFadeOutSeconds(): number {
     return this._fadeOutSeconds;
   }
 
   /**
-   * 获取动作
+   * モーションの取得
    *
-   * @return 动作
+   * @return モーション
    */
   public getCubismMotion(): ACubismMotion {
     return this._motion;
   }
 
-  _autoDelete: boolean; // 自动删除
-  _motion: ACubismMotion; // 动作
+  _autoDelete: boolean; // 自動削除
+  _motion: ACubismMotion; // モーション
 
-  _available: boolean; // 有效化标志
-  _finished: boolean; // 结束标志
-  _started: boolean; // 开始标志
-  _startTimeSeconds: number; // 动作播放开始时刻[秒]
-  _fadeInStartTimeSeconds: number; // 淡入开始时刻（循环时仅首次）[秒]
-  _endTimeSeconds: number; // 预计结束时刻[秒]
-  _stateTimeSeconds: number; // 时刻状态[秒]
-  _stateWeight: number; // 权重状态
-  _lastEventCheckSeconds: number; // 最后检查动作的时间
-  private _fadeOutSeconds: number; // 淡出时间[秒]
-  private _isTriggeredFadeOut: boolean; // 淡出开始标志
+  _available: boolean; // 有効化フラグ
+  _finished: boolean; // 終了フラグ
+  _started: boolean; // 開始フラグ
+  _startTimeSeconds: number; // モーション再生開始時刻[秒]
+  _fadeInStartTimeSeconds: number; // フェードイン開始時刻（ループの時は初回のみ）[秒]
+  _endTimeSeconds: number; // 終了予定時刻[秒]
+  _stateTimeSeconds: number; // 時刻の状態[秒]
+  _stateWeight: number; // 重みの状態
+  _lastEventCheckSeconds: number; // 最終のMotion側のチェックした時間
+  private _fadeOutSeconds: number; // フェードアウト時間[秒]
+  private _isTriggeredFadeOut: boolean; // フェードアウト開始フラグ
 
-  _motionQueueEntryHandle: CubismMotionQueueEntryHandle; // 每个实例唯一的识别编号
+  _motionQueueEntryHandle: CubismMotionQueueEntryHandle; // インスタンスごとに一意の値を持つ識別番号
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismmotionqueueentry';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

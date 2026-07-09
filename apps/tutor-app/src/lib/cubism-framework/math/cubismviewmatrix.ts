@@ -331,7 +331,7 @@ export class CubismViewMatrix extends CubismMatrix44 {
   private _minScale: number; // 拡大率の最小値
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismviewmatrix';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

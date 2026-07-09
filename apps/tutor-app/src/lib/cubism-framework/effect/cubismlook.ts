@@ -10,21 +10,21 @@ import { CubismIdHandle } from '../id/cubismid';
 import { CubismModel } from '../model/cubismmodel';
 
 /**
- * 目标参数跟随功能
+ * ターゲットによるパラメータ追従機能
  *
- * 提供针对拖拽输入的参数跟随功能。
+ * ドラッグ入力に対するパラメータ追従機能を提供する。
  */
 export class CubismLook {
   /**
-   * 创建实例
+   * インスタンスの作成
    */
   public static create(): CubismLook {
     return new CubismLook();
   }
 
   /**
-   * 销毁实例
-   * @param instance 目标 CubismDrag
+   * インスタンスの破棄
+   * @param instance 対象のCubismDrag
    */
   public static delete(instance: CubismLook): void {
     if (instance != null) {
@@ -33,26 +33,26 @@ export class CubismLook {
   }
 
   /**
-   * 绑定目标跟随参数
-   * @param lookParameters 想要绑定目标跟随的参数列表
+   * ターゲット追従のパラメータの紐づけ
+   * @param lookParameters ターゲット追従を紐づけたいパラメータのリスト
    */
   public setParameters(lookParameters: Array<LookParameterData>): void {
     this._lookParameters = lookParameters;
   }
 
   /**
-   * 获取已绑定目标跟随的参数
-   * @return 已绑定目标跟随的参数列表
+   * ターゲット追従に紐づいているパラメータの取得
+   * @return ターゲット追従に紐づいているパラメータのリスト
    */
   public getParameters(): Array<LookParameterData> {
     return this._lookParameters;
   }
 
   /**
-   * 更新模型参数
-   * @param model 目标模型
-   * @param dragX 目标的 X 坐标
-   * @param dragY 目标的 Y 坐标
+   * モデルのパラメータの更新
+   * @param model 対象のモデル
+   * @param dragX ターゲットのX座標
+   * @param dragY ターゲットのY座標
    */
   public updateParameters(
     model: CubismModel,
@@ -72,25 +72,25 @@ export class CubismLook {
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._lookParameters = new Array<LookParameterData>();
   }
 
-  _lookParameters: Array<LookParameterData>; // 已绑定目标跟随的参数列表
+  _lookParameters: Array<LookParameterData>; // ターゲット追従に紐づいているパラメータのリスト
 }
 
 /**
- * 目标跟随参数信息
+ * ターゲット追従のパラメータ情報
  */
 export class LookParameterData {
   /**
-   * 构造函数
-   * @param parameterId   要绑定目标跟随的参数 ID
-   * @param factorX       X 方向拖拽输入系数
-   * @param factorY       Y 方向拖拽输入系数
-   * @param factorXY      XY 乘积拖拽输入系数
+   * コンストラクタ
+   * @param parameterId   ターゲット追従を紐づけるパラメータID
+   * @param factorX       X方向ドラッグ入力に対する係数
+   * @param factorY       Y方向ドラッグ入力に対する係数
+   * @param factorXY      XY積ドラッグ入力に対する係数
    */
   constructor(
     parameterId?: CubismIdHandle,
@@ -104,13 +104,13 @@ export class LookParameterData {
     this.factorXY = factorXY == undefined ? 0.0 : factorXY;
   }
 
-  parameterId: CubismIdHandle; // 要绑定目标跟随的参数 ID
-  factorX: number; // X 方向拖拽输入系数
-  factorY: number; // Y 方向拖拽输入系数
-  factorXY: number; // XY 乘积拖拽输入系数
+  parameterId: CubismIdHandle; // ターゲット追従を紐づけるパラメータID
+  factorX: number; // X方向ドラッグ入力に対する係数
+  factorY: number; // Y方向ドラッグ入力に対する係数
+  factorXY: number; // XY積ドラッグ入力に対する係数
 }
 
-// 为兼容性定义的命名空间。
+// Namespace definition for compatibility.
 import * as $ from './cubismlook';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

@@ -8,10 +8,10 @@
 
 export class CubismString {
   /**
-   * 获取应用了标准输出格式的字符串。
-   * @param format    标准输出格式指定字符串
-   * @param ...args   传给格式指定字符串的字符串
-   * @return 应用格式后的字符串
+   * 標準出力の書式を適用した文字列を取得する。
+   * @param format    標準出力の書式指定文字列
+   * @param ...args   書式指定文字列に渡す文字列
+   * @return 書式を適用した文字列
    */
   public static getFormatedString(format: string, ...args: any[]): string {
     const ret: string = format;
@@ -27,11 +27,11 @@ export class CubismString {
   }
 
   /**
-   * 返回 text 是否以 startWord 开头
-   * @param test 检查对象字符串
-   * @param startWord 比较对象字符串
-   * @return true text 以 startWord 开头
-   * @return false text 不以 startWord 开头
+   * textがstartWordで始まっているかどうかを返す
+   * @param test 検査対象の文字列
+   * @param startWord 比較対象の文字列
+   * @return true textがstartWordで始まっている
+   * @return false textがstartWordで始まっていない
    */
   public static isStartWith(text: string, startWord: string): boolean {
     let textIndex = 0;
@@ -48,13 +48,13 @@ export class CubismString {
   }
 
   /**
-   * 从 position 位置的字符开始解析数字。
+   * position位置の文字から数字を解析する。
    *
-   * @param string 字符串
-   * @param length 字符串长度
-   * @param position 要解析的字符位置
-   * @param outEndPos 若一个字符都没读入则填入错误值(-1)
-   * @return 解析结果的数值
+   * @param string 文字列
+   * @param length 文字列の長さ
+   * @param position 解析したい文字の位置
+   * @param outEndPos 一文字も読み込まなかった場合はエラー値(-1)が入る
+   * @return 解析結果の数値
    */
   public static stringToFloat(
     string: string,
@@ -63,18 +63,18 @@ export class CubismString {
     outEndPos: number[]
   ): number {
     let i: number = position;
-    let minus = false; // 负数标记
+    let minus = false; // マイナスフラグ
     let period = false;
     let v1 = 0;
 
-    // 检查负号
+    //負号の確認
     let c: number = parseInt(string[i]);
     if (c < 0) {
       minus = true;
       i++;
     }
 
-    // 检查整数部分
+    //整数部の確認
     for (; i < length; i++) {
       const c = string[i];
       if (0 <= parseInt(c) && parseInt(c) <= 9) {
@@ -88,7 +88,7 @@ export class CubismString {
       }
     }
 
-    // 检查小数部分
+    //小数部の確認
     if (period) {
       let mul = 0.1;
       for (; i < length; i++) {
@@ -98,14 +98,14 @@ export class CubismString {
         } else {
           break;
         }
-        mul *= 0.1; // 降低一位
+        mul *= 0.1; //一桁下げる
         if (!c) break;
       }
     }
 
     if (i == position) {
-      // 一个字符都没读入的情况
-      outEndPos[0] = -1; // 会填入错误值，调用方需进行适当处理
+      //一文字も読み込まなかった場合
+      outEndPos[0] = -1; //エラー値が入るので呼び出し元で適切な処理を行う
       return 0;
     }
 
@@ -116,12 +116,12 @@ export class CubismString {
   }
 
   /**
-   * 使其成为不可调用构造函数的静态类。
+   * コンストラクタ呼び出し不可な静的クラスにする。
    */
   private constructor() {}
 }
 
-// 为兼容性定义的命名空间。
+// Namespace definition for compatibility.
 import * as $ from './cubismstring';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

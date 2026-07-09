@@ -12,27 +12,27 @@ import { CubismTargetPoint } from '../math/cubismtargetpoint';
 import { CubismLook } from '../effect/cubismlook';
 
 /**
- * 视线跟随效果的更新器。
- * 通过 MotionQueueManager 管理拖拽动作。
+ * Updater for look effects.
+ * Handles the management of dragging motion through the MotionQueueManager.
  */
 export class CubismLookUpdater extends ICubismUpdater {
   private _look: CubismLook;
   private _dragManager: CubismTargetPoint;
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param look CubismLook 引用
-   * @param dragManager CubismTargetPoint 引用
+   * @param look CubismLook reference
+   * @param dragManager CubismTargetPoint reference
    */
   constructor(look: CubismLook, dragManager: CubismTargetPoint);
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param look CubismLook 引用
-   * @param dragManager CubismTargetPoint 引用
-   * @param executionOrder 执行顺序
+   * @param look CubismLook reference
+   * @param dragManager CubismTargetPoint reference
+   * @param executionOrder Order of operations
    */
   constructor(
     look: CubismLook,
@@ -51,10 +51,10 @@ export class CubismLookUpdater extends ICubismUpdater {
   }
 
   /**
-   * 更新处理。
+   * Update process.
    *
-   * @param model 要更新的模型
-   * @param deltaTimeSeconds 增量时间（秒）。
+   * @param model Model to update
+   * @param deltaTimeSeconds Delta time in seconds.
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -69,7 +69,7 @@ export class CubismLookUpdater extends ICubismUpdater {
   }
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismlookupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

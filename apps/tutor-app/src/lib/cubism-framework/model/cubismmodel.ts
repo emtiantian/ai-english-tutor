@@ -21,8 +21,8 @@ export const NoOffscreenIndex = -1; // オフスクリーンが取得できな�
 /**
  * カラーブレンドのタイプ
  */
-// Patch: Cubism Core 1.0.2 未暴露 ColorBlendType_* 常量，
-// 使用与 Cubism 5 Core 匹配的硬编码值。
+// Patch: Cubism Core 1.0.2 doesn't expose ColorBlendType_* constants.
+// Use hardcoded values matching Cubism 5 Core.
 export enum CubismColorBlend {
   ColorBlend_None = -1,
   ColorBlend_Normal = 0,
@@ -67,14 +67,14 @@ export enum CubismModelObjectType {
 }
 
 /**
- * 管理参数循环设置覆盖信息的结构体
+ * Structure for managing the override of parameter repetition settings
  */
 export class ParameterRepeatData {
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param isOverridden 是否覆盖
-   * @param isParameterRepeated 设置覆盖标志
+   * @param isOverridden whether to be overriden
+   * @param isParameterRepeated override flag for settings
    */
   public constructor(
     isOverridden: boolean = false,
@@ -85,12 +85,12 @@ export class ParameterRepeatData {
   }
 
   /**
-   * 是否覆盖
+   * Whether to be overridden
    */
   public isOverridden: boolean;
 
   /**
-   * 设置覆盖标志
+   * Override flag for settings
    */
   public isParameterRepeated: boolean;
 }
@@ -197,7 +197,7 @@ export class CubismModel {
    * モデルのパラメータの更新
    */
   public update(): void {
-    // 更新模型
+    // Update model
     this._model.update();
 
     this._model.drawables.resetDynamicFlags();
@@ -267,38 +267,38 @@ export class CubismModel {
   }
 
   /**
-   * 检查是否对整个模型执行参数循环。
+   * Checks whether parameter repetition is performed for the entire model.
    *
-   * @return 如果对整个模型执行参数循环则返回 true，否则返回 false。
+   * @return true if parameter repetition is performed for the entire model; otherwise returns false.
    */
   public getOverrideFlagForModelParameterRepeat(): boolean {
     return this._isOverriddenParameterRepeat;
   }
 
   /**
-   * 设置是否对整个模型执行参数循环。
-   * 传入 true 则对整个模型执行参数循环，传入 false 则不执行。
+   * Sets whether parameter repetition is performed for the entire model.
+   * Use true to perform parameter repetition for the entire model, or false to not perform it.
    */
   public setOverrideFlagForModelParameterRepeat(isRepeat: boolean): void {
     this._isOverriddenParameterRepeat = isRepeat;
   }
 
   /**
-   * 返回是否覆盖参数循环的标志。
+   * Returns the flag indicating whether to override the parameter repeat.
    *
-   * @param parameterIndex 参数索引
+   * @param parameterIndex Parameter index
    *
-   * @return 如果覆盖参数循环则返回 true，否则返回 false。
+   * @return true if the parameter repeat is overridden, false otherwise.
    */
   public getOverrideFlagForParameterRepeat(parameterIndex: number): boolean {
     return this._userParameterRepeatDataList[parameterIndex].isOverridden;
   }
 
   /**
-   * 设置是否覆盖参数循环的标志。
+   * Sets the flag indicating whether to override the parameter repeat.
    *
-   * @param parameterIndex 参数索引
-   * @param value 如果要覆盖则传入 true，否则传入 false。
+   * @param parameterIndex Parameter index
+   * @param value true if it is to be overridden; otherwise, false.
    */
   public setOverrideFlagForParameterRepeat(
     parameterIndex: number,
@@ -308,11 +308,11 @@ export class CubismModel {
   }
 
   /**
-   * 返回循环标志。
+   * Returns the repeat flag.
    *
-   * @param parameterIndex 参数索引
+   * @param parameterIndex Parameter index
    *
-   * @return 如果循环则返回 true，否则返回 false。
+   * @return true if repeating, false otherwise.
    */
   public getRepeatFlagForParameterRepeat(parameterIndex: number): boolean {
     return this._userParameterRepeatDataList[parameterIndex]
@@ -320,10 +320,10 @@ export class CubismModel {
   }
 
   /**
-   * 设置循环标志。
+   * Sets the repeat flag.
    *
-   * @param parameterIndex 参数索引
-   * @param value 启用循环传 true，否则传 false。
+   * @param parameterIndex Parameter index
+   * @param value true to enable repeating, false otherwise.
    */
   public setRepeatFlagForParameterRepeat(
     parameterIndex: number,
@@ -815,34 +815,34 @@ export class CubismModel {
   }
 
   /**
-   * 获取参数是否设置了循环。
+   * Gets whether the parameter has the repeat setting.
    *
-   * @param parameterIndex 参数索引
+   * @param parameterIndex Parameter index
    *
-   * @return 如果已设置则返回 true，否则返回 false。
+   * @return true if it is set, otherwise returns false.
    */
   public isRepeat(parameterIndex: number): boolean {
     if (this._notExistParameterValues.has(parameterIndex)) {
       return false;
     }
 
-    // 索引范围检测
+    // In-index range detection
     CSM_ASSERT(
       0 <= parameterIndex && parameterIndex < this.getParameterCount()
     );
 
     let isRepeat: boolean;
 
-    // 判断是否执行参数循环处理
+    // Determines whether to perform parameter repeat processing
     if (
       this._isOverriddenParameterRepeat ||
       this._userParameterRepeatDataList[parameterIndex].isOverridden
     ) {
-      // 使用 SDK 侧设置的循环信息
+      // Use repeat information set on the SDK side
       isRepeat =
         this._userParameterRepeatDataList[parameterIndex].isParameterRepeated;
     } else {
-      // 使用 Editor 中设置的循环信息
+      // Use repeat information set in Editor
       isRepeat = this._model.parameters.repeats[parameterIndex] != 0;
     }
 
@@ -850,12 +850,12 @@ export class CubismModel {
   }
 
   /**
-   * 返回计算后的结果，确保数值落在参数范围内。
+   * Returns the calculated result ensuring the value falls within the parameter's range.
    *
-   * @param parameterIndex 参数索引
-   * @param value 参数值
+   * @param parameterIndex Parameter index
+   * @param value Parameter value
    *
-   * @return 落在参数范围内的值。如果参数不存在，则原样返回。
+   * @return a value that falls within the parameter’s range. If the parameter does not exist, returns it as is.
    */
   public getParameterRepeatValue(
     parameterIndex: number,
@@ -865,7 +865,7 @@ export class CubismModel {
       return value;
     }
 
-    // 索引范围检测
+    // In-index range detection
     CSM_ASSERT(
       0 <= parameterIndex && parameterIndex < this.getParameterCount()
     );
@@ -897,19 +897,19 @@ export class CubismModel {
   }
 
   /**
-   * 返回将数值限制在参数范围内的结果。
+   * Returns the result of clamping the value to ensure it falls within the parameter's range.
    *
-   * @param parameterIndex 参数索引
-   * @param value 参数值
+   * @param parameterIndex Parameter index
+   * @param value Parameter value
    *
-   * @return 限制后的值。如果参数不存在，则原样返回。
+   * @return the clamped value. If the parameter does not exist, returns it as is.
    */
   public getParameterClampValue(parameterIndex: number, value: number): number {
     if (this._notExistParameterValues.has(parameterIndex)) {
       return value;
     }
 
-    // 索引范围检测
+    // In-index range detection
     CSM_ASSERT(
       0 <= parameterIndex && parameterIndex < this.getParameterCount()
     );
@@ -923,11 +923,11 @@ export class CubismModel {
   }
 
   /**
-   * 返回参数的循环设置。
+   * Returns the repeat of the parameter.
    *
-   * @param parameterIndex 参数索引
+   * @param parameterIndex Parameter index
    *
-   * @return 来自 Cubism Core 的原始参数循环数据。
+   * @return the raw data parameter repeat from the Cubism Core.
    */
   public getParameterRepeats(parameterIndex: number): boolean {
     return this._model.parameters.repeats[parameterIndex] != 0;
@@ -1011,7 +1011,7 @@ export class CubismModel {
    * @return Drawableの描画順リスト
    */
   public getRenderOrders(): Int32Array {
-    // Patch: Cubism 3 Core 没有 getRenderOrders() 方法。
+    // Patch: Cubism 3 Core doesn't have getRenderOrders() method.
     return this._model.drawables.renderOrders;
   }
 
@@ -1800,8 +1800,8 @@ export class CubismModel {
    * @param model モデル
    */
   public constructor(model: Live2DCubismCore.Model) {
-    // Patch: Cubism 3 Core (1.0.2) 返回的模型缺少 Cubism 5 属性。
-    // 注入 mock 对象，使 Cubism 5 Framework 能够渲染旧模型。
+    // Patch: Cubism 3 Core (1.0.2) returns models without Cubism 5 properties.
+    // Inject mock objects so the Cubism 5 Framework can render older models.
     if (!model.offscreens) {
       (model as any).offscreens = {
         count: 0,
@@ -1818,7 +1818,7 @@ export class CubismModel {
     if (!model.drawables.blendModes) {
       (model as any).drawables.blendModes = new Int32Array(
         model.drawables.count
-      ); // 全为 0 表示 Normal/Over 混合模式
+      ); // all zeros = Normal/Over blend mode
     }
 
     this._model = model;
@@ -1903,14 +1903,14 @@ export class CubismModel {
   private _savedParameters: Array<number>; // 保存されたパラメータ
 
   /**
-   * 决定是否覆盖整个模型的参数循环的标志
+   * Flag to determine whether to override model-wide parameter repeats on the SDK
    */
   private _isOverriddenParameterRepeat: boolean;
 
   private _overrideMultiplyAndScreenColor: CubismModelMultiplyAndScreenColor; // 乗算色・スクリーン色の管理クラス
 
   /**
-   * 管理每个参数的 ParameterRepeat 与 Override 标志的列表
+   * List to manage ParameterRepeat and Override flag to be set for each Parameter
    */
   private _userParameterRepeatDataList: Array<ParameterRepeatData>;
   private _partsHierarchy: Array<CubismModelPartInfo>; // Partの親子構造
@@ -1947,7 +1947,7 @@ export class CubismModel {
   private _offscreenScreenColors: CubismTextureColor[]; // Offscreenのスクリーン色の配列
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismmodel';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

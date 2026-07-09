@@ -10,15 +10,15 @@ import { ICubismUpdater, ICubismUpdaterChangeListener } from './icubismupdater';
 import { CubismModel } from '../model/cubismmodel';
 
 /**
- * 用于管理并更新 ICubismUpdater 实例的调度器。
- * 通过有序列表管理更新顺序与执行。
+ * Scheduler for managing and updating ICubismUpdater instances.
+ * Handles the management of update order and execution through a sorted list.
  */
 export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   private _cubismUpdatableList: ICubismUpdater[];
   private _needsSort: boolean;
 
   /**
-   * 构造函数
+   * Constructor
    */
   constructor() {
     this._cubismUpdatableList = [];
@@ -26,34 +26,34 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 析构等效处理 - 释放所有更新器并移除监听器
+   * Destructor equivalent - releases all updaters and removes listeners
    */
   public release(): void {
-    // 清空前先移除所有监听器
+    // Remove all listeners before clearing
     for (const updater of this._cubismUpdatableList) {
       if (updater) {
         updater.removeChangeListener(this);
       }
     }
-    // 清空列表 - 在 TypeScript 中无需手动删除对象，
-    // 当不再被引用时它们会被垃圾回收
+    // Clear the list - in TypeScript we don't need to manually delete objects
+    // as they will be garbage collected when no longer referenced
     this._cubismUpdatableList.length = 0;
   }
 
   /**
-   * 将 ICubismUpdater 添加到更新列表。
-   * 列表会在下次更新前按执行顺序自动排序。
+   * Adds ICubismUpdater to the update list.
+   * The list will be automatically sorted by execution order before the next update.
    *
-   * @param updatable 要添加的 ICubismUpdater 实例。
+   * @param updatable The ICubismUpdater instance to be added.
    */
   public addUpdatableList(updatable: ICubismUpdater): void {
     if (!updatable) {
       return;
     }
 
-    // 检查是否重复注册
+    // Check for duplicate registration
     if (this.hasUpdatable(updatable)) {
-      return; // 已存在，跳过添加
+      return; // Already exists, skip adding
     }
 
     this._cubismUpdatableList.push(updatable);
@@ -62,10 +62,10 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 从更新列表中移除 ICubismUpdater。
+   * Removes ICubismUpdater from the update list.
    *
-   * @param updatable 要移除的 ICubismUpdater 实例。
-   * @return 如果找到并移除则返回 true，否则返回 false。
+   * @param updatable The ICubismUpdater instance to be removed.
+   * @return true if the updater was found and removed, false otherwise.
    */
   public removeUpdatableList(updatable: ICubismUpdater): boolean {
     if (!updatable) {
@@ -76,14 +76,14 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
     if (index >= 0) {
       this._cubismUpdatableList.splice(index, 1);
       updatable.removeChangeListener(this);
-      // 注意：移除后不需要重新排序
+      // Note: removal doesn't require re-sorting
       return true;
     }
     return false;
   }
 
   /**
-   * 使用 ICubismUpdater 排序函数对更新列表排序。
+   * Sorts the update list using the ICubismUpdater sort function.
    */
   public sortUpdatableList(): void {
     this._cubismUpdatableList.sort(ICubismUpdater.sortFunction);
@@ -91,18 +91,18 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 更新列表中的每个元素。
-   * 执行前会按执行顺序自动排序。
+   * Updates every element in the list.
+   * The list is automatically sorted by execution order before execution.
    *
-   * @param model 要更新的模型
-   * @param deltaTimeSeconds 增量时间（秒）。
+   * @param model Model to update
+   * @param deltaTimeSeconds Delta time in seconds.
    */
   public onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
       return;
     }
 
-    // 如果需要，自动排序以保证执行顺序
+    // Automatically sort if needed to ensure execution order
     if (this._needsSort) {
       this.sortUpdatableList();
     }
@@ -116,19 +116,19 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 获取列表中更新器的数量。
+   * Gets the number of updaters in the list.
    *
-   * @return 更新器数量
+   * @return Number of updaters
    */
   public getUpdatableCount(): number {
     return this._cubismUpdatableList.length;
   }
 
   /**
-   * 获取指定索引处的更新器。
+   * Gets the updater at the specified index.
    *
-   * @param index 要获取的更新器索引
-   * @return 指定索引处的更新器，如果越界则返回 null
+   * @param index Index of the updater to retrieve
+   * @return The updater at the specified index, or null if index is out of bounds
    */
   public getUpdatable(index: number): ICubismUpdater | null {
     if (index < 0 || index >= this._cubismUpdatableList.length) {
@@ -138,20 +138,20 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 检查指定更新器是否存在于列表中。
+   * Checks if the specified updater exists in the list.
    *
-   * @param updatable 要检查的更新器
-   * @return 如果存在返回 true，否则返回 false
+   * @param updatable The updater to check for
+   * @return true if the updater exists in the list, false otherwise
    */
   public hasUpdatable(updatable: ICubismUpdater): boolean {
     return this._cubismUpdatableList.indexOf(updatable) >= 0;
   }
 
   /**
-   * 清空列表中的所有更新器。
+   * Clears all updaters from the list.
    */
   public clearUpdatableList(): void {
-    // 清空前先移除监听器
+    // Remove listeners before clearing
     for (const updater of this._cubismUpdatableList) {
       if (updater) {
         updater.removeChangeListener(this);
@@ -162,17 +162,17 @@ export class CubismUpdateScheduler implements ICubismUpdaterChangeListener {
   }
 
   /**
-   * 当更新器的执行顺序发生变化时调用。
-   * 将列表标记为需要重新排序。
+   * Called when an updater's execution order has changed.
+   * Marks the list for re-sorting.
    *
-   * @param updater 发生变化的更新器
+   * @param updater The updater that was changed
    */
   public onUpdaterChanged(updater: ICubismUpdater): void {
     this._needsSort = true;
   }
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismupdatescheduler';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

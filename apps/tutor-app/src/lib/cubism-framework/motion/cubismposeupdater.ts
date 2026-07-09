@@ -11,24 +11,24 @@ import { CubismModel } from '../model/cubismmodel';
 import { CubismPose } from '../effect/cubismpose';
 
 /**
- * 姿态效果的更新器。
- * 通过 CubismPose 类管理姿态动画。
+ * Updater for pose effects.
+ * Handles the management of pose animation through the CubismPose class.
  */
 export class CubismPoseUpdater extends ICubismUpdater {
   private _pose: CubismPose;
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param pose CubismPose 引用
+   * @param pose CubismPose reference
    */
   constructor(pose: CubismPose);
 
   /**
-   * 构造函数
+   * Constructor
    *
-   * @param pose CubismPose 引用
-   * @param executionOrder 执行顺序
+   * @param pose CubismPose reference
+   * @param executionOrder Order of operations
    */
   constructor(pose: CubismPose, executionOrder: number);
 
@@ -38,10 +38,10 @@ export class CubismPoseUpdater extends ICubismUpdater {
   }
 
   /**
-   * 更新处理。
+   * Update process.
    *
-   * @param model 要更新的模型
-   * @param deltaTimeSeconds 增量时间（秒）。
+   * @param model Model to update
+   * @param deltaTimeSeconds Delta time in seconds.
    */
   onLateUpdate(model: CubismModel, deltaTimeSeconds: number): void {
     if (!model) {
@@ -52,7 +52,7 @@ export class CubismPoseUpdater extends ICubismUpdater {
   }
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismposeupdater';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

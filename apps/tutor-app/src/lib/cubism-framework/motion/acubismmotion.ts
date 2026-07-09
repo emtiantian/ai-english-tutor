@@ -11,20 +11,20 @@ import { CubismModel } from '../model/cubismmodel';
 import { CSM_ASSERT, CubismDebug } from '../utils/cubismdebug';
 import { CubismMotionQueueEntry } from './cubismmotionqueueentry';
 
-/** 动作开始播放回调函数定义 */
+/** モーション再生開始コールバック関数定義 */
 export type BeganMotionCallback = (self: ACubismMotion) => void;
 
-/** 动作结束播放回调函数定义 */
+/** モーション再生終了コールバック関数定義 */
 export type FinishedMotionCallback = (self: ACubismMotion) => void;
 
 /**
- * 动作的抽象基类
+ * モーションの抽象基底クラス
  *
- * 动作的抽象基类。由 MotionQueueManager 管理动作播放。
+ * モーションの抽象基底クラス。MotionQueueManagerによってモーションの再生を管理する。
  */
 export abstract class ACubismMotion {
   /**
-   * 销毁实例
+   * インスタンスの破棄
    */
   public static delete(motion: ACubismMotion): void {
     motion.release();
@@ -32,31 +32,31 @@ export abstract class ACubismMotion {
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._fadeInSeconds = -1.0;
     this._fadeOutSeconds = -1.0;
     this._weight = 1.0;
-    this._offsetSeconds = 0.0; // 播放开始时刻
-    this._isLoop = false; // 是否循环
-    this._isLoopFadeIn = true; // 循环时是否启用淡入的标志。默认为启用。
+    this._offsetSeconds = 0.0; // 再生の開始時刻
+    this._isLoop = false; // ループするか
+    this._isLoopFadeIn = true; // ループ時にフェードインが有効かどうかのフラグ。初期値では有効。
     this._previousLoopState = this._isLoop;
     this._firedEventValues = new Array<string>();
   }
 
   /**
-   * 析构等效处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     this._weight = 0.0;
   }
 
   /**
-   * 更新模型的参数
-   * @param model 目标模型
-   * @param motionQueueEntry CubismMotionQueueManager 中管理的动作
-   * @param userTimeSeconds 累计增量时间[秒]
+   * モデルのパラメータ
+   * @param model 対象のモデル
+   * @param motionQueueEntry CubismMotionQueueManagerで管理されているモーション
+   * @param userTimeSeconds デルタ時間の積算値[秒]
    */
   public updateParameters(
     model: CubismModel,
@@ -71,7 +71,7 @@ export abstract class ACubismMotion {
 
     const fadeWeight = this.updateFadeWeight(motionQueueEntry, userTimeSeconds);
 
-    //---- 遍历所有参数 ID ----
+    //---- 全てのパラメータIDをループする ----
     this.doUpdateParameters(
       model,
       userTimeSeconds,
@@ -79,23 +79,23 @@ export abstract class ACubismMotion {
       motionQueueEntry
     );
 
-    // 后处理
-    // 超过结束时刻则设置结束标志（CubismMotionQueueManager）
+    // 後処理
+    // 終了時刻を過ぎたら終了フラグを立てる(CubismMotionQueueManager)
     if (
       motionQueueEntry.getEndTime() > 0 &&
       motionQueueEntry.getEndTime() < userTimeSeconds
     ) {
-      motionQueueEntry.setIsFinished(true); // 结束
+      motionQueueEntry.setIsFinished(true); // 終了
     }
   }
 
   /**
-   * @brief 开始模型播放处理
+   * @brief モデルの再生開始処理
    *
-   * 设置并开始播放动作。
+   * モーションの再生を開始するためのセットアップを行う。
    *
-   * @param[in]   motionQueueEntry    CubismMotionQueueManager 中管理的动作
-   * @param[in]   userTimeSeconds     累计增量时间[秒]
+   * @param[in]   motionQueueEntry    CubismMotionQueueManagerで管理されているモーション
+   * @param[in]   userTimeSeconds     デルタ時間の積算値[秒]
    */
   public setupMotionQueueEntry(
     motionQueueEntry: CubismMotionQueueEntry,
@@ -110,27 +110,27 @@ export abstract class ACubismMotion {
     }
 
     motionQueueEntry.setIsStarted(true);
-    motionQueueEntry.setStartTime(userTimeSeconds - this._offsetSeconds); // 记录动作开始时刻
-    motionQueueEntry.setFadeInStartTime(userTimeSeconds); // 淡入开始时刻
+    motionQueueEntry.setStartTime(userTimeSeconds - this._offsetSeconds); // モーションの開始時刻を記録
+    motionQueueEntry.setFadeInStartTime(userTimeSeconds); // フェードインの開始時刻
 
     if (motionQueueEntry.getEndTime() < 0.0) {
-      // 存在尚未开始就已设置结束的情况
+      // 開始していないうちに終了設定している場合がある
       this.adjustEndTime(motionQueueEntry);
     }
 
-    // 播放开始回调
+    // 再生開始コールバック
     if (motionQueueEntry._motion._onBeganMotion) {
       motionQueueEntry._motion._onBeganMotion(motionQueueEntry._motion);
     }
   }
 
   /**
-   * @brief 更新模型权重
+   * @brief モデルのウェイト更新
    *
-   * 更新动作权重。
+   * モーションのウェイトを更新する。
    *
-   * @param[in]   motionQueueEntry    CubismMotionQueueManager 中管理的动作
-   * @param[in]   userTimeSeconds     累计增量时间[秒]
+   * @param[in]   motionQueueEntry    CubismMotionQueueManagerで管理されているモーション
+   * @param[in]   userTimeSeconds     デルタ時間の積算値[秒]
    */
   public updateFadeWeight(
     motionQueueEntry: CubismMotionQueueEntry,
@@ -140,10 +140,10 @@ export abstract class ACubismMotion {
       CubismDebug.print(LogLevel.LogLevel_Error, 'motionQueueEntry is null.');
     }
 
-    let fadeWeight: number = this._weight; // 与当前值相乘的比例
+    let fadeWeight: number = this._weight; // 現在の値と掛け合わせる割合
 
-    //---- 淡入/淡出处理 ----
-    // 使用简单的正弦函数进行缓动
+    //---- フェードイン・アウトの処理 ----
+    // 単純なサイン関数でイージングする
     const fadeIn: number =
       this._fadeInSeconds == 0.0
         ? 1.0
@@ -170,124 +170,128 @@ export abstract class ACubismMotion {
   }
 
   /**
-   * 设置淡入时间
-   * @param fadeInSeconds 淡入所需时间[秒]
+   * フェードインの時間を設定する
+   * @param fadeInSeconds フェードインにかかる時間[秒]
    */
   public setFadeInTime(fadeInSeconds: number): void {
     this._fadeInSeconds = fadeInSeconds;
   }
 
   /**
-   * 设置淡出时间
-   * @param fadeOutSeconds 淡出所需时间[秒]
+   * フェードアウトの時間を設定する
+   * @param fadeOutSeconds フェードアウトにかかる時間[秒]
    */
   public setFadeOutTime(fadeOutSeconds: number): void {
     this._fadeOutSeconds = fadeOutSeconds;
   }
 
   /**
-   * 获取淡出所需时间
-   * @return 淡出所需时间[秒]
+   * フェードアウトにかかる時間の取得
+   * @return フェードアウトにかかる時間[秒]
    */
   public getFadeOutTime(): number {
     return this._fadeOutSeconds;
   }
 
   /**
-   * 获取淡入所需时间
-   * @return 淡入所需时间[秒]
+   * フェードインにかかる時間の取得
+   * @return フェードインにかかる時間[秒]
    */
   public getFadeInTime(): number {
     return this._fadeInSeconds;
   }
 
   /**
-   * 设置动作应用的权重
-   * @param weight 权重（0.0 - 1.0）
+   * モーション適用の重みの設定
+   * @param weight 重み（0.0 - 1.0）
    */
   public setWeight(weight: number): void {
     this._weight = weight;
   }
 
   /**
-   * 获取动作应用的权重
-   * @return 权重（0.0 - 1.0）
+   * モーション適用の重みの取得
+   * @return 重み（0.0 - 1.0）
    */
   public getWeight(): number {
     return this._weight;
   }
 
   /**
-   * 获取动作长度
-   * @return 动作长度[秒]
+   * モーションの長さの取得
+   * @return モーションの長さ[秒]
    *
-   * @note 循环时返回「-1」。非循环时需重写。返回正值时在该时间结束。返回「-1」时，除非外部发出停止命令，否则不会结束。
+   * @note ループの時は「-1」。
+   *       ループでない場合は、オーバーライドする。
+   *       正の値の時は取得される時間で終了する。
+   *       「-1」の時は外部から停止命令がない限り終わらない処理となる。
    */
   public getDuration(): number {
     return -1.0;
   }
 
   /**
-   * 获取动作单次循环的长度
-   * @return 动作单次循环的长度[秒]
+   * モーションのループ1回分の長さの取得
+   * @return モーションのループ一回分の長さ[秒]
    *
-   * @note 不循环时返回与 getDuration() 相同的值。无法定义单次循环长度时（例如程序上持续运动的子类）返回「-1」。
+   * @note ループしない場合は、getDuration()と同じ値を返す
+   *       ループ一回分の長さが定義できない場合(プログラム的に動き続けるサブクラスなど)の場合は「-1」を返す
    */
   public getLoopDuration(): number {
     return -1.0;
   }
 
   /**
-   * 设置动作播放的开始时刻
-   * @param offsetSeconds 动作播放的开始时刻[秒]
+   * モーション再生の開始時刻の設定
+   * @param offsetSeconds モーション再生の開始時刻[秒]
    */
   public setOffsetTime(offsetSeconds: number): void {
     this._offsetSeconds = offsetSeconds;
   }
 
   /**
-   * 设置循环信息
-   * @param loop 循环信息
+   * ループ情報の設定
+   * @param loop ループ情報
    */
   public setLoop(loop: boolean): void {
     this._isLoop = loop;
   }
 
   /**
-   * 获取循环信息
-   * @return true 循环
-   * @return false 不循环
+   * ループ情報の取得
+   * @return true ループする
+   * @return false ループしない
    */
   public getLoop(): boolean {
     return this._isLoop;
   }
 
   /**
-   * 设置循环时的淡入信息
-   * @param loopFadeIn  循环时的淡入信息
+   * ループ時のフェードイン情報の設定
+   * @param loopFadeIn  ループ時のフェードイン情報
    */
   public setLoopFadeIn(loopFadeIn: boolean) {
     this._isLoopFadeIn = loopFadeIn;
   }
 
   /**
-   * 获取循环时的淡入信息
+   * ループ時のフェードイン情報の取得
    *
-   * @return  true    启用
-   * @return  false   不启用
+   * @return  true    する
+   * @return  false   しない
    */
   public getLoopFadeIn(): boolean {
     return this._isLoopFadeIn;
   }
 
   /**
-   * 更新模型的参数
+   * モデルのパラメータ更新
    *
-   * 检查事件触发。
-   * 输入时间以被调用时的动作时间点为 0 的秒数。
+   * イベント発火のチェック。
+   * 入力する時間は呼ばれるモーションタイミングを０とした秒数で行う。
    *
-   * @param beforeCheckTimeSeconds 上次事件检查时间[秒]
-   * @param motionTimeSeconds 本次播放时间[秒]
+   * @param beforeCheckTimeSeconds 前回のイベントチェック時間[秒]
+   * @param motionTimeSeconds 今回の再生時間[秒]
    */
   public getFiredEvent(
     beforeCheckTimeSeconds: number,
@@ -297,13 +301,13 @@ export abstract class ACubismMotion {
   }
 
   /**
-   * 更新动作并将参数值反映到模型
-   * @param model 目标模型
-   * @param userTimeSeconds 累计增量时间[秒]
-   * @param weight 动作权重
-   * @param motionQueueEntry CubismMotionQueueManager 中管理的动作
-   * @return true 有参数值反映到模型
-   * @return false 没有参数值反映到模型（动作无变化）
+   * モーションを更新して、モデルにパラメータ値を反映する
+   * @param model 対象のモデル
+   * @param userTimeSeconds デルタ時間の積算値[秒]
+   * @param weight モーションの重み
+   * @param motionQueueEntry CubismMotionQueueManagerで管理されているモーション
+   * @return true モデルへパラメータ値の反映あり
+   * @return false モデルへのパラメータ値の反映なし（モーションの変化なし）
    */
   public abstract doUpdateParameters(
     model: CubismModel,
@@ -313,121 +317,121 @@ export abstract class ACubismMotion {
   ): void;
 
   /**
-   * 注册动作开始播放回调
+   * モーション再生開始コールバックの登録
    *
-   * 注册动作开始播放回调。
-   * 在以下情况下不会被调用：
-   *   1. 播放中的动作被设置为「循环」时
-   *   2. 未注册回调时
+   * モーション再生開始コールバックを登録する。
+   * 以下の状態の際には呼び出されない:
+   *   1. 再生中のモーションが「ループ」として設定されているとき
+   *   2. コールバックが登録されていない時
    *
-   * @param onBeganMotionHandler 动作开始播放回调函数
+   * @param onBeganMotionHandler モーション再生開始コールバック関数
    */
   public setBeganMotionHandler = (onBeganMotionHandler: BeganMotionCallback) =>
     (this._onBeganMotion = onBeganMotionHandler);
 
   /**
-   * 获取动作开始播放回调
+   * モーション再生開始コールバックの取得
    *
-   * 获取动作开始播放回调。
+   * モーション再生開始コールバックを取得する。
    *
-   * @return 已注册的动作开始播放回调函数
+   * @return 登録されているモーション再生開始コールバック関数
    */
   public getBeganMotionHandler = () => this._onBeganMotion;
 
   /**
-   * 注册动作结束播放回调
+   * モーション再生終了コールバックの登録
    *
-   * 注册动作结束播放回调。
-   * 在设置 isFinished 标志时调用。
-   * 在以下情况下不会被调用：
-   *   1. 播放中的动作被设置为「循环」时
-   *   2. 未注册回调时
+   * モーション再生終了コールバックを登録する。
+   * isFinishedフラグを設定するタイミングで呼び出される。
+   * 以下の状態の際には呼び出されない:
+   *   1. 再生中のモーションが「ループ」として設定されているとき
+   *   2. コールバックが登録されていない時
    *
-   * @param onFinishedMotionHandler 动作结束播放回调函数
+   * @param onFinishedMotionHandler モーション再生終了コールバック関数
    */
   public setFinishedMotionHandler = (
     onFinishedMotionHandler: FinishedMotionCallback
   ) => (this._onFinishedMotion = onFinishedMotionHandler);
 
   /**
-   * 获取动作结束播放回调
+   * モーション再生終了コールバックの取得
    *
-   * 获取动作结束播放回调。
+   * モーション再生終了コールバックを取得する。
    *
-   * @return 已注册的动作结束播放回调函数
+   * @return 登録されているモーション再生終了コールバック関数
    */
   public getFinishedMotionHandler = () => this._onFinishedMotion;
 
   /**
-   * 检查是否存在透明度曲线
+   * 透明度のカーブが存在するかどうかを確認する
    *
-   * @return true  -> 存在键
-   *          false -> 不存在键
+   * @return true  -> キーが存在する
+   *          false -> キーが存在しない
    */
   public isExistModelOpacity(): boolean {
     return false;
   }
 
   /**
-   * 返回透明度曲线的索引
+   * 透明度のカーブのインデックスを返す
    *
-   * @return success:透明度曲线的索引
+   * @return success:透明度のカーブのインデックス
    */
   public getModelOpacityIndex(): number {
     return -1;
   }
 
   /**
-   * 返回透明度的 Id
+   * 透明度のIdを返す
    *
-   * @param index 动作曲线的索引
-   * @return success:透明度的 Id
+   * @param index モーションカーブのインデックス
+   * @return success:透明度のId
    */
   public getModelOpacityId(index: number): CubismIdHandle {
     return null;
   }
 
   /**
-   * 返回指定时间的透明度值
+   * 指定時間の透明度の値を返す
    *
-   * @return success:动作当前时间的 Opacity 值
+   * @return success:モーションの現在時間におけるOpacityの値
    *
-   * @note  要获取更新后的值，请在 updateParameters() 之后调用。
+   * @note  更新後の値を取るにはUpdateParameters() の後に呼び出す。
    */
   protected getModelOpacityValue(): number {
     return 1.0;
   }
 
   /**
-   * 调整结束时刻
-   * @param motionQueueEntry CubismMotionQueueManager 中管理的动作
+   * 終了時刻の調整
+   * @param motionQueueEntry CubismMotionQueueManagerで管理されているモーション
    */
   protected adjustEndTime(motionQueueEntry: CubismMotionQueueEntry) {
     const duration = this.getDuration();
 
-    // duration == -1 时循环播放
+    // duration == -1 の場合はループする
     const endTime =
       duration <= 0.0 ? -1 : motionQueueEntry.getStartTime() + duration;
 
     motionQueueEntry.setEndTime(endTime);
   }
 
-  public _fadeInSeconds: number; // 淡入时间[秒]
-  public _fadeOutSeconds: number; // 淡出时间[秒]
-  public _weight: number; // 动作权重
-  public _offsetSeconds: number; // 动作播放开始时间[秒]
-  public _isLoop: boolean; // 是否启用循环的标志
-  public _isLoopFadeIn: boolean; // 循环时是否启用淡入的标志
-  public _previousLoopState: boolean; // 上一次 _isLoop 的状态
+  public _fadeInSeconds: number; // フェードインにかかる時間[秒]
+  public _fadeOutSeconds: number; // フェードアウトにかかる時間[秒]
+  public _weight: number; // モーションの重み
+  public _offsetSeconds: number; // モーション再生の開始時間[秒]
+  public _isLoop: boolean; // ループが有効かのフラグ
+  public _isLoopFadeIn: boolean; // ループ時にフェードインが有効かどうかのフラグ
+  public _previousLoopState: boolean; // 前回の `_isLoop` の状態
   public _firedEventValues: Array<string>;
 
-  // 动作开始播放回调函数
+  // モーション再生開始コールバック関数
   public _onBeganMotion?: BeganMotionCallback;
-  // 动作结束播放回调函数
+  // モーション再生終了コールバック関数
   public _onFinishedMotion?: FinishedMotionCallback;
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './acubismmotion';
 import { CubismIdHandle } from '../id/cubismid';
 import { LogLevel } from '../live2dcubismframework';

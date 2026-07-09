@@ -64,7 +64,7 @@ export const CubismDefaultParameterId = Object.freeze<Record<string, string>>({
   ParamNONE: 'NONE:'
 });
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismdefaultparameterid';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

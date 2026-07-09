@@ -7,33 +7,33 @@
  */
 
 /**
- * 用于提供参数值的接口类。<br>
- * 定义了向模型提供参数值的类的基本接口。
+ * Interface class for providing parameter values.<br>
+ * Defines the base interface for classes that supply parameter values to the model.
  */
 export abstract class IParameterProvider {
   /**
-   * 构造函数
+   * Constructor
    */
   constructor() {}
 
   /**
-   * 更新处理。
+   * Update process.
    *
-   * @param deltaTimeSeconds 增量时间（秒），可选。
+   * @param deltaTimeSeconds Delta time in seconds (optional).
    *
-   * @return 更新成功则返回 true。
+   * @return true if the update is successful.
    */
   abstract update(deltaTimeSeconds?: number): boolean;
 
   /**
-   * 获取参数的当前值。
+   * Retrieves the current value of the parameter.
    *
-   * @return 参数值，浮点数。
+   * @return The parameter value as a floating-point number.
    */
   abstract getParameter(): number;
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './iparameterprovider';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

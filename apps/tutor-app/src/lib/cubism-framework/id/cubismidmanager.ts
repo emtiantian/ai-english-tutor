@@ -9,20 +9,20 @@
 import { CubismId } from './cubismid';
 
 /**
- * ID 名称管理
+ * ID名の管理
  *
- * 管理 ID 名称。
+ * ID名を管理する。
  */
 export class CubismIdManager {
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._ids = new Array<CubismId>();
   }
 
   /**
-   * 相当于析构函数的处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     for (let i = 0; i < this._ids.length; ++i) {
@@ -32,10 +32,10 @@ export class CubismIdManager {
   }
 
   /**
-   * 从列表中注册 ID 名称
+   * ID名をリストから登録
    *
-   * @param ids ID 名称列表
-   * @param count ID 个数
+   * @param ids ID名リスト
+   * @param count IDの個数
    */
   public registerIds(ids: string[]): void {
     for (let i = 0; i < ids.length; i++) {
@@ -44,9 +44,9 @@ export class CubismIdManager {
   }
 
   /**
-   * 注册 ID 名称
+   * ID名を登録
    *
-   * @param id ID 名称
+   * @param id ID名
    */
   public registerId(id: string): CubismId {
     let result: CubismId = null;
@@ -66,19 +66,19 @@ export class CubismIdManager {
   }
 
   /**
-   * 根据 ID 名称获取 ID
+   * ID名からIDを取得する
    *
-   * @param id ID 名称
+   * @param id ID名
    */
   public getId(id: string): CubismId {
     return this.registerId(id);
   }
 
   /**
-   * 根据 ID 名称确认 ID 是否存在
+   * ID名からIDの確認
    *
-   * @return true 存在
-   * @return false 不存在
+   * @return true 存在する
+   * @return false 存在しない
    */
   public isExist(id: string): boolean {
     if ('string' == typeof id) {
@@ -88,10 +88,10 @@ export class CubismIdManager {
   }
 
   /**
-   * 根据 ID 名称搜索 ID。
+   * ID名からIDを検索する。
    *
-   * @param id ID 名称
-   * @return 已注册的 ID。没有则返回 NULL。
+   * @param id ID名
+   * @return 登録されているID。なければNULL。
    */
   private findId(id: string): CubismId {
     for (let i = 0; i < this._ids.length; ++i) {
@@ -103,10 +103,10 @@ export class CubismIdManager {
     return null;
   }
 
-  private _ids: Array<CubismId>; // 已注册的 ID 列表
+  private _ids: Array<CubismId>; // 登録されているIDのリスト
 }
 
-// 用于兼容性的命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismidmanager';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

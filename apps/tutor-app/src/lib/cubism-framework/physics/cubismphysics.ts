@@ -22,32 +22,32 @@ import {
 } from './cubismphysicsinternal';
 import { CubismPhysicsJson } from './cubismphysicsjson';
 
-// 物理类型标签。
+// physics types tags.
 const PhysicsTypeTagX = 'X';
 const PhysicsTypeTagY = 'Y';
 const PhysicsTypeTagAngle = 'Angle';
 
-// 空气阻力常数。
+// Constant of air resistance.
 const AirResistance = 5.0;
 
-// 输入与输出权重最大值常数。
+// Constant of maximum weight of input and output ratio.
 const MaximumWeight = 100.0;
 
-// 移动阈值常数。
+// Constant of threshold of movement.
 const MovementThreshold = 0.001;
 
-// 允许的最大 delta time 常数
+// Constant of maximum allowed delta time
 const MaxDeltaTime = 5.0;
 
 /**
- * 物理演算类
+ * 物理演算クラス
  */
 export class CubismPhysics {
   /**
-   * 创建实例
-   * @param buffer    已加载 physics3.json 的缓冲区
-   * @param size      缓冲区大小
-   * @return 创建的实例
+   * インスタンスの作成
+   * @param buffer    physics3.jsonが読み込まれているバッファ
+   * @param size      バッファのサイズ
+   * @return 作成されたインスタンス
    */
   public static create(buffer: ArrayBuffer, size: number): CubismPhysics {
     const ret: CubismPhysics = new CubismPhysics();
@@ -59,8 +59,8 @@ export class CubismPhysics {
   }
 
   /**
-   * 销毁实例
-   * @param physics 要销毁的实例
+   * インスタンスを破棄する
+   * @param physics 破棄するインスタンス
    */
   public static delete(physics: CubismPhysics): void {
     if (physics != null) {
@@ -70,9 +70,9 @@ export class CubismPhysics {
   }
 
   /**
-   * 解析 physics3.json。
-   * @param physicsJson 已加载 physics3.json 的缓冲区
-   * @param size 缓冲区大小
+   * physics3.jsonをパースする。
+   * @param physicsJson physics3.jsonが読み込まれているバッファ
+   * @param size バッファのサイズ
    */
   public parse(physicsJson: ArrayBuffer, size: number): void {
     this._physicsRig = new CubismPhysicsRig();
@@ -136,7 +136,7 @@ export class CubismPhysics {
       this._physicsRig.settings[i].normalizationAngle.defalut =
         json.getNormalizationAngleDefaultValue(i);
 
-      // 输入
+      // Input
       this._physicsRig.settings[i].inputCount = json.getInputCount(i);
       this._physicsRig.settings[i].baseInputIndex = inputIndex;
 
@@ -175,7 +175,7 @@ export class CubismPhysics {
       }
       inputIndex += this._physicsRig.settings[i].inputCount;
 
-      // 输出
+      // Output
       this._physicsRig.settings[i].outputCount = json.getOutputCount(i);
       this._physicsRig.settings[i].baseOutputIndex = outputIndex;
 
@@ -196,7 +196,7 @@ export class CubismPhysics {
       );
 
       for (let j = 0; j < this._physicsRig.settings[i].outputCount; ++j) {
-        // 初始化
+        // initialize
         currentRigOutput.outputs[j] = 0.0;
         previousRigOutput.outputs[j] = 0.0;
 
@@ -248,7 +248,7 @@ export class CubismPhysics {
 
       outputIndex += this._physicsRig.settings[i].outputCount;
 
-      // 粒子
+      // Particle
       this._physicsRig.settings[i].particleCount = json.getParticleCount(i);
       this._physicsRig.settings[i].baseParticleIndex = particleIndex;
 
@@ -276,8 +276,8 @@ export class CubismPhysics {
   }
 
   /**
-   * 计算当前参数值下物理演算稳定的状态。
-   * @param model 要应用物理演算结果的模型
+   * 現在のパラメータ値で物理演算が安定化する状態を演算する。
+   * @param model 物理演算の結果を適用するモデル
    */
   public stabilization(model: CubismModel): void {
     let totalAngle: { angle: number };
@@ -330,7 +330,7 @@ export class CubismPhysics {
         currentSetting.baseParticleIndex
       );
 
-      // 加载输入参数
+      // Load input parameters
       for (let i = 0; i < currentSetting.inputCount; ++i) {
         weight = currentInputs[i].weight / MaximumWeight;
 
@@ -366,7 +366,7 @@ export class CubismPhysics {
         totalTranslation.x * CubismMath.sin(radAngle) +
         totalTranslation.y * CubismMath.cos(radAngle);
 
-      // 计算粒子位置。
+      // Calculate particles position.
       updateParticlesForStabilization(
         currentParticles,
         currentSetting.particleCount,
@@ -376,7 +376,7 @@ export class CubismPhysics {
         MovementThreshold * currentSetting.normalizationPosition.maximum
       );
 
-      // 更新输出参数。
+      // Update output parameters.
       for (let i = 0; i < currentSetting.outputCount; ++i) {
         const particleIndex = currentOutputs[i].vertexIndex;
 
@@ -418,7 +418,7 @@ export class CubismPhysics {
                 JSON.stringify(
                   parameterValues.subarray(destinationParameterIndex)
                 )
-              ) // 用于按值传递，使用 JSON.parse / JSON.stringify
+              ) // 値渡しするため、JSON.parse, JSON.stringify
             : parameterValues.slice(destinationParameterIndex);
 
         updateOutputParameterValue(
@@ -429,7 +429,7 @@ export class CubismPhysics {
           currentOutputs[i]
         );
 
-        // 反映数值
+        // 値を反映
         for (
           let offset: number = destinationParameterIndex, outParamIndex = 0;
           offset < this._parameterCaches.length;
@@ -443,44 +443,45 @@ export class CubismPhysics {
   }
 
   /**
-   * 物理演算评估
+   * 物理演算の評価
    *
-   * 摆锤插值权重
+   * Pendulum interpolation weights
    *
-   * 摆锤计算结果会被保存，对参数的输出会与保存的前一次摆锤结果进行插值。
-   * 摆锤计算结果会被保存，
-   * 对参数的输出会与保存的前一次摆锤结果进行插值。
+   * 振り子の計算結果は保存され、パラメータへの出力は保存された前回の結果で補間されます。
+   * The result of the pendulum calculation is saved and
+   * the output to the parameters is interpolated with the saved previous result of the pendulum calculation.
    *
-   * 如图所示，在 [1] 与 [2] 之间进行插值。
-   * 图中展示了 [1] 与 [2] 之间的插值。
+   * 図で示すと[1]と[2]で補間されます。
+   * The figure shows the interpolation between [1] and [2].
    *
-   * 插值权重由当前时间相对于最新一次摆锤计算时刻与下一次时刻之间的位置决定。
-   * 插值权重由当前时间在最新一次摆锤计算时刻与下一次时刻之间所处的位置决定。
+   * 補間の重みは最新の振り子計算タイミングと次回のタイミングの間で見た現在時間で決定する。
+   * The weight of the interpolation are determined by the current time seen between
+   * the latest pendulum calculation timing and the next timing.
    *
-   * 如图所示，(3) 的位置权重取决于在 [2] 与 [4] 之间所见的位置。
-   * 图中展示了 (3) 在 [2] 与 [4] 之间所处位置的权重。
+   * 図で示すと[2]と[4]の間でみた(3)の位置の重みになる。
+   * Figure shows the weight of position (3) as seen between [2] and [4].
    *
-   * 可以理解为摆锤计算的时刻与权重计算的时刻存在偏差。
-   * 可以理解为摆锤计算与权重计算的时刻不一致。
+   * 解釈として振り子計算のタイミングと重み計算のタイミングがズレる。
+   * As an interpretation, the pendulum calculation and weights are misaligned.
    *
-   * 当 physics3.json 中不存在 FPS 信息时，始终会设置为前一次摆锤状态。
-   * 当 physics3.json 中没有 FPS 信息时，始终设置为前一次摆锤状态。
+   * physics3.jsonにFPS情報が存在しない場合は常に前の振り子状態で設定される。
+   * If there is no FPS information in physics3.json, it is always set in the previous pendulum state.
    *
-   * 该规范旨在避免超出插值范围所导致的颤抖外观。
-   * 该规范的目的是避免因偏离插值范围而产生的抖动外观。
+   * この仕様は補間範囲を逸脱したことが原因の震えたような見た目を回避を目的にしている。
+   * The purpose of this specification is to avoid the quivering appearance caused by deviations from the interpolation range.
    *
    * ------------ time -------------->
    *
-   *                 |+++++|------| <- 权重
+   *                 |+++++|------| <- weight
    * ==[1]====#=====[2]---(3)----(4)
-   *          ^ 输出内容
+   *          ^ output contents
    *
    * 1:_previousRigOutputs
    * 2:_currentRigOutputs
-   * 3:_currentRemainTime（当前渲染）
-   * 4:下一次粒子计算时刻
-   * @param model 要应用物理演算结果的模型
-   * @param deltaTimeSeconds 增量时间[秒]
+   * 3:_currentRemainTime (now rendering)
+   * 4:next particles timing
+   * @param model 物理演算の結果を適用するモデル
+   * @param deltaTimeSeconds デルタ時間[秒]
    */
   public evaluate(model: CubismModel, deltaTimeSeconds: number): void {
     let totalAngle: { angle: number };
@@ -529,7 +530,7 @@ export class CubismPhysics {
     }
 
     while (this._currentRemainTime >= physicsDeltaTime) {
-      // 将 _currentRigOutputs 复制到 _previousRigOutputs
+      // copyRigOutputs _currentRigOutputs to _previousRigOutputs
       for (
         let settingIndex = 0;
         settingIndex < this._physicsRig.subRigCount;
@@ -545,10 +546,10 @@ export class CubismPhysics {
         }
       }
 
-      // 对输入缓存与参数进行线性插值，计算 UpdateParticles 执行时刻的输入。
-      // 对 _parameterInputCache 与 parameterValue 进行线性插值，计算 UpdateParticles 执行时刻的输入。
-      // _parameterCache 负责在组间传播数值，因此需要与 _parameterInputCache 分离。
-      // _parameterCache 需要在组间传播数值，因此要与 _parameterInputCache 分离。
+      // 入力キャッシュとパラメータで線形補間してUpdateParticlesするタイミングでの入力を計算する。
+      // Calculate the input at the timing to UpdateParticles by linear interpolation with the _parameterInputCache and parameterValue.
+      // _parameterCacheはグループ間での値の伝搬の役割があるので_parameterInputCacheとの分離が必要。
+      // _parameterCache needs to be separated from _parameterInputCache because of its role in propagating values between groups.
       const inputWeight = physicsDeltaTime / this._currentRemainTime;
       for (let j = 0; j < model.getParameterCount(); ++j) {
         this._parameterCaches[j] =
@@ -576,7 +577,7 @@ export class CubismPhysics {
           currentSetting.baseParticleIndex
         );
 
-        // 加载输入参数
+        // Load input parameters
         for (let i = 0; i < currentSetting.inputCount; ++i) {
           weight = currentInputs[i].weight / MaximumWeight;
 
@@ -609,7 +610,7 @@ export class CubismPhysics {
           totalTranslation.x * CubismMath.sin(radAngle) +
           totalTranslation.y * CubismMath.cos(radAngle);
 
-        // 计算粒子位置。
+        // Calculate particles position.
         updateParticles(
           currentParticles,
           currentSetting.particleCount,
@@ -621,7 +622,7 @@ export class CubismPhysics {
           AirResistance
         );
 
-        // 更新输出参数。
+        // Update output parameters.
         for (let i = 0; i < currentSetting.outputCount; ++i) {
           const particleIndex = currentOutputs[i].vertexIndex;
 
@@ -664,7 +665,7 @@ export class CubismPhysics {
                   JSON.stringify(
                     this._parameterCaches.subarray(destinationParameterIndex)
                   )
-                ) // 用于按值传递，使用 JSON.parse / JSON.stringify
+                ) // 値渡しするため、JSON.parse, JSON.stringify
               : this._parameterCaches.slice(destinationParameterIndex);
 
           updateOutputParameterValue(
@@ -675,7 +676,7 @@ export class CubismPhysics {
             currentOutputs[i]
           );
 
-          // 反映数值
+          // 値を反映
           for (
             let offset: number = destinationParameterIndex, outParamIndex = 0;
             offset < this._parameterCaches.length;
@@ -693,10 +694,10 @@ export class CubismPhysics {
   }
 
   /**
-   * 应用物理演算结果
-   * 根据指定权重，将最新一次摆锤演算结果与前一次结果进行应用。
-   * @param model 要应用物理演算结果的模型
-   * @param weight 最新结果的权重
+   * 物理演算結果の適用
+   * 振り子演算の最新の結果と一つ前の結果から指定した重みで適用する。
+   * @param model 物理演算の結果を適用するモデル
+   * @param weight 最新結果の重み
    */
   public interpolate(model: CubismModel, weight: number): void {
     let currentOutputs: CubismPhysicsOutput[];
@@ -717,7 +718,7 @@ export class CubismPhysics {
         currentSetting.baseOutputIndex
       );
 
-      // 加载输入参数。
+      // Load input parameters.
       for (let i = 0; i < currentSetting.outputCount; ++i) {
         if (currentOutputs[i].destinationParameterIndex == -1) {
           continue;
@@ -731,7 +732,7 @@ export class CubismPhysics {
                 JSON.stringify(
                   parameterValues.subarray(destinationParameterIndex)
                 )
-              ) // 用于按值传递，使用 JSON.parse / JSON.stringify
+              ) // 値渡しするため、JSON.parse, JSON.stringify
             : parameterValues.slice(destinationParameterIndex);
 
         updateOutputParameterValue(
@@ -743,7 +744,7 @@ export class CubismPhysics {
           currentOutputs[i]
         );
 
-        // 反映数值
+        // 値を反映
         for (
           let offset: number = destinationParameterIndex, outParamIndex = 0;
           offset < parameterValues.length;
@@ -756,28 +757,28 @@ export class CubismPhysics {
   }
 
   /**
-   * 设置选项
-   * @param options 选项
+   * オプションの設定
+   * @param options オプション
    */
   public setOptions(options: Options): void {
     this._options = options;
   }
 
   /**
-   * 获取选项
-   * @return 选项
+   * オプションの取得
+   * @return オプション
    */
   public getOption(): Options {
     return this._options;
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     this._physicsRig = null;
 
-    // 设置默认选项
+    // set default options
     this._options = new Options();
     this._options.gravity.y = -1.0;
     this._options.gravity.x = 0.0;
@@ -791,7 +792,7 @@ export class CubismPhysics {
   }
 
   /**
-   * 相当于析构函数的处理
+   * デストラクタ相当の処理
    */
   public release(): void {
     this._physicsRig = void 0;
@@ -799,7 +800,7 @@ export class CubismPhysics {
   }
 
   /**
-   * 初始化
+   * 初期化する
    */
   public initialize(): void {
     let strand: CubismPhysicsParticle[];
@@ -816,7 +817,7 @@ export class CubismPhysics {
         currentSetting.baseParticleIndex
       );
 
-      // 初始化首个粒子。
+      // Initialize the top of particle.
       strand[0].initialPosition = new CubismVector2(0.0, 0.0);
       strand[0].lastPosition = new CubismVector2(
         strand[0].initialPosition.x,
@@ -827,7 +828,7 @@ export class CubismPhysics {
       strand[0].velocity = new CubismVector2(0.0, 0.0);
       strand[0].force = new CubismVector2(0.0, 0.0);
 
-      // 初始化粒子。
+      // Initialize particles.
       for (let i = 1; i < currentSetting.particleCount; ++i) {
         radius = new CubismVector2(0.0, 0.0);
         radius.y = strand[i].radius;
@@ -851,20 +852,20 @@ export class CubismPhysics {
     }
   }
 
-  _physicsRig: CubismPhysicsRig; // 物理演算数据
-  _options: Options; // 选项
+  _physicsRig: CubismPhysicsRig; // 物理演算のデータ
+  _options: Options; // オプション
 
-  _currentRigOutputs: Array<PhysicsOutput>; ///< 最新一次摆锤计算的结果
-  _previousRigOutputs: Array<PhysicsOutput>; ///< 前一次摆锤计算的结果
+  _currentRigOutputs: Array<PhysicsOutput>; ///< 最新の振り子計算の結果
+  _previousRigOutputs: Array<PhysicsOutput>; ///< 一つ前の振り子計算の結果
 
-  _currentRemainTime: number; ///< 物理演算尚未处理的时间
+  _currentRemainTime: number; ///< 物理演算が処理していない時間
 
-  _parameterCaches: Float32Array; ///< Evaluate 使用的参数缓存
-  _parameterInputCaches: Float32Array; ///< UpdateParticles 运行时的输入缓存
+  _parameterCaches: Float32Array; ///< Evaluateで利用するパラメータのキャッシュ
+  _parameterInputCaches: Float32Array; ///< UpdateParticlesが動くときの入力をキャッシュ
 }
 
 /**
- * 物理演算选项
+ * 物理演算のオプション
  */
 export class Options {
   constructor() {
@@ -873,26 +874,26 @@ export class Options {
   }
 
   gravity: CubismVector2; // 重力方向
-  wind: CubismVector2; // 风向
+  wind: CubismVector2; // 風の方向
 }
 
 /**
- * 应用到参数之前的物理演算输出结果
+ * パラメータに適用する前の物理演算の出力結果
  */
 export class PhysicsOutput {
   constructor() {
     this.outputs = new Array<number>(0);
   }
 
-  outputs: Array<number>; // 物理演算输出结果
+  outputs: Array<number>; // 物理演算出力結果
 }
 
 /**
- * 获取符号。
+ * Gets sign.
  *
- * @param value 要评估的数值。
+ * @param value Evaluation target value.
  *
- * @return 数值的符号。
+ * @return Sign of value.
  */
 function sign(value: number): number {
   let ret = 0;
@@ -1072,16 +1073,16 @@ function getOutputScaleAngle(
 }
 
 /**
- * 更新粒子。
+ * Updates particles.
  *
- * @param strand                粒子目标数组。
- * @param strandCount           粒子数量。
- * @param totalTranslation      总平移值。
- * @param totalAngle            总角度。
- * @param windDirection         风向。
- * @param thresholdValue        移动阈值。
- * @param deltaTimeSeconds      增量时间。
- * @param airResistance         空气阻力。
+ * @param strand                Target array of particle.
+ * @param strandCount           Count of particle.
+ * @param totalTranslation      Total translation value.
+ * @param totalAngle            Total angle.
+ * @param windDirection         Direction of Wind.
+ * @param thresholdValue        Threshold of movement.
+ * @param deltaTimeSeconds      Delta time.
+ * @param airResistance         Air resistance.
  */
 function updateParticles(
   strand: CubismPhysicsParticle[],
@@ -1170,14 +1171,14 @@ function updateParticles(
 }
 
 /**
- * 为稳定化更新粒子。
+ * Updates particles for stabilization.
  *
- * @param strand                粒子目标数组。
- * @param strandCount           粒子数量。
- * @param totalTranslation      总平移值。
- * @param totalAngle            总角度。
- * @param windDirection         风向。
- * @param thresholdValue        移动阈值。
+ * @param strand                Target array of particle.
+ * @param strandCount           Count of particle.
+ * @param totalTranslation      Total translation value.
+ * @param totalAngle            Total angle.
+ * @param windDirection         Direction of Wind.
+ * @param thresholdValue        Threshold of movement.
  */
 function updateParticlesForStabilization(
   strand: CubismPhysicsParticle[],
@@ -1229,11 +1230,11 @@ function updateParticlesForStabilization(
 }
 
 /**
- * 更新输出参数值。
- * @param parameterValue            目标参数值。
- * @param parameterValueMinimum     参数最小值。
- * @param parameterValueMaximum     参数最大值。
- * @param translation               平移值。
+ * Updates output parameter value.
+ * @param parameterValue            Target parameter value.
+ * @param parameterValueMinimum     Minimum of parameter value.
+ * @param parameterValueMaximum     Maximum of parameter value.
+ * @param translation               Translation value.
  */
 function updateOutputParameterValue(
   parameterValue: Float32Array,
@@ -1347,7 +1348,7 @@ function normalizeParameterValue(
   return isInverted ? result : result * -1.0;
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismphysics';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

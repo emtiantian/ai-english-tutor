@@ -9,58 +9,58 @@
 import { CubismIdHandle } from '../id/cubismid';
 
 /**
- * @brief 动作曲线目标类型
+ * @brief モーションカーブの種類
  *
- * 动作曲线目标类型。
+ * モーションカーブの種類。
  */
 export enum CubismMotionCurveTarget {
-  CubismMotionCurveTarget_Model, // 针对模型
-  CubismMotionCurveTarget_Parameter, // 针对参数
-  CubismMotionCurveTarget_PartOpacity // 针对部件不透明度
+  CubismMotionCurveTarget_Model, // モデルに対して
+  CubismMotionCurveTarget_Parameter, // パラメータに対して
+  CubismMotionCurveTarget_PartOpacity // パーツの不透明度に対して
 }
 
 /**
- * @brief 动作曲线段类型
+ * @brief モーションカーブのセグメントの種類
  *
- * 动作曲线段类型。
+ * モーションカーブのセグメントの種類。
  */
 export enum CubismMotionSegmentType {
-  CubismMotionSegmentType_Linear = 0, // 线性
-  CubismMotionSegmentType_Bezier = 1, // 贝塞尔曲线
-  CubismMotionSegmentType_Stepped = 2, // 阶梯
-  CubismMotionSegmentType_InverseStepped = 3 // 反向阶梯
+  CubismMotionSegmentType_Linear = 0, // リニア
+  CubismMotionSegmentType_Bezier = 1, // ベジェ曲線
+  CubismMotionSegmentType_Stepped = 2, // ステップ
+  CubismMotionSegmentType_InverseStepped = 3 // インバースステップ
 }
 
 /**
- * @brief 动作曲线控制点
+ * @brief モーションカーブの制御点
  *
- * 动作曲线控制点。
+ * モーションカーブの制御点。
  */
 export class CubismMotionPoint {
-  time = 0.0; // 时间[秒]
-  value = 0.0; // 值
+  time = 0.0; // 時間[秒]
+  value = 0.0; // 値
 }
 
 /**
- * 动作曲线段的求值函数
+ * モーションカーブのセグメントの評価関数
  *
- * @param   points      动作曲线控制点列表
- * @param   time        要求值的时间[秒]
+ * @param   points      モーションカーブの制御点リスト
+ * @param   time        評価する時間[秒]
  */
 export interface csmMotionSegmentEvaluationFunction {
   (points: CubismMotionPoint[], time: number): number;
 }
 
 /**
- * @brief 动作曲线段
+ * @brief モーションカーブのセグメント
  *
- * 动作曲线段。
+ * モーションカーブのセグメント。
  */
 export class CubismMotionSegment {
   /**
-   * @brief 构造函数
+   * @brief コンストラクタ
    *
-   * 构造函数。
+   * コンストラクタ。
    */
   public constructor() {
     this.evaluate = null;
@@ -68,15 +68,15 @@ export class CubismMotionSegment {
     this.segmentType = 0;
   }
 
-  evaluate: csmMotionSegmentEvaluationFunction; // 使用的求值函数
-  basePointIndex: number; // 第一个段的索引
-  segmentType: number; // 段类型
+  evaluate: csmMotionSegmentEvaluationFunction; // 使用する評価関数
+  basePointIndex: number; // 最初のセグメントへのインデックス
+  segmentType: number; // セグメントの種類
 }
 
 /**
- * @brief 动作曲线
+ * @brief モーションカーブ
  *
- * 动作曲线。
+ * モーションカーブ。
  */
 export class CubismMotionCurve {
   public constructor() {
@@ -87,16 +87,16 @@ export class CubismMotionCurve {
     this.fadeOutTime = 0.0;
   }
 
-  type: CubismMotionCurveTarget; // 曲线类型
-  id: CubismIdHandle; // 曲线 ID
-  segmentCount: number; // 段数量
-  baseSegmentIndex: number; // 第一个段的索引
-  fadeInTime: number; // 淡入时间[秒]
-  fadeOutTime: number; // 淡出时间[秒]
+  type: CubismMotionCurveTarget; // カーブの種類
+  id: CubismIdHandle; // カーブのID
+  segmentCount: number; // セグメントの個数
+  baseSegmentIndex: number; // 最初のセグメントのインデックス
+  fadeInTime: number; // フェードインにかかる時間[秒]
+  fadeOutTime: number; // フェードアウトにかかる時間[秒]
 }
 
 /**
- * 事件。
+ * イベント。
  */
 export class CubismMotionEvent {
   fireTime = 0.0;
@@ -104,9 +104,9 @@ export class CubismMotionEvent {
 }
 
 /**
- * @brief 动作数据
+ * @brief モーションデータ
  *
- * 动作数据。
+ * モーションデータ。
  */
 export class CubismMotionData {
   public constructor() {
@@ -122,18 +122,18 @@ export class CubismMotionData {
     this.events = new Array<CubismMotionEvent>();
   }
 
-  duration: number; // 动作长度[秒]
-  loop: boolean; // 是否循环
-  curveCount: number; // 曲线数量
-  eventCount: number; // UserData 数量
-  fps: number; // 帧率
-  curves: Array<CubismMotionCurve>; // 曲线列表
-  segments: Array<CubismMotionSegment>; // 段列表
-  points: Array<CubismMotionPoint>; // 点列表
-  events: Array<CubismMotionEvent>; // 事件列表
+  duration: number; // モーションの長さ[秒]
+  loop: boolean; // ループするかどうか
+  curveCount: number; // カーブの個数
+  eventCount: number; // UserDataの個数
+  fps: number; // フレームレート
+  curves: Array<CubismMotionCurve>; // カーブのリスト
+  segments: Array<CubismMotionSegment>; // セグメントのリスト
+  points: Array<CubismMotionPoint>; // ポイントのリスト
+  events: Array<CubismMotionEvent>; // イベントのリスト
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismmotioninternal';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

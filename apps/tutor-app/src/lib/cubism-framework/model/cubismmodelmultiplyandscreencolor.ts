@@ -28,7 +28,7 @@ export class ColorData {
 }
 
 /**
- * 处理模型的乘色和屏幕色。
+ * Handling multiply and screen colors of the model.
  */
 export class CubismModelMultiplyAndScreenColor {
   private _model: any; // CubismModel
@@ -42,9 +42,9 @@ export class CubismModelMultiplyAndScreenColor {
   private _userOffscreenMultiplyColors: Array<ColorData>;
 
   /**
-   * 构造函数。
+   * Constructor.
    *
-   * @param model Cubism 模型。
+   * @param model cubism model.
    */
   public constructor(model: any) {
     this._model = model;
@@ -59,11 +59,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 初始化乘色和屏幕色的使用。
+   * Initialization for using multiply and screen colors.
    *
-   * @param partCount 部件数量。
-   * @param drawableCount 可绘制对象数量。
-   * @param offscreenCount 离屏缓冲数量。
+   * @param partCount number of parts.
+   * @param drawableCount number of drawables.
+   * @param offscreenCount number of offscreen.
    */
   public initialize(
     partCount: number,
@@ -82,7 +82,7 @@ export class CubismModelMultiplyAndScreenColor {
       new CubismTextureColor(0.0, 0.0, 0.0, 1.0)
     );
 
-    // 部件
+    // Part
     this._userPartMultiplyColors = new Array(partCount);
     this._userPartScreenColors = new Array(partCount);
     for (let i = 0; i < partCount; i++) {
@@ -106,7 +106,7 @@ export class CubismModelMultiplyAndScreenColor {
       );
     }
 
-    // 可绘制对象
+    // Drawable
     this._userDrawableMultiplyColors = new Array(drawableCount);
     this._userDrawableScreenColors = new Array(drawableCount);
     for (let i = 0; i < drawableCount; i++) {
@@ -130,7 +130,7 @@ export class CubismModelMultiplyAndScreenColor {
       );
     }
 
-    // 离屏缓冲
+    // Offscreen
     this._userOffscreenMultiplyColors = new Array(offscreenCount);
     this._userOffscreenScreenColors = new Array(offscreenCount);
     for (let i = 0; i < offscreenCount; i++) {
@@ -156,11 +156,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 输出索引越界错误的警告信息。
+   * Outputs a warning message for index out of range errors.
    *
-   * @param functionName 调用函数的名称
-   * @param index 无效的索引值
-   * @param maxIndex 最大有效索引（length - 1）
+   * @param functionName Name of the calling function
+   * @param index The invalid index value
+   * @param maxIndex The maximum valid index (length - 1)
    */
   private warnIndexOutOfRange(
     functionName: string,
@@ -173,11 +173,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 校验给定的部件索引是否在有效范围内。
+   * Validates if the given part index is within valid range.
    *
-   * @param index 要校验的部件索引
-   * @param functionName 用于错误报告的调用函数名称
-   * @return 索引有效则返回 true，否则返回 false
+   * @param index Part index to validate
+   * @param functionName Name of the calling function for error reporting
+   * @return true if the index is valid; otherwise false
    */
   private isValidPartIndex(index: number, functionName: string): boolean {
     if (index < 0 || index >= this._model.getPartCount()) {
@@ -192,11 +192,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 校验给定的可绘制对象索引是否在有效范围内。
+   * Validates if the given drawable index is within valid range.
    *
-   * @param index 要校验的可绘制对象索引
-   * @param functionName 用于错误报告的调用函数名称
-   * @return 索引有效则返回 true，否则返回 false
+   * @param index Drawable index to validate
+   * @param functionName Name of the calling function for error reporting
+   * @return true if the index is valid; otherwise false
    */
   private isValidDrawableIndex(index: number, functionName: string): boolean {
     if (index < 0 || index >= this._model.getDrawableCount()) {
@@ -211,11 +211,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 校验给定的离屏缓冲索引是否在有效范围内。
+   * Validates if the given offscreen index is within valid range.
    *
-   * @param index 要校验的离屏缓冲索引
-   * @param functionName 用于错误报告的调用函数名称
-   * @return 索引有效则返回 true，否则返回 false
+   * @param index Offscreen index to validate
+   * @param functionName Name of the calling function for error reporting
+   * @return true if the index is valid; otherwise false
    */
   private isValidOffscreenIndex(index: number, functionName: string): boolean {
     if (index < 0 || index >= this._model.getOffscreenCount()) {
@@ -230,47 +230,47 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否将运行时设置的颜色用作整个模型渲染时的乘色。
+   * Sets the flag indicating whether the color set at runtime is used as the multiply color for the entire model during rendering.
    *
-   * @param value 要使用运行时设置的颜色则为 true，否则为 false。
+   * @param value true if the color set at runtime is to be used; otherwise false.
    */
   public setMultiplyColorEnabled(value: boolean): void {
     this._isOverriddenModelMultiplyColors = value;
   }
 
   /**
-   * 返回是否将运行时设置的颜色用作整个模型渲染时的乘色。
+   * Returns the flag indicating whether the color set at runtime is used as the multiply color for the entire model during rendering.
    *
-   * @return 使用运行时设置的颜色则返回 true，否则返回 false。
+   * @return true if the color set at runtime is used; otherwise false.
    */
   public getMultiplyColorEnabled(): boolean {
     return this._isOverriddenModelMultiplyColors;
   }
 
   /**
-   * 设置是否将运行时设置的颜色用作整个模型渲染时的屏幕色。
+   * Sets the flag indicating whether the color set at runtime is used as the screen color for the entire model during rendering.
    *
-   * @param value 要使用运行时设置的颜色则为 true，否则为 false。
+   * @param value true if the color set at runtime is to be used; otherwise false.
    */
   public setScreenColorEnabled(value: boolean): void {
     this._isOverriddenModelScreenColors = value;
   }
 
   /**
-   * 返回是否将运行时设置的颜色用作整个模型渲染时的屏幕色。
+   * Returns the flag indicating whether the color set at runtime is used as the screen color for the entire model during rendering.
    *
-   * @return 使用运行时设置的颜色则返回 true，否则返回 false。
+   * @return true if the color set at runtime is used; otherwise false.
    */
   public getScreenColorEnabled(): boolean {
     return this._isOverriddenModelScreenColors;
   }
 
   /**
-   * 设置是否由 SDK 覆盖部件乘色。
-   * 传入 true 使用 SDK 提供的颜色信息，false 则使用模型中的颜色信息。
+   * Sets whether the part multiply color is overridden by the SDK.
+   * Use true to use the color information from the SDK, or false to use the color information from the model.
    *
-   * @param partIndex 部件索引
-   * @param value true 启用覆盖，false 禁用覆盖
+   * @param partIndex Part index
+   * @param value true enable override, false to disable
    */
   public setPartMultiplyColorEnabled(partIndex: number, value: boolean): void {
     if (!this.isValidPartIndex(partIndex, 'setPartMultiplyColorEnabled')) {
@@ -286,11 +286,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 检查部件乘色是否由 SDK 覆盖。
+   * Checks whether the part multiply color is overridden by the SDK.
    *
-   * @param partIndex 部件索引
+   * @param partIndex Part index
    *
-   * @return 使用 SDK 提供的颜色信息则返回 true，否则返回 false。
+   * @return true if the color information from the SDK is used; otherwise false.
    */
   public getPartMultiplyColorEnabled(partIndex: number): boolean {
     if (!this.isValidPartIndex(partIndex, 'getPartMultiplyColorEnabled')) {
@@ -300,11 +300,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否由 SDK 覆盖部件屏幕色。
-   * 传入 true 使用 SDK 提供的颜色信息，false 则使用模型中的颜色信息。
+   * Sets whether the part screen color is overridden by the SDK.
+   * Use true to use the color information from the SDK, or false to use the color information from the model.
    *
-   * @param partIndex 部件索引
-   * @param value true 启用覆盖，false 禁用覆盖
+   * @param partIndex Part index
+   * @param value true enable override, false to disable
    */
   public setPartScreenColorEnabled(partIndex: number, value: boolean): void {
     if (!this.isValidPartIndex(partIndex, 'setPartScreenColorEnabled')) {
@@ -320,11 +320,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 检查部件屏幕色是否由 SDK 覆盖。
+   * Checks whether the part screen color is overridden by the SDK.
    *
-   * @param partIndex 部件索引
+   * @param partIndex Part index
    *
-   * @return 使用 SDK 提供的颜色信息则返回 true，否则返回 false。
+   * @return true if the color information from the SDK is used; otherwise false.
    */
   public getPartScreenColorEnabled(partIndex: number): boolean {
     if (!this.isValidPartIndex(partIndex, 'getPartScreenColorEnabled')) {
@@ -334,10 +334,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件的乘色。
+   * Sets the multiply color of the part.
    *
-   * @param partIndex 部件索引
-   * @param color 要设置的乘色（CubismTextureColor）
+   * @param partIndex Part index
+   * @param color Multiply color to be set (CubismTextureColor)
    */
   public setPartMultiplyColorByTextureColor(
     partIndex: number,
@@ -358,13 +358,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件的乘色。
+   * Sets the multiply color of the part.
    *
-   * @param partIndex 部件索引
-   * @param r 要设置的乘色红色分量
-   * @param g 要设置的乘色绿色分量
-   * @param b 要设置的乘色蓝色分量
-   * @param a 要设置的乘色透明度分量
+   * @param partIndex Part index
+   * @param r Red value of the multiply color to be set
+   * @param g Green value of the multiply color to be set
+   * @param b Blue value of the multiply color to be set
+   * @param a Alpha value of the multiply color to be set
    */
   public setPartMultiplyColorByRGBA(
     partIndex: number,
@@ -389,11 +389,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 返回部件的乘色。
+   * Returns the multiply color of the part.
    *
-   * @param partIndex 部件索引
+   * @param partIndex Part index
    *
-   * @return 乘色（CubismTextureColor）
+   * @return Multiply color (CubismTextureColor)
    */
   public getPartMultiplyColor(partIndex: number): CubismTextureColor {
     if (!this.isValidPartIndex(partIndex, 'getPartMultiplyColor')) {
@@ -403,10 +403,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件的屏幕色。
+   * Sets the screen color of the part.
    *
-   * @param partIndex 部件索引
-   * @param color 要设置的屏幕色（CubismTextureColor）
+   * @param partIndex Part index
+   * @param color Screen color to be set (CubismTextureColor)
    */
   public setPartScreenColorByTextureColor(
     partIndex: number,
@@ -425,13 +425,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件的屏幕色。
+   * Sets the screen color of the part.
    *
-   * @param partIndex 部件索引
-   * @param r 要设置的屏幕色红色分量
-   * @param g 要设置的屏幕色绿色分量
-   * @param b 要设置的屏幕色蓝色分量
-   * @param a 要设置的屏幕色透明度分量
+   * @param partIndex Part index
+   * @param r Red value of the screen color to be set
+   * @param g Green value of the screen color to be set
+   * @param b Blue value of the screen color to be set
+   * @param a Alpha value of the screen color to be set
    */
   public setPartScreenColorByRGBA(
     partIndex: number,
@@ -456,11 +456,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 返回部件的屏幕色。
+   * Returns the screen color of the part.
    *
-   * @param partIndex 部件索引
+   * @param partIndex Part index
    *
-   * @return 屏幕色（CubismTextureColor）
+   * @return Screen color (CubismTextureColor)
    */
   public getPartScreenColor(partIndex: number): CubismTextureColor {
     if (!this.isValidPartIndex(partIndex, 'getPartScreenColor')) {
@@ -470,10 +470,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否将运行时设置的颜色用作可绘制对象渲染时的乘色。
+   * Sets the flag indicating whether the color set at runtime is used as the multiply color for the drawable during rendering.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param value 要使用运行时设置的颜色则为 true，否则为 false。
+   * @param drawableIndex Drawable index
+   * @param value true if the color set at runtime is to be used; otherwise false.
    */
   public setDrawableMultiplyColorEnabled(
     drawableIndex: number,
@@ -491,11 +491,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 返回是否将运行时设置的颜色用作可绘制对象渲染时的乘色。
+   * Returns the flag indicating whether the color set at runtime is used as the multiply color for the drawable during rendering.
    *
-   * @param drawableIndex 可绘制对象索引
+   * @param drawableIndex Drawable index
    *
-   * @return 使用运行时设置的颜色则返回 true，否则返回 false。
+   * @return true if the color set at runtime is used; otherwise false.
    */
   public getDrawableMultiplyColorEnabled(drawableIndex: number): boolean {
     if (
@@ -510,10 +510,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否将运行时设置的颜色用作可绘制对象渲染时的屏幕色。
+   * Sets the flag indicating whether the color set at runtime is used as the screen color for the drawable during rendering.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param value 要使用运行时设置的颜色则为 true，否则为 false。
+   * @param drawableIndex Drawable index
+   * @param value true if the color set at runtime is to be used; otherwise false.
    */
   public setDrawableScreenColorEnabled(
     drawableIndex: number,
@@ -528,11 +528,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 返回是否将运行时设置的颜色用作可绘制对象渲染时的屏幕色。
+   * Returns the flag indicating whether the color set at runtime is used as the screen color for the drawable during rendering.
    *
-   * @param drawableIndex 可绘制对象索引
+   * @param drawableIndex Drawable index
    *
-   * @return 使用运行时设置的颜色则返回 true，否则返回 false。
+   * @return true if the color set at runtime is used; otherwise false.
    */
   public getDrawableScreenColorEnabled(drawableIndex: number): boolean {
     if (
@@ -544,10 +544,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置可绘制对象的乘色。
+   * Sets the multiply color of the drawable.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param color 要设置的乘色（CubismTextureColor）
+   * @param drawableIndex Drawable index
+   * @param color Multiply color to be set (CubismTextureColor)
    */
   public setDrawableMultiplyColorByTextureColor(
     drawableIndex: number,
@@ -571,13 +571,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置可绘制对象的乘色。
+   * Sets the multiply color of the drawable.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param r 要设置的乘色红色分量
-   * @param g 要设置的乘色绿色分量
-   * @param b 要设置的乘色蓝色分量
-   * @param a 要设置的乘色透明度分量
+   * @param drawableIndex Drawable index
+   * @param r Red value of the multiply color to be set
+   * @param g Green value of the multiply color to be set
+   * @param b Blue value of the multiply color to be set
+   * @param a Alpha value of the multiply color to be set
    */
   public setDrawableMultiplyColorByRGBA(
     drawableIndex: number,
@@ -601,11 +601,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 从可绘制对象列表中返回乘色。
+   * Returns the multiply color from the list of drawables.
    *
-   * @param drawableIndex 可绘制对象索引
+   * @param drawableIndex Drawable index
    *
-   * @return 乘色（CubismTextureColor）
+   * @return Multiply color (CubismTextureColor)
    */
   public getDrawableMultiplyColor(drawableIndex: number): CubismTextureColor {
     if (!this.isValidDrawableIndex(drawableIndex, 'getDrawableMultiplyColor')) {
@@ -621,10 +621,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置可绘制对象的屏幕色。
+   * Sets the screen color of the drawable.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param color 要设置的屏幕色（CubismTextureColor）
+   * @param drawableIndex Drawable index
+   * @param color Screen color to be set (CubismTextureColor)
    */
   public setDrawableScreenColorByTextureColor(
     drawableIndex: number,
@@ -648,13 +648,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置可绘制对象的屏幕色。
+   * Sets the screen color of the drawable.
    *
-   * @param drawableIndex 可绘制对象索引
-   * @param r 要设置的屏幕色红色分量
-   * @param g 要设置的屏幕色绿色分量
-   * @param b 要设置的屏幕色蓝色分量
-   * @param a 要设置的屏幕色透明度分量
+   * @param drawableIndex Drawable index
+   * @param r Red value of the screen color to be set
+   * @param g Green value of the screen color to be set
+   * @param b Blue value of the screen color to be set
+   * @param a Alpha value of the screen color to be set
    */
   public setDrawableScreenColorByRGBA(
     drawableIndex: number,
@@ -675,11 +675,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 从可绘制对象列表中返回屏幕色。
+   * Returns the screen color from the list of drawables.
    *
-   * @param drawableIndex 可绘制对象索引
+   * @param drawableIndex Drawable index
    *
-   * @return 屏幕色（CubismTextureColor）
+   * @return Screen color (CubismTextureColor)
    */
   public getDrawableScreenColor(drawableIndex: number): CubismTextureColor {
     if (!this.isValidDrawableIndex(drawableIndex, 'getDrawableScreenColor')) {
@@ -695,11 +695,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否由 SDK 覆盖离屏缓冲乘色。
-   * 传入 true 使用 SDK 提供的颜色信息，false 则使用模型中的颜色信息。
+   * Sets whether the offscreen multiply color is overridden by the SDK.
+   * Use true to use the color information from the SDK, or false to use the color information from the model.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param value true 启用覆盖，false 禁用覆盖
+   * @param offscreenIndex Offscreen index
+   * @param value true enable override, false to disable
    */
   public setOffscreenMultiplyColorEnabled(
     offscreenIndex: number,
@@ -717,11 +717,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 检查离屏缓冲乘色是否由 SDK 覆盖。
+   * Checks whether the offscreen multiply color is overridden by the SDK.
    *
-   * @param offscreenIndex 离屏缓冲索引
+   * @param offscreenIndex Offscreen index
    *
-   * @return 使用 SDK 提供的颜色信息则返回 true，否则返回 false。
+   * @return true if the color information from the SDK is used; otherwise false.
    */
   public getOffscreenMultiplyColorEnabled(offscreenIndex: number): boolean {
     if (
@@ -736,11 +736,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置是否由 SDK 覆盖离屏缓冲屏幕色。
-   * 传入 true 使用 SDK 提供的颜色信息，false 则使用模型中的颜色信息。
+   * Sets whether the offscreen screen color is overridden by the SDK.
+   * Use true to use the color information from the SDK, or false to use the color information from the model.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param value true 启用覆盖，false 禁用覆盖
+   * @param offscreenIndex Offscreen index
+   * @param value true enable override, false to disable
    */
   public setOffscreenScreenColorEnabled(
     offscreenIndex: number,
@@ -758,11 +758,11 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 检查离屏缓冲屏幕色是否由 SDK 覆盖。
+   * Checks whether the offscreen screen color is overridden by the SDK.
    *
-   * @param offscreenIndex 离屏缓冲索引
+   * @param offscreenIndex Offscreen index
    *
-   * @return 使用 SDK 提供的颜色信息则返回 true，否则返回 false。
+   * @return true if the color information from the SDK is used; otherwise false.
    */
   public getOffscreenScreenColorEnabled(offscreenIndex: number): boolean {
     if (
@@ -777,10 +777,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置离屏缓冲的乘色。
+   * Sets the multiply color of the offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param color 要设置的乘色（CubismTextureColor）
+   * @param offscreenIndex Offsscreen index
+   * @param color Multiply color to be set (CubismTextureColor)
    */
   public setOffscreenMultiplyColorByTextureColor(
     offscreenIndex: number,
@@ -804,13 +804,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置离屏缓冲的乘色。
+   * Sets the multiply color of the offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param r 要设置的乘色红色分量
-   * @param g 要设置的乘色绿色分量
-   * @param b 要设置的乘色蓝色分量
-   * @param a 要设置的乘色透明度分量
+   * @param offscreenIndex Offsscreen index
+   * @param r Red value of the multiply color to be set
+   * @param g Green value of the multiply color to be set
+   * @param b Blue value of the multiply color to be set
+   * @param a Alpha value of the multiply color to be set
    */
   public setOffscreenMultiplyColorByRGBA(
     offscreenIndex: number,
@@ -834,17 +834,17 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 从离屏缓冲列表中返回乘色。
+   * Returns the multiply color from the list of offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
+   * @param offscreenIndex Offsscreen index
    *
-   * @return 乘色（CubismTextureColor）
+   * @return Multiply color (CubismTextureColor)
    */
   public getOffscreenMultiplyColor(offscreenIndex: number): CubismTextureColor {
     if (
       !this.isValidOffscreenIndex(offscreenIndex, 'getOffscreenMultiplyColor')
     ) {
-      return new CubismTextureColor(1.0, 1.0, 1.0, 1.0); // 默认离屏缓冲乘色
+      return new CubismTextureColor(1.0, 1.0, 1.0, 1.0); // Default offscreen multiply color
     }
     if (
       this.getMultiplyColorEnabled() ||
@@ -856,10 +856,10 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置离屏缓冲的屏幕色。
+   * Sets the screen color of the offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param color 要设置的屏幕色（CubismTextureColor）
+   * @param offscreenIndex Offsscreen index
+   * @param color Screen color to be set (CubismTextureColor)
    */
   public setOffscreenScreenColorByTextureColor(
     offscreenIndex: number,
@@ -883,13 +883,13 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置离屏缓冲的屏幕色。
+   * Sets the screen color of the offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
-   * @param r 要设置的屏幕色红色分量
-   * @param g 要设置的屏幕色绿色分量
-   * @param b 要设置的屏幕色蓝色分量
-   * @param a 要设置的屏幕色透明度分量
+   * @param offscreenIndex Offsscreen index
+   * @param r Red value of the screen color to be set
+   * @param g Green value of the screen color to be set
+   * @param b Blue value of the screen color to be set
+   * @param a Alpha value of the screen color to be set
    */
   public setOffscreenScreenColorByRGBA(
     offscreenIndex: number,
@@ -913,17 +913,17 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 从离屏缓冲列表中返回屏幕色。
+   * Returns the screen color from the list of offscreen.
    *
-   * @param offscreenIndex 离屏缓冲索引
+   * @param offscreenIndex Offsscreen index
    *
-   * @return 屏幕色（CubismTextureColor）
+   * @return Screen color (CubismTextureColor)
    */
   public getOffscreenScreenColor(offscreenIndex: number): CubismTextureColor {
     if (
       !this.isValidOffscreenIndex(offscreenIndex, 'getOffscreenScreenColor')
     ) {
-      return new CubismTextureColor(0.0, 0.0, 0.0, 1.0); // 默认离屏缓冲屏幕色
+      return new CubismTextureColor(0.0, 0.0, 0.0, 1.0); // Default offscreen screen color
     }
     if (
       this.getScreenColorEnabled() ||
@@ -935,7 +935,7 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件颜色，并向子层级传播（内部方法）
+   * Sets the part color with hierarchical propagation (internal method)
    */
   private setPartColor(
     partIndex: number,
@@ -956,7 +956,7 @@ export class CubismModelMultiplyAndScreenColor {
       const offscreenIndices = this._model.getPartOffscreenIndices();
       const offscreenIndex = offscreenIndices[partIndex];
       if (offscreenIndex == NoOffscreenIndex) {
-        // 未绑定离屏缓冲时，效果应用到子对象。
+        // If no offscreen buffer is attached, the effect is applied to the children.
         const partsHierarchy = this._model.getPartsHierarchy();
         if (partsHierarchy && partsHierarchy[partIndex]) {
           for (let i = 0; i < partsHierarchy[partIndex].objects.length; ++i) {
@@ -986,7 +986,7 @@ export class CubismModelMultiplyAndScreenColor {
           }
         }
       } else {
-        // 绑定了离屏缓冲时，只影响该离屏缓冲。
+        // If an offscreen buffer is attached, only that offscreen buffer is affected.
         offscreenColors[offscreenIndex].color.r = r;
         offscreenColors[offscreenIndex].color.g = g;
         offscreenColors[offscreenIndex].color.b = b;
@@ -996,7 +996,7 @@ export class CubismModelMultiplyAndScreenColor {
   }
 
   /**
-   * 设置部件颜色启用标志，并向子层级传播（内部方法）
+   * Sets the part color enabled flag with hierarchical propagation (internal method)
    */
   private setPartColorEnabled(
     partIndex: number,
@@ -1010,7 +1010,7 @@ export class CubismModelMultiplyAndScreenColor {
     const offscreenIndices = this._model.getPartOffscreenIndices();
     const offscreenIndex = offscreenIndices[partIndex];
     if (offscreenIndex == NoOffscreenIndex) {
-      // 未绑定离屏缓冲时，效果应用到子对象。
+      // If no offscreen buffer is attached, the effect is applied to the children.
       const partsHierarchy = this._model.getPartsHierarchy();
       if (partsHierarchy && partsHierarchy[partIndex]) {
         for (let i = 0; i < partsHierarchy[partIndex].objects.length; ++i) {
@@ -1054,7 +1054,7 @@ export class CubismModelMultiplyAndScreenColor {
         }
       }
     } else {
-      // 绑定了离屏缓冲时，只影响该离屏缓冲。
+      // If an offscreen buffer is attached, only that offscreen buffer is affected.
       offscreenColors[offscreenIndex].isOverridden = value;
       if (value) {
         offscreenColors[offscreenIndex].color.r = partColors[partIndex].color.r;

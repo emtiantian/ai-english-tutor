@@ -19,42 +19,42 @@ import {
 } from './cubismrenderer';
 import { CubismShaderManager_WebGL } from './cubismshader_webgl';
 
-const s_invalidValue = -1; // 表示无效值的常量
+const s_invalidValue = -1; // 無効な値を表す定数
 /*
- * 复制着色器时使用的顶点索引
+ * シェーダをコピーする際に衣装する頂点のインデックス
  */
 const s_renderTargetIndexArray: Uint16Array = new Uint16Array([
   0, 1, 2, 2, 1, 3
 ]);
 
 /**
- * 执行裁剪蒙版处理的类
+ * クリッピングマスクの処理を実行するクラス
  */
 export class CubismClippingManager_WebGL extends CubismClippingManager<CubismClippingContext_WebGL> {
   /**
-   * 设置 WebGL 渲染上下文
+   * WebGLレンダリングコンテキストを設定する
    *
-   * @param gl WebGL 渲染上下文
+   * @param gl WebGLレンダリングコンテキスト
    */
   public setGL(gl: WebGLRenderingContext): void {
     this.gl = gl;
   }
 
   /**
-   * 构造函数
+   * コンストラクタ
    */
   public constructor() {
     super(CubismClippingContext_WebGL);
   }
 
   /**
-   * 创建裁剪上下文。在模型绘制时执行。
+   * クリッピングコンテキストを作成する。モデル描画時に実行する。
    *
-   * @param model 模型实例
-   * @param renderer 渲染器实例
-   * @param lastFbo 帧缓冲
-   * @param lastViewport 视口
-   * @param drawObjectType 绘制对象类型
+   * @param model モデルのインスタンス
+   * @param renderer レンダラのインスタンス
+   * @param lastFbo フレームバッファ
+   * @param lastViewport ビューポート
+   * @param drawObjectType 描画オブジェクトのタイプ
    */
   public setupClippingContext(
     model: CubismModel,
@@ -63,19 +63,19 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
     lastViewport: number[],
     drawObjectType: DrawableObjectType
   ): void {
-    // 准备所有裁剪
-    // 如果复用同一个裁剪（多个时合并为一个），只设置一次
+    // 全てのクリッピングを用意する
+    // 同じクリップ（複数の場合はまとめて一つのクリップ）を使う場合は1度だけ設定する
     let usingClipCount = 0;
     for (
       let clipIndex = 0;
       clipIndex < this._clippingContextListForMask.length;
       clipIndex++
     ) {
-      // 针对单个裁剪蒙版
+      // 1つのクリッピングマスクに関して
       const cc: CubismClippingContext_WebGL =
         this._clippingContextListForMask[clipIndex];
 
-      // 计算使用此裁剪的绘制对象整体包围矩形
+      // このクリップを利用する描画オブジェクト群全体を囲む矩形を計算
       switch (drawObjectType) {
         case DrawableObjectType.DrawableObjectType_Drawable:
         default:
@@ -87,7 +87,7 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
       }
 
       if (cc._isUsing) {
-        usingClipCount++; // 计为使用中
+        usingClipCount++; // 使用中としてカウント
       }
     }
 
@@ -95,7 +95,7 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
       return;
     }
 
-    // 将视口设置为与生成的 FrameBuffer 相同大小
+    // 生成したFrameBufferと同じサイズでビューポートを設定
     this.gl.viewport(
       0,
       0,
@@ -103,7 +103,7 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
       this._clippingMaskBufferSize
     );
 
-    // 为后续计算设置索引起点
+    // 後の計算のためにインデックスの最初をセット
     switch (drawObjectType) {
       case DrawableObjectType.DrawableObjectType_Drawable:
       default:
@@ -114,14 +114,14 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
         break;
     }
 
-    // ---------- 蒙版绘制处理 ----------
+    // ---------- マスク描画処理 ----------
     this._currentMaskBuffer.beginDraw(lastFbo);
 
-    renderer.preDraw(); // 清空缓冲
+    renderer.preDraw(); // バッファをクリアする
 
     this.setupLayoutBounds(usingClipCount);
 
-    // 如果大小与渲染纹理数量不一致，则对齐
+    // サイズがレンダーテクスチャの枚数と合わない場合は合わせる
     if (this._clearedMaskBufferFlags.length != this._renderTextureCount) {
       this._clearedMaskBufferFlags.length = 0;
       this._clearedMaskBufferFlags = new Array<boolean>(
@@ -132,28 +132,28 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
       }
     }
 
-    // 每帧开始时初始化蒙版清空标志
+    // マスクのクリアフラグを毎フレーム開始時に初期化
     for (let index = 0; index < this._clearedMaskBufferFlags.length; index++) {
       this._clearedMaskBufferFlags[index] = false;
     }
 
-    // 实际生成蒙版
-    // 决定如何布局并绘制所有蒙版，并保存到 ClipContext、ClippedDrawContext
+    // 実際にマスクを生成する
+    // 全てのマスクをどのようにレイアウトして描くかを決定し、ClipContext, ClippedDrawContextに記憶する
     for (
       let clipIndex = 0;
       clipIndex < this._clippingContextListForMask.length;
       clipIndex++
     ) {
-      // --- 实际绘制单个蒙版 ---
+      // --- 実際に1つのマスクを描く ---
       const clipContext: CubismClippingContext_WebGL =
         this._clippingContextListForMask[clipIndex];
-      const allClipedDrawRect: csmRect = clipContext._allClippedDrawRect; // 所有使用此蒙版的绘制对象在逻辑坐标上的包围矩形
-      const layoutBoundsOnTex01: csmRect = clipContext._layoutBounds; // 将蒙版收纳于此区域内
-      const margin = 0.05; // 对模型坐标上的矩形酌情添加边距
+      const allClipedDrawRect: csmRect = clipContext._allClippedDrawRect; // このマスクを使う、すべての描画オブジェクトの論理座標上の囲み矩形
+      const layoutBoundsOnTex01: csmRect = clipContext._layoutBounds; // この中にマスクを収める
+      const margin = 0.05; // モデル座標上の矩形を、適宜マージンを付けて使う
       let scaleX = 0;
       let scaleY = 0;
 
-      // 通过索引获取 clipContext 设置的渲染纹理
+      // clipContextに設定したレンダーテクスチャをインデックスで取得
       let maskBuffer: CubismRenderTarget_WebGL;
       switch (drawObjectType) {
         case DrawableObjectType.DrawableObjectType_Drawable:
@@ -167,13 +167,13 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
           break;
       }
 
-      // 当前渲染纹理与 clipContext 不一致时
+      // 現在のレンダーテクスチャがclipContextのものと異なる場合
       if (this._currentMaskBuffer != maskBuffer) {
-        this._currentMaskBuffer.endDraw(); // 结束上一个渲染纹理的绘制
+        this._currentMaskBuffer.endDraw(); // 前のレンダーテクスチャの描画を終了
         this._currentMaskBuffer = maskBuffer;
-        this._currentMaskBuffer.beginDraw(lastFbo); // 开始新渲染纹理的绘制
+        this._currentMaskBuffer.beginDraw(lastFbo); // 新しいレンダーテクスチャの描画を開始
 
-        renderer.preDraw(); // 清空缓冲
+        renderer.preDraw(); // バッファをクリアする
       }
 
       this._tmpBoundsOnModel.setRect(allClipedDrawRect);
@@ -181,14 +181,14 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
         allClipedDrawRect.width * margin,
         allClipedDrawRect.height * margin
       );
-      //########## 本来不应使用分配区域的全部，最小必要尺寸更佳
+      //########## 本来は割り当てられた領域の全体を使わず必要最低限のサイズがよい
 
-      // 求着色器用计算公式。不考虑旋转时如下
+      // シェーダ用の計算式を求める。回転を考慮しない場合は以下のとおり
       // movePeriod' = movePeriod * scaleX + offX		  [[ movePeriod' = (movePeriod - tmpBoundsOnModel.movePeriod)*scale + layoutBoundsOnTex01.movePeriod ]]
       scaleX = layoutBoundsOnTex01.width / this._tmpBoundsOnModel.width;
       scaleY = layoutBoundsOnTex01.height / this._tmpBoundsOnModel.height;
 
-      //--------- draw 时 mask 引用矩阵计算 ---------
+      //--------- draw時の mask 参照用行列を計算---------
       this.createMatrixForMask(false, layoutBoundsOnTex01, scaleX, scaleY);
 
       clipContext._matrixForMask.setMatrix(this._tmpMatrixForMask.getArray());
@@ -204,7 +204,7 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
       for (let i = 0; i < clipDrawCount; i++) {
         const clipDrawIndex: number = clipContext._clippingIdList[i];
 
-        // 若顶点信息未更新、不可靠，则跳过绘制
+        // 頂点情報が更新されておらず、信頼性がない場合は描画をパスする
         if (
           !model.getDrawableDynamicFlagVertexPositionsDidChange(clipDrawIndex)
         ) {
@@ -213,25 +213,25 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
 
         renderer.setIsCulling(model.getDrawableCulling(clipDrawIndex) != false);
 
-        // 若蒙版尚未清空则处理
+        // マスクがクリアされていないなら処理する
         if (!this._clearedMaskBufferFlags[clipContext._bufferIndex]) {
-          // 清空蒙版
-          // （临时规格）1 为无效（不绘制）区域，0 为有效（绘制）区域。（在着色器中用 Cd*Cs 乘以接近 0 的值来制作蒙版。乘以 1 则无任何变化）
+          // マスクをクリアする
+          // (仮仕様) 1が無効（描かれない）領域、0が有効（描かれる）領域。（シェーダーCd*Csで0に近い値をかけてマスクを作る。1をかけると何も起こらない）
           this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
           this.gl.clear(this.gl.COLOR_BUFFER_BIT);
           this._clearedMaskBufferFlags[clipContext._bufferIndex] = true;
         }
 
-        // 应用本次专用的变换进行绘制
-        // 还需要切换通道（A、R、G、B）
+        // 今回専用の変換を適用して描く
+        // チャンネルも切り替える必要がある(A,R,G,B)
         renderer.setClippingContextBufferForMask(clipContext);
 
         renderer.drawMeshWebGL(model, clipDrawIndex);
       }
     }
 
-    // --- 后处理 ---
-    this._currentMaskBuffer.endDraw(); // 结束蒙版绘制
+    // --- 後処理 ---
+    this._currentMaskBuffer.endDraw(); // マスクの描画を終了
     renderer.setClippingContextBufferForMask(null);
 
     this.gl.viewport(
@@ -243,29 +243,29 @@ export class CubismClippingManager_WebGL extends CubismClippingManager<CubismCli
   }
 
   /**
-   * 统计蒙版总数
+   * マスクの合計数をカウント
    *
-   * @return 返回蒙版总数
+   * @return マスクの合計数を返す
    */
   public getClippingMaskCount(): number {
     return this._clippingContextListForMask.length;
   }
 
-  _currentMaskBuffer: CubismRenderTarget_WebGL; // 蒙版用离屏表面
+  _currentMaskBuffer: CubismRenderTarget_WebGL; // マスク用オフスクリーンサーフェス
 
-  gl: WebGLRenderingContext; // WebGL 渲染上下文
+  gl: WebGLRenderingContext; // WebGLレンダリングコンテキスト
 }
 
 /**
- * 裁剪蒙版的上下文
+ * クリッピングマスクのコンテキスト
  */
 export class CubismClippingContext_WebGL extends CubismClippingContext {
   /**
-   * 带参数的构造函数
+   * 引数付きコンストラクタ
    *
-   * @param manager 管理蒙版的管理器实例
-   * @param clippingDrawableIndices 被裁剪 Drawable 的索引列表
-   * @param clipCount 被裁剪 Drawable 的数量
+   * @param manager マスクを管理しているマネージャのインスタンス
+   * @param clippingDrawableIndices クリップしているDrawableのインデックスリスト
+   * @param clipCount クリップしているDrawableの個数
    */
   public constructor(
     manager: CubismClippingManager_WebGL,
@@ -277,24 +277,24 @@ export class CubismClippingContext_WebGL extends CubismClippingContext {
   }
 
   /**
-   * 获取管理此蒙版的管理器实例
+   * このマスクを管理するマネージャのインスタンスを取得する
    *
-   * @return 裁剪管理器实例
+   * @return クリッピングマネージャのインスタンス
    */
   public getClippingManager(): CubismClippingManager_WebGL {
     return this._owner;
   }
 
   /**
-   * 设置 WebGL 渲染上下文
+   * WebGLレンダリングコンテキストを設定する
    *
-   * @param gl WebGL 渲染上下文
+   * @param gl WebGLレンダリングコンテキスト
    */
   public setGl(gl: WebGLRenderingContext): void {
     this._owner.setGL(gl);
   }
 
-  private _owner: CubismClippingManager_WebGL; // 管理此蒙版的管理器实例
+  private _owner: CubismClippingManager_WebGL; // このマスクを管理しているマネージャのインスタンス
 }
 
 /**

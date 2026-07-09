@@ -131,7 +131,7 @@ export class CubismModelUserData {
   private _artMeshUserDataNode: Array<CubismModelUserDataNode>; // 閲覧リストの保持
 }
 
-// 兼容性命名空间定义。
+// Namespace definition for compatibility.
 import * as $ from './cubismmodeluserdata';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Live2DCubismFramework {

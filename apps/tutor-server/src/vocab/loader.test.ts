@@ -11,16 +11,13 @@ const REPO_ROOT = resolve(__dirname, '..', '..', '..', '..')
 // 在导入 config/loader 之前设置环境变量，确保它们被读取。
 const tmpRoot = mkdtempSync(join(tmpdir(), 'loader-test-'))
 const configDir = join(tmpRoot, 'config')
-const dataDir = join(tmpRoot, 'data')
 const defaultDir = join(tmpRoot, 'default')
 
 mkdirSync(join(configDir, 'vocab'), { recursive: true })
-mkdirSync(join(dataDir, 'vocab'), { recursive: true })
 mkdirSync(defaultDir, { recursive: true })
 
 process.env.NODE_ENV = 'development'
 process.env.CONFIG_DIR = configDir
-process.env.DATA_DIR = dataDir
 process.env.DEFAULT_VOCAB_DIR = defaultDir
 
 const { getVocabularyByLevel } = await import('./loader.js')
@@ -49,20 +46,13 @@ async function main(): Promise<void> {
     const a1 = getVocabularyByLevel('A1')
     assert.strictEqual(a1.words[0].word, 'default-a1', 'A1 应回退到 DEFAULT_VOCAB_DIR')
 
-    // 2. DATA_DIR/vocab 优先级高于 DEFAULT_VOCAB_DIR
-    writeVocab(defaultDir, 'A2', 'default-a2')
-    writeVocab(join(dataDir, 'vocab'), 'A2', 'data-a2')
-    const a2 = getVocabularyByLevel('A2')
-    assert.strictEqual(a2.words[0].word, 'data-a2', 'A2 应优先使用 DATA_DIR')
-
-    // 3. CONFIG_DIR/vocab 优先级高于 DATA_DIR/vocab
+    // 2. CONFIG_DIR/vocab 优先级高于 DEFAULT_VOCAB_DIR
     writeVocab(defaultDir, 'B1', 'default-b1')
-    writeVocab(join(dataDir, 'vocab'), 'B1', 'data-b1')
     writeVocab(join(configDir, 'vocab'), 'B1', 'config-b1')
     const b1 = getVocabularyByLevel('B1')
     assert.strictEqual(b1.words[0].word, 'config-b1', 'B1 应优先使用 CONFIG_DIR')
 
-    // 4. 不设置 DEFAULT_VOCAB_DIR 时，loader 应从仓库根 config/vocab/ 推导默认目录
+    // 3. 不设置 DEFAULT_VOCAB_DIR 时，loader 应从仓库根 config/vocab/ 推导默认目录
     const repoC1 = join(REPO_ROOT, 'config', 'vocab', 'C1.json')
     if (existsSync(repoC1)) {
       delete (process.env as Record<string, string | undefined>).DEFAULT_VOCAB_DIR

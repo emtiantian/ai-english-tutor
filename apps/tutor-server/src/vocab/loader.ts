@@ -1,50 +1,27 @@
 import { readFileSync, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join, resolve } from 'path'
-import { homedir } from 'os'
 import { logger } from '../logger.js'
-import { config, IS_DEPLOY } from '../config.js'
+import { config } from '../config.js'
 import {
   scenarios as sharedScenarios,
-  getScenariosForLevel as sharedGetScenariosForLevel,
-  getScenarioById as sharedGetScenarioById,
   LUNA_PERSONA,
   personaFromJson,
   type Scenario as SharedScenario,
   type ScenarioObjective as SharedScenarioObjective,
   type CharacterPersona,
   type PersonaJson,
-  type OpeningStyle,
 } from '@ai-english-tutor/shared'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // ── 配置目录解析 ──
-// 优先级：
-//   CONFIG_DIR 环境变量 > DATA_DIR（当已填充时）
-//   > ~/.ai-english-tutor/（仅部署模式下的旧版兼容）> 编译内置默认值
-function resolveConfigDir(): string | null {
-  const envDir = process.env.CONFIG_DIR
-  if (envDir && existsSync(envDir)) return envDir
-
-  // 规范路径：DATA_DIR（部署 → ~/.ai-english-tutor/data，开发 → <repo>/.dev-data）
-  const dataDir = config.DATA_DIR
-  if (existsSync(dataDir)) return dataDir
-
-  // 旧版部署回退：~/.ai-english-tutor/（persona.json/scenarios.json/vocab/
-  // 有时位于 data/ 的上一级）。开发模式跳过，以免本地开发受用户主目录中
-  // 随意文件的影响。
-  if (IS_DEPLOY) {
-    const legacyDir = join(homedir(), '.ai-english-tutor')
-    if (existsSync(legacyDir)) return legacyDir
-  }
-
-  // 最终回退：源码树自带的 <repo>/config/
-  const defaultDir = join(__dirname, '..', '..', '..', 'config')
-  if (existsSync(defaultDir)) return defaultDir
-
-  return null
+// 优先级：CONFIG_DIR 环境变量 > 仓库根 config/（源码内置默认）
+// CONFIG_DIR 默认即 DATA_DIR，因此不再单独探测 DATA_DIR。
+function resolveConfigDir(): string {
+  if (config.CONFIG_DIR && existsSync(config.CONFIG_DIR)) return config.CONFIG_DIR
+  return resolve(__dirname, '..', '..', '..', 'config')
 }
 
 export interface VocabWord {
@@ -83,6 +60,9 @@ export function loadAllVocabulary(): void {
 /**
  * 获取默认词库目录。
  * 优先读取 DEFAULT_VOCAB_DIR 环境变量；否则从 loader.ts 位置推导仓库根下的 config/vocab/。
+ *
+ * DEFAULT_VOCAB_DIR 主要供 Docker 镜像使用：镜像将默认词库 COPY 到 /app/config/vocab，
+ * 运行时通过该环境变量兜底；开发模式下则回退到源码树 config/vocab/。
  */
 function getDefaultVocabDir(): string {
   if (process.env.DEFAULT_VOCAB_DIR) return process.env.DEFAULT_VOCAB_DIR
@@ -92,6 +72,8 @@ function getDefaultVocabDir(): string {
 
 /**
  * 加载单个 CEFR 等级词汇。
+ * 优先级：CONFIG_DIR/vocab > DEFAULT_VOCAB_DIR > 仓库根 config/vocab。
+ * CONFIG_DIR 默认即 DATA_DIR，因此不再单独探测 DATA_DIR。
  */
 function loadVocabularyLevel(level: string): VocabLevel {
   if (vocabCache.has(level)) {
@@ -99,9 +81,7 @@ function loadVocabularyLevel(level: string): VocabLevel {
   }
 
   const candidates = [
-    join(config.CONFIG_DIR, 'vocab', `${level}.json`),
-    join(config.DATA_DIR, 'vocab', `${level}.json`),
-    ...(IS_DEPLOY ? [join(homedir(), '.ai-english-tutor', 'vocab', `${level}.json`)] : []),
+    join(resolveConfigDir(), 'vocab', `${level}.json`),
     join(getDefaultVocabDir(), `${level}.json`),
   ]
 
@@ -237,19 +217,16 @@ let runtimeScenarios: Scenario[] | null = null
  * 从 JSON 文件加载场景，回退到编译内置默认值。
  */
 export function loadAllScenarios(): void {
-  const configDir = resolveConfigDir()
-  if (configDir) {
-    const filePath = join(configDir, 'scenarios.json')
-    try {
-      if (existsSync(filePath)) {
-        const data = readFileSync(filePath, 'utf-8')
-        runtimeScenarios = JSON.parse(data)
-        logger.info({ count: runtimeScenarios!.length, source: filePath }, 'Scenarios loaded from JSON file')
-        return
-      }
-    } catch (err) {
-      logger.error({ err, filePath }, 'Failed to load scenarios.json, using compiled defaults')
+  const filePath = join(resolveConfigDir(), 'scenarios.json')
+  try {
+    if (existsSync(filePath)) {
+      const data = readFileSync(filePath, 'utf-8')
+      runtimeScenarios = JSON.parse(data)
+      logger.info({ count: runtimeScenarios!.length, source: filePath }, 'Scenarios loaded from JSON file')
+      return
     }
+  } catch (err) {
+    logger.error({ err, filePath }, 'Failed to load scenarios.json, using compiled defaults')
   }
   // 回退到编译内置默认值
   runtimeScenarios = [...sharedScenarios]
@@ -293,20 +270,17 @@ let runtimePersona: CharacterPersona | null = null
 export function loadPersona(): CharacterPersona {
   if (runtimePersona) return runtimePersona
 
-  const configDir = resolveConfigDir()
-  if (configDir) {
-    const filePath = join(configDir, 'persona.json')
-    try {
-      if (existsSync(filePath)) {
-        const data = readFileSync(filePath, 'utf-8')
-        const json: PersonaJson = JSON.parse(data)
-        runtimePersona = personaFromJson(json)
-        logger.info({ name: json.name, source: filePath }, 'Persona loaded from JSON file')
-        return runtimePersona
-      }
-    } catch (err) {
-      logger.error({ err, filePath }, 'Failed to load persona.json, using compiled default')
+  const filePath = join(resolveConfigDir(), 'persona.json')
+  try {
+    if (existsSync(filePath)) {
+      const data = readFileSync(filePath, 'utf-8')
+      const json: PersonaJson = JSON.parse(data)
+      runtimePersona = personaFromJson(json)
+      logger.info({ name: json.name, source: filePath }, 'Persona loaded from JSON file')
+      return runtimePersona
     }
+  } catch (err) {
+    logger.error({ err, filePath }, 'Failed to load persona.json, using compiled default')
   }
 
   // 回退到编译内置默认值

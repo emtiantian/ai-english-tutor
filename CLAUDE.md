@@ -30,7 +30,7 @@ pnpm dev:clean        # 杀掉 3000/6173/8080 端口残留
 
 ```bash
 pnpm build            # 前端：vue-tsc 类型检查 + vite build
-pnpm --filter @ai-english-tutor/server build   # 后端：tsc + 拷贝 vocab/lists 到 dist/
+pnpm --filter @ai-english-tutor/server build   # 后端：tsc 编译
 ```
 
 ### 部署（生产启动）

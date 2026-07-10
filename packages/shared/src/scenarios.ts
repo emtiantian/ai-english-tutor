@@ -21,7 +21,7 @@ export interface ActDef {
 
 /**
  * @deprecated v2 起场景不再用 phase 级 objective；改用顶层 acts 描述剧情骨架，
- * 并由运行时按用户 CEFR 档从 vocab/lists/{level}.json 自动抽 30 个目标词。
+ * 并由运行时按用户 CEFR 档从 config/vocab/{level}.json 自动抽 30 个目标词。
  * 该类型保留仅为向后兼容旧 scenarios-default.json。
  */
 export interface ScenarioObjective {
@@ -44,11 +44,11 @@ export interface Scenario {
    * 仅为向后兼容旧 scenarios-default.json 保留。
    */
   level: number
-  /** 主题标签，v2 用作 vocab/lists/{level}.json 的抽词锚点 */
+  /** 主题标签，v2 用作 config/vocab/{level}.json 的抽词锚点 */
   topics: string[]
   /**
    * @deprecated v2 起目标词不再静态写在场景里，改由运行时按
-   * (用户CEFR档, scenario.topics) 自动从 vocab/lists/{level}.json 抽 30 个。
+   * (用户CEFR档, scenario.topics) 自动从 config/vocab/{level}.json 抽 30 个。
    * 仅为向后兼容旧 scenarios-default.json 保留。
    */
   targetWords: string[]

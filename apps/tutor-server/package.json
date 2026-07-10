@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && cp -r src/vocab/lists dist/vocab/",
+    "build": "tsc",
     "start": "NODE_ENV=production node dist/index.js",
     "test": "for f in $(find src -name '*.test.ts' | sort); do npx tsx \"$f\" || exit 1; done"
   },

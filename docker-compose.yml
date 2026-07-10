@@ -57,6 +57,7 @@ services:
       - DATA_DIR=/app/data
       - DB_PATH=/app/data/tutor.db
       - CONFIG_DIR=/app/data
+      - DEFAULT_VOCAB_DIR=/app/config/vocab
     volumes:
       - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data:/app/data
     networks:

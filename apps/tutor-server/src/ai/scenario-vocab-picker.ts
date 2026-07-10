@@ -24,7 +24,7 @@ function shuffleArray<T>(arr: T[]): T[] {
  * 为场景按目标 CEFR 档抽取目标词。
  *
  * 规则：
- * 1. 优先从 targetLevel 的 vocab/lists/{level}.json 中按 scenario.topics 过滤。
+ * 1. 优先从 targetLevel 的 config/vocab/{level}.json 中按 scenario.topics 过滤。
  * 2. 如果数量不足 30，从下一档借 30%（向上取整），仍按 topics 过滤。
  * 3. 还不足则 fallback 到 targetLevel 全量随机补齐。
  * 4. 最终去重并截取 30 个。

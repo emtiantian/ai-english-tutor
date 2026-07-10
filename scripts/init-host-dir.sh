@@ -40,7 +40,7 @@ else
 fi
 
 # 复制默认词汇表（不覆盖已有文件）
-VOCAB_SRC="$PROJECT_ROOT/apps/tutor-server/src/vocab/lists"
+VOCAB_SRC="$PROJECT_ROOT/config/vocab"
 COPIED=0
 for f in "$VOCAB_SRC"/*.json; do
     fname="$(basename "$f")"

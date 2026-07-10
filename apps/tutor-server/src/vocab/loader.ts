@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { dirname, join, resolve } from 'path'
 import { homedir } from 'os'
 import { logger } from '../logger.js'
 import { config, IS_DEPLOY } from '../config.js'
@@ -81,6 +81,16 @@ export function loadAllVocabulary(): void {
 }
 
 /**
+ * 获取默认词库目录。
+ * 优先读取 DEFAULT_VOCAB_DIR 环境变量；否则从 loader.ts 位置推导仓库根下的 config/vocab/。
+ */
+function getDefaultVocabDir(): string {
+  if (process.env.DEFAULT_VOCAB_DIR) return process.env.DEFAULT_VOCAB_DIR
+  // loader.ts 位于 apps/tutor-server/src/vocab/ 或 dist/vocab/，向上四级到达仓库根
+  return resolve(__dirname, '..', '..', '..', '..', 'config', 'vocab')
+}
+
+/**
  * 加载单个 CEFR 等级词汇。
  */
 function loadVocabularyLevel(level: string): VocabLevel {
@@ -90,7 +100,9 @@ function loadVocabularyLevel(level: string): VocabLevel {
 
   const candidates = [
     join(config.CONFIG_DIR, 'vocab', `${level}.json`),
-    join(__dirname, 'lists', `${level}.json`),
+    join(config.DATA_DIR, 'vocab', `${level}.json`),
+    ...(IS_DEPLOY ? [join(homedir(), '.ai-english-tutor', 'vocab', `${level}.json`)] : []),
+    join(getDefaultVocabDir(), `${level}.json`),
   ]
 
   for (const filePath of candidates) {

@@ -48,11 +48,10 @@ COPY --from=builder /prod/server/dist ./dist
 COPY --from=builder /prod/server/package.json ./package.json
 COPY --from=builder /prod/server/node_modules ./node_modules
 
-# Copy default vocab lists into the compiled dist tree.
-# loader.ts falls back to `__dirname/lists/<level>.json` (i.e. dist/vocab/lists)
-# when CONFIG_DIR/vocab/<level>.json is absent. Without these files the
-# fallback yields empty word lists in production.
-COPY apps/tutor-server/src/vocab/lists ./dist/vocab/lists
+# Copy default vocabulary into the image. The loader falls back to
+# DEFAULT_VOCAB_DIR when CONFIG_DIR/vocab/<level>.json is absent.
+COPY config/vocab /app/config/vocab
+ENV DEFAULT_VOCAB_DIR=/app/config/vocab
 
 # Create data directory for SQLite persistence and config mount point
 RUN mkdir -p /app/data /app/config

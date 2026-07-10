@@ -13,7 +13,7 @@ describe('Live2D model manifests', () => {
   it('HIYORI_MANIFEST is well-formed', () => {
     expect(HIYORI_MANIFEST.id).toBe('hiyori')
     expect(HIYORI_MANIFEST.type).toBe('live2d')
-    expect(HIYORI_MANIFEST.modelJsonPath).toMatch(/^\/models\/hiyori\/.+\.model3\.json$/)
+    expect(HIYORI_MANIFEST.modelJsonPath).toBe('/models/hiyori/hiyori.model3.json')
     expect(HIYORI_MANIFEST.hasExpressions).toBe(false)
     expect(HIYORI_MANIFEST.expressionParamPresets).toBeDefined()
     // 必须保留 重构前的 7 个表情
@@ -121,6 +121,12 @@ describe('Live2D model manifests', () => {
   it('每个 manifest 的 id 唯一', () => {
     const ids = AVAILABLE_LIVE2D_MODELS.map((m) => m.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('所有 manifest 的 modelJsonPath 遵循 /models/<id>/<id>.model3.json 约定', () => {
+    for (const manifest of AVAILABLE_LIVE2D_MODELS) {
+      expect(manifest.modelJsonPath).toBe(`/models/${manifest.id}/${manifest.id}.model3.json`)
+    }
   })
 
   it('DEFAULT_LIVE2D_MODEL_ID points to mao_pro', () => {

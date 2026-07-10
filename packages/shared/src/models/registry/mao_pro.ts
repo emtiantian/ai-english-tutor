@@ -15,7 +15,8 @@
 import { AVAILABLE_MOTIONS, AVAILABLE_EXPRESSIONS } from '../../types.js'
 import type { MotionId, ExpressionId } from '../../types.js'
 import type { MotionRegistry, MotionMapping, ExpressionMapping } from '../../motion-registry.js'
-import type { Live2DModelManifest, ExpressionParamPreset } from '../types.js'
+import type { ExpressionParamPreset } from '../types.js'
+import { defineLive2DModelManifest } from '../define-manifest.js'
 
 /**
  * Mao Pro motion 映射。
@@ -172,11 +173,10 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
   },
 }
 
-export const MAO_PRO_MANIFEST: Live2DModelManifest = {
+export const MAO_PRO_MANIFEST = defineLive2DModelManifest({
   id: 'mao_pro',
   displayName: 'Mao Niziiro',
   type: 'live2d',
-  modelJsonPath: '/models/mao_pro/mao_pro.model3.json',
   hasExpressions: false,                   // 先用 preset;TODO 后续支持 .exp3.json 加载
   expressionParamPresets: MAO_PRO_EXPRESSION_PRESETS,
   view: {
@@ -193,4 +193,4 @@ export const MAO_PRO_MANIFEST: Live2DModelManifest = {
     licenseUrl: 'https://www.live2d.com/eula/live2d-sample-model-terms_en.html',
     sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/mao_pro',
   },
-}
+})

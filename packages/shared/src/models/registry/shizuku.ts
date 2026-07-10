@@ -13,7 +13,8 @@
 import { AVAILABLE_MOTIONS, AVAILABLE_EXPRESSIONS } from '../../types.js'
 import type { MotionId, ExpressionId } from '../../types.js'
 import type { MotionRegistry, MotionMapping, ExpressionMapping } from '../../motion-registry.js'
-import type { Live2DModelManifest, ExpressionParamPreset } from '../types.js'
+import type { ExpressionParamPreset } from '../types.js'
+import { defineLive2DModelManifest } from '../define-manifest.js'
 
 /**
  * Shizuku motion 映射。
@@ -166,11 +167,10 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
   },
 }
 
-export const SHIZUKU_MANIFEST: Live2DModelManifest = {
+export const SHIZUKU_MANIFEST = defineLive2DModelManifest({
   id: 'shizuku',
   displayName: 'Shizuku',
   type: 'live2d',
-  modelJsonPath: '/models/shizuku/shizuku.model3.json',
   hasExpressions: false,
   expressionParamPresets: SHIZUKU_EXPRESSION_PRESETS,
   view: {
@@ -186,4 +186,4 @@ export const SHIZUKU_MANIFEST: Live2DModelManifest = {
     licenseUrl: 'https://www.live2d.com/eula/live2d-sample-model-terms_en.html',
     sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/shizuku',
   },
-}
+})

@@ -171,14 +171,14 @@ import { config } from './config'
 
 A-D 阶段完成后，加模型已经是**纯数据工作**，不改 Provider 代码：
 
-1. **放素材** — 把 `runtime/` 下整套文件（`*.moc3` / `*.model3.json` / `*.physics3.json` / `*.cdi3.json` / `*.pose3.json` / textures / motions / expressions）拍平拷到 `apps/tutor-app/public/models/<id>/`
+1. **放素材** — 把 `runtime/` 下整套文件（`*.moc3` / `*.model3.json` / `*.physics3.json` / `*.cdi3.json` / `*.pose3.json` / textures / motions / expressions）拍平拷到 `apps/tutor-app/public/models/<id>/`，并**把入口 `.model3.json` 重命名为 `<id>.model3.json`**（如 `hiyori/hiyori.model3.json`）。manifest 里不再手写路径，由 `defineLive2DModelManifest()` 按约定自动生成 `/models/<id>/<id>.model3.json`
 2. **协议合规** — 如果是 Live2D Inc. 官方 sample，**必须**保留 `ReadMe.txt`（协议要求），并放一份 `LICENSE-Live2D.md` 到该目录；首次引入新协议时同步更新仓库根 `README.md` 的"第三方 Live2D 素材声明"章节
 3. **写 manifest** — 新建 `packages/shared/src/models/registry/<id>.ts`，照 `hiyori.ts` / `shizuku.ts` / `mao_pro.ts` 三个样例（顺序复杂度递增）写：
-   - `modelJsonPath` 指向第 1 步的 `.model3.json`
+   - 用 `defineLive2DModelManifest({ id: '<id>', ... })` 包裹，不需要写 `modelJsonPath`
    - `motionRegistry` — 把 8 个语义 motion ID（`wave/nod/think/...`）映射到模型自己的 motion key（`${groupName}_${index}` 格式；空字符串组的 key 是 `_0` / `_1` / ...，**坑**）
    - `expressionParamPresets` — 用模型的 cdi3.json 里能找到的参数名写 6+1 个语义表情（happy/neutral/curious/surprised/encouraging/thoughtful/sad）；**neutral 必须把所有用到的参数显式清 0**，否则切表情时会有残留漂移
    - `view.scale/offsetX/offsetY` — 各模型画幅差异大，需要手测调节，先填 1.0 跑起来再调
-4. **注册** — 在 `packages/shared/src/models/list.ts` 的 `AVAILABLE_LIVE2D_MODELS` 数组里加进去；在 `models/index.ts` 加 export
+4. **注册** — 在 `packages/shared/src/models/list.ts` 的 `AVAILABLE_LIVE2D_MODELS` 数组里加进去；在 `models/index.ts` 加 export（若仍按原 `id` export 则不需要改 `index.ts`，新文件 export 后 list.ts import 即可）
 5. **测试** — `apps/tutor-app/src/providers/__tests__/live2d-manifest.test.ts` 抄一组 case 覆盖新 manifest（motion key、neutral 清零、credit 字段）
 6. **构建注意** — 大于 5MB 的贴图不会进 PWA precache（`vite.config.ts` 的 `globIgnores: ['**/models/**']` 已经排除），但会被 runtime CacheFirst 缓存，无需额外动作
 

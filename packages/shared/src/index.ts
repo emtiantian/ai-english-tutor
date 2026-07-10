@@ -1,6 +1,5 @@
 export * from './types.js'
 export * from './motion-registry.js'
-export * from './motion-registry-default.js'
 export * from './motion-analyzer.js'
 export * from './models/index.js'
 export * from './character-persona.js'

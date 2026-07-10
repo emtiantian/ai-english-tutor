@@ -1,7 +1,7 @@
 <template>
   <div class="app-root">
     <OfflineBanner />
-    <SvgLoading v-if="showSvg" />
+    <!-- <SvgLoading v-if="showSvg" /> -->
     <canvas
       ref="characterCanvas"
       class="absolute inset-0 w-full h-full opacity-0 transition-opacity-800ms z-1 md:(top-auto bottom-0 h-55% w-full)"
@@ -187,7 +187,7 @@ const lastVocabulary = computed(() => {
   return undefined
 })
 
-const showSvg = ref(true)
+const showSvg = ref(false)
 const showCharacterCanvas = ref(false)
 const characterCanvas = ref<HTMLCanvasElement | null>(null)
 
@@ -256,22 +256,19 @@ onMounted(async () => {
   const teacher = new RemoteTeacherProvider(client)
 
   // 与加载动画并行开始加载角色 Provider。
-  // SVG 加载画面会一直保持，直到角色就绪且
-  // 品牌动画最短播放时间结束，这样 Live2D 慢加载会被掩盖，
-  // 而快速 Provider 也能平滑入场。
+  // 测试时注掉 SVG 过渡动画，让 Live2D 直接显示。
   const characterLoad = initCharacter()
-  const minDisplayTime = new Promise(resolve => setTimeout(resolve, 3000))
-  await Promise.all([characterLoad, minDisplayTime])
+  await characterLoad
 
-  // 角色 Provider 已就绪；显示画布并淡出 SVG 加载。
+  // 角色 Provider 已就绪；显示画布。
   showCharacterCanvas.value = true
 
   // 设置 Provider（角色已由可组合函数设置）
   store.ttsProvider = new SpeechSynthesisTTSProvider()
   store.teacherProvider = teacher
 
-  // SVG 淡出
-  showSvg.value = false
+  // SVG 淡出（已注掉）
+  // showSvg.value = false
 
   // 如果是回头用户，恢复已确认等级
   const confirmedLevel = localStorage.getItem('tutor_level_confirmed')

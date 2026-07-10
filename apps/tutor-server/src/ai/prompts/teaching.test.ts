@@ -22,15 +22,15 @@ async function main(): Promise<void> {
   const startSystem = String(startMessages[0].content)
 
   assert(
-    startSystem.includes('TARGET VOCABULARY POOL'),
+    startSystem.includes('目标词汇池'),
     'start prompt should declare target vocabulary pool',
   )
   for (const w of runtimeWords) {
     assert(startSystem.includes(w), `start prompt should include runtime target word "${w}"`)
   }
-  assert(startSystem.includes('CURRENT ACT: 1 of 3'), 'start prompt should open at act 1')
+  assert(startSystem.includes('当前幕：第 1 / 3 幕'), 'start prompt should open at act 1')
   assert(
-    startSystem.includes('FOCUS WORDS FOR THIS TURN'),
+    startSystem.includes('本轮焦点词'),
     'start prompt should tell LLM which words to focus on',
   )
 
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   const teachingSystem = String(teachingMessages[0].content)
 
   assert(
-    teachingSystem.includes('TARGET VOCABULARY POOL'),
+    teachingSystem.includes('目标词汇池'),
     'teaching prompt should declare target vocabulary pool',
   )
   for (const w of usedWords) {
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   }
 
   assert(
-    teachingSystem.includes('studentReplyHints MUST be'),
+    teachingSystem.includes('studentReplyHints 必须是'),
     'teaching prompt should instruct hints to include target words',
   )
 

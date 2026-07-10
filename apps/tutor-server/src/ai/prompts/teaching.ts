@@ -12,7 +12,9 @@ import type { ReviewWord } from '../vocab-tracker.js'
 export type { OpeningStyle }
 
 /**
- * 从角色预设列表中随机挑选一个开场风格
+ * 从角色预设列表中固定挑选默认开场风格
+ *
+ * 优先使用 `lazy-mature`；找不到时回退到第一个风格。
  */
 export function pickOpeningStyle(persona: CharacterPersona = LUNA_PERSONA): OpeningStyle {
   const styles = persona.styles
@@ -40,11 +42,11 @@ export function buildTeachingMessages(
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
     systemPrompt += `
 
-VOCABULARY REVIEW — The student needs to practice these words. Naturally incorporate them into your response in a NEW context (different from previous conversations). Don't force them — weave them in organically. If the word doesn't fit naturally, skip it.
+词汇复习 — 学生需要练习这些单词。请在全新语境（与之前对话不同）中自然地把它们融入回复；不要生硬插入，有机编织即可。若某个词不适合当前情境，可跳过。
 
-Words to review: ${wordList}
+需要复习的单词：${wordList}
 
-After using a review word, include it in the "vocabulary" field of your JSON response. Include one example sentence per review word in "vocabularySentences"; each sentence must naturally include at least one of the review words above.`
+使用复习词后，请将其纳入 JSON 响应的 "vocabulary" 字段；并在 "vocabularySentences" 中为每个复习词提供一句例句，每句例句必须自然包含至少一个上述复习词。`
   }
 
   const messages: LLMMessage[] = [
@@ -65,7 +67,7 @@ After using a review word, include it in the "vocabulary" field of your JSON res
 /**
  * 为课程开始构建消息。
  *
- * 使用传入的风格（或从角色中随机挑选一个）并将人格注入 system prompt。
+ * 使用传入的风格（或从角色中固定挑选默认风格）并将人格注入 system prompt。
  */
 export function buildLessonStartMessages(
   level: number,
@@ -79,10 +81,9 @@ export function buildLessonStartMessages(
     {
       role: 'user',
       content:
-        `The student has just started a Level ${level} lesson. ` +
+        `学生刚刚开始了一节 Level ${level} 的课程。` +
         `${chosen.persona} ` +
-        `Give a warm welcome (1-2 sentences) that matches this personality. ` +
-        `Then briefly introduce what we'll learn today.`,
+        `请用符合该人格的语气热情地欢迎学生（1-2 句话），然后简要介绍今天会学习什么。`,
     },
   ]
 
@@ -118,10 +119,10 @@ export function buildScenarioStartMessages(
     {
       role: 'user',
       content:
-        `The student is starting a role-play scenario: "${scenario.nameEn}" at CEFR level ${targetLevel}. ` +
-        `Setting: ${scenario.setting} ` +
-        `Begin the scenario naturally. Introduce the setting and your role in character. ` +
-        `Do NOT explain the objectives — just start the conversation as if it's really happening.`,
+        `学生正在开始一个角色扮演场景："${scenario.nameEn}"，CEFR 等级为 ${targetLevel}。` +
+        `场景设定：${scenario.setting} ` +
+        `请自然地开启场景，用角色身份介绍场景背景和你扮演的角色。` +
+        `不要解释学习目标——就像事情真的在发生一样直接开始对话。`,
     },
   ]
 
@@ -164,9 +165,9 @@ export function buildScenarioTeachingMessages(
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
     systemPrompt += `
 
-VOCABULARY REVIEW — Also try to naturally use these words if they fit the scenario:
-Words: ${wordList}
-Include any words you use in the "vocabulary" field and provide one example sentence per word in "vocabularySentences"; each sentence must naturally include at least one word from the vocabulary list above.`
+词汇复习 — 如果这些词适合当前场景，也请尽量自然地使用：
+单词：${wordList}
+请将使用到的词纳入 "vocabulary" 字段，并在 "vocabularySentences" 中为每个词提供一句例句，每句例句必须自然包含至少一个上述单词。`
   }
 
   const messages: LLMMessage[] = [
@@ -207,9 +208,9 @@ function buildLineReuseBlock(reusableLines?: string[]): string {
   const list = reusableLines.map((l) => `- ${JSON.stringify(l)}`).join('\n')
   return `
 
-LINE REUSE (say it the same way when it fits) — Below are lines you have ALREADY spoken in this exact scenario and CEFR level. If one of them fits the current moment naturally and in character, reuse it VERBATIM as your "text" — character-for-character identical, including punctuation. Only write a brand-new "text" when none of these fits the situation. This keeps your voice consistent. This applies ONLY to the "text" field; "textZh", "vocabularySentences" and "studentReplyHints" must still follow their own rules.
+台词复用（合适时原样说出）—— 以下是你在当前这个场景和 CEFR 等级中已经说过的台词。如果其中某一句在当前情境下自然且符合角色，请逐字复用（包括标点完全一致）作为你的 "text" 字段内容。仅当没有合适台词时才撰写新的 "text"。这能保持你的声线一致。此规则仅适用于 "text" 字段；"textZh"、"vocabularySentences" 和 "studentReplyHints" 仍需遵循各自规则。
 
-Previously spoken lines:
+已说过的台词：
 ${list}`
 }
 
@@ -266,55 +267,55 @@ function buildScenarioContext(
   const nextList = nextBucketWords.slice(0, 3)
 
   const focusSection = focusList.length
-    ? `FOCUS WORDS FOR THIS TURN (naturally use or model these UNUSED words, in priority order):\n${focusList.map((w) => `- ${w}`).join('\n')}`
-    : `FOCUS WORDS FOR THIS TURN: none left in this act — move the conversation forward toward the next act.`
+    ? `本轮焦点词（自然地使用或示范这些未使用的词，按优先级）：\n${focusList.map((w) => `- ${w}`).join('\n')}`
+    : `本轮焦点词：当前幕已无剩余 — 推进对话至下一幕。`
 
   const nextSection = nextList.length
-    ? `COMING UP NEXT (you may lightly preview one of these if the current act is wrapping up):\n${nextList.map((w) => `- ${w}`).join('\n')}`
+    ? `即将出现（当前幕接近尾声时，可轻微铺垫其中 1 个）：\n${nextList.map((w) => `- ${w}`).join('\n')}`
     : ''
 
   const usedSection = usedTargetWords.length
-    ? `ALREADY USED BY STUDENT (acknowledge positively, do not force reuse):\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
-    : 'No target words used by the student yet.'
+    ? `学生已使用（积极地自然回应，不要强迫复用）：\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
+    : '学生尚未使用目标词汇。'
 
   return `
 
-SCENARIO CONTEXT — You are now in a role-play scenario.
+场景上下文 — 你现在正处于角色扮演场景中。
 
-Setting: ${scenario.setting}
-Your role: ${scenario.role.teacher}
-Student's role: ${scenario.role.student}
-Target CEFR level: ${targetLevel}
+场景设定：${scenario.setting}
+你的角色：${scenario.role.teacher}
+学生的角色：${scenario.role.student}
+目标 CEFR 等级：${targetLevel}
 
 ${actsBlock}
 
-TARGET VOCABULARY POOL (${targetWords.length} words to weave naturally across the whole scenario):
+目标词汇池（共 ${targetWords.length} 个词，需在整段场景中自然穿插）：
 ${targetWords.join(', ')}
 
-CURRENT ACT: ${currentActIndex + 1} of ${buckets.length}
+当前幕：第 ${currentActIndex + 1} / ${buckets.length} 幕
 ${focusSection}
 ${nextSection}
 ${usedSection}
 
-SCENARIO RULES:
-- Stay in character as ${scenario.role.teacher} throughout
-- Guide the student through the act structure in order
-- Use the FOCUS WORDS naturally in your responses; if they don't fit the moment, model one in your own line rather than forcing the student
-- When the student uses a target word, acknowledge it positively and naturally move forward
-- Keep responses concise (1-3 sentences)
-- In the Main act, introduce organic twists or complications to make the conversation feel real (do NOT rely on pre-written twists)
-- When the student has used enough target words or the conversation has gone on long enough, move toward the Closing act and wrap up naturally
-- studentReplyHints MUST be 1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT, written IN CHARACTER. Prefer hints that naturally include one of the FOCUS WORDS above.
+场景规则：
+- 始终扮演 ${scenario.role.teacher} 的角色
+- 按顺序引导学生经历幕结构
+- 在你的回复中自然地使用焦点词；若当下不适合，可在自己的台词中示范一个，而非强迫学生
+- 当学生使用目标词时，积极地肯定并自然推进
+- 保持回复简洁（1-3 句话）
+- 在主体幕中，引入自然的转折或复杂情况，让对话更真实（不要依赖预写转折）
+- 当学生已使用足够目标词或对话已足够长时，自然转向结尾幕并收尾
+- studentReplyHints 必须是 1-3 句学生（扮演 ${scenario.role.student}）接下来可能自然说出的简短回复，以学生本人的口吻书写。优先选择能自然包含上述焦点词的提示。
 
-OUTPUT FORMAT:
+输出格式（必须返回合法 JSON）：
 {
-  "text": "your response in character",
+  "text": "你的角色回复（英文）",
   "textZh": "简短的中文翻译，帮助学生理解",
-  "motionId": "one of: wave|nod|think|gesture|clap|point|write|surprised — pick the gesture that best fits your text",
-  "expressionId": "one of: happy|neutral|curious|surprised|encouraging|thoughtful — pick the facial expression that best fits your text",
-  "vocabulary": ["target words you used from the TARGET VOCABULARY POOL above — only include words from that pool"],
-  "vocabularySentences": ["TEACHING examples — one fresh natural example sentence per vocabulary word, never reuse a sentence from earlier turns; each sentence must include at least one word from the vocabulary list above. Use [] only if vocabulary is also empty."],
-  "studentReplyHints": ["1-3 short replies the STUDENT (playing ${scenario.role.student}) could naturally say NEXT in response to your text — written IN CHARACTER, in the student's own voice. Prefer replies that fit the current scenario phase and naturally use a FOCUS WORD when it suits the moment. NEVER write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are real in-character lines the student would speak. Always provide at least one hint."]
+  "motionId": "从 wave|nod|think|gesture|clap|point|write|surprised 中选择最贴合文本的动作",
+  "expressionId": "从 happy|neutral|curious|surprised|encouraging|thoughtful 中选择最贴合文本的表情",
+  "vocabulary": ["你使用的、来自上方目标词汇池的单词，仅限该池中的词"],
+  "vocabularySentences": ["教学例句——每个词汇对应一句新鲜自然的例句，不要复用之前回合的句子；每句必须包含至少一个上方词汇表中的词。若 vocabulary 为空，则此项也为空数组。"],
+  "studentReplyHints": ["1-3 句学生（扮演 ${scenario.role.student}）接下来可能自然说出的简短回复，以学生自己的口吻书写。优先选择符合当前场景阶段、并能自然使用焦点词的提示。永远不要写元/教学句，如'你可以在说 X 时用 Y'或'这是 X 的用法'——这些是学生真正会说出的角色台词。至少提供一条提示。"]
 }`
 }
 
@@ -333,17 +334,17 @@ function bucketWordsForActs(targetWords: string[], actsCount: number): { actInde
 function buildActsBlock(acts: NonNullable<Scenario['acts']>): string {
   if (!acts || acts.length === 0) return ''
   const lines = acts.map((act, i) => {
-    const labels = ['Opening', 'Main', 'Closing']
-    return `${labels[i] ?? `Act ${i + 1}`}: ${act.name} — ${act.goal}`
+    const labels = ['开场', '主体', '结尾']
+    return `${labels[i] ?? `第 ${i + 1} 幕`}: ${act.name} — ${act.goal}`
   })
-  return `3-ACT STRUCTURE (guide the conversation through these stages in order):\n${lines.map((l) => `- ${l}`).join('\n')}`
+  return `三幕结构（按顺序引导对话经历以下阶段）：\n${lines.map((l) => `- ${l}`).join('\n')}`
 }
 
 function buildObjectivesBlock(
   objectives: Scenario['objectives'],
 ): string {
   const objectivesText = objectives
-    .map((obj, i) => `${i + 1}. ${obj.descriptionEn} — keywords: [${obj.keywords.join(', ')}]`)
+    .map((obj, i) => `${i + 1}. ${obj.descriptionEn} — 关键词：[${obj.keywords.join(', ')}]`)
     .join('\n')
-  return `CONVERSATION PHASES (guide the student through these in order):\n${objectivesText}`
+  return `对话阶段（按顺序引导学生完成）：\n${objectivesText}`
 }

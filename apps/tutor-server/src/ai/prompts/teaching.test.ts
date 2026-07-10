@@ -1,9 +1,7 @@
 import assert from 'node:assert'
 import { scenarios, LUNA_PERSONA } from '@ai-english-tutor/shared'
-import {
-  buildScenarioStartMessages,
-  buildScenarioTeachingMessages,
-} from './teaching.js'
+import { buildScenarioStartMessages } from './scenario/scenario-start.js'
+import { buildScenarioTeachingMessages } from './scenario/scenario-turn.js'
 
 const restaurant = scenarios.find((s) => s.id === 'restaurant-ordering')!
 const runtimeWords = Array.from({ length: 30 }, (_, i) => `word${i + 1}`)

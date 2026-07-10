@@ -1,5 +1,5 @@
 import assert from 'node:assert'
-import { parseTeachingResponse } from './response-parser.js'
+import { parseTeachingResponse } from './parsers/teaching-response.js'
 
 async function main(): Promise<void> {
   // 内容中直接包含有效 JSON 对象

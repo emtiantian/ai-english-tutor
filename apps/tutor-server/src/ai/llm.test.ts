@@ -1,5 +1,6 @@
 import assert from 'node:assert'
-import { createLLMProvider, extractTextContent, normalizeToString } from './llm.js'
+import { createLLMProvider } from './llm/factory.js'
+import { extractTextContent, normalizeToString } from './llm/utils.js'
 import { config } from '../config.js'
 
 async function main(): Promise<void> {

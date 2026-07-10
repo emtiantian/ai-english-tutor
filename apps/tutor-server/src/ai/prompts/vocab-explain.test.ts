@@ -1,8 +1,6 @@
 import assert from 'node:assert'
-import {
-  buildVocabExplainMessages,
-  parseVocabExplainResponse,
-} from './vocab-explain.js'
+import { buildVocabExplainMessages } from './vocab/explain.js'
+import { parseVocabExplainResponse } from './parsers/vocab-explain.js'
 
 async function main(): Promise<void> {
   // ── buildVocabExplainMessages 应把句子与提示融入 prompt ──

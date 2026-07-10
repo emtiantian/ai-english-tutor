@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { registerSSE } from '../sse/handler.js'
 import { AudioPipeline } from './audio-pipeline.js'
-import type { LLMProvider } from './llm.js'
+import type { LLMProvider } from './llm/types.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '../voice/tts.js'
 import type { ASRProvider, ASRResult } from '../voice/asr.js'
 

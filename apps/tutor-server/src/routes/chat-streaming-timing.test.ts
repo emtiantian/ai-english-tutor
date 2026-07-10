@@ -13,7 +13,7 @@ process.env.CORS_ORIGIN = '*'
 const { createServer } = await import('../server.js')
 const { tutorEngine } = await import('../ai/engine.js')
 
-import type { LLMProvider, LLMResponse, ProviderCapabilities } from '../ai/llm.js'
+import type { LLMProvider, LLMResponse, ProviderCapabilities } from '../ai/llm/types.js'
 
 /**
  * 一个流式方法足够慢的 provider，用来证明 HTTP 响应在生成完成前就已经返回。

@@ -4,6 +4,7 @@ import { gzipSync, gunzipSync } from 'node:zlib'
 import { config } from '../../config.js'
 import { logger } from '../../logger.js'
 import type { ASRProvider, ASRResult } from '../asr.js'
+import { parseWavData } from '../wav-utils.js'
 import WebSocket from 'ws'
 
 /**
@@ -50,7 +51,7 @@ export class VolcengineASRProvider implements ASRProvider {
 
     // 确保音频为 WAV 16kHz 16bit mono raw
     const wavBuffer = await ensureWav16kMono(audioBuffer, mimeType)
-    const rawAudio = extractRawAudioFromWav(wavBuffer)
+    const rawAudio = parseWavData(wavBuffer)
 
     const connectId = randomUUID()
     const requestId = randomUUID()
@@ -70,6 +71,20 @@ export class VolcengineASRProvider implements ASRProvider {
       let errorMessage = ''
       let connected = false
       let fullRequestAck = false
+      // settle 守卫：保证 resolve/reject 只触发一次，避免超时/异常路径与正常 close 事件重复 settle
+      let settled = false
+
+      const settleResolve = (result: ASRResult): void => {
+        if (settled) return
+        settled = true
+        resolve(result)
+      }
+
+      const settleReject = (err: Error): void => {
+        if (settled) return
+        settled = true
+        reject(err)
+      }
 
       ws.on('open', () => {
         connected = true
@@ -93,11 +108,17 @@ export class VolcengineASRProvider implements ASRProvider {
         // 异步发送音频分段，避免阻塞接收
         sendAudioSegments(ws, rawAudio, this.segmentMs).catch((err) => {
           logger.error({ err }, '[火山 ASR] 发送音频分段失败')
-          reject(err)
+          // reject 前先关闭连接，避免 close 事件再次触发 settle
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.close()
+          }
+          settleReject(err)
         })
       })
 
       ws.on('message', (data: Buffer) => {
+        // 已结束（超时/异常）则忽略后续消息
+        if (settled) return
         try {
           const response = parseResponse(data)
           logger.debug({ response: response.toLog() }, '[火山 ASR] 收到消息')
@@ -134,29 +155,33 @@ export class VolcengineASRProvider implements ASRProvider {
 
       ws.on('error', (err) => {
         logger.error({ err: err.message }, '[火山 ASR] WebSocket 错误')
-        reject(new Error(`火山 ASR WebSocket 错误：${err.message}`))
+        settleReject(new Error(`火山 ASR WebSocket 错误：${err.message}`))
       })
 
       ws.on('close', () => {
+        // 超时/发送失败/异常已先行 settle，这里直接返回不再处理
+        if (settled) return
         const duration = Date.now() - startTime
         if (errorMessage) {
-          reject(new Error(errorMessage))
+          settleReject(new Error(errorMessage))
           return
         }
         logger.info(
           { provider: this.name, duration, text: fullText.slice(0, 100), textLength: fullText.length },
           '[火山 ASR] 转写完成',
         )
-        resolve({
+        settleResolve({
           text: fullText,
           language: config.ASR_LANGUAGE === 'auto' ? undefined : config.ASR_LANGUAGE,
         })
       })
 
-      // 兜底超时
+      // 兜底超时：超时后 reject 明确错误，不再静默返回截断文本
       setTimeout(() => {
+        if (settled) return
+        logger.warn('[火山 ASR] 转写超时，关闭连接')
+        settleReject(new Error('火山 ASR 转写超时（60s）'))
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          logger.warn('[火山 ASR] 转写超时，关闭连接')
           ws.close()
         }
       }, 60000)
@@ -371,20 +396,6 @@ async function ensureWav16kMono(audioBuffer: Buffer, mimeType?: string): Promise
 
 function isValidWav(data: Buffer): boolean {
   return data.length >= 12 && data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WAVE'
-}
-
-function extractRawAudioFromWav(wavBuffer: Buffer): Buffer {
-  // 解析 WAV 头，定位 data chunk
-  let offset = 12
-  while (offset < wavBuffer.length - 8) {
-    const chunkId = wavBuffer.toString('ascii', offset, offset + 4)
-    const chunkSize = wavBuffer.readUInt32LE(offset + 4)
-    if (chunkId === 'data') {
-      return wavBuffer.subarray(offset + 8, offset + 8 + chunkSize)
-    }
-    offset += 8 + chunkSize
-  }
-  throw new Error('无效的 WAV 文件：未找到 data chunk')
 }
 
 function convertWithFfmpeg(inputBuffer: Buffer, inputFormat: string): Promise<Buffer> {

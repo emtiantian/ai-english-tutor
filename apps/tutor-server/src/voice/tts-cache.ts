@@ -11,9 +11,6 @@ const MAX_CACHE_FILES = config.TTS_CACHE_MAX_FILES  // 缓存文件数量上限
 /** 按缓存键索引的合成中 Promise */
 const inFlight = new Map<string, Promise<Buffer>>()
 
-/** 每个 key 的文件操作锁 */
-const fileLocks = new Map<string, Promise<void>>()
-
 /**
  * 自进程启动以来的累计缓存统计。
  *
@@ -24,6 +21,33 @@ const stats = { hits: 0, misses: 0 }
 
 /** 每 N 次合成请求（命中 + 未命中）记录一次统计摘要。 */
 const STATS_LOG_EVERY = 20
+
+/** 每多少次写入触发一次缓存清理 */
+const CLEANUP_EVERY_WRITES = 50
+
+/** 累计写入次数，用于触发周期性清理 */
+let writeCount = 0
+
+/** 上次清理时观测到的文件数，用于判断是否接近上限需要提前清理 */
+let lastKnownFileCount = 0
+
+/**
+ * 影响音频输出的缓存键维度。
+ * 所有维度都会参与缓存键的计算，确保同文本但不同音色/格式/语速
+ * 不会命中错误缓存。
+ */
+export interface CacheKeyOptions {
+  /** 音色 ID */
+  voice?: string
+  /** 音频格式：mp3 | wav | pcm ... */
+  format?: string
+  /** 语速倍数 */
+  speed?: number
+  /** 音色设计描述（小米 VoiceDesign 等） */
+  voiceDesign?: string
+  /** TTS 模式（小米 preset / voicedesign / voiceclone） */
+  mode?: string
+}
 
 /**
  * 缓存效果快照。`hitRate` = 命中数 /（命中数 + 未命中数）。
@@ -78,7 +102,7 @@ export async function getCacheDiskUsage(): Promise<{
     files = wavs.length
     totalBytes = sizes.reduce((sum, s) => sum + s, 0)
   } catch {
-    // 目录尚未创建 → 返回零值
+    // 目录尚未创建 -> 返回零值
   }
   return {
     dir: CACHE_DIR,
@@ -107,8 +131,20 @@ async function ensureCacheDir(): Promise<void> {
   await fs.mkdir(CACHE_DIR, { recursive: true })
 }
 
-function getCacheKey(text: string, voiceDesign?: string): string {
-  return createHash('sha256').update(text + (voiceDesign ?? '')).digest('hex')
+/**
+ * 构建缓存键：把所有影响音频输出的维度一起 SHA256，
+ * 避免同文本不同音色/格式/语速命中错误缓存。
+ */
+export function buildCacheKey(text: string, opts: CacheKeyOptions = {}): string {
+  const parts = [
+    text,
+    opts.voice ?? '',
+    opts.format ?? '',
+    opts.speed !== undefined ? String(opts.speed) : '',
+    opts.voiceDesign ?? '',
+    opts.mode ?? '',
+  ]
+  return createHash('sha256').update(parts.join('|')).digest('hex')
 }
 
 function getCachePath(key: string): string {
@@ -116,37 +152,16 @@ function getCachePath(key: string): string {
 }
 
 /**
- * 获取针对某个缓存键的独占锁。
- * 返回一个释放函数，使用完毕后必须调用。
- */
-async function acquireLock(key: string): Promise<() => void> {
-  while (fileLocks.has(key)) {
-    // eslint-disable-next-line no-await-in-loop
-    await fileLocks.get(key)
-  }
-
-  let release: () => void
-  const lockPromise = new Promise<void>((resolve) => {
-    release = () => {
-      fileLocks.delete(key)
-      resolve()
-    }
-  })
-  fileLocks.set(key, lockPromise)
-  return release!
-}
-
-/**
  * 读取指定文本对应的缓存音频。
  *
- * 使用异步 I/O 和每个 key 的锁，避免读取到未写完的文件。
+ * setCachedAudio 已用 tmp+rename 原子写，读取 final path 永远
+ * 拿不到半个文件，inFlight 已做并发去重，无需额外文件锁。
  */
-export async function getCachedAudio(text: string, voiceDesign?: string): Promise<Buffer | undefined> {
+export async function getCachedAudio(text: string, opts: CacheKeyOptions = {}): Promise<Buffer | undefined> {
   await ensureCacheDir()
-  const key = getCacheKey(text, voiceDesign)
+  const key = buildCacheKey(text, opts)
   const path = getCachePath(key)
 
-  const release = await acquireLock(key)
   try {
     const buffer = await fs.readFile(path)
     logger.debug({ key: key.slice(0, 8) }, 'TTS 缓存命中')
@@ -156,8 +171,6 @@ export async function getCachedAudio(text: string, voiceDesign?: string): Promis
     if (code === 'ENOENT') return undefined
     logger.warn({ key: key.slice(0, 8), err }, 'TTS 缓存读取失败')
     throw err
-  } finally {
-    release()
   }
 }
 
@@ -165,22 +178,21 @@ export async function getCachedAudio(text: string, voiceDesign?: string): Promis
  * 以原子方式将音频保存到缓存。
  *
  * 先写入临时文件，再重命名为目标文件，确保读取端永远不会
- * 看到部分写入的文件。
+ * 看到部分写入的文件。写入后按计数触发周期性清理。
  */
-export async function setCachedAudio(text: string, buffer: Buffer, voiceDesign?: string): Promise<void> {
+export async function setCachedAudio(text: string, buffer: Buffer, opts: CacheKeyOptions = {}): Promise<void> {
   await ensureCacheDir()
-  const key = getCacheKey(text, voiceDesign)
+  const key = buildCacheKey(text, opts)
+  const path = getCachePath(key)
+  const tempPath = `${path}.tmp.${Date.now()}`
+  await fs.writeFile(tempPath, buffer)
+  await fs.rename(tempPath, path)
+  logger.debug({ key: key.slice(0, 8), size: buffer.length }, 'TTS 缓存已保存')
 
-  const release = await acquireLock(key)
-  try {
-    const path = getCachePath(key)
-    const tempPath = `${path}.tmp.${Date.now()}`
-    await fs.writeFile(tempPath, buffer)
-    await fs.rename(tempPath, path)
-    logger.debug({ key: key.slice(0, 8), size: buffer.length }, 'TTS 缓存已保存')
+  writeCount++
+  // 每达 50 次写入、或上次观测到的文件数已达上限 80% 时才清理，避免每次写入都扫盘
+  if (writeCount % CLEANUP_EVERY_WRITES === 0 || lastKnownFileCount >= MAX_CACHE_FILES * 0.8) {
     await cleanupIfNeeded()
-  } finally {
-    release()
   }
 }
 
@@ -192,11 +204,11 @@ export async function setCachedAudio(text: string, buffer: Buffer, voiceDesign?:
  */
 export async function getOrSynthesizeCachedAudio(
   text: string,
-  voiceDesign: string | undefined,
+  opts: CacheKeyOptions,
   synthesize: () => Promise<Buffer>,
 ): Promise<Buffer> {
   await ensureCacheDir()
-  const key = getCacheKey(text, voiceDesign)
+  const key = buildCacheKey(text, opts)
 
   const existing = inFlight.get(key)
   if (existing) {
@@ -205,7 +217,7 @@ export async function getOrSynthesizeCachedAudio(
   }
 
   const promise = (async () => {
-    const cached = await getCachedAudio(text, voiceDesign)
+    const cached = await getCachedAudio(text, opts)
     if (cached) {
       recordHit()
       return cached
@@ -213,7 +225,7 @@ export async function getOrSynthesizeCachedAudio(
 
     recordMiss()
     const buffer = await synthesize()
-    await setCachedAudio(text, buffer, voiceDesign)
+    await setCachedAudio(text, buffer, opts)
     return buffer
   })().finally(() => {
     inFlight.delete(key)
@@ -252,4 +264,7 @@ async function cleanupIfNeeded(): Promise<void> {
       // 忽略
     }
   }
+
+  // 更新观测值，供 setCachedAudio 判断是否需要提前清理
+  lastKnownFileCount = files.length
 }

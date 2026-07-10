@@ -3,6 +3,7 @@ import { logger } from '../logger.js'
 import { CosyVoiceProvider } from './providers/cosyvoice.js'
 import { XiaomiTTSProvider } from './providers/xiaomi-tts.js'
 import { VolcengineTTSProvider } from './providers/volcengine-tts.js'
+import { generateSilentWav } from './wav-utils.js'
 
 /**
  * TTS（文本转语音）Provider 接口
@@ -53,45 +54,6 @@ class BrowserTTSProvider implements TTSProvider {
     await new Promise((resolve) => setTimeout(resolve, 300))
     return generateSilentWav()
   }
-}
-
-/**
- * 生成一段包含静音的最小有效 WAV 文件。
- * 用于浏览器 TTS 兜底且没有真实 API 音频产出的场景。
- */
-function generateSilentWav(): Buffer {
-  const sampleRate = 16000
-  const channels = 1
-  const bitsPerSample = 16
-  const durationSeconds = 0.1
-  const byteRate = sampleRate * channels * bitsPerSample / 8
-  const blockAlign = channels * bitsPerSample / 8
-  const dataSize = Math.floor(sampleRate * durationSeconds) * blockAlign
-  const fileSize = 36 + dataSize
-
-  const buffer = Buffer.alloc(44 + dataSize)
-  let offset = 0
-
-  // RIFF chunk 描述符
-  buffer.write('RIFF', offset); offset += 4
-  buffer.writeUInt32LE(fileSize, offset); offset += 4
-  buffer.write('WAVE', offset); offset += 4
-
-  // fmt 子 chunk
-  buffer.write('fmt ', offset); offset += 4
-  buffer.writeUInt32LE(16, offset); offset += 4 // Subchunk1Size（PCM）
-  buffer.writeUInt16LE(1, offset); offset += 2 // AudioFormat（PCM）
-  buffer.writeUInt16LE(channels, offset); offset += 2
-  buffer.writeUInt32LE(sampleRate, offset); offset += 4
-  buffer.writeUInt32LE(byteRate, offset); offset += 4
-  buffer.writeUInt16LE(blockAlign, offset); offset += 2
-  buffer.writeUInt16LE(bitsPerSample, offset); offset += 2
-
-  // data 子 chunk（静音已由 Buffer.alloc 初始化为 0）
-  buffer.write('data', offset); offset += 4
-  buffer.writeUInt32LE(dataSize, offset); offset += 4
-
-  return buffer
 }
 
 /**

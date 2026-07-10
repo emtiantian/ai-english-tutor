@@ -2,6 +2,19 @@ import { config } from '../../config.js'
 import { logger } from '../../logger.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
+import { pcmToWav } from '../wav-utils.js'
+
+/** fetch 超时时间（毫秒） */
+const FETCH_TIMEOUT_MS = 30_000
+
+/**
+ * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
+ */
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
 
 /** CosyVoice 可用的内置音色 */
 export const COSYVOICE_VOICES = [
@@ -20,40 +33,6 @@ export function selectTeachingVoice(level?: number): CosyVoiceId {
   if (!level || level <= 2) return '英文女' // 初学者使用温柔女声
   if (level <= 4) return '英文男' // 中级使用清晰男声
   return '英文女' // 高级使用专业女声
-}
-
-/**
- * 将原始单声道 16 位小端 PCM 打包成最小 WAV（RIFF）容器。
- *
- * CosyVoice fastapi 的 `server.py` 流式输出的是*无头* int16 PCM
- *（`(tts_speech.numpy() * 2**15).astype(np.int16).tobytes()`），这些字节
- * 无法直接被浏览器 / `decodeAudioData` 播放。在前面加上 44 字节的 WAV
- * 头后，输出就是自描述、通用可解码的音频 buffer。
- */
-function pcmToWav(pcm: Buffer, sampleRate: number, channels = 1, bitsPerSample = 16): Buffer {
-  const byteRate = (sampleRate * channels * bitsPerSample) / 8
-  const blockAlign = (channels * bitsPerSample) / 8
-  const dataSize = pcm.length
-  const header = Buffer.alloc(44)
-  let offset = 0
-
-  header.write('RIFF', offset); offset += 4
-  header.writeUInt32LE(36 + dataSize, offset); offset += 4
-  header.write('WAVE', offset); offset += 4
-
-  header.write('fmt ', offset); offset += 4
-  header.writeUInt32LE(16, offset); offset += 4 // PCM fmt chunk 大小
-  header.writeUInt16LE(1, offset); offset += 2 // 音频格式 = PCM
-  header.writeUInt16LE(channels, offset); offset += 2
-  header.writeUInt32LE(sampleRate, offset); offset += 4
-  header.writeUInt32LE(byteRate, offset); offset += 4
-  header.writeUInt16LE(blockAlign, offset); offset += 2
-  header.writeUInt16LE(bitsPerSample, offset); offset += 2
-
-  header.write('data', offset); offset += 4
-  header.writeUInt32LE(dataSize, offset)
-
-  return Buffer.concat([header, pcm])
 }
 
 /**
@@ -91,43 +70,46 @@ export class CosyVoiceProvider implements TTSProvider {
   }
 
   async synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer> {
-    return getOrSynthesizeCachedAudio(text, options?.voiceDesign, async () => {
-      const voice = options?.voice ?? config.COSYVOICE_SPK_ID
-      const speed = options?.speed ?? config.COSYVOICE_SPEED
+    const voice = options?.voice ?? config.COSYVOICE_SPK_ID
+    const speed = options?.speed ?? config.COSYVOICE_SPEED
+    return getOrSynthesizeCachedAudio(
+      text,
+      { voice, format: 'wav', speed, voiceDesign: options?.voiceDesign },
+      async () => {
+        logger.debug(
+          { provider: this.name, voice, speed, textLength: text.length },
+          'CosyVoice 合成请求',
+        )
 
-      logger.debug(
-        { provider: this.name, voice, speed, textLength: text.length },
-        'CosyVoice 合成请求',
-      )
+        const startTime = Date.now()
 
-      const startTime = Date.now()
+        const form = new FormData()
+        form.append('tts_text', text)
+        form.append('spk_id', voice)
+        form.append('speed', String(speed))
 
-      const form = new FormData()
-      form.append('tts_text', text)
-      form.append('spk_id', voice)
-      form.append('speed', String(speed))
+        const response = await fetchWithTimeout(`${this.baseUrl}/inference_sft`, {
+          method: 'POST',
+          body: form,
+        })
 
-      const response = await fetch(`${this.baseUrl}/inference_sft`, {
-        method: 'POST',
-        body: form,
-      })
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'unknown error')
+          throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
+        }
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
-      }
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = pcmToWav(Buffer.from(arrayBuffer), config.COSYVOICE_SAMPLE_RATE)
+        const duration = Date.now() - startTime
 
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = pcmToWav(Buffer.from(arrayBuffer), config.COSYVOICE_SAMPLE_RATE)
-      const duration = Date.now() - startTime
+        logger.info(
+          { provider: this.name, duration, size: buffer.length },
+          'CosyVoice 合成完成',
+        )
 
-      logger.info(
-        { provider: this.name, duration, size: buffer.length },
-        'CosyVoice 合成完成',
-      )
-
-      return buffer
-    })
+        return buffer
+      },
+    )
   }
 
   async *synthesizeStream(
@@ -170,7 +152,7 @@ export class CosyVoiceProvider implements TTSProvider {
     form.append('instruct_text', instruct)
     form.append('speed', String(speed))
 
-    const response = await fetch(`${this.baseUrl}/inference_instruct`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/inference_instruct`, {
       method: 'POST',
       body: form,
     })

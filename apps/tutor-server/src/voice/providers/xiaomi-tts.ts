@@ -4,6 +4,19 @@ import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 import { getOrGenerateVoiceSample } from '../voice-samples.js'
 
+/** fetch 超时时间（毫秒） */
+const FETCH_TIMEOUT_MS = 30_000
+
+/**
+ * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
+ * 超时覆盖从发起到收到响应头的时间；响应体读取不受限。
+ */
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 /**
  * 小米 MiMo TTS v2.5 Provider
  *
@@ -34,64 +47,69 @@ export class XiaomiTTSProvider implements TTSProvider {
   }
 
   async synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer> {
-    return getOrSynthesizeCachedAudio(text, options?.voiceDesign, async () => {
-      const startTime = Date.now()
-      const voiceDesign = options?.voiceDesign
+    const voice = options?.voice ?? config.XIAOMI_TTS_VOICE ?? 'Chloe'
+    return getOrSynthesizeCachedAudio(
+      text,
+      { voice, mode: this.mode, voiceDesign: options?.voiceDesign },
+      async () => {
+        const startTime = Date.now()
+        const voiceDesign = options?.voiceDesign
 
-      // voiceclone 模式：自动标定 —— 首次使用时用 voicedesign 生成参考样本，之后固定使用
-      let effectiveMode = this.mode
-      let cloneSource: string | undefined
-      if (this.mode === 'voiceclone' && voiceDesign) {
-        cloneSource = await this.ensureVoiceSample(voiceDesign)
-      }
+        // voiceclone 模式：自动标定 -- 首次使用时用 voicedesign 生成参考样本，之后固定使用
+        let effectiveMode = this.mode
+        let cloneSource: string | undefined
+        if (this.mode === 'voiceclone' && voiceDesign) {
+          cloneSource = await this.ensureVoiceSample(voiceDesign)
+        }
 
-      logger.info(
-        {
-          provider: this.name,
-          mode: effectiveMode,
-          voice: options?.voice ?? config.XIAOMI_TTS_VOICE ?? 'Chloe',
-          textLength: text.length,
-          hasVoiceDesign: !!voiceDesign,
-          voiceDesignPreview: voiceDesign?.slice(0, 60),
-          usedCloneSample: !!cloneSource,
-          textPreview: text.slice(0, 60),
-        },
-        '[小米 TTS] 合成请求',
-      )
+        logger.info(
+          {
+            provider: this.name,
+            mode: effectiveMode,
+            voice,
+            textLength: text.length,
+            hasVoiceDesign: !!voiceDesign,
+            voiceDesignPreview: voiceDesign?.slice(0, 60),
+            usedCloneSample: !!cloneSource,
+            textPreview: text.slice(0, 60),
+          },
+          '[小米 TTS] 合成请求',
+        )
 
-      const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
+        const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': config.XIAOMI_TTS_API_KEY,
-        },
-        body: JSON.stringify(body),
-      })
+        const response = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': config.XIAOMI_TTS_API_KEY,
+          },
+          body: JSON.stringify(body),
+        })
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`小米 TTS 错误：${response.status} - ${errorText}`)
-      }
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'unknown error')
+          throw new Error(`小米 TTS 错误：${response.status} - ${errorText}`)
+        }
 
-      const result = (await response.json()) as XiaomiTTSResponse
-      const audioBase64 = result.choices?.[0]?.message?.audio?.data
+        const result = (await response.json()) as XiaomiTTSResponse
+        const audioBase64 = result.choices?.[0]?.message?.audio?.data
 
-      if (!audioBase64) {
-          throw new Error('小米 TTS 响应缺少音频数据')
-      }
+        if (!audioBase64) {
+            throw new Error('小米 TTS 响应缺少音频数据')
+        }
 
-      const buffer = Buffer.from(audioBase64, 'base64')
-      const duration = Date.now() - startTime
+        const buffer = Buffer.from(audioBase64, 'base64')
+        const duration = Date.now() - startTime
 
-      logger.info(
-        { provider: this.name, mode: effectiveMode, duration, size: buffer.length },
-        '[小米 TTS] 合成完成',
-      )
+        logger.info(
+          { provider: this.name, mode: effectiveMode, duration, size: buffer.length },
+          '[小米 TTS] 合成完成',
+        )
 
-      return buffer
-    })
+        return buffer
+      },
+    )
   }
 
   /**
@@ -114,7 +132,7 @@ export class XiaomiTTSProvider implements TTSProvider {
         audio: { format: 'wav' as const },
       }
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      const response = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +177,7 @@ export class XiaomiTTSProvider implements TTSProvider {
     const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
     ;(body as Record<string, unknown>).stream = true
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -256,7 +274,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
         // voiceclone 模型要求 audio.voice 必须是参考音频的 DataURL。
         // 没有任何参考样本时（没传 voiceDesign 且没配 XIAOMI_TTS_VOICE_CLONE）
-        // 无法做克隆 —— 退回 preset 模型用音色名兜底，避免 400。
+        // 无法做克隆 -- 退回 preset 模型用音色名兜底，避免 400。
         if (!sample) {
           logger.warn(
             { voice },

@@ -4,6 +4,19 @@ import { logger } from '../../logger.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 
+/** fetch 超时时间（毫秒） */
+const FETCH_TIMEOUT_MS = 30_000
+
+/**
+ * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
+ * 超时覆盖从发起到收到响应头的时间；响应体读取不受限。
+ */
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 /**
  * Volcengine Ark Agent Plan 语音合成 TTS Provider
  *
@@ -54,125 +67,127 @@ export class VolcengineTTSProvider implements TTSProvider {
   }
 
   async synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer> {
-    // 音色由 speaker 固定，缓存键用 speaker + format
-    const cacheKey = `${this.speaker}:${this.format}`
-    return getOrSynthesizeCachedAudio(text, cacheKey, async () => {
-      const startTime = Date.now()
-      const speed = options?.speed ?? config.TTS_SPEED
+    const speed = options?.speed ?? config.TTS_SPEED
+    return getOrSynthesizeCachedAudio(
+      text,
+      { voice: this.speaker, format: this.format, speed },
+      async () => {
+        const startTime = Date.now()
 
-      logger.info(
-        {
-          provider: this.name,
-          resourceId: this.resourceId,
-          speaker: this.speaker,
-          format: this.format,
-          sampleRate: this.sampleRate,
-          speed,
-          textLength: text.length,
-          textPreview: text.slice(0, 60),
-        },
-        '[火山 TTS] 合成请求',
-      )
-
-      const body = {
-        req_params: {
-          text,
-          speaker: this.speaker,
-          audio_params: {
+        logger.info(
+          {
+            provider: this.name,
+            resourceId: this.resourceId,
+            speaker: this.speaker,
             format: this.format,
-            sample_rate: this.sampleRate,
-            // 通过 speed 控制语速（若接口支持；否则仅作日志）
-            ...(speed !== 1 ? { speed } : {}),
+            sampleRate: this.sampleRate,
+            speed,
+            textLength: text.length,
+            textPreview: text.slice(0, 60),
           },
-        },
-      }
+          '[火山 TTS] 合成请求',
+        )
 
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Connection': 'keep-alive',
-          'X-Api-Key': this.apiKey,
-          'X-Api-Resource-Id': this.resourceId,
-          'X-Api-Connect-Id': randomUUID(),
-          'X-Control-Require-Usage-Tokens-Return': '*',
-        },
-        body: JSON.stringify(body),
-      })
+        const body = {
+          req_params: {
+            text,
+            speaker: this.speaker,
+            audio_params: {
+              format: this.format,
+              sample_rate: this.sampleRate,
+              // 通过 speed 控制语速（若接口支持；否则仅作日志）
+              ...(speed !== 1 ? { speed } : {}),
+            },
+          },
+        }
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'unknown error')
-        throw new Error(`火山 TTS 错误：${response.status} - ${errorText}`)
-      }
+        const response = await fetchWithTimeout(this.baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+            'X-Api-Key': this.apiKey,
+            'X-Api-Resource-Id': this.resourceId,
+            'X-Api-Connect-Id': randomUUID(),
+            'X-Control-Require-Usage-Tokens-Return': '*',
+          },
+          body: JSON.stringify(body),
+        })
 
-      if (!response.body) {
-        throw new Error('火山 TTS 响应体为空')
-      }
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'unknown error')
+          throw new Error(`火山 TTS 错误：${response.status} - ${errorText}`)
+        }
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      const audioChunks: Buffer[] = []
-      let buffer = ''
-      let totalSize = 0
-      let finished = false
+        if (!response.body) {
+          throw new Error('火山 TTS 响应体为空')
+        }
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        const audioChunks: Buffer[] = []
+        let buffer = ''
+        let totalSize = 0
+        let finished = false
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() ?? ''
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-          for (const line of lines) {
-            const trimmed = line.trim()
-            if (!trimmed) continue
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
 
-            let chunk: VolcengineTTSChunk
-            try {
-              chunk = JSON.parse(trimmed) as VolcengineTTSChunk
-            } catch {
-              logger.warn({ line: trimmed.slice(0, 200) }, '[火山 TTS] 跳过格式错误的 JSON 行')
-              continue
-            }
+            for (const line of lines) {
+              const trimmed = line.trim()
+              if (!trimmed) continue
 
-            if (chunk.code === 20000000) {
-              finished = true
-              continue
-            }
+              let chunk: VolcengineTTSChunk
+              try {
+                chunk = JSON.parse(trimmed) as VolcengineTTSChunk
+              } catch {
+                logger.warn({ line: trimmed.slice(0, 200) }, '[火山 TTS] 跳过格式错误的 JSON 行')
+                continue
+              }
 
-            if (chunk.code !== 0) {
-              throw new Error(
-                `火山 TTS 失败：code=${chunk.code} message=${chunk.message ?? '无消息'}`,
-              )
-            }
+              if (chunk.code === 20000000) {
+                finished = true
+                continue
+              }
 
-            if (chunk.data) {
-              const audio = Buffer.from(chunk.data, 'base64')
-              audioChunks.push(audio)
-              totalSize += audio.length
+              if (chunk.code !== 0) {
+                throw new Error(
+                  `火山 TTS 失败：code=${chunk.code} message=${chunk.message ?? '无消息'}`,
+                )
+              }
+
+              if (chunk.data) {
+                const audio = Buffer.from(chunk.data, 'base64')
+                audioChunks.push(audio)
+                totalSize += audio.length
+              }
             }
           }
+        } finally {
+          reader.releaseLock()
         }
-      } finally {
-        reader.releaseLock()
-      }
 
-      if (!finished && audioChunks.length === 0) {
-        throw new Error('火山 TTS 未返回音频且没有结束信号')
-      }
+        if (!finished && audioChunks.length === 0) {
+          throw new Error('火山 TTS 未返回音频且没有结束信号')
+        }
 
-      const result = Buffer.concat(audioChunks)
-      const duration = Date.now() - startTime
+        const result = Buffer.concat(audioChunks)
+        const duration = Date.now() - startTime
 
-      logger.info(
-        { provider: this.name, duration, size: result.length, chunks: audioChunks.length },
-        '[火山 TTS] 合成完成',
-      )
+        logger.info(
+          { provider: this.name, duration, size: result.length, chunks: audioChunks.length },
+          '[火山 TTS] 合成完成',
+        )
 
-      return result
-    })
+        return result
+      },
+    )
   }
 }
 

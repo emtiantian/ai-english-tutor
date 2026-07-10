@@ -1,5 +1,5 @@
 import { logger } from '../logger.js'
-import { broadcast, broadcastToSession } from '../sse/handler.js'
+import { broadcastToSession } from '../sse/handler.js'
 import type { TeacherAudioEvent } from '../sse/types.js'
 import type { TTSProvider } from '../voice/tts.js'
 import type { ASRProvider } from '../voice/asr.js'
@@ -192,7 +192,7 @@ export class AudioPipeline {
       if (sessionId) {
         broadcastToSession(sessionId, event)
       } else {
-        broadcast(event)
+        logger.warn('未提供 sessionId，跳过音频广播')
       }
     }
   }

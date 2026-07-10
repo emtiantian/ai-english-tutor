@@ -207,30 +207,6 @@ export function broadcastToSession(sessionId: string, event: SSEEvent): boolean 
   }
 }
 
-/**
- * @deprecated 请改用 broadcastToSession()。
- * 仅保留用于向后兼容 —— 会发送到所有连接。
- */
-export function broadcast(event: SSEEvent): void {
-  logger.warn({ event: event.event }, 'broadcast() 未提供 sessionId，请改用 broadcastToSession()')
-  const payload = formatSSE(event)
-  for (const [id, reply] of connections) {
-    if (reply.raw.destroyed || reply.raw.writableEnded || !reply.raw.writable) {
-      connections.delete(id)
-      destroyRaw(reply)
-      continue
-    }
-
-    try {
-      reply.raw.write(payload)
-    } catch (err) {
-      logger.warn({ sessionId: id, err }, '向连接广播失败')
-      connections.delete(id)
-      destroyRaw(reply)
-    }
-  }
-}
-
 /** 获取活跃连接数 */
 export function getConnectionCount(): number {
   return connections.size

@@ -1,6 +1,7 @@
 import { config } from '../config.js'
 import { logger } from '../logger.js'
 import { DeepSeekProvider } from './providers/deepseek.js'
+import { VolcengineProvider } from './providers/volcengine.js'
 import { XiaomiProvider } from './providers/xiaomi.js'
 
 // ── 内容类型 ──
@@ -148,9 +149,23 @@ export function createLLMProvider(): LLMProvider {
 
   switch (provider) {
     case 'deepseek':
-      return new DeepSeekProvider()
+      return new DeepSeekProvider({
+        apiKey: config.DEEPSEEK_API_KEY,
+        baseURL: config.DEEPSEEK_BASE_URL,
+        model: config.DEEPSEEK_MODEL,
+      })
+    case 'volcengine':
+      return new VolcengineProvider({
+        apiKey: config.VOLCENGINE_LLM_API_KEY,
+        baseURL: config.VOLCENGINE_LLM_BASE_URL,
+        model: config.VOLCENGINE_LLM_MODEL,
+      })
     case 'xiaomi':
-      return new XiaomiProvider()
+      return new XiaomiProvider({
+        apiKey: config.XIAOMI_API_KEY,
+        baseURL: config.XIAOMI_BASE_URL,
+        model: config.XIAOMI_MODEL,
+      })
     case 'mock':
       return new MockProvider()
     default:

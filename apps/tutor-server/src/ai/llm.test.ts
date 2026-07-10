@@ -48,6 +48,31 @@ async function main(): Promise<void> {
   const fallback = createLLMProvider()
   assert.strictEqual(fallback.name, 'mock', 'unknown provider falls back to mock')
 
+  // ── 真实 Provider 工厂（不发起网络请求）────────────────────
+
+  config.LLM_PROVIDER = 'deepseek'
+  config.DEEPSEEK_API_KEY = 'fake-key'
+  const deepseekProvider = createLLMProvider()
+  assert.strictEqual(deepseekProvider.name, 'deepseek')
+  assert.strictEqual(deepseekProvider.capabilities.supportsStreaming, true)
+  assert.strictEqual(deepseekProvider.capabilities.supportsAudioInput, false)
+
+  config.LLM_PROVIDER = 'volcengine'
+  config.VOLCENGINE_LLM_API_KEY = 'fake-key'
+  config.VOLCENGINE_LLM_MODEL = 'ep-fake'
+  const volcengineProvider = createLLMProvider()
+  assert.strictEqual(volcengineProvider.name, 'volcengine')
+  assert.strictEqual(volcengineProvider.capabilities.supportsStreaming, true)
+  assert.strictEqual(volcengineProvider.capabilities.supportsAudioInput, false)
+
+  config.LLM_PROVIDER = 'xiaomi'
+  config.XIAOMI_API_KEY = 'fake-key'
+  config.XIAOMI_MODEL = 'mimo-v2.5'
+  const xiaomiProvider = createLLMProvider()
+  assert.strictEqual(xiaomiProvider.name, 'xiaomi')
+  assert.strictEqual(xiaomiProvider.capabilities.supportsStreaming, true)
+  assert.strictEqual(xiaomiProvider.capabilities.supportsAudioInput, true)
+
   // ── MockProvider abort 行为 ───────────────────────────
 
   const controller = new AbortController()

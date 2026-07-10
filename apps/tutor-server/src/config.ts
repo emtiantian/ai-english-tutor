@@ -86,6 +86,17 @@ export const config = {
   /** DeepSeek 模型 */
   DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
 
+  // ── 火山方舟 LLM 配置 ──
+
+  /** 火山方舟 LLM API Key */
+  VOLCENGINE_LLM_API_KEY: process.env.VOLCENGINE_LLM_API_KEY ?? '',
+
+  /** 火山方舟 LLM Base URL（OpenAI 兼容） */
+  VOLCENGINE_LLM_BASE_URL: process.env.VOLCENGINE_LLM_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3',
+
+  /** 火山方舟 LLM 模型（推理接入点 ID，如 ep-xxxxxxxxxxxxx） */
+  VOLCENGINE_LLM_MODEL: process.env.VOLCENGINE_LLM_MODEL ?? '',
+
   // ── 小米 TTS 配置 ──
 
   /** 小米 MiMo TTS API 密钥（Token Plan 格式：tp-xxxxx） */

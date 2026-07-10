@@ -188,7 +188,6 @@ export class TutorClient {
       'teacher.response',
       'teacher.chunk',
       'teacher.audio',
-      'level.result',
       'error',
       'heartbeat',
     ] as const

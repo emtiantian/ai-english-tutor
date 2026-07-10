@@ -44,15 +44,6 @@ export interface TeacherChunkEvent extends SSEEventBase {
   }
 }
 
-/** 英语水平评估结果 */
-export interface LevelResultEvent extends SSEEventBase {
-  event: 'level.result'
-  data: {
-    level: number
-    reason: string
-  }
-}
-
 /** 教师的音频回复（TTS） */
 export interface TeacherAudioEvent extends SSEEventBase {
   event: 'teacher.audio'
@@ -87,6 +78,5 @@ export type SSEEvent =
   | ConfigEvent
   | TeacherResponseEvent
   | TeacherChunkEvent
-  | LevelResultEvent
   | TeacherAudioEvent
   | HeartbeatEvent

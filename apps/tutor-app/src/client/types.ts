@@ -33,7 +33,6 @@ export interface TutorEventMap {
   'teacher.response': TeachingResponse
   'teacher.chunk': { chunk: string; isEnd: boolean }
   'teacher.audio': { audioBase64: string; format: string; isEnd: boolean }
-  'level.result': { level: number; reason: string }
 
   // 录音
   'recording.start': void
@@ -54,7 +53,7 @@ export interface TutorEventMap {
 }
 
 export interface ChatRequestBody {
-  type: 'user.speak' | 'level.check' | 'lesson.start' | 'level.assess'
+  type: 'user.speak' | 'lesson.start'
   text?: string
   level?: number
   sessionId?: string
@@ -64,33 +63,10 @@ export interface ChatRequestBody {
   styleName?: string
   scenarioId?: string
   userId?: string
-  round?: number
-  previousScores?: number[]
-  topicSeed?: string
   /** v2: 场景挑战的目标 CEFR 档（A1-C2） */
   targetLevel?: CEFRLevel
   /** v2: 从暂停快照恢复时携带的后端 sessionId */
   resumeFrom?: string
-}
-
-/** 多轮评估响应 */
-export interface AssessmentResponse {
-  round: number
-  scores: {
-    vocabulary: number
-    grammar: number
-    fluency: number
-    comprehension: number
-  }
-  overallLevel: number
-  confidence: string
-  reason: string
-  transcript?: string
-  nextQuestion?: string
-  motionId?: string
-  expressionId?: string
-  audioBase64?: string
-  isComplete: boolean
 }
 
 /** 后端返回的场景进度信息 */

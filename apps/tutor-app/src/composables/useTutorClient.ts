@@ -131,11 +131,6 @@ export function useTutorClient(config?: TutorClientConfig) {
     }),
   )
 
-  // --- 等级评估 ---
-  unsubs.push(
-    client.on('level.result', ({ level }) => { store.currentLevel = level }),
-  )
-
   // --- 清理 ---
   function unsubscribeAll() {
     unsubs.forEach((fn) => fn())

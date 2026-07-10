@@ -3,10 +3,10 @@ import type { CEFRLevel } from '@ai-english-tutor/shared'
 import { logger } from '../logger.js'
 import { broadcastToSession, onSessionDisconnect } from '../sse/handler.js'
 import { tutorEngine } from '../ai/engine.js'
-import type { TeacherResponseEvent, LevelResultEvent } from '../sse/types.js'
+import type { TeacherResponseEvent } from '../sse/types.js'
 
 interface ChatRequestBody {
-  type: 'user.speak' | 'level.check' | 'lesson.start' | 'level.assess'
+  type: 'user.speak' | 'lesson.start'
   text?: string
   level?: number
   sessionId?: string
@@ -25,12 +25,6 @@ interface ChatRequestBody {
   targetLevel?: string
   /** v2：通过服务端 sessionId 恢复暂停的场景会话（用于 lesson.start） */
   resumeFrom?: string
-  /** level.assess 的评估轮次（1-3） */
-  round?: number
-  /** level.assess 前几轮的得分 */
-  previousScores?: number[]
-  /** 评估题目的主题种子，用于生成多样化问题 */
-  topicSeed?: string
 }
 
 /**
@@ -39,7 +33,6 @@ interface ChatRequestBody {
  *
  * 支持的类型：
  * - user.speak:     用户输入（文字或语音）→ AI 教学回复
- * - level.check:    英语水平评估
  * - lesson.start:   开始新课程（可选 scenarioId）
  */
 export async function chatRoutes(server: FastifyInstance): Promise<void> {
@@ -123,21 +116,6 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             }
           }
 
-          case 'level.check': {
-            const assessment = await tutorEngine.assessLevel(text ?? '')
-
-            const result: LevelResultEvent = {
-              event: 'level.result',
-              data: {
-                level: assessment.level,
-                reason: assessment.reason,
-              },
-            }
-
-            if (sessionId) broadcastToSession(sessionId, result)
-            return reply.send(result.data)
-          }
-
           case 'lesson.start': {
             // sessionId 必填——客户端必须提供，用于 SSE 作用域划分
             if (!sessionId) {
@@ -174,32 +152,9 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             })
           }
 
-          case 'level.assess': {
-            logger.info({
-              text: text?.slice(0, 50),
-              hasAudio: !!audioBase64,
-              audioFormat,
-              audioSize: audioBase64?.length,
-              round: request.body.round,
-              styleName,
-            }, '[Route] level.assess request received')
-
-            const result = await tutorEngine.handleAssessmentTurn(text ?? '', {
-              sessionId,
-              round: request.body.round ?? 1,
-              previousScores: request.body.previousScores,
-              audioBase64,
-              audioFormat,
-              styleName,
-              topicSeed: request.body.topicSeed,
-            })
-
-            return reply.send(result)
-          }
-
           default:
             return reply.status(400).send({
-              error: 'Invalid type. Expected: user.speak | level.check | lesson.start | level.assess',
+              error: 'Invalid type. Expected: user.speak | lesson.start',
               code: 'INVALID_TYPE',
             })
         }

@@ -50,7 +50,7 @@ export class AudioPipeline {
   ): Promise<{ audioBase64?: string }> {
     const result = await this.ttsOutput.handleOutput(text, voiceDesign)
     if (result.audioBase64) {
-      this.audioBroadcaster.broadcastAudioChunks(result.audioBase64, 'mp3', sessionId)
+      this.audioBroadcaster.broadcastAudioChunks(result.audioBase64, this.tts.outputFormat, sessionId)
       logger.info({ size: Buffer.byteLength(result.audioBase64, 'base64') }, 'TTS 音频广播完成')
     }
     return result

@@ -31,6 +31,8 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIME
  */
 export class XiaomiTTSProvider implements TTSProvider {
   readonly name = 'xiaomi'
+  // buildRequestBody 始终用 format='wav' 请求音频，故产出格式为 wav。
+  readonly outputFormat = 'wav'
   private baseUrl: string
   private mode: string
 

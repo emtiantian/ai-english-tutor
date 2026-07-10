@@ -12,6 +12,13 @@ export interface TTSProvider {
   readonly name: string
 
   /**
+   * 该 provider 实际产出的音频格式（如 'mp3' / 'wav'）。
+   * 用于 SSE 广播的 format 元数据与 /api/tts 的 Content-Type 对齐，
+   * 避免硬编码 'mp3' 导致与真实字节不一致。
+   */
+  readonly outputFormat: string
+
+  /**
    * 将文本合成为语音音频
    * 返回音频数据 Buffer
    */
@@ -47,6 +54,8 @@ export interface TTSSynthesizeOptions {
  */
 class BrowserTTSProvider implements TTSProvider {
   readonly name = 'browser'
+  // 浏览器 TTS 返回静音 WAV 兜底（见 generateSilentWav）。
+  readonly outputFormat = 'wav'
 
   async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
     logger.debug({ browser: true }, '浏览器 TTS 合成（静音兜底）')

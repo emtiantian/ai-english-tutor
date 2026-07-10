@@ -55,7 +55,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
       logger.info(
         { provider: tts.name, textLength: text.length, voice, format },
-        'TTS request',
+        'TTS 请求',
       )
 
       try {
@@ -65,7 +65,8 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
           speed,
         })
 
-        const responseFormat = format ?? config.TTS_FORMAT
+        // 用 provider 实际产出格式作为 Content-Type，保证与返回字节一致。
+        const responseFormat = format ?? tts.outputFormat
         const contentType = getAudioContentType(responseFormat)
 
         return reply
@@ -73,9 +74,9 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
           .header('Content-Length', audioBuffer.length)
           .send(audioBuffer)
       } catch (err) {
-        logger.error({ err }, 'TTS failed')
+        logger.error({ err }, 'TTS 合成失败')
         return reply.status(500).send({
-          error: err instanceof Error ? err.message : 'TTS failed',
+          error: err instanceof Error ? err.message : 'TTS 合成失败',
           code: 'TTS_ERROR',
         })
       }
@@ -111,7 +112,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
     logger.info(
       { provider: asr.name, filename: data.filename, mimetype: data.mimetype },
-      'ASR request',
+      'ASR 请求',
     )
 
     try {
@@ -123,7 +124,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
         totalSize += chunk.length
         if (totalSize > maxSize) {
           return reply.status(413).send({
-            error: `Audio file too large. Max size: ${config.MAX_AUDIO_SIZE_MB}MB`,
+            error: `音频文件过大，最大 ${config.MAX_AUDIO_SIZE_MB}MB`,
             code: 'AUDIO_TOO_LARGE',
           })
         }
@@ -141,9 +142,9 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
       return reply.send(response)
     } catch (err) {
-      logger.error({ err }, 'ASR failed')
+      logger.error({ err }, 'ASR 识别失败')
       return reply.status(500).send({
-        error: err instanceof Error ? err.message : 'ASR failed',
+        error: err instanceof Error ? err.message : 'ASR 识别失败',
         code: 'ASR_ERROR',
       })
     }
@@ -168,7 +169,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
         })
       }
 
-      logger.info({ textLength: text.length }, 'Translate TTS request')
+      logger.info({ textLength: text.length }, '翻译 TTS 请求')
 
       try {
         // 步骤 1：使用 LLM 将英文翻译为中文（带超时）
@@ -194,29 +195,35 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
         logger.info(
           { originalLength: text.length, translationLength: translation.length },
-          'Translation complete',
+          '翻译完成',
         )
 
-        // 步骤 2：用温暖的台湾女声合成中文 TTS
-        const zhVoiceDesign = config.XIAOMI_TTS_ZH_VOICE_DESIGN
-        logger.info({ zhVoiceDesign: zhVoiceDesign?.slice(0, 50) }, 'Using Chinese voice design')
+        // 步骤 2：合成中文 TTS。
+        // voiceDesign 仅对 xiaomi voicedesign/voiceclone 模式有效；
+        // volcengine（固定 speaker）/cosyvoice（内置音色）传入会被忽略甚至导致异常，
+        // 因此做 provider-aware 处理：仅 xiaomi 传中文音色设计，其余用 provider 默认音色。
+        const zhVoiceDesign =
+          tts.name === 'xiaomi' ? config.XIAOMI_TTS_ZH_VOICE_DESIGN : undefined
+        if (zhVoiceDesign) {
+          logger.info({ zhVoiceDesign: zhVoiceDesign.slice(0, 50) }, '使用中文音色设计')
+        }
         const audioBuffer = await tts.synthesize(translation, {
           voiceDesign: zhVoiceDesign,
-          format: config.TTS_FORMAT,
+          format: tts.outputFormat,
         })
 
         const audioBase64 = audioBuffer.toString('base64')
 
         logger.info(
           { translationLength: translation.length, audioSize: audioBuffer.length },
-          'Translate TTS complete',
+          '翻译 TTS 完成',
         )
 
         return reply.send({ audioBase64, translation })
       } catch (err) {
-        logger.error({ err }, 'Translate TTS failed')
+        logger.error({ err }, '翻译 TTS 失败')
         return reply.status(500).send({
-          error: err instanceof Error ? err.message : 'Translate TTS failed',
+          error: err instanceof Error ? err.message : '翻译 TTS 失败',
           code: 'TRANSLATE_TTS_ERROR',
         })
       }

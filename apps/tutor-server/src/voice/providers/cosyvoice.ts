@@ -62,6 +62,8 @@ export function selectTeachingVoice(level?: number): CosyVoiceId {
  */
 export class CosyVoiceProvider implements TTSProvider {
   readonly name = 'cosyvoice'
+  // pcmToWav 把服务端无头 PCM 包成 WAV，故实际产出格式为 wav。
+  readonly outputFormat = 'wav'
   private baseUrl: string
 
   constructor() {

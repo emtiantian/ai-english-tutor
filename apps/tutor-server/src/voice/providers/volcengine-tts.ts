@@ -37,6 +37,8 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIME
  */
 export class VolcengineTTSProvider implements TTSProvider {
   readonly name = 'volcengine'
+  // 输出格式由 config.VOLCENGINE_TTS_FORMAT 决定（默认 mp3）。
+  readonly outputFormat = config.VOLCENGINE_TTS_FORMAT
   private baseUrl: string
   private apiKey: string
   private resourceId: string

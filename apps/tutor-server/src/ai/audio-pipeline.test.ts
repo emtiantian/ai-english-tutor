@@ -74,6 +74,7 @@ function createMockProviders(audioInput = false): {
   return {
     tts: {
       name: 'mock-tts',
+      outputFormat: 'wav',
       async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
         // 返回 12288 字节的缓冲区，使其正好分成 2 个分片
         return Buffer.alloc(12288, 0xab)

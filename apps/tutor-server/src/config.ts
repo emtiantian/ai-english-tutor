@@ -122,7 +122,12 @@ export const config = {
   /** 小米 MiMo TTS 声音克隆样本 base64（voiceclone 模式） */
   XIAOMI_TTS_VOICE_CLONE: process.env.XIAOMI_TTS_VOICE_CLONE ?? '',
 
-  /** 小米 MiMo TTS 中文翻译音色设计（温暖的台湾女声） */
+  /**
+   * 小米 MiMo TTS 中文翻译音色设计（温暖的台湾女声）。
+   * 仅 xiaomi provider（voicedesign/voiceclone 模式）使用；
+   * volcengine（固定 speaker）/cosyvoice（内置音色）在翻译 TTS 时走各自默认音色，
+   * 不会读取该字段（见 routes/voice.ts 的 provider-aware 处理）。
+   */
   XIAOMI_TTS_ZH_VOICE_DESIGN: process.env.XIAOMI_TTS_ZH_VOICE_DESIGN ??
     '台湾腔温柔女声，语速适中，声音甜美温暖，像是一个亲切的台湾小姐姐在跟你说话',
 

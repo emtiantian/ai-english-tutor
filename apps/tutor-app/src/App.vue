@@ -228,13 +228,13 @@ const { client } = useTutorClient({
 })
 
 // 可组合模块 — 各自管理自身生命周期
-const { learnWords, restoreScenarioProgress } = useVocabSync(client)
+const { learnWords } = useVocabSync(client)
 _learnWords = learnWords
 
 const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
 // 从 /api/config 加载 ASR Provider 配置，让录音器知道是走浏览器端 SpeechRecognition 还是把音频发到后端。
 const { asrProvider, voiceStyleSelectable } = useASRConfig()
-const { isRecording, isEncoding, recordingDuration, requestType: recordRequestType, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
+const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
 const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
 
 // --- 辅助函数 ---
@@ -279,6 +279,8 @@ onMounted(async () => {
   // 加载完成后始终显示场景选择器（先选场景）
   setTimeout(async () => {
     await fetchScenarios()
+    // 从 IndexedDB 恢复未过期的暂停快照，供 ScenarioPicker 显示「续玩」徽章
+    await store.loadPausedSnapshots()
     store.phase = 'scenario-select'
   }, 600)
 })

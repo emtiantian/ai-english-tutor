@@ -1,5 +1,15 @@
 import { ref, onMounted } from 'vue'
 
+/**
+ * 从后端 /api/config 拉取运行时配置，决定语音识别（ASR）与语音风格的可选项。
+ *
+ * - asrProvider：决定录音链路——'browser' 走浏览器 Web Speech API（本地识别），
+ *   其它值（whisper / volcengine / ...）则把音频上传后端识别。useAudioRecorder 据此分流。
+ * - voiceStyleSelectable：火山 TTS 用固定音色时为 false，此时「语音风格」下拉
+ *   仅作用于 LLM 人格（见后端 /api/config 的 voiceStyleSelectable 字段）。
+ *
+ * 挂载时自动请求一次；加载失败回退到服务端 ASR 默认值。
+ */
 export type ASRProvider = 'browser' | 'xiaomi' | 'whisper' | 'mock' | string
 
 export function useASRConfig() {

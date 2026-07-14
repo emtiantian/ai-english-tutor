@@ -118,35 +118,18 @@ describe('TutorStore v2 — scenario redesign', () => {
     }
   }
 
-  it('computed: 派生 currentScenarioLevel/currentTurn/maxTurns/coverageRate/currentStars', () => {
+  it('computed: 派生 currentScenarioLevel/maxTurns/coverageRate', () => {
     const store = useTutorStore()
     store.setScenario(makeScenarioProgress({ wordsLearned: ['hello', 'coffee', 'tea'] })) // 3/4 = 75%
     expect(store.currentScenarioLevel).toBe('A2')
-    expect(store.currentTurn).toBe(8)
     expect(store.maxTurns).toBe(20)
     expect(store.coverageRate).toBeCloseTo(0.75)
-    expect(store.currentStars).toBe(4)
-  })
-
-  it('computed: stars 阶梯按覆盖率落档', () => {
-    const store = useTutorStore()
-    const cases: Array<[number, 0 | 3 | 4 | 5]> = [
-      [4, 5], // 4/4 = 100%
-      [3, 4], // 3/4 = 75%
-      [2, 0], // 2/4 = 50% — 不足 60%
-    ]
-    for (const [hit, expected] of cases) {
-      const words = ['hello', 'coffee', 'tea', 'water'].slice(0, hit)
-      store.setScenario(makeScenarioProgress({ wordsLearned: words }))
-      expect(store.currentStars).toBe(expected)
-    }
   })
 
   it('coverageRate 后端下发优先于本地推断', () => {
     const store = useTutorStore()
     store.setScenario(makeScenarioProgress({ coverageRate: 0.92 }))
     expect(store.coverageRate).toBeCloseTo(0.92)
-    expect(store.currentStars).toBe(5)
   })
 
   it('pauseCurrentScenario: <6 轮直接放弃，不写 IndexedDB', async () => {
@@ -219,7 +202,6 @@ describe('TutorStore v2 — scenario redesign', () => {
     expect(store.phase).toBe('teaching')
     expect(store.currentScenario.id).toBe('shopping')
     expect(store.currentScenarioLevel).toBe('B1')
-    expect(store.currentTurn).toBe(12)
     expect(store.coverageRate).toBeCloseTo(0.5)
   })
 

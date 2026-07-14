@@ -29,6 +29,11 @@ export interface ChatMessage {
 
 export const useTutorStore = defineStore('tutor', () => {
   // === 状态 ===
+  // phase 状态机驱动整个 UI 渲染（App.vue 按 phase 条件渲染各组件）：
+  //   loading -> scenario-select -> teaching -> scenario-complete -> scenario-select
+  //   自由聊天分支：scenario-select -> assess-result -> ready -> teaching
+  // 各阶段对应组件：scenario-select=ScenarioPicker / teaching=ChatMessageList+ChatInputBar
+  //   / scenario-complete=ScenarioComplete / assess-result=LevelResult
   const phase = ref<AppPhase>('loading')
   // Provider 实例包装了 WebGL / Cubism / 音频对象。它们必须用 shallowRef 持有，
   // 而不是 ref：深层 ref 会代理整个对象图（Live2D 模型、它的 Map 和 CubismMotionManager），
@@ -116,27 +121,9 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-  /** Computed：场景完成百分比（基于词汇） */
-  const scenarioProgress = computed(() => {
-    if (!currentScenario.value) return 0
-    const { wordsLearned, targetWordsTotal } = currentScenario.value
-    if (!targetWordsTotal) return 0
-    return Math.round((wordsLearned.length / targetWordsTotal) * 100)
-  })
-
-  /** Computed：场景是否已完成 */
-  const isScenarioComplete = computed(() => {
-    return currentScenario.value?.completed === true
-  })
-
   /** v2 computed: 当前挑战的 CEFR 档（来自后端 scenario.level，未下发返回 null） */
   const currentScenarioLevel = computed<CEFRLevel | null>(() => {
     return currentScenario.value?.level ?? null
-  })
-
-  /** v2 computed: 当前轮次 */
-  const currentTurn = computed<number>(() => {
-    return currentScenario.value?.turnsCount ?? 0
   })
 
   /** v2 computed: 硬上限轮次（后端未下发时回退默认 20） */
@@ -153,35 +140,11 @@ export const useTutorStore = defineStore('tutor', () => {
     return sc.wordsLearned.length / sc.targetWordsTotal
   })
 
-  /**
-   * v2 computed: 当前应显示的星数。优先用后端给的 stars，
-   * 否则按覆盖率本地推断（90%+ 5星 / 75%+ 4星 / 60%+ 3星 / <60% 0星）。
-   */
-  const currentStars = computed<0 | 3 | 4 | 5>(() => {
-    const sc = currentScenario.value
-    if (sc?.stars !== undefined) return sc.stars
-    const r = coverageRate.value
-    if (r >= 0.9) return 5
-    if (r >= 0.75) return 4
-    if (r >= 0.6) return 3
-    return 0
-  })
-
   // === 文字显示时机开关 ===
   const showTextImmediately = ref(true)
   const delayedText = ref('')
 
   // === 带副作用的操作 ===
-  function setProviders(providers: {
-    character: CharacterProvider
-    tts: TTSProvider
-    teacher: AITeacherProvider
-  }) {
-    characterProvider.value = providers.character
-    ttsProvider.value = providers.tts
-    teacherProvider.value = providers.teacher
-  }
-
   function addUserMessage(text: string) {
     messages.value.push({
       id: `msg-${Date.now()}`,
@@ -443,16 +406,6 @@ export const useTutorStore = defineStore('tutor', () => {
     return CEFR_ORDER[idx + 1]
   }
 
-  /** 为最后一条 assistant 消息保存音频数据（用于重听） */
-  function setMessageAudio(audioBase64: string) {
-    for (let i = messages.value.length - 1; i >= 0; i--) {
-      if (messages.value[i].role === 'assistant') {
-        messages.value[i].audioBase64 = audioBase64
-        break
-      }
-    }
-  }
-
   /** 为最后一条用户语音消息设置识别文本 */
   function setLastUserTranscript(transcript: string) {
     for (let i = messages.value.length - 1; i >= 0; i--) {
@@ -518,18 +471,13 @@ export const useTutorStore = defineStore('tutor', () => {
     delayedText,
     // 场景状态
     currentScenario,
-    scenarioProgress,
-    isScenarioComplete,
     // v2：场景重新设计
     pausedSnapshots,
     userScenarioProgress,
     currentScenarioLevel,
-    currentTurn,
     maxTurns,
     coverageRate,
-    currentStars,
     // 操作
-    setProviders,
     addUserMessage,
     startAssistantStream,
     appendStreamChunk,
@@ -538,7 +486,6 @@ export const useTutorStore = defineStore('tutor', () => {
     setShowTextImmediately,
     setScenario,
     clearScenario,
-    setMessageAudio,
     setLastUserTranscript,
     confirmLevel,
     // v2 操作

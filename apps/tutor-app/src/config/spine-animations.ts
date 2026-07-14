@@ -1,14 +1,16 @@
 import type { SpineModelConfig } from '../types/spine'
 
 /**
- * Spineboy 示例角色配置
- * 使用 Spine 官方示例数据（spineboy）
+ * 默认 Spine 角色配置（使用 Spine 官方示例数据 spineboy）
+ *
+ * 由 providers/factory.ts 在未传入 spineConfig 时作为 fallback 使用。
+ * 动画映射把通用动作名（idle / walk / talking / ...）映射到 spineboy 自带的动画名。
  */
-export const spineboyConfig: SpineModelConfig = {
+export const defaultSpineConfig: SpineModelConfig = {
   skeletonPath: '/models/spine/spineboy-4.3.skel',
   atlasPath: '/models/spine/spineboy-4.3.atlas',
 
-  // 动画映射：通用动作名 → spineboy 动画名
+  // 动画映射：通用动作名 -> spineboy 动画名
   animationMap: {
     idle: 'idle',           // 待机
     walk: 'walk',           // 走路
@@ -37,8 +39,3 @@ export const spineboyConfig: SpineModelConfig = {
   offset: [0, 0],
   premultipliedAlpha: true,
 }
-
-/**
- * 默认角色配置
- */
-export const defaultSpineConfig = spineboyConfig

@@ -22,6 +22,18 @@ export interface TutorClientOptions {
   requestTimeoutMs?: number
 }
 
+/**
+ * 与后端通信的统一客户端：SSE 长连接 + HTTP 即发即忘双通道。
+ *
+ * - SSE 通道：GET /api/chat/stream?sessionId=... 建立长连接，接收服务端推送的
+ *   teacher.chunk / teacher.response / teacher.audio / config 等事件。sessionId
+ *   是 SSE 作用域键，前后端用同一个 connectionId，服务端据此定向广播。
+ * - HTTP 通道：POST /api/chat 等「即发即忘」——请求立即返回 202 accepted，
+ *   真正的回复随后通过 SSE 推回。因此 sendMessage(stream:true) 不会阻塞等 LLM。
+ *
+ * 事件系统用 mitt 做发布订阅：useTutorClient 订阅事件并驱动 Pinia store。
+ * 断线时按指数退避 + 抖动自动重连，重试耗尽才上报 disconnected。
+ */
 export class TutorClient {
   private emitter = mitt<TutorEventMap>()
   private eventSource: EventSource | null = null
@@ -55,6 +67,11 @@ export class TutorClient {
   }
 
   // --- HTTP 接口 ---
+  /**
+   * 发送对话请求。stream=true 走「即发即忘」：后端立即返回 { accepted: true }，
+   * 流式回复由 SSE 推送；stream=false 同步等待完整 ChatResponse。
+   * 语音请求（带 audioBase64）建议传更长 timeoutMs（ASR+LLM+TTS 可能 30-60s）。
+   */
   async sendMessage(body: ChatRequestBody & { stream: true }, timeoutMs?: number): Promise<{ accepted: true }>
   async sendMessage(body: ChatRequestBody, timeoutMs?: number): Promise<ChatResponse>
   async sendMessage(
@@ -200,7 +217,9 @@ export class TutorClient {
           // 触发原始 SSE 事件
           this.emit(eventName, data)
 
-          // 针对特定情况触发派生事件
+          // teacher.response 除原始事件外，还派生出两个便利事件：
+          // - message.assistant：本地 TTS 模式下触发音频播放（见 useAudioPlayback）
+          // - vocab.new：抽出回复里的生词，供词汇面板/同步使用
           if (eventName === 'teacher.response') {
             this.emit('message.assistant', data)
             // 注：state.idle 不再在这里自动触发，改为在 tts.start 时触发

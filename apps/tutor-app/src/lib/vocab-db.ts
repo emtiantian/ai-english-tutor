@@ -15,6 +15,11 @@ interface PendingSyncRecord {
   timestamp: number
 }
 
+// === IndexedDB 数据库结构（DB_NAME='english-tutor-vocab'，版本 1）===
+// - 'words' store：以 word 为主键，记录 learnedAt / reviewCount / lastReviewAt / synced
+// - 'pending-sync' store：自增 id 主键，离线时暂存待同步的 learn/review 动作
+// - 'scenario-progress' store：以 scenarioId 为主键，缓存每个场景已学单词列表
+// getDB() 单例化 dbPromise，避免重复打开连接。
 const DB_NAME = 'english-tutor-vocab'
 const DB_VERSION = 1
 

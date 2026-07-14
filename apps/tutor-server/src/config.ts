@@ -114,22 +114,8 @@ export const config = {
   /** 小米 MiMo TTS 音色（preset 模式，例如 'Chloe'、'mimo_default'） */
   XIAOMI_TTS_VOICE: process.env.XIAOMI_TTS_VOICE ?? 'Chloe',
 
-  /** 小米 MiMo TTS 音色设计描述（voicedesign 模式）
-   *  voicedesign 模式下、且 session 无角色人设时的英文兜底音色描述。默认慵懒御姐风。 */
-  XIAOMI_TTS_VOICE_DESIGN: process.env.XIAOMI_TTS_VOICE_DESIGN ||
-    '成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声',
-
   /** 小米 MiMo TTS 声音克隆样本 base64（voiceclone 模式） */
   XIAOMI_TTS_VOICE_CLONE: process.env.XIAOMI_TTS_VOICE_CLONE ?? '',
-
-  /**
-   * 小米 MiMo TTS 中文翻译音色设计（温暖的台湾女声）。
-   * 仅 xiaomi provider（voicedesign/voiceclone 模式）使用；
-   * volcengine（固定 speaker）/cosyvoice（内置音色）在翻译 TTS 时走各自默认音色，
-   * 不会读取该字段（见 routes/voice.ts 的 provider-aware 处理）。
-   */
-  XIAOMI_TTS_ZH_VOICE_DESIGN: process.env.XIAOMI_TTS_ZH_VOICE_DESIGN ??
-    '台湾腔温柔女声，语速适中，声音甜美温暖，像是一个亲切的台湾小姐姐在跟你说话',
 
   // ── 小米 LLM 配置 ──
 

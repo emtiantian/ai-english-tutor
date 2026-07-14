@@ -232,8 +232,8 @@ const { learnWords } = useVocabSync(client)
 _learnWords = learnWords
 
 const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
-// 从 /api/config 加载 ASR Provider 配置，让录音器知道是走浏览器端 SpeechRecognition 还是把音频发到后端。
-const { asrProvider, voiceStyleSelectable } = useASRConfig()
+// 从 /api/config 加载 ASR/TTS 运行时配置。
+const { asrProvider, ttsProvider, voiceStyleSelectable } = useASRConfig()
 const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
 const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
 

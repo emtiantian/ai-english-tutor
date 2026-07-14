@@ -100,27 +100,6 @@ async function main(): Promise<void> {
   const asrOkBody = JSON.parse(asrOk.body)
   assert.strictEqual(asrOkBody.text, '', 'browser ASR returns empty transcript on server')
 
-  // ── POST /api/translate-tts 翻译并语音合成 ──────────────────
-
-  const translateMissing = await app.inject({
-    method: 'POST',
-    url: '/api/translate-tts',
-    payload: { text: '' },
-  })
-  assert.strictEqual(translateMissing.statusCode, 400, 'empty translate text should return 400')
-  const translateMissingBody = JSON.parse(translateMissing.body)
-  assert.strictEqual(translateMissingBody.code, 'MISSING_TEXT')
-
-  const translateOk = await app.inject({
-    method: 'POST',
-    url: '/api/translate-tts',
-    payload: { text: 'Good morning' },
-  })
-  assert.strictEqual(translateOk.statusCode, 200, 'valid translate-tts should return 200')
-  const translateOkBody = JSON.parse(translateOk.body)
-  assert.ok(translateOkBody.audioBase64.length > 0)
-  assert.ok(translateOkBody.translation.length > 0)
-
   await app.close()
   console.log('✅ voice route test passed')
 }

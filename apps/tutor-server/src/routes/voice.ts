@@ -3,7 +3,6 @@ import { logger } from '../logger.js'
 import { createTTSProvider } from '../voice/tts.js'
 import { createASRProvider } from '../voice/asr.js'
 import { getCacheStats, getCacheDiskUsage } from '../voice/tts-cache.js'
-import { createLLMProvider, type LLMMessage } from '../ai/llm.js'
 import { config } from '../config.js'
 
 interface TTSRequestBody {
@@ -11,10 +10,6 @@ interface TTSRequestBody {
   voice?: string
   format?: string
   speed?: number
-}
-
-interface TranslateTTSRequestBody {
-  text: string
 }
 
 interface ASRResponse {
@@ -32,7 +27,6 @@ interface ASRResponse {
 export async function voiceRoutes(server: FastifyInstance): Promise<void> {
   const tts = createTTSProvider()
   const asr = createASRProvider()
-  const llm = createLLMProvider()
 
   /**
    * POST /api/tts
@@ -150,85 +144,6 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
     }
   })
 
-  /**
-   * POST /api/translate-tts
-   * 将英文文本翻译为中文，并用温暖的台湾女声合成语音。
-   *
-   * 请求体：{ text: string }
-   * 响应：{ audioBase64: string, translation: string }
-   */
-  server.post(
-    '/api/translate-tts',
-    async (request: FastifyRequest<{ Body: TranslateTTSRequestBody }>, reply) => {
-      const { text } = request.body
-
-      if (!text || text.trim().length === 0) {
-        return reply.status(400).send({
-          error: 'Text is required',
-          code: 'MISSING_TEXT',
-        })
-      }
-
-      logger.info({ textLength: text.length }, '翻译 TTS 请求')
-
-      try {
-        // 步骤 1：使用 LLM 将英文翻译为中文（带超时）
-        const translateMessages: LLMMessage[] = [
-          {
-            role: 'system',
-            content:
-              '你是一名翻译助手。请将给定的英文文本翻译成自然的简体中文。' +
-              '只返回中文译文，不要解释、不要引号、不要额外内容。',
-          },
-          { role: 'user', content: text },
-        ]
-
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 15000)
-        let translationResponse: { content: string }
-        try {
-          translationResponse = await llm.complete(translateMessages, controller.signal)
-        } finally {
-          clearTimeout(timeoutId)
-        }
-        const translation = translationResponse.content.trim()
-
-        logger.info(
-          { originalLength: text.length, translationLength: translation.length },
-          '翻译完成',
-        )
-
-        // 步骤 2：合成中文 TTS。
-        // voiceDesign 仅对 xiaomi voicedesign/voiceclone 模式有效；
-        // volcengine（固定 speaker）/cosyvoice（内置音色）传入会被忽略甚至导致异常，
-        // 因此做 provider-aware 处理：仅 xiaomi 传中文音色设计，其余用 provider 默认音色。
-        const zhVoiceDesign =
-          tts.name === 'xiaomi' ? config.XIAOMI_TTS_ZH_VOICE_DESIGN : undefined
-        if (zhVoiceDesign) {
-          logger.info({ zhVoiceDesign: zhVoiceDesign.slice(0, 50) }, '使用中文音色设计')
-        }
-        const audioBuffer = await tts.synthesize(translation, {
-          voiceDesign: zhVoiceDesign,
-          format: tts.outputFormat,
-        })
-
-        const audioBase64 = audioBuffer.toString('base64')
-
-        logger.info(
-          { translationLength: translation.length, audioSize: audioBuffer.length },
-          '翻译 TTS 完成',
-        )
-
-        return reply.send({ audioBase64, translation })
-      } catch (err) {
-        logger.error({ err }, '翻译 TTS 失败')
-        return reply.status(500).send({
-          error: err instanceof Error ? err.message : '翻译 TTS 失败',
-          code: 'TRANSLATE_TTS_ERROR',
-        })
-      }
-    },
-  )
 }
 
 function getAudioContentType(format: string): string {

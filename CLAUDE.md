@@ -121,7 +121,7 @@ UI 各组件按 `phase` 条件渲染（见 `App.vue`）。
 - `providers/{character,tts,ai-teacher,voice-input}-provider.ts` — Provider 接口定义
 - `motion-registry*.ts` — Live2D 动作/表情注册表（带 motion-analyzer 根据回复文本选动作；hiyori 的 `HIYORI_MOTION_REGISTRY` 被后端 engine.ts 直接 import）
 - `models/` — Live2D 模型清单系统（`types.ts` 定义 `Live2DModelManifest`；`registry/{hiyori,shizuku,mao_pro}.ts` 各模型 manifest；`list.ts` 注册到 `AVAILABLE_LIVE2D_MODELS`）。Provider 不再硬编码模型路径，统一读 manifest
-- `persona-default.json`、`scenarios-default.json`、`motion-registry-default.json` — 默认数据，部署时可被 `~/.ai-english-tutor/data/{persona,scenarios}.json` 覆盖
+- `persona-default.json`、`scenarios-default.json` — 默认数据，部署时可被 `~/.ai-english-tutor/data/{persona,scenarios}.json` 覆盖
 
 ### 配置覆盖优先级
 

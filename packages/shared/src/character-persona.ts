@@ -1,5 +1,4 @@
 import type { MotionId, ExpressionId } from './types.js'
-import type { MotionConfig, ExpressionConfig } from './motion-registry-json.js'
 
 /**
  * 开场风格 —— 一种人格预设，让老师拥有鲜明的个性风味。
@@ -39,9 +38,6 @@ export interface CharacterPersona {
 
   /** 该角色可用的人格预设 */
   readonly styles: OpeningStyle[]
-
-  readonly motionConfig?: MotionConfig
-  readonly expressionConfig?: ExpressionConfig
 
   /**
    * 构建教学对话的系统提示词。
@@ -185,8 +181,6 @@ export interface PersonaJson {
   systemPromptTemplate: string
   levelAssessPrompt: string
   styles: OpeningStyle[]
-  motionConfig?: MotionConfig
-  expressionConfig?: ExpressionConfig
 }
 
 /**
@@ -226,8 +220,6 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
   return {
     name: json.name,
     styles: json.styles,
-    motionConfig: json.motionConfig,
-    expressionConfig: json.expressionConfig,
 
     buildSystemPrompt(
       level: number,

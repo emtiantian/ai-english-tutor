@@ -15,7 +15,7 @@ services:
       - SERVER_NAME=${SERVER_NAME:-_}
     volumes:
       # TLS certs；缺失时 entrypoint 静默禁用 443，可安全挂载
-      - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data/certs:/etc/nginx/certs:ro
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/certs:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
       context: .
       dockerfile: apps/tutor-server/Dockerfile
     env_file:
-      - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data/.env
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/.env
     environment:
       - PORT=3000
       - NODE_ENV=production
@@ -59,7 +59,7 @@ services:
       - CONFIG_DIR=/app/data
       - DEFAULT_VOCAB_DIR=/app/config/vocab
     volumes:
-      - ${AI_TUTOR_HOME:-~/data/.ai-english-tutor}/data:/app/data
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data:/app/data
     networks:
       - tutor-net
     restart: unless-stopped

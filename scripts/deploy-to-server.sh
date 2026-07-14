@@ -7,9 +7,12 @@
 
 set -euo pipefail
 
+USE_LOCAL_ENV=false
+
 if [[ $# -gt 0 ]]; then
   case "$1" in
     -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
+    --use-local-env) USE_LOCAL_ENV=true ;;
     *)         echo "未知参数: $1" >&2; sed -n '2,5p' "$0"; exit 1 ;;
   esac
 fi
@@ -28,6 +31,9 @@ REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
 
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
+
+# 加载公共配置生成库（颜色、prompt、env_get、generate_env）
+source "${LOCAL_PROJECT_ROOT}/scripts/lib/setup-env.sh"
 
 WHISPER_MODEL_FILE="${WHISPER_MODEL:-ggml-base.en.bin}"
 WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_FILE}"
@@ -60,11 +66,6 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DATA_DIR="${REMOTE_BACKUP_DIR}/data-${TIMESTAMP}"
 BACKUP_APP_DIR="${REMOTE_BACKUP_DIR}/app-${TIMESTAMP}"
 
-RED=$'\033[0;31m'
-GREEN=$'\033[0;32m'
-YELLOW=$'\033[1;33m'
-NC=$'\033[0m'
-
 TEST_DURATION=0
 SYNC_COUNT=0
 
@@ -76,10 +77,6 @@ EXISTING_ENV_FILE=""
 # ════════════════════════════════════════
 # 工具函数
 # ════════════════════════════════════════
-log_info()  { echo "${GREEN}[INFO]${NC} $*"; }
-log_warn()  { echo "${YELLOW}[WARN]${NC} $*"; }
-log_error() { echo "${RED}[ERROR]${NC} $*" >&2; }
-
 remote_exec() {
   ssh "${REMOTE_USER}@${REMOTE_HOST}" "$*"
 }
@@ -87,49 +84,6 @@ remote_exec() {
 # TTY 版：用于需要实时进度的命令（如 docker build）。会注入控制字符，不用于解析输出。
 remote_exec_tty() {
   ssh -t "${REMOTE_USER}@${REMOTE_HOST}" "$*"
-}
-
-prompt() {
-  local message="$1"
-  local default="${2:-}"
-  local input
-  if [ -n "${default}" ]; then
-    read -rp "${message} [${default}]: " input
-    echo "${input:-${default}}"
-  else
-    read -rp "${message}: " input
-    echo "${input}"
-  fi
-}
-
-# 静默输入：用于 API Key，不回显
-prompt_secret() {
-  local message="$1"
-  local existing="${2:-}"
-  local input
-  if [ -n "${existing}" ]; then
-    read -srp "${message}（已输入，回车保留原值）: " input
-    echo "" >&2
-    echo "${input:-${existing}}"
-  else
-    read -srp "${message}: " input
-    echo "" >&2
-    echo "${input}"
-  fi
-}
-
-# 读取 env 文件中 key 的最后一个匹配值
-env_get() {
-  local file="$1" key="$2"
-  [ -n "${file}" ] && [ -f "${file}" ] || return 0
-  grep -E "^${key}=" "${file}" | tail -1 | cut -d= -f2-
-}
-
-prompt_yes_no() {
-  local message="$1"
-  local input
-  read -rp "${message} [y/N]: " input
-  [[ "${input}" =~ ^[Yy]$ ]]
 }
 
 # ════════════════════════════════════════
@@ -225,232 +179,23 @@ run_local_tests() {
 # ════════════════════════════════════════
 # 交互式 .env
 # ════════════════════════════════════════
-generate_env() {
-  log_info "交互式配置服务器 .env (将写入 ${REMOTE_ENV_FILE})..."
-  if [ -n "${EXISTING_ENV_FILE}" ]; then
-    log_info "已读取现有 .env，下列默认值即当前服务器配置（直接回车保留）"
-  else
-    log_info "首次配置，默认值为项目内置推荐值"
-  fi
-
-  local llm_provider llm_api_key llm_base_url llm_model
-  local deepseek_api_key deepseek_base_url deepseek_model
-  local tts_provider tts_api_key tts_base_url tts_mode
-  local asr_provider asr_api_key asr_base_url
-  local cors_origin log_level heartbeat
-
-  # ── 现有值（来自远端 .env；首次部署为空，下面用 :- 兜底到内置默认）──
-  local prev_llm_provider prev_xiaomi_key prev_xiaomi_url prev_xiaomi_model
-  local prev_deepseek_key prev_deepseek_url prev_deepseek_model
-  local prev_tts_provider prev_tts_key prev_tts_url prev_tts_mode
-  local prev_asr_provider prev_asr_key prev_asr_url
-  local prev_cors prev_log prev_heartbeat prev_server_name
-  prev_llm_provider=$(env_get "${EXISTING_ENV_FILE}" LLM_PROVIDER)
-  prev_xiaomi_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_API_KEY)
-  prev_xiaomi_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_BASE_URL)
-  prev_xiaomi_model=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_MODEL)
-  prev_deepseek_key=$(env_get "${EXISTING_ENV_FILE}" DEEPSEEK_API_KEY)
-  prev_deepseek_url=$(env_get "${EXISTING_ENV_FILE}" DEEPSEEK_BASE_URL)
-  prev_deepseek_model=$(env_get "${EXISTING_ENV_FILE}" DEEPSEEK_MODEL)
-  prev_tts_provider=$(env_get "${EXISTING_ENV_FILE}" TTS_PROVIDER)
-  prev_tts_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_API_KEY)
-  prev_tts_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_BASE_URL)
-  prev_tts_mode=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_TTS_MODE)
-  prev_volcengine_tts_key=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_API_KEY)
-  prev_volcengine_tts_resource_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_RESOURCE_ID)
-  prev_volcengine_tts_speaker=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_SPEAKER)
-  prev_volcengine_tts_format=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_FORMAT)
-  prev_volcengine_tts_sample_rate=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_TTS_SAMPLE_RATE)
-  prev_volcengine_asr_key=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_ASR_API_KEY)
-  prev_volcengine_asr_resource_id=$(env_get "${EXISTING_ENV_FILE}" VOLCENGINE_ASR_RESOURCE_ID)
-  prev_asr_provider=$(env_get "${EXISTING_ENV_FILE}" ASR_PROVIDER)
-  prev_asr_key=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_API_KEY)
-  prev_asr_url=$(env_get "${EXISTING_ENV_FILE}" XIAOMI_ASR_BASE_URL)
-  prev_cors=$(env_get "${EXISTING_ENV_FILE}" CORS_ORIGIN)
-  prev_log=$(env_get "${EXISTING_ENV_FILE}" LOG_LEVEL)
-  prev_heartbeat=$(env_get "${EXISTING_ENV_FILE}" SSE_HEARTBEAT_INTERVAL)
-  prev_server_name=$(env_get "${EXISTING_ENV_FILE}" SERVER_NAME)
-
-  # 默认值（沿用现有值时不重置，写文件时按各分支赋值）
-  llm_api_key=""; llm_base_url=""; llm_model=""
-  deepseek_api_key=""; deepseek_base_url=""; deepseek_model=""
-  tts_api_key=""; tts_base_url=""; tts_mode="${prev_tts_mode:-voicedesign}"
-  asr_api_key=""; asr_base_url=""
-
-  # ── LLM ──
-  llm_provider=$(prompt "LLM 厂商 (xiaomi/deepseek/mock)" "${prev_llm_provider:-deepseek}")
-  case "${llm_provider}" in
-    xiaomi)
-      llm_api_key=$(prompt_secret "Xiaomi LLM API Key (输入不回显)" "${prev_xiaomi_key}")
-      llm_base_url=$(prompt "Xiaomi LLM Base URL" "${prev_xiaomi_url:-https://token-plan-sgp.xiaomimimo.com/v1}")
-      llm_model=$(prompt "Xiaomi LLM Model" "${prev_xiaomi_model:-mimo-v2.5}")
-      ;;
-    deepseek)
-      deepseek_api_key=$(prompt_secret "DeepSeek API Key (输入不回显)" "${prev_deepseek_key}")
-      deepseek_base_url=$(prompt "DeepSeek Base URL" "${prev_deepseek_url:-https://ark.cn-beijing.volces.com/api/v3}")
-      deepseek_model=$(prompt "DeepSeek Model（火山方舟接入点 ID）" "${prev_deepseek_model}")
-      ;;
-    mock)
-      ;;
-    *)
-      log_error "不支持的 LLM 厂商: ${llm_provider}"
-      exit 1
-      ;;
-  esac
-
-  # ── TTS ──（browser / xiaomi / cosyvoice / volcengine）
-  tts_provider=$(prompt "TTS 厂商 (browser/xiaomi/cosyvoice/volcengine)" "${prev_tts_provider:-browser}")
-  case "${tts_provider}" in
-    browser)
-      log_info "TTS=browser：前端走浏览器 SpeechSynthesis，后端不合成"
-      ;;
-    xiaomi)
-      tts_api_key=$(prompt_secret "Xiaomi TTS API Key (输入不回显)" "${prev_tts_key}")
-      tts_base_url=$(prompt "Xiaomi TTS Base URL" "${prev_tts_url:-https://token-plan-sgp.xiaomimimo.com/v1}")
-      tts_mode=$(prompt "Xiaomi TTS 模式 (voicedesign=按人设描述生成 / preset=固定预置音色)" "${prev_tts_mode:-voicedesign}")
-      ;;
-    cosyvoice)
-      log_warn "CosyVoice 需 GPU，且需用 docker-compose.cosyvoice.yml 叠加部署"
-      if prompt_yes_no "服务器是否已具备 GPU + cosyvoice:local 镜像"; then
-        ENABLE_COSYVOICE=true
-        log_warn "将以 -f docker-compose.cosyvoice.yml 叠加启动 cosyvoice"
-      else
-        log_warn "未启用 GPU，TTS 自动切换为 browser"
-        tts_provider="browser"
-      fi
-      ;;
-    volcengine)
-      local volcengine_tts_key volcengine_tts_resource_id volcengine_tts_speaker volcengine_tts_format volcengine_tts_sample_rate
-      volcengine_tts_key=$(prompt_secret "Volcengine TTS API Key (输入不回显)" "${prev_volcengine_tts_key}")
-      volcengine_tts_resource_id=$(prompt "Volcengine TTS Resource ID" "${prev_volcengine_tts_resource_id:-seed-tts-2.0}")
-      volcengine_tts_speaker=$(prompt "Volcengine TTS Speaker" "${prev_volcengine_tts_speaker:-zh_female_gaolengyujie_uranus_bigtts}")
-      volcengine_tts_format=$(prompt "Volcengine TTS Format" "${prev_volcengine_tts_format:-mp3}")
-      volcengine_tts_sample_rate=$(prompt "Volcengine TTS Sample Rate" "${prev_volcengine_tts_sample_rate:-24000}")
-      VOLCENGINE_TTS_API_KEY="${volcengine_tts_key}"
-      VOLCENGINE_TTS_RESOURCE_ID="${volcengine_tts_resource_id}"
-      VOLCENGINE_TTS_SPEAKER="${volcengine_tts_speaker}"
-      VOLCENGINE_TTS_FORMAT="${volcengine_tts_format}"
-      VOLCENGINE_TTS_SAMPLE_RATE="${volcengine_tts_sample_rate}"
-      ;;
-    *)
-      log_error "不支持的 TTS 厂商: ${tts_provider}"
-      exit 1
-      ;;
-  esac
-
-  # ── ASR ──（browser / xiaomi / whisper / volcengine）
-  asr_provider=$(prompt "ASR 厂商 (browser/xiaomi/whisper/volcengine)" "${prev_asr_provider:-browser}")
-  case "${asr_provider}" in
-    browser)
-      log_info "ASR=browser：前端浏览器识别，无需 whisper 容器"
-      ;;
-    xiaomi)
-      asr_api_key=$(prompt_secret "Xiaomi ASR API Key (输入不回显)" "${prev_asr_key}")
-      asr_base_url=$(prompt "Xiaomi ASR Base URL" "${prev_asr_url:-https://token-plan-sgp.xiaomimimo.com/v1}")
-      ;;
-    whisper)
-      asr_base_url="http://whisper:8080"
-      ENABLE_WHISPER=true
-      log_warn "ASR=whisper：将以 -f docker-compose.whisper.yml 叠加启动 whisper.cpp 容器"
-      ;;
-    volcengine)
-      local volcengine_asr_key volcengine_asr_resource_id
-      volcengine_asr_key=$(prompt_secret "Volcengine ASR API Key（留空则回退到 TTS key，输入不回显）" "${prev_volcengine_asr_key}")
-      volcengine_asr_resource_id=$(prompt "Volcengine ASR Resource ID" "${prev_volcengine_asr_resource_id:-volc.seedasr.sauc.duration}")
-      VOLCENGINE_ASR_API_KEY="${volcengine_asr_key}"
-      VOLCENGINE_ASR_RESOURCE_ID="${volcengine_asr_resource_id}"
-      ;;
-    *)
-      log_error "不支持的 ASR 厂商: ${asr_provider}"
-      exit 1
-      ;;
-  esac
-
-  # ── 通用 ──
-  cors_origin=$(prompt "CORS_ORIGIN" "${prev_cors:-*}")
-  log_level=$(prompt "LOG_LEVEL" "${prev_log:-info}")
-  heartbeat=$(prompt "SSE_HEARTBEAT_INTERVAL" "${prev_heartbeat:-30000}")
-  # SERVER_NAME：nginx http(s) server_name；HTTPS 启用时建议填 FQDN/IP，纯 HTTP 可留空用 _
-  server_name=$(prompt "SERVER_NAME（HTTPS 虚拟主机；留空 = _）" "${prev_server_name}")
-
-  cat > "${LOCAL_ENV_TEMP}" <<EOF
-# Generated by deploy-to-server.sh at ${TIMESTAMP}
-PORT=3000
-NODE_ENV=production
-LOG_LEVEL=${log_level}
-CORS_ORIGIN=${cors_origin}
-SSE_HEARTBEAT_INTERVAL=${heartbeat}
-# HTTPS 虚拟主机（nginx server_name）；留空 = _ 匹配所有
-SERVER_NAME=${server_name}
-
-# ── 前端（Vite，构建期注入；compose --env-file 读取后传给 frontend build args）──
-VITE_BACKEND_URL=
-VITE_CHARACTER_PROVIDER=live2d
-
-# ── LLM ──
-LLM_PROVIDER=${llm_provider}
-XIAOMI_API_KEY=${llm_api_key}
-XIAOMI_BASE_URL=${llm_base_url}
-XIAOMI_MODEL=${llm_model}
-DEEPSEEK_API_KEY=${deepseek_api_key}
-DEEPSEEK_BASE_URL=${deepseek_base_url}
-DEEPSEEK_MODEL=${deepseek_model}
-
-# ── TTS ──（browser / xiaomi / cosyvoice / volcengine）
-TTS_PROVIDER=${tts_provider}
-XIAOMI_TTS_API_KEY=${tts_api_key}
-XIAOMI_TTS_BASE_URL=${tts_base_url}
-# XIAOMI_TTS_MODE：voicedesign=按人设描述生成；preset=固定预置音色
-XIAOMI_TTS_MODE=${tts_mode}
-# voicedesign 英文兜底音色描述
-XIAOMI_TTS_VOICE_DESIGN=成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声
-# 中文翻译音色
-# XIAOMI_TTS_ZH_VOICE_DESIGN=台湾腔温柔女声，语速适中，声音甜美温暖
-# 通用 TTS 参数（按需开启）
-# TTS_FORMAT=mp3
-# TTS_SPEED=1.0
-# CosyVoice（需 GPU + docker-compose.cosyvoice.yml 叠加）
-COSYVOICE_BASE_URL=http://cosyvoice:50000
-COSYVOICE_SPK_ID=英文女
-COSYVOICE_SPEED=0.9
-
-# Volcengine 火山方舟 Agent Plan 语音合成 TTS
-VOLCENGINE_TTS_API_KEY=${VOLCENGINE_TTS_API_KEY:-}
-VOLCENGINE_TTS_RESOURCE_ID=${VOLCENGINE_TTS_RESOURCE_ID:-seed-tts-2.0}
-# VOLCENGINE_TTS_BASE_URL=https://openspeech.bytedance.com/api/v3/plan/tts/unidirectional
-# VOLCENGINE_TTS_SPEAKER=zh_female_gaolengyujie_uranus_bigtts
-# VOLCENGINE_TTS_FORMAT=mp3
-# VOLCENGINE_TTS_SAMPLE_RATE=24000
-
-# Volcengine 火山方舟 Agent Plan 语音识别 ASR
-VOLCENGINE_ASR_API_KEY=${VOLCENGINE_ASR_API_KEY:-}
-VOLCENGINE_ASR_RESOURCE_ID=${VOLCENGINE_ASR_RESOURCE_ID:-volc.seedasr.sauc.duration}
-# VOLCENGINE_ASR_BASE_URL=wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_nostream
-# VOLCENGINE_ASR_SEGMENT_MS=200
-
-# ── ASR ──（browser=浏览器识别 / xiaomi / whisper）
-ASR_PROVIDER=${asr_provider}
-XIAOMI_ASR_API_KEY=${asr_api_key}
-XIAOMI_ASR_BASE_URL=${asr_base_url}
-# XIAOMI_ASR_MODEL=mimo-v2.5-asr
-# 通用 ASR 参数（按需开启）
-# ASR_LANGUAGE=auto
-# MAX_AUDIO_SIZE_MB=10
-# Whisper（需 docker-compose.whisper.yml 叠加）
-WHISPER_BASE_URL=http://whisper:8080
-WHISPER_MODEL=${WHISPER_MODEL_FILE}
-
-# ── Data ──
-DB_PATH=/app/data/tutor.db
-CONFIG_DIR=/app/data
-DATA_DIR=/app/data
-TTS_CACHE_DIR=/app/data/tts-cache
-EOF
-
-  log_info "已生成本地临时 .env，准备上传"
-}
+# 公共逻辑已迁移到 scripts/lib/setup-env.sh 的 generate_env()。
+# 本文件只保留远端特有的 env 文件拉取/上传/判断逻辑。
 
 configure_remote_env() {
+  # --use-local-env：跳过交互式配置，直接上传本地 ~/.ai-english-tutor/data/.env
+  if $USE_LOCAL_ENV; then
+    local local_env="${AI_TUTOR_HOME:-$HOME/.ai-english-tutor}/data/.env"
+    if [ ! -f "${local_env}" ]; then
+      log_error "本地 ${local_env} 不存在，无法使用 --use-local-env"
+      exit 1
+    fi
+    log_info "使用本地 .env: ${local_env}"
+    scp "${local_env}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+    detect_compose_overlays
+    return 0
+  fi
+
   if remote_exec "[ -f ${REMOTE_ENV_FILE} ]"; then
     log_info "服务器已存在 ${REMOTE_ENV_FILE}"
     # 拉取远端 .env 到本地，作为本次交互式配置的默认值来源
@@ -471,7 +216,9 @@ configure_remote_env() {
       fi
     fi
     if $reconfigure; then
-      generate_env
+      generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" false
+      ENABLE_WHISPER="${GENERATED_ENABLE_WHISPER:-false}"
+      ENABLE_COSYVOICE="${GENERATED_ENABLE_COSYVOICE:-false}"
       scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
     fi
     [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
@@ -479,7 +226,9 @@ configure_remote_env() {
   else
     log_warn "服务器不存在 ${REMOTE_ENV_FILE}"
     if prompt_yes_no "是否交互式创建 .env"; then
-      generate_env
+      generate_env "${LOCAL_ENV_TEMP}" "" false
+      ENABLE_WHISPER="${GENERATED_ENABLE_WHISPER:-false}"
+      ENABLE_COSYVOICE="${GENERATED_ENABLE_COSYVOICE:-false}"
       scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
     else
       log_warn "跳过 .env 配置，将由 init-host-dir.sh 从模板复制（含占位符，需手动编辑）"

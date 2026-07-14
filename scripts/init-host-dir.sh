@@ -8,14 +8,26 @@
 #   所有用户可编辑的配置（.env / persona.json / scenarios.json / vocab/）
 #   都必须放在 data/ 下，否则容器读不到。
 #
-# Usage: bash scripts/init-host-dir.sh [自定义路径]
+# Usage: bash scripts/init-host-dir.sh [--skip-mkcert] [自定义路径]
 #   默认: ~/.ai-english-tutor/
 #   示例: bash scripts/init-host-dir.sh /opt/ai-tutor
+#   示例: bash scripts/init-host-dir.sh --skip-mkcert /opt/ai-tutor
 
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TUTOR_HOME="${1:-$HOME/.ai-english-tutor}"
+
+SKIP_MKCERT=false
+TUTOR_HOME_ARG=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --skip-mkcert) SKIP_MKCERT=true ;;
+    *) TUTOR_HOME_ARG="$arg" ;;
+  esac
+done
+
+TUTOR_HOME="${TUTOR_HOME_ARG:-$HOME/.ai-english-tutor}"
 DATA_DIR="$TUTOR_HOME/data"
 
 echo "📁 初始化宿主机配置目录: $TUTOR_HOME"
@@ -72,10 +84,14 @@ else
 fi
 
 # ── mkcert 自签证书（HTTPS 可选启用）──
-# 检测 mkcert，存在且未生成过证书时自动签一对覆盖 localhost 的证书
-# 放到 $DATA_DIR/certs/，gateway 容器会挂载这个目录到 /etc/nginx/certs/
-# mkcert 不存在时主动询问用户是否安装，避免静默失败
+if ! $SKIP_MKCERT; then
+  ensure_mkcert_certs
+fi
+
 ensure_mkcert_certs() {
+  # 检测 mkcert，存在且未生成过证书时自动签一对覆盖 localhost 的证书
+  # 放到 $DATA_DIR/certs/，gateway 容器会挂载这个目录到 /etc/nginx/certs/
+  # mkcert 不存在时主动询问用户是否安装，避免静默失败
   local cert_file="$DATA_DIR/certs/fullchain.pem"
   local key_file="$DATA_DIR/certs/privkey.pem"
   if [ -f "$cert_file" ] && [ -f "$key_file" ]; then

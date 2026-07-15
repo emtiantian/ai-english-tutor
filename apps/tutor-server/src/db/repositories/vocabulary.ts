@@ -1,4 +1,12 @@
 import { getDb } from '../index.js'
+import { UserVocabularyTable } from '../schema/tables.js'
+import type { InferRow } from '../schema/types.js'
+import { parseJsonColumn, stringifyJsonColumn } from '../schema/helpers.js'
+
+const C = UserVocabularyTable.columns
+
+/** 从 schema 推导的用户词汇数据库行类型（编译期检查用）。 */
+export type UserVocabularyRow = InferRow<typeof UserVocabularyTable>
 
 export type WordStatus = 'learning' | 'mastered' | 'forgotten'
 
@@ -39,20 +47,23 @@ export const vocabRepo = {
     const nextReview = now + 600 // 新单词延迟 10 分钟
 
     const existing = db.prepare(
-      'SELECT id FROM user_vocabulary WHERE user_id = ? AND word = ?',
+      `SELECT ${C.id.name} FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
     ).get(userId, word.toLowerCase()) as { id: number } | undefined
 
     if (existing) {
       db.prepare(
-        `UPDATE user_vocabulary
-         SET status = ?, level = ?, updated_at = ?
-         WHERE id = ?`,
+        `UPDATE ${UserVocabularyTable.name}
+         SET ${C.status.name} = ?, ${C.level.name} = ?, ${C.updated_at.name} = ?
+         WHERE ${C.id.name} = ?`,
       ).run(status, level, now, existing.id)
     } else {
       db.prepare(
-        `INSERT INTO user_vocabulary
-         (user_id, word, level, status, review_count, correct_count, incorrect_count,
-          consecutive_incorrect, context_count, contexts, last_review_at, next_review_at, created_at)
+        `INSERT INTO ${UserVocabularyTable.name}
+         (${C.user_id.name}, ${C.word.name}, ${C.level.name}, ${C.status.name},
+          ${C.review_count.name}, ${C.correct_count.name}, ${C.incorrect_count.name},
+          ${C.consecutive_incorrect.name}, ${C.context_count.name}, ${C.contexts.name},
+          ${C.last_review_at.name}, ${C.next_review_at.name}, ${C.created_at.name})
          VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, '[]', NULL, ?, ?)`,
       ).run(userId, word.toLowerCase(), level, status, nextReview, now)
     }
@@ -77,10 +88,11 @@ export const vocabRepo = {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
 
-    // 获取当前状态
     const row = db.prepare(
-      `SELECT correct_count, incorrect_count, consecutive_incorrect, context_count
-       FROM user_vocabulary WHERE user_id = ? AND word = ?`,
+      `SELECT ${C.correct_count.name}, ${C.incorrect_count.name},
+              ${C.consecutive_incorrect.name}, ${C.context_count.name}
+       FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
     ).get(userId, word.toLowerCase()) as Record<string, number> | undefined
 
     if (!row) return
@@ -89,7 +101,6 @@ export const vocabRepo = {
     const newIncorrectCount = correct ? row.incorrect_count : row.incorrect_count + 1
     const newConsecutiveIncorrect = correct ? 0 : row.consecutive_incorrect + 1
 
-    // 确定状态
     let status: WordStatus
     if (newConsecutiveIncorrect >= 3) {
       status = 'forgotten'
@@ -99,19 +110,18 @@ export const vocabRepo = {
       status = 'learning'
     }
 
-    // 计算下次复习间隔
     const nextReview = calculateNextReview(correct, newCorrectCount)
 
     db.prepare(
-      `UPDATE user_vocabulary
-       SET review_count = review_count + 1,
-           correct_count = ?,
-           incorrect_count = ?,
-           consecutive_incorrect = ?,
-           status = ?,
-           last_review_at = ?,
-           next_review_at = ?
-       WHERE user_id = ? AND word = ?`,
+      `UPDATE ${UserVocabularyTable.name}
+       SET ${C.review_count.name} = ${C.review_count.name} + 1,
+           ${C.correct_count.name} = ?,
+           ${C.incorrect_count.name} = ?,
+           ${C.consecutive_incorrect.name} = ?,
+           ${C.status.name} = ?,
+           ${C.last_review_at.name} = ?,
+           ${C.next_review_at.name} = ?
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
     ).run(newCorrectCount, newIncorrectCount, newConsecutiveIncorrect, status, now, nextReview, userId, word.toLowerCase())
   },
 
@@ -126,9 +136,11 @@ export const vocabRepo = {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
     const rows = db.prepare(
-      `SELECT word, level, status, context_count FROM user_vocabulary
-       WHERE user_id = ? AND status != 'mastered' AND (next_review_at IS NULL OR next_review_at <= ?)
-       ORDER BY next_review_at ASC
+      `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}
+       FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.status.name} != 'mastered'
+         AND (${C.next_review_at.name} IS NULL OR ${C.next_review_at.name} <= ?)
+       ORDER BY ${C.next_review_at.name} ASC
        LIMIT ?`,
     ).all(userId, now, limit) as Record<string, unknown>[]
 
@@ -149,14 +161,14 @@ export const vocabRepo = {
     const now = Math.floor(Date.now() / 1000)
 
     const row = db.prepare(
-      'SELECT contexts FROM user_vocabulary WHERE user_id = ? AND word = ?',
+      `SELECT ${C.contexts.name} FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
     ).get(userId, word.toLowerCase()) as { contexts: string } | undefined
 
     if (!row) return false
 
-    const contexts: string[] = JSON.parse(row.contexts || '[]')
+    const contexts: string[] = parseJsonColumn(row.contexts) ?? []
 
-    // 检查重复（简单字符串匹配）
     const normalizedDesc = contextDesc.toLowerCase().trim()
     if (contexts.some((c) => c.toLowerCase().trim() === normalizedDesc)) {
       return false
@@ -164,10 +176,10 @@ export const vocabRepo = {
 
     contexts.push(contextDesc)
     db.prepare(
-      `UPDATE user_vocabulary
-       SET context_count = ?, contexts = ?, updated_at = ?
-       WHERE user_id = ? AND word = ?`,
-    ).run(contexts.length, JSON.stringify(contexts), now, userId, word.toLowerCase())
+      `UPDATE ${UserVocabularyTable.name}
+       SET ${C.context_count.name} = ?, ${C.contexts.name} = ?, ${C.updated_at.name} = ?
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
+    ).run(contexts.length, stringifyJsonColumn(contexts), now, userId, word.toLowerCase())
 
     return true
   },
@@ -182,11 +194,11 @@ export const vocabRepo = {
     const result = db.prepare(
       `SELECT
         COUNT(*) as total,
-        SUM(CASE WHEN status = 'mastered' THEN 1 ELSE 0 END) as mastered,
-        SUM(CASE WHEN status = 'learning' THEN 1 ELSE 0 END) as learning,
-        SUM(CASE WHEN status = 'forgotten' THEN 1 ELSE 0 END) as forgotten,
-        SUM(CASE WHEN status != 'mastered' AND (next_review_at IS NULL OR next_review_at <= ?) THEN 1 ELSE 0 END) as due_for_review
-       FROM user_vocabulary WHERE user_id = ?`,
+        SUM(CASE WHEN ${C.status.name} = 'mastered' THEN 1 ELSE 0 END) as mastered,
+        SUM(CASE WHEN ${C.status.name} = 'learning' THEN 1 ELSE 0 END) as learning,
+        SUM(CASE WHEN ${C.status.name} = 'forgotten' THEN 1 ELSE 0 END) as forgotten,
+        SUM(CASE WHEN ${C.status.name} != 'mastered' AND (${C.next_review_at.name} IS NULL OR ${C.next_review_at.name} <= ?) THEN 1 ELSE 0 END) as due_for_review
+       FROM ${UserVocabularyTable.name} WHERE ${C.user_id.name} = ?`,
     ).get(now, userId) as Record<string, number | null>
 
     const total = Number(result.total) || 0
@@ -208,7 +220,9 @@ export const vocabRepo = {
   getAllWords(userId: string): Array<{ word: string; level: string; status: WordStatus; contextCount: number; contexts: string[] }> {
     const db = getDb()
     const rows = db.prepare(
-      'SELECT word, level, status, context_count, contexts FROM user_vocabulary WHERE user_id = ?',
+      `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}, ${C.contexts.name}
+       FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ?`,
     ).all(userId) as Record<string, unknown>[]
 
     return rows.map((r) => ({
@@ -216,7 +230,7 @@ export const vocabRepo = {
       level: String(r.level),
       status: String(r.status) as WordStatus,
       contextCount: Number(r.context_count),
-      contexts: JSON.parse(String(r.contexts || '[]')),
+      contexts: parseJsonColumn<string[]>(String(r.contexts)) ?? [],
     }))
   },
 }

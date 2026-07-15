@@ -5,10 +5,9 @@ import type { OpeningStyle } from './prompts/teaching.js'
 import {
   saveSession,
   getSession as getSessionFromDb,
-  getSessionMessages,
-  saveMessage,
   saveScenarioState as saveScenarioStateToDb,
-} from '../db/session-store.js'
+} from '../db/repositories/session.js'
+import { getSessionMessages, saveMessage } from '../db/repositories/message.js'
 
 /** 会话内的场景状态 */
 export interface ScenarioState {

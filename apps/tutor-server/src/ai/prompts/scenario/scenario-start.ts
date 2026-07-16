@@ -35,16 +35,16 @@ export function buildScenarioStartMessages(
   systemPrompt += buildScenarioContext(scenario, targetLevel, words, { currentActIndex: 0 })
   systemPrompt += buildLineReuseBlock(reusableLines)
 
+  // 提示词：场景开场触发 —— 告诉模型学生正在开始一个角色扮演场景，要求以角色身份自然开启场景、介绍背景和角色，不要解释学习目标
+  const scenarioOpeningPrompt =
+    `The student is starting a role-play scenario: "${scenario.nameEn}" at CEFR level ${targetLevel}. ` +
+    `Setting: ${scenario.setting} ` +
+    `Please open the scene naturally in character, introduce the background and the role you are playing. ` +
+    `Do NOT explain learning objectives — start the conversation as if this is really happening.`
+
   const messages: LLMMessage[] = [
     { role: 'system', content: systemPrompt },
-    {
-      role: 'user',
-      content:
-        `学生正在开始一个角色扮演场景："${scenario.nameEn}"，CEFR 等级为 ${targetLevel}。` +
-        `场景设定：${scenario.setting} ` +
-        `请自然地开启场景，用角色身份介绍场景背景和你扮演的角色。` +
-        `不要解释学习目标——就像事情真的在发生一样直接开始对话。`,
-    },
+    { role: 'user', content: scenarioOpeningPrompt },
   ]
 
   return { messages, style: chosen }

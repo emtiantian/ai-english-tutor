@@ -18,16 +18,22 @@ export function buildTeachingMessages(
   const personality = style?.persona
   let systemPrompt = persona.buildSystemPrompt(level, personality)
 
-  // 如果有待复习单词，注入复习指令
   if (reviewWords && reviewWords.length > 0) {
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
-    systemPrompt += `
+    // 提示词：复习指令标题 —— 告诉模型这些单词需要复习，要求自然融入，不要生硬插入
+    const reviewHeader = `
 
-词汇复习 — 学生需要练习这些单词。请在全新语境（与之前对话不同）中自然地把它们融入回复；不要生硬插入，有机编织即可。若某个词不适合当前情境，可跳过。
+Vocabulary review — the student needs practice with these words. Weave them into your response naturally in a fresh context (different from previous turns); do not force them if they do not fit the current situation.`
+    // 提示词：复习单词列表 —— 列出具体需要复习的单词
+    const reviewWordList = `
 
-需要复习的单词：${wordList}
+Words to review: ${wordList}`
+    // 提示词：复习单词输出要求 —— 要求将使用的复习词纳入 vocabulary，并为每个词提供包含该词的例句
+    const reviewOutputRequirement = `
 
-使用复习词后，请将其纳入 JSON 响应的 "vocabulary" 字段；并在 "vocabularySentences" 中为每个复习词提供一句例句，每句例句必须自然包含至少一个上述复习词。`
+When you use a review word, include it in the JSON "vocabulary" field, and provide one example sentence per review word in "vocabularySentences". Each sentence must naturally contain at least one of the words above.`
+    const reviewBlock = reviewHeader + reviewWordList + reviewOutputRequirement
+    systemPrompt += reviewBlock
   }
 
   const messages: LLMMessage[] = [

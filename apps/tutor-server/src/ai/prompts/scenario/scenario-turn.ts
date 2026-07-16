@@ -41,14 +41,21 @@ export function buildScenarioTeachingMessages(
   systemPrompt += buildScenarioContext(scenario, targetLevel, words, vocabState)
   systemPrompt += buildLineReuseBlock(reusableLines)
 
-  // 如果有待复习单词，注入复习指令
   if (reviewWords && reviewWords.length > 0) {
     const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
-    systemPrompt += `
+    // 提示词：场景复习指令标题 —— 告诉模型如果复习词适合当前场景，也自然融入，不要生硬插入
+    const reviewHeader = `
 
-词汇复习 — 如果这些词适合当前场景，也请尽量自然地使用：
-单词：${wordList}
-请将使用到的词纳入 "vocabulary" 字段，并在 "vocabularySentences" 中为每个词提供一句例句，每句例句必须自然包含至少一个上述单词。`
+Vocabulary review — if these words fit the current scene, please use them naturally as well:`
+    // 提示词：场景复习单词列表 —— 列出具体可以融入的复习词
+    const reviewWordList = `
+Words: ${wordList}`
+    // 提示词：场景复习输出要求 —— 要求将使用的复习词纳入 vocabulary，并为每个词提供包含该词的例句
+    const reviewOutputRequirement = `
+
+Include any used words in the "vocabulary" field, and provide one example sentence per word in "vocabularySentences". Each sentence must naturally contain at least one of the words above.`
+    const reviewBlock = reviewHeader + reviewWordList + reviewOutputRequirement
+    systemPrompt += reviewBlock
   }
 
   const messages: LLMMessage[] = [

@@ -4,8 +4,6 @@ import { pickOpeningStyle } from '../shared/persona.js'
 
 /**
  * 为课程开始构建消息。
- *
- * 使用传入的风格（或从角色中固定挑选默认风格）并将人格注入 system prompt。
  */
 export function buildLessonStartMessages(
   level: number,
@@ -14,15 +12,27 @@ export function buildLessonStartMessages(
 ): { messages: LLMMessage[]; style: OpeningStyle } {
   const chosen = style ?? pickOpeningStyle(persona)
 
+  // 提示词：建议模型在开场时使用与风格匹配的动作
+  const motionBlock = chosen.motionHint
+    ? `MOTION HINT: For this opening greeting, prefer the "${chosen.motionHint}" motion if it feels natural.`
+    : undefined
+  // 提示词：建议模型在开场时使用与风格匹配的表情
+  const expressionBlock = chosen.expressionHint
+    ? `EXPRESSION HINT: For this opening greeting, prefer the "${chosen.expressionHint}" expression.`
+    : undefined
+
+  // 提示词：触发课程开场 —— 告诉模型学生刚刚开始一节自由对话英语课，要求用角色身份热情问候、自然开启对话，并简要提及一个练习话题
+  const openingUserPrompt =
+    `The student has just started a Level ${level} free-form English lesson. ` +
+    `Greet them warmly in character, and open the conversation naturally. ` +
+    `Keep your greeting to 1-2 sentences. Briefly mention one light topic or skill we can practice today.`
+
   const messages: LLMMessage[] = [
-    { role: 'system', content: persona.buildSystemPrompt(level, chosen.persona) },
     {
-      role: 'user',
-      content:
-        `学生刚刚开始了一节 Level ${level} 的课程。` +
-        `${chosen.persona} ` +
-        `请用符合该人格的语气热情地欢迎学生（1-2 句话），然后简要介绍今天会学习什么。`,
+      role: 'system',
+      content: persona.buildSystemPrompt(level, chosen.persona, motionBlock, expressionBlock),
     },
+    { role: 'user', content: openingUserPrompt },
   ]
 
   return { messages, style: chosen }

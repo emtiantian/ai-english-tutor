@@ -12,7 +12,7 @@ export function buildScenarioContext(
     wordsUsed?: string[]
   },
 ): string {
-  // v2：将目标词汇分到各幕，让 LLM 每轮只关注一小批词
+  // 计算当前幕和词汇使用情况，用于生成焦点词/已用词/即将出现的词
   const actsCount = scenario.acts?.length ?? 3
   const buckets = bucketWordsForActs(targetWords, actsCount)
   const currentActIndex = Math.min(
@@ -23,12 +23,10 @@ export function buildScenarioContext(
 
   const usedSet = new Set((state?.wordsUsed ?? []).map((w) => w.toLowerCase()))
   const usedTargetWords = targetWords.filter((w) => usedSet.has(w.toLowerCase()))
-  const unusedTargetWords = targetWords.filter((w) => !usedSet.has(w.toLowerCase()))
 
   const focusWords = currentBucket.words.filter(
     (w) => !usedSet.has(w.toLowerCase()),
   )
-  // 如果当前幕即将完成，也开始露出下一幕的词汇
   const currentBucketUsedCount = currentBucket.words.filter(
     (w) => usedSet.has(w.toLowerCase()),
   ).length
@@ -44,7 +42,6 @@ export function buildScenarioContext(
     )
   }
 
-  // v2：有 3 幕结构时优先使用；否则回退到 objectives
   const actsBlock = scenario.acts
     ? buildActsBlock(scenario.acts)
     : buildObjectivesBlock(scenario.objectives)
@@ -52,57 +49,77 @@ export function buildScenarioContext(
   const focusList = focusWords.slice(0, 5)
   const nextList = nextBucketWords.slice(0, 3)
 
+  // 提示词：本轮焦点词 —— 告诉模型优先使用或示范这些尚未使用的目标词
   const focusSection = focusList.length
-    ? `本轮焦点词（自然地使用或示范这些未使用的词，按优先级）：\n${focusList.map((w) => `- ${w}`).join('\n')}`
-    : `本轮焦点词：当前幕已无剩余 — 推进对话至下一幕。`
+    ? `Focus words for this turn (use or model these unused words naturally, in priority order):\n${focusList.map((w) => `- ${w}`).join('\n')}`
+    : `Focus words: no remaining words in the current act — move the conversation to the next act.`
 
+  // 提示词：下一批即将出现的词 —— 当前幕接近尾声时，可轻微铺垫其中 1 个
   const nextSection = nextList.length
-    ? `即将出现（当前幕接近尾声时，可轻微铺垫其中 1 个）：\n${nextList.map((w) => `- ${w}`).join('\n')}`
+    ? `Coming up (when the current act is almost done, you may lightly foreshadow 1 of these):\n${nextList.map((w) => `- ${w}`).join('\n')}`
     : ''
 
+  // 提示词：学生已使用的目标词 —— 要求模型自然回应并肯定，但不要强迫复用
   const usedSection = usedTargetWords.length
-    ? `学生已使用（积极地自然回应，不要强迫复用）：\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
-    : '学生尚未使用目标词汇。'
+    ? `Words the student has already used (respond positively and naturally; do not force reuse):\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
+    : 'The student has not used any target words yet.'
 
-  return `
+  // 提示词：场景头部 —— 声明当前处于角色扮演场景，并给出场景设定、角色身份和目标 CEFR 等级
+  const scenarioHeader = `
 
-场景上下文 — 你现在正处于角色扮演场景中。
+SCENARIO CONTEXT — You are currently inside a role-play scenario.
 
-场景设定：${scenario.setting}
-你的角色：${scenario.role.teacher}
-学生的角色：${scenario.role.student}
-目标 CEFR 等级：${targetLevel}
+Setting: ${scenario.setting}
+Your role: ${scenario.role.teacher}
+Student's role: ${scenario.role.student}
+Target CEFR level: ${targetLevel}
 
-${actsBlock}
+${actsBlock}`
 
-目标词汇池（共 ${targetWords.length} 个词，需在整段场景中自然穿插）：
-${targetWords.join(', ')}
+  // 提示词：目标词汇池 —— 列出整段场景中需要自然穿插的所有目标词
+  const vocabularyPool = `
 
-当前幕：第 ${currentActIndex + 1} / ${buckets.length} 幕
+Target vocabulary pool (${targetWords.length} words; weave them naturally throughout the whole scenario):
+${targetWords.join(', ')}`
+
+  // 提示词：当前进度 —— 说明当前幕数、本轮焦点词、即将出现的词和学生已使用的词
+  const progressSection = `
+
+Current act: ${currentActIndex + 1} / ${buckets.length}
 ${focusSection}
 ${nextSection}
-${usedSection}
+${usedSection}`
 
-场景规则：
-- 始终扮演 ${scenario.role.teacher} 的角色
-- 按顺序引导学生经历幕结构
-- 在你的回复中自然地使用焦点词；若当下不适合，可在自己的台词中示范一个，而非强迫学生
-- 当学生使用目标词时，积极地肯定并自然推进
-- 保持回复简洁（1-3 句话）
-- 在主体幕中，引入自然的转折或复杂情况，让对话更真实（不要依赖预写转折）
-- 当学生已使用足够目标词或对话已足够长时，自然转向结尾幕并收尾
-- studentReplyHints 必须是 1-3 句学生（扮演 ${scenario.role.student}）接下来可能自然说出的简短回复，以学生本人的口吻书写。优先选择能自然包含上述焦点词的提示。
+  // 提示词：场景规则 —— 约束模型保持角色、按幕推进、自然使用焦点词、控制回复长度、生成学生回复提示等
+  const scenarioRules = `
 
-输出格式（必须返回合法 JSON）：
+Scenario rules:
+- Stay in character as ${scenario.role.teacher} at all times.
+- Guide the student through the act structure in order.
+- Use focus words naturally in your reply; if a word does not fit right now, model it in your own line instead of forcing the student.
+- When the student uses a target word, affirm them positively and move the scene forward naturally.
+- Keep replies concise (1-3 sentences).
+- In the middle act(s), introduce natural twists or complications to make the conversation realistic (do not rely on pre-written turns).
+- When the student has used enough target words or the conversation has run long enough, naturally transition to the closing act and wrap up.
+- studentReplyHints must be 1-3 short replies the student (playing ${scenario.role.student}) could naturally say next, written in the student's own voice. Prefer hints that can naturally include the focus words above.`
+
+  // 提示词：输出格式 —— 要求模型必须返回合法 JSON，并说明每个字段的含义
+  const outputFormat = `
+
+OUTPUT FORMAT — You MUST respond with valid JSON:
 {
-  "text": "你的角色回复（英文）",
-  "textZh": "简短的中文翻译，帮助学生理解",
-  "motionId": "从 wave|nod|think|gesture|clap|point|write|surprised 中选择最贴合文本的动作",
-  "expressionId": "从 happy|neutral|curious|surprised|encouraging|thoughtful 中选择最贴合文本的表情",
-  "vocabulary": ["你使用的、来自上方目标词汇池的单词，仅限该池中的词"],
-  "vocabularySentences": ["教学例句——每个词汇对应一句新鲜自然的例句，不要复用之前回合的句子；每句必须包含至少一个上方词汇表中的词。若 vocabulary 为空，则此项也为空数组。"],
-  "studentReplyHints": ["1-3 句学生（扮演 ${scenario.role.student}）接下来可能自然说出的简短回复，以学生自己的口吻书写。优先选择符合当前场景阶段、并能自然使用焦点词的提示。永远不要写元/教学句，如'你可以在说 X 时用 Y'或'这是 X 的用法'——这些是学生真正会说出的角色台词。至少提供一条提示。"]
+  "text": "Your in-character reply in English",
+  "textZh": "A short Chinese translation to help the student understand",
+  "motionId": "Choose the motion that best fits the text from wave|nod|think|gesture|clap|point|write|surprised",
+  "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
+  "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
+  "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; do not reuse sentences from earlier turns. Each sentence must contain at least one word from the pool above. Empty array if vocabulary is empty."],
+  "studentReplyHints": ["1-3 short replies the student (playing ${scenario.role.student}) could naturally say next, written in the student's own voice. Prefer hints that fit the current scene stage and can naturally use focus words. Never write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are actual lines the student would say. Provide at least one hint."]
 }`
+
+  const scenarioContextBlock = scenarioHeader + vocabularyPool + progressSection + scenarioRules + outputFormat
+
+  return scenarioContextBlock
 }
 
 /**
@@ -120,17 +137,21 @@ export function bucketWordsForActs(targetWords: string[], actsCount: number): { 
 export function buildActsBlock(acts: NonNullable<Scenario['acts']>): string {
   if (!acts || acts.length === 0) return ''
   const lines = acts.map((act, i) => {
-    const labels = ['开场', '主体', '结尾']
-    return `${labels[i] ?? `第 ${i + 1} 幕`}: ${act.name} — ${act.goal}`
+    const labels = ['Opening', 'Body', 'Closing']
+    return `${labels[i] ?? `Act ${i + 1}`}: ${act.name} — ${act.goal}`
   })
-  return `三幕结构（按顺序引导对话经历以下阶段）：\n${lines.map((l) => `- ${l}`).join('\n')}`
+  // 提示词：三幕结构说明 —— 要求模型按顺序引导学生经历开场、主体、结尾三个阶段
+  const actsBlock = `Three-act structure (guide the conversation through these stages in order):\n${lines.map((l) => `- ${l}`).join('\n')}`
+  return actsBlock
 }
 
 export function buildObjectivesBlock(
   objectives: Scenario['objectives'],
 ): string {
   const objectivesText = objectives
-    .map((obj, i) => `${i + 1}. ${obj.descriptionEn} — 关键词：[${obj.keywords.join(', ')}]`)
+    .map((obj, i) => `${i + 1}. ${obj.descriptionEn} — Keywords: [${obj.keywords.join(', ')}]`)
     .join('\n')
-  return `对话阶段（按顺序引导学生完成）：\n${objectivesText}`
+  // 提示词：对话阶段说明 —— 要求模型按顺序引导学生完成各个阶段目标
+  const objectivesBlock = `Conversation stages (guide the student through these in order):\n${objectivesText}`
+  return objectivesBlock
 }

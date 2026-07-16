@@ -7,7 +7,13 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "NODE_ENV=production node dist/index.js",
-    "test": "for f in $(find src -name '*.test.ts' | sort); do npx tsx \"$f\" || exit 1; done"
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@ai-english-tutor/shared": "workspace:*",
@@ -26,7 +32,10 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "tsx": "^4.0.0",
-    "typescript": "~5.7.0"
+    "typescript": "~5.7.0",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import { getScenariosForLevel, getAllScenarios, getScenarioById } from '@ai-english-tutor/shared'
+import { getScenariosForLevel, getAllScenarios, getScenarioById } from '../vocab/loader.js'
 
 /**
  * 场景 API 路由

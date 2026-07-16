@@ -1,6 +1,6 @@
 import { LRUCache } from 'lru-cache'
 import { logger } from '../logger.js'
-import type { CEFRLevel } from '@ai-english-tutor/shared'
+import type { CEFRLevel, ScenarioLevelProfile } from '@ai-english-tutor/shared'
 import type { OpeningStyle } from './prompts/teaching.js'
 import {
   saveSession,
@@ -28,6 +28,10 @@ export interface ScenarioState {
   }>
   turnsCount: number
   wordsUsed: Set<string>
+  /** v2: 当前激活的等级变体配置 */
+  levelProfile?: ScenarioLevelProfile
+  /** v2: 每幕使用的词汇主题，用于恢复时与目标词对齐 */
+  actThemes?: string[][]
 }
 
 /** 内存中持有的会话数据 */
@@ -58,6 +62,8 @@ function parseScenarioState(json: string): ScenarioState | undefined {
       objectives: Array.isArray(parsed.objectives) ? parsed.objectives : [],
       turnsCount: typeof parsed.turnsCount === 'number' ? parsed.turnsCount : 0,
       wordsUsed: new Set(Array.isArray(parsed.wordsUsed) ? parsed.wordsUsed : []),
+      levelProfile: parsed.levelProfile,
+      actThemes: Array.isArray(parsed.actThemes) ? parsed.actThemes : undefined,
     }
   } catch (err) {
     logger.error({ err, jsonPreview: json.slice(0, 200) }, '解析 scenario_state 失败')

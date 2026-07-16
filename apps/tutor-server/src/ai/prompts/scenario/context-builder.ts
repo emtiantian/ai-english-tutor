@@ -1,4 +1,10 @@
-import { type CEFRLevel, type Scenario } from '@ai-english-tutor/shared'
+import {
+  type CEFRLevel,
+  type Scenario,
+  type ScenarioLevelProfile,
+  getScenarioActs,
+  getScenarioProfile,
+} from '@ai-english-tutor/shared'
 
 /**
  * 构建要注入 system prompt 的场景上下文块。
@@ -11,15 +17,26 @@ export function buildScenarioContext(
     currentActIndex?: number
     wordsUsed?: string[]
   },
+  levelProfile?: ScenarioLevelProfile,
 ): string {
   // 计算当前幕和词汇使用情况，用于生成焦点词/已用词/即将出现的词
-  const actsCount = scenario.acts?.length ?? 3
-  const buckets = bucketWordsForActs(targetWords, actsCount)
+  const acts =
+    levelProfile?.acts ??
+    (scenario.acts && scenario.acts.length > 0
+      ? scenario.acts
+      : (scenario.objectives ?? []).map((obj) => ({
+          name: obj.description,
+          goal: obj.descriptionEn,
+          vocabThemes: [],
+        })))
+  const actsCount = acts.length > 0 ? acts.length : 3
+  const buckets = bucketWordsForActs(targetWords, acts)
   const currentActIndex = Math.min(
     buckets.length - 1,
     Math.max(0, state?.currentActIndex ?? 0),
   )
   const currentBucket = buckets[currentActIndex]
+  const currentAct = acts[currentActIndex]
 
   const usedSet = new Set((state?.wordsUsed ?? []).map((w) => w.toLowerCase()))
   const usedTargetWords = targetWords.filter((w) => usedSet.has(w.toLowerCase()))
@@ -42,9 +59,7 @@ export function buildScenarioContext(
     )
   }
 
-  const actsBlock = scenario.acts
-    ? buildActsBlock(scenario.acts)
-    : buildObjectivesBlock(scenario.objectives)
+  const actsBlock = buildActsBlock(acts)
 
   const focusList = focusWords.slice(0, 5)
   const nextList = nextBucketWords.slice(0, 3)
@@ -64,14 +79,18 @@ export function buildScenarioContext(
     ? `Words the student has already used (respond positively and naturally; do not force reuse):\n${usedTargetWords.map((w) => `- ${w}`).join('\n')}`
     : 'The student has not used any target words yet.'
 
+  // 使用 levelProfile 的 setting/role，否则回退到场景顶层字段
+  const activeSetting = levelProfile?.setting ?? scenario.setting
+  const activeRole = levelProfile?.role ?? scenario.role
+
   // 提示词：场景头部 —— 声明当前处于角色扮演场景，并给出场景设定、角色身份和目标 CEFR 等级
   const scenarioHeader = `
 
 SCENARIO CONTEXT — You are currently inside a role-play scenario.
 
-Setting: ${scenario.setting}
-Your role: ${scenario.role.teacher}
-Student's role: ${scenario.role.student}
+Setting: ${activeSetting}
+Your role: ${activeRole.teacher}
+Student's role: ${activeRole.student}
 Target CEFR level: ${targetLevel}
 
 ${actsBlock}`
@@ -82,26 +101,37 @@ ${actsBlock}`
 Target vocabulary pool (${targetWords.length} words; weave them naturally throughout the whole scenario):
 ${targetWords.join(', ')}`
 
+  // 提示词：当前幕主题与 twist
+  const themeSection = currentAct?.vocabThemes?.length
+    ? `Current act theme: ${currentAct.vocabThemes.join(', ')}`
+    : ''
+
+  const twistSection = levelProfile?.twist
+    ? `Natural complication for this level: ${levelProfile.twist}\nGuide the conversation to incorporate this complication naturally.`
+    : ''
+
   // 提示词：当前进度 —— 说明当前幕数、本轮焦点词、即将出现的词和学生已使用的词
   const progressSection = `
 
 Current act: ${currentActIndex + 1} / ${buckets.length}
+${themeSection}
 ${focusSection}
 ${nextSection}
-${usedSection}`
+${usedSection}
+${twistSection}`
 
   // 提示词：场景规则 —— 约束模型保持角色、按幕推进、自然使用焦点词、控制回复长度、生成学生回复提示等
   const scenarioRules = `
 
 Scenario rules:
-- Stay in character as ${scenario.role.teacher} at all times.
+- Stay in character as ${activeRole.teacher} at all times.
 - Guide the student through the act structure in order.
 - Use focus words naturally in your reply; if a word does not fit right now, model it in your own line instead of forcing the student.
 - When the student uses a target word, affirm them positively and move the scene forward naturally.
 - Keep replies concise (1-3 sentences).
 - In the middle act(s), introduce natural twists or complications to make the conversation realistic (do not rely on pre-written turns).
 - When the student has used enough target words or the conversation has run long enough, naturally transition to the closing act and wrap up.
-- studentReplyHints must be 1-3 short replies the student (playing ${scenario.role.student}) could naturally say next, written in the student's own voice. Prefer hints that can naturally include the focus words above.`
+- studentReplyHints must be 1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Prefer hints that can naturally include the focus words above.`
 
   // 提示词：输出格式 —— 要求模型必须返回合法 JSON，并说明每个字段的含义
   const outputFormat = `
@@ -114,7 +144,7 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
   "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
   "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
   "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; do not reuse sentences from earlier turns. Each sentence must contain at least one word from the pool above. Empty array if vocabulary is empty."],
-  "studentReplyHints": ["1-3 short replies the student (playing ${scenario.role.student}) could naturally say next, written in the student's own voice. Prefer hints that fit the current scene stage and can naturally use focus words. Never write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are actual lines the student would say. Provide at least one hint."]
+  "studentReplyHints": ["1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Prefer hints that fit the current scene stage and can naturally use focus words. Never write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are actual lines the student would say. Provide at least one hint."]
 }`
 
   const scenarioContextBlock = scenarioHeader + vocabularyPool + progressSection + scenarioRules + outputFormat
@@ -123,10 +153,16 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
 }
 
 /**
- * 将目标词汇大致均分到每一幕，每个桶对应一幕。
+ * 将目标词汇按幕分桶。
+ *
+ * 如果 acts 中每幕都定义了 vocabThemes，则优先按 pickScenarioVocabulary 返回的词序
+ * （已经按幕分组）直接均分；否则按目标词数量机械均分。
  */
-export function bucketWordsForActs(targetWords: string[], actsCount: number): { actIndex: number; words: string[] }[] {
-  const count = Math.max(1, actsCount)
+export function bucketWordsForActs(
+  targetWords: string[],
+  acts: Scenario['acts'],
+): { actIndex: number; words: string[] }[] {
+  const count = Math.max(1, acts?.length ?? 3)
   const bucketSize = Math.ceil(targetWords.length / count)
   return Array.from({ length: count }, (_, i) => ({
     actIndex: i,
@@ -134,11 +170,13 @@ export function bucketWordsForActs(targetWords: string[], actsCount: number): { 
   }))
 }
 
-export function buildActsBlock(acts: NonNullable<Scenario['acts']>): string {
+export function buildActsBlock(acts: Scenario['acts']): string {
   if (!acts || acts.length === 0) return ''
+  const labels = ['Opening', 'Body', 'Closing']
   const lines = acts.map((act, i) => {
-    const labels = ['Opening', 'Body', 'Closing']
-    return `${labels[i] ?? `Act ${i + 1}`}: ${act.name} — ${act.goal}`
+    const goalText = Array.isArray(act.goal) ? act.goal.join('; ') : act.goal
+    const themeHint = act.vocabThemes?.length ? ` (themes: ${act.vocabThemes.join(', ')})` : ''
+    return `${labels[i] ?? `Act ${i + 1}`}: ${act.name} — ${goalText}${themeHint}`
   })
   // 提示词：三幕结构说明 —— 要求模型按顺序引导学生经历开场、主体、结尾三个阶段
   const actsBlock = `Three-act structure (guide the conversation through these stages in order):\n${lines.map((l) => `- ${l}`).join('\n')}`

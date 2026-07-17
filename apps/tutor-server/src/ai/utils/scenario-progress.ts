@@ -24,13 +24,12 @@ export function isScenarioComplete(turnsCount: number, coverage: number): boolea
 /**
  * 判断场景对话当前处于哪一幕。
  *
- * 目标词汇被均匀分配到三幕中。每一幕至少要使用一半以上词汇才会进入下一幕，
+ * 目标词汇被按幕主题分配到各幕中。每一幕至少要使用一半以上词汇才会进入下一幕，
  * 这样每轮都能让 LLM 专注于一小批可执行的词汇。
  */
 export function computeCurrentActIndex(scenarioState: ScenarioState): number {
-  // v2: 场景围绕三幕结构设计。运行时场景未声明幕时，仍将目标词汇分成 3 份，
-  // 让 LLM 每轮只关注一小批可执行的词汇。
-  const actsCount = 3
+  // v2: 优先使用恢复时保存的 actThemes 长度作为幕数；未保存则默认 3。
+  const actsCount = scenarioState.actThemes?.length ?? 3
   const bucketSize = Math.ceil(scenarioState.targetWords.length / actsCount)
   if (bucketSize <= 0) return 0
 

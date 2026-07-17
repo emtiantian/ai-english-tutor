@@ -1,5 +1,6 @@
 import { logger } from '../../logger.js'
 import type { CEFRLevel, CharacterPersona, OpeningStyle } from '@ai-english-tutor/shared'
+import { getScenarioProfile, getScenarioActs } from '@ai-english-tutor/shared'
 import type { LLMProvider } from '../llm.js'
 import type { AudioPipeline } from '../audio-pipeline.js'
 import { SessionManager, type SessionData, type ScenarioState } from '../session-manager.js'
@@ -8,7 +9,7 @@ import { getScenarioById, type Scenario } from '../../vocab/loader.js'
 import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teaching.js'
 import { parseTeachingResponse } from '../response-parser.js'
 import { warnIfMissingVocabSentences } from '../response/response-orchestrator.js'
-import { pickScenarioVocabulary } from '../scenario-vocab-picker.js'
+import { pickScenarioVocabulary, DEFAULT_TARGET_COUNT } from '../scenario-vocab-picker.js'
 import { lineGroupKey, getReusableLines, recordTeacherLine } from '../line-pool.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
 import { DEFAULT_MAX_TURNS } from '../utils/scenario-progress.js'
@@ -67,7 +68,7 @@ export class ScenarioEngine {
       const lineGroup = lineGroupKey(scenario.id, cefrLevel, resolvedStyle.voiceDesign)
       const reusableLines = await getReusableLines(lineGroup)
 
-      const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(scenario, level, cefrLevel, resolvedStyle, this.persona, reusableLines, scenarioState.targetWords)
+      const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(scenario, level, cefrLevel, resolvedStyle, this.persona, reusableLines, scenarioState.targetWords, scenarioState.levelProfile)
 
       const session = this.sessions.getOrCreate(sessionId, level)
       session.userId = userId
@@ -152,14 +153,17 @@ export class ScenarioEngine {
    * v2: 创建新的 ScenarioState，目标词汇根据 CEFR 等级筛选。
    */
   private createScenarioState(scenario: Scenario, level: CEFRLevel): ScenarioState {
-    const targetWords = pickScenarioVocabulary(scenario, level)
+    const profile = getScenarioProfile(scenario, level)
+    const targetCount = profile?.targetWordCount ?? DEFAULT_TARGET_COUNT
+    const targetWords = pickScenarioVocabulary(scenario, level, targetCount)
+    const acts = getScenarioActs(scenario, level)
     return {
       id: scenario.id,
       name: scenario.name,
       icon: scenario.icon,
       level,
       targetWords,
-      maxTurns: DEFAULT_MAX_TURNS,
+      maxTurns: profile?.maxTurns ?? DEFAULT_MAX_TURNS,
       objectives: (scenario.objectives ?? []).map((obj) => ({
         id: obj.id,
         description: obj.description,
@@ -169,6 +173,8 @@ export class ScenarioEngine {
       })),
       turnsCount: 0,
       wordsUsed: new Set(),
+      levelProfile: profile,
+      actThemes: acts.map((act) => act.vocabThemes ?? []),
     }
   }
 

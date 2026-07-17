@@ -5,6 +5,7 @@ import {
   type CEFRLevel,
   type OpeningStyle,
   type Scenario,
+  type ScenarioLevelProfile,
 } from '@ai-english-tutor/shared'
 import type { ReviewWord } from '../../vocab-tracker.js'
 import { stripBaseOutputFormat, buildLineReuseBlock } from './line-reuse.js'
@@ -30,6 +31,7 @@ export function buildScenarioTeachingMessages(
     currentActIndex?: number
     wordsUsed?: string[]
   },
+  levelProfile?: ScenarioLevelProfile,
 ): LLMMessage[] {
   const personality = style?.persona
   // 剥离基础 OUTPUT FORMAT —— 场景上下文会提供自己的格式
@@ -38,7 +40,7 @@ export function buildScenarioTeachingMessages(
   // v2：优先使用运行时目标词，回退到静态 scenario.targetWords
   const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
   // 注入场景上下文（包含它自己的 OUTPUT FORMAT）
-  systemPrompt += buildScenarioContext(scenario, targetLevel, words, vocabState)
+  systemPrompt += buildScenarioContext(scenario, targetLevel, words, vocabState, levelProfile)
   systemPrompt += buildLineReuseBlock(reusableLines)
 
   if (reviewWords && reviewWords.length > 0) {

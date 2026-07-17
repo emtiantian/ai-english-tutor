@@ -89,13 +89,217 @@
       },
       {
         "name": "主线",
-        "goal": "Order a drinkThen Order food Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Order a drink",
+          "Order food",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Pay and leave"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A casual Italian restaurant on a Friday evening. The restaurant is warm and cozy. You are a hungry customer.",
+        "twist": "The waiter is friendly and patient; keep the order simple and clear.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the waiter and ask for a table.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Order a drink and a simple meal.",
+            "vocabThemes": [
+              "food",
+              "number",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Pay and say thank you.",
+            "vocabThemes": [
+              "payment",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A busy burger joint at lunchtime. You have a food allergy.",
+        "twist": "You need to ask whether a dish contains nuts or dairy.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and ask about allergens.",
+            "vocabThemes": [
+              "greeting",
+              "health",
+              "question"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Choose a safe meal and explain your preference.",
+            "vocabThemes": [
+              "food",
+              "preference",
+              "health",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Pay and give brief feedback.",
+            "vocabThemes": [
+              "payment",
+              "evaluation",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A steakhouse for a business dinner. Your colleague is running late.",
+        "twist": "The restaurant is fully booked; you must negotiate a table or waiting time.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the booking and ask to wait or be seated.",
+            "vocabThemes": [
+              "communication",
+              "politeness",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss menu options while waiting.",
+            "vocabThemes": [
+              "food",
+              "comparison",
+              "suggestion",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Settle the bill and apologize for the delay.",
+            "vocabThemes": [
+              "payment",
+              "apology",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A fine-dining restaurant for an anniversary dinner. The service did not meet expectations.",
+        "twist": "You need to politely but firmly complain and ask for reasonable compensation.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the issue without being rude.",
+            "vocabThemes": [
+              "complaint",
+              "politeness",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a solution with the manager.",
+            "vocabThemes": [
+              "negotiation",
+              "decision",
+              "evaluation",
+              "persuasion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach an agreement and close gracefully.",
+            "vocabThemes": [
+              "agreement",
+              "payment",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A casual Italian restaurant on a Friday evening. The restaurant is warm and cozy. You are a hungry customer.",
+        "twist": "The waiter is friendly and chatty; keep the order a little more detailed.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the waiter and ask for a table.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Order a drink and a simple meal.",
+            "vocabThemes": [
+              "food",
+              "number",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Pay and say thank you.",
+            "vocabThemes": [
+              "payment",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A fine-dining restaurant for an anniversary dinner. The service did not meet expectations.",
+        "twist": "You need to politely but firmly complain and ask for reasonable compensation. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the issue without being rude.",
+            "vocabThemes": [
+              "complaint",
+              "politeness",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a solution with the manager.",
+            "vocabThemes": [
+              "negotiation",
+              "decision",
+              "evaluation",
+              "persuasion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach an agreement and close gracefully.",
+            "vocabThemes": [
+              "agreement",
+              "payment",
+              "gratitude"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "asking-directions",
@@ -185,13 +389,219 @@
       },
       {
         "name": "主线",
-        "goal": "Ask how to get to the destinationThen Understand and confirm directions Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Ask how to get to the destination",
+          "Understand and confirm directions",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Thank and say goodbye"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A busy street in a small city. You are looking for the train station.",
+        "twist": "A friendly local is happy to help.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and ask for help.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "question"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask how to get to the station.",
+            "vocabThemes": [
+              "place",
+              "transport",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Thank the person and say goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A city center with many one-way streets. You are late for a meeting.",
+        "twist": "The first route is blocked by construction; you need an alternative.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and explain where you need to go.",
+            "vocabThemes": [
+              "greeting",
+              "communication",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask for an alternative route.",
+            "vocabThemes": [
+              "transport",
+              "decision",
+              "place",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm directions and thank them.",
+            "vocabThemes": [
+              "politeness",
+              "certainty",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "You are leading a small group of tourists to a museum.",
+        "twist": "The bus is delayed; you must decide whether to walk or wait.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the situation to the group.",
+            "vocabThemes": [
+              "communication",
+              "time",
+              "explanation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare walking and waiting options.",
+            "vocabThemes": [
+              "comparison",
+              "decision",
+              "transport",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Make a decision and guide the group.",
+            "vocabThemes": [
+              "decision",
+              "politeness",
+              "direction"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "You are a delivery driver in an unfamiliar downtown area. The address is ambiguous.",
+        "twist": "Two locals give conflicting directions; you must clarify politely.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the ambiguous address.",
+            "vocabThemes": [
+              "description",
+              "clarity",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Resolve the conflicting directions.",
+            "vocabThemes": [
+              "comparison",
+              "persuasion",
+              "decision",
+              "clarity"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the final route and thank them.",
+            "vocabThemes": [
+              "agreement",
+              "certainty",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A busy street in a small city. You are looking for the train station.",
+        "twist": "A friendly local is happy to help.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and ask for help.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "question"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask how to get to the station.",
+            "vocabThemes": [
+              "place",
+              "transport",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Thank the person and say goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "You are a delivery driver in an unfamiliar downtown area. The address is ambiguous.",
+        "twist": "Two locals give conflicting directions; you must clarify politely. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the ambiguous address.",
+            "vocabThemes": [
+              "description",
+              "clarity",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Resolve the conflicting directions.",
+            "vocabThemes": [
+              "comparison",
+              "persuasion",
+              "decision",
+              "clarity"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the final route and thank them.",
+            "vocabThemes": [
+              "agreement",
+              "certainty",
+              "gratitude"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "shopping",
@@ -277,13 +687,221 @@
       },
       {
         "name": "主线",
-        "goal": "Ask about an itemThen Ask the price Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Ask about an item",
+          "Ask the price",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Decide to buy and pay"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A small clothing store. You are looking for a gift.",
+        "twist": "The shop assistant is helpful and patient.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the shop assistant.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about an item and its price.",
+            "vocabThemes": [
+              "object",
+              "number",
+              "description",
+              "money"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Decide to buy and pay.",
+            "vocabThemes": [
+              "payment",
+              "politeness",
+              "decision"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A sports shop. You need shoes for running but are unsure about size.",
+        "twist": "Your size is out of stock; you must choose another model.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain what you are looking for.",
+            "vocabThemes": [
+              "communication",
+              "description",
+              "preference"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare models and choose an alternative.",
+            "vocabThemes": [
+              "comparison",
+              "decision",
+              "object",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Pay and ask about the return policy.",
+            "vocabThemes": [
+              "payment",
+              "question",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "An electronics store. You want to return a faulty charger.",
+        "twist": "You left the receipt at home; you need to negotiate the return.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the problem with the charger.",
+            "vocabThemes": [
+              "communication",
+              "problem",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a refund or exchange without a receipt.",
+            "vocabThemes": [
+              "negotiation",
+              "decision",
+              "payment",
+              "complaint"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach a solution and leave.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "payment"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A luxury boutique. You are buying a gift but have a tight budget.",
+        "twist": "The recommended item is too expensive; you must decline gracefully and ask for alternatives.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State your budget and the occasion.",
+            "vocabThemes": [
+              "communication",
+              "money",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Decline expensive options and negotiate alternatives.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Make a purchase or leave politely.",
+            "vocabThemes": [
+              "payment",
+              "politeness",
+              "decision"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A small clothing store. You are looking for a gift.",
+        "twist": "The shop assistant is helpful and chatty.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the shop assistant.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about an item and its price.",
+            "vocabThemes": [
+              "object",
+              "number",
+              "description",
+              "money"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Decide to buy and pay.",
+            "vocabThemes": [
+              "payment",
+              "politeness",
+              "decision"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A luxury boutique. You are buying a gift but have a tight budget.",
+        "twist": "The recommended item is too expensive; you must decline gracefully and ask for alternatives. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State your budget and the occasion.",
+            "vocabThemes": [
+              "communication",
+              "money",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Decline expensive options and negotiate alternatives.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Make a purchase or leave politely.",
+            "vocabThemes": [
+              "payment",
+              "politeness",
+              "decision"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "meeting-someone",
@@ -357,13 +975,220 @@
       },
       {
         "name": "主线",
-        "goal": "Ask about the other person Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Ask about the other person",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Talk about family or friends"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A friendly neighborhood party. Music is playing and people are chatting.",
+        "twist": "Everyone is warm and open to making friends.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and introduce yourself.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about the other person.",
+            "vocabThemes": [
+              "family",
+              "people",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Exchange contact details or say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "social"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A language exchange meetup. You want to find a practice partner.",
+        "twist": "Your interests are different; you need to find common ground.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Introduce yourself and your learning goals.",
+            "vocabThemes": [
+              "communication",
+              "greeting",
+              "education"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss hobbies and find shared interests.",
+            "vocabThemes": [
+              "social",
+              "preference",
+              "comparison",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Suggest meeting again and exchange contacts.",
+            "vocabThemes": [
+              "suggestion",
+              "social",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A networking event for professionals.",
+        "twist": "You accidentally forget the other person's name and need to recover.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Introduce yourself and your work.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss professional interests and handle the forgotten name.",
+            "vocabThemes": [
+              "communication",
+              "memory",
+              "apology",
+              "social"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Suggest connecting on social media.",
+            "vocabThemes": [
+              "suggestion",
+              "social",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A formal dinner party with people from different cultures.",
+        "twist": "A conversation topic becomes sensitive; you must steer it politely.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Make polite small talk.",
+            "vocabThemes": [
+              "politeness",
+              "social",
+              "culture"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Navigate a sensitive topic and change the subject.",
+            "vocabThemes": [
+              "communication",
+              "persuasion",
+              "politeness",
+              "culture"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Leave a positive impression and say goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "social",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A friendly neighborhood party. Music is playing and people are chatting.",
+        "twist": "Everyone is warm and open to making friends.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and introduce yourself.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about the other person.",
+            "vocabThemes": [
+              "family",
+              "people",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Exchange contact details or say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "social"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A formal dinner party with people from different cultures.",
+        "twist": "A conversation topic becomes sensitive; you must steer it politely. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Make polite small talk.",
+            "vocabThemes": [
+              "politeness",
+              "social",
+              "culture"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Navigate a sensitive topic and change the subject.",
+            "vocabThemes": [
+              "communication",
+              "persuasion",
+              "politeness",
+              "culture"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Leave a positive impression and say goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "social",
+              "gratitude"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "at-school",
@@ -446,13 +1271,219 @@
       },
       {
         "name": "主线",
-        "goal": "Talk about school lifeThen Talk about hobbies Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Talk about school life",
+          "Talk about hobbies",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Say goodbye"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A school classroom during break time. Students are chatting.",
+        "twist": "Your classmate is friendly and curious.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet your classmate.",
+            "vocabThemes": [
+              "greeting",
+              "people"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about school and hobbies.",
+            "vocabThemes": [
+              "school",
+              "verb",
+              "object",
+              "like"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "You are preparing for a group presentation.",
+        "twist": "You and your partner disagree on who will present which part.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and discuss the presentation topic.",
+            "vocabThemes": [
+              "communication",
+              "school",
+              "work"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Divide tasks and agree on a plan.",
+            "vocabThemes": [
+              "decision",
+              "social",
+              "planning",
+              "communication"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm next steps and encourage each other.",
+            "vocabThemes": [
+              "encouragement",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A study group is deciding on a project topic.",
+        "twist": "Two popular ideas conflict; you need to compare and choose.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Present your idea.",
+            "vocabThemes": [
+              "communication",
+              "education",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare ideas and persuade the group.",
+            "vocabThemes": [
+              "comparison",
+              "persuasion",
+              "decision",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree on the topic and assign tasks.",
+            "vocabThemes": [
+              "agreement",
+              "social",
+              "planning"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "You are defending your essay choice to a strict professor.",
+        "twist": "The professor challenges your argument; you must defend it respectfully.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your essay thesis.",
+            "vocabThemes": [
+              "communication",
+              "education",
+              "explanation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Defend your choices with evidence.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "persuasion",
+              "thinking"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Acknowledge feedback and outline revisions.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "improvement"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A school classroom during break time. Students are chatting.",
+        "twist": "Your classmate is friendly and curious.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet your classmate.",
+            "vocabThemes": [
+              "greeting",
+              "people"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about school and hobbies.",
+            "vocabThemes": [
+              "school",
+              "verb",
+              "object",
+              "like"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "You are defending your essay choice to a strict professor.",
+        "twist": "The professor challenges your argument; you must defend it respectfully. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your essay thesis.",
+            "vocabThemes": [
+              "communication",
+              "education",
+              "explanation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Defend your choices with evidence.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "persuasion",
+              "thinking"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Acknowledge feedback and outline revisions.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "improvement"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "daily-routine",
@@ -526,13 +1557,216 @@
       },
       {
         "name": "主线",
-        "goal": "Talk about daily schedule Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Talk about daily schedule",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Say goodbye and leave"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "Your apartment in the morning. You and Luna are having breakfast together.",
+        "twist": "You are both relaxed and talking about the day.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say good morning.",
+            "vocabThemes": [
+              "greeting",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about your daily schedule.",
+            "vocabThemes": [
+              "time",
+              "verb",
+              "food"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye and leave.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "You are planning a shared weekend schedule with your roommate.",
+        "twist": "Your plans overlap; you need to compromise.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and share your weekend plans.",
+            "vocabThemes": [
+              "greeting",
+              "time",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare plans and find a compromise.",
+            "vocabThemes": [
+              "comparison",
+              "decision",
+              "preference",
+              "social"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the plan.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "You are discussing household responsibilities with your roommate.",
+        "twist": "One person has not been doing their share; you need to address it politely.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Bring up the topic of chores.",
+            "vocabThemes": [
+              "communication",
+              "home",
+              "problem"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss responsibilities and agree on a schedule.",
+            "vocabThemes": [
+              "negotiation",
+              "decision",
+              "time",
+              "agreement"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the new arrangement.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "Your roommate's late-night habits are affecting your sleep.",
+        "twist": "You want to keep the friendship while setting boundaries.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the issue without blaming.",
+            "vocabThemes": [
+              "description",
+              "emotion",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate boundaries and solutions.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "respect"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree on rules and reassure them.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "emotion"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "Your apartment in the morning. You and Luna are having breakfast together.",
+        "twist": "You are both relaxed and talking about the day.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say good morning.",
+            "vocabThemes": [
+              "greeting",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about your daily schedule.",
+            "vocabThemes": [
+              "time",
+              "verb",
+              "food"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye and leave.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "Your roommate's late-night habits are affecting your sleep.",
+        "twist": "You want to keep the friendship while setting boundaries. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the issue without blaming.",
+            "vocabThemes": [
+              "description",
+              "emotion",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate boundaries and solutions.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "respect"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree on rules and reassure them.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "emotion"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "job-interview",
@@ -629,13 +1863,222 @@
       },
       {
         "name": "主线",
-        "goal": "Describe your skillsThen Explain your motivationThen Ask questions to the interviewer Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Describe your skills",
+          "Explain your motivation",
+          "Ask questions to the interviewer",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Close the interview politely"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A small café. You are interviewing for a part-time job.",
+        "twist": "The interviewer speaks slowly and asks simple questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and introduce yourself.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about yourself.",
+            "vocabThemes": [
+              "people",
+              "school",
+              "work",
+              "basic"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you and goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A modern office meeting room. You are interviewing for a position at a company.",
+        "twist": "You lack one required skill but have related experience.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Introduce yourself and your background.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "education"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Explain your skills and address the missing requirement.",
+            "vocabThemes": [
+              "skill",
+              "experience",
+              "communication",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask questions and close politely.",
+            "vocabThemes": [
+              "question",
+              "politeness",
+              "work"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A video interview for a remote position.",
+        "twist": "The connection is unstable; you must stay professional and clarify questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Set up the call and introduce yourself.",
+            "vocabThemes": [
+              "communication",
+              "technology",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer questions and handle technical issues.",
+            "vocabThemes": [
+              "communication",
+              "problem",
+              "clarity",
+              "experience"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask about next steps and thank the interviewer.",
+            "vocabThemes": [
+              "question",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A panel interview for a senior role.",
+        "twist": "The panel questions a gap in your CV; you must respond confidently.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Deliver a concise self-introduction.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Address concerns and defend your experience.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "persuasion",
+              "confidence"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask strategic questions and close strongly.",
+            "vocabThemes": [
+              "question",
+              "persuasion",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A small café. You are interviewing for a part-time job.",
+        "twist": "The interviewer speaks slowly and asks simple questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and introduce yourself.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about yourself.",
+            "vocabThemes": [
+              "people",
+              "school",
+              "work",
+              "basic"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you and goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A panel interview for a senior role.",
+        "twist": "The panel questions a gap in your CV; you must respond confidently. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Deliver a concise self-introduction.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Address concerns and defend your experience.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "persuasion",
+              "confidence"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask strategic questions and close strongly.",
+            "vocabThemes": [
+              "question",
+              "persuasion",
+              "politeness"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "hotel-complaint",
@@ -721,13 +2164,219 @@
       },
       {
         "name": "主线",
-        "goal": "Request helpThen Negotiate a solution Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Request help",
+          "Negotiate a solution",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Confirm resolution"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A hotel lobby. Your room key is not working.",
+        "twist": "The receptionist is kind and quick to help.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and explain the problem.",
+            "vocabThemes": [
+              "greeting",
+              "problem",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask for a new key.",
+            "vocabThemes": [
+              "request",
+              "help",
+              "room"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Thank the receptionist.",
+            "vocabThemes": [
+              "politeness",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A hotel lobby. You have an issue with your room and need to speak to the receptionist.",
+        "twist": "The room is noisy; you need a different room.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the problem.",
+            "vocabThemes": [
+              "problem",
+              "room",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Request a room change.",
+            "vocabThemes": [
+              "request",
+              "help",
+              "decision",
+              "politeness"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the solution and thank them.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A hotel lobby after a business trip. The Wi-Fi was unusable for two days.",
+        "twist": "You need a partial refund, but the receptionist is hesitant.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe the service issue.",
+            "vocabThemes": [
+              "problem",
+              "description",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a refund or discount.",
+            "vocabThemes": [
+              "negotiation",
+              "payment",
+              "complaint",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach an agreement and confirm details.",
+            "vocabThemes": [
+              "agreement",
+              "payment",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A luxury hotel. Your room was double-booked upon arrival.",
+        "twist": "The hotel offers a downgrade; you must insist on a fair alternative.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State the problem and your expectations.",
+            "vocabThemes": [
+              "complaint",
+              "expectation",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a suitable solution.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm compensation and close professionally.",
+            "vocabThemes": [
+              "agreement",
+              "payment",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A hotel lobby. Your room key is not working.",
+        "twist": "The receptionist is kind and quick to help.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and explain the problem.",
+            "vocabThemes": [
+              "greeting",
+              "problem",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask for a new key.",
+            "vocabThemes": [
+              "request",
+              "help",
+              "room"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Thank the receptionist.",
+            "vocabThemes": [
+              "politeness",
+              "gratitude"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A luxury hotel. Your room was double-booked upon arrival.",
+        "twist": "The hotel offers a downgrade; you must insist on a fair alternative. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State the problem and your expectations.",
+            "vocabThemes": [
+              "complaint",
+              "expectation",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate a suitable solution.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm compensation and close professionally.",
+            "vocabThemes": [
+              "agreement",
+              "payment",
+              "politeness"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "travel-planning",
@@ -813,13 +2462,219 @@
       },
       {
         "name": "主线",
-        "goal": "Discuss the planThen Share opinions and suggestions Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Discuss the plan",
+          "Share opinions and suggestions",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Make a final decision"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A coffee shop. You and Luna are planning a short trip together.",
+        "twist": "You both want a simple, fun plan.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Suggest a destination.",
+            "vocabThemes": [
+              "place",
+              "travel",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about what you want to do.",
+            "vocabThemes": [
+              "travel",
+              "time",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree and say goodbye.",
+            "vocabThemes": [
+              "agreement",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "You are planning a weekend trip with different budgets.",
+        "twist": "You need to choose between a cheap hotel and a nicer but expensive one.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Suggest destinations and budgets.",
+            "vocabThemes": [
+              "travel",
+              "money",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare accommodation options.",
+            "vocabThemes": [
+              "comparison",
+              "decision",
+              "money",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Book and confirm the plan.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "payment"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A road trip plan with several stops.",
+        "twist": "One person wants to cancel a stop; the other disagrees.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Review the itinerary.",
+            "vocabThemes": [
+              "travel",
+              "time",
+              "planning"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss changing the itinerary.",
+            "vocabThemes": [
+              "negotiation",
+              "decision",
+              "preference",
+              "communication"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Finalize the route.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "travel"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "Planning a multi-city tour with conflicting interests.",
+        "twist": "You must balance culture, relaxation, and budget while persuading your partner.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Present your priorities.",
+            "vocabThemes": [
+              "communication",
+              "preference",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Persuade and negotiate the itinerary.",
+            "vocabThemes": [
+              "persuasion",
+              "negotiation",
+              "decision",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Lock in the plan and manage expectations.",
+            "vocabThemes": [
+              "agreement",
+              "planning",
+              "communication"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A coffee shop. You and Luna are planning a short trip together.",
+        "twist": "You both want a simple, fun plan.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Suggest a destination.",
+            "vocabThemes": [
+              "place",
+              "travel",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about what you want to do.",
+            "vocabThemes": [
+              "travel",
+              "time",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree and say goodbye.",
+            "vocabThemes": [
+              "agreement",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "Planning a multi-city tour with conflicting interests.",
+        "twist": "You must balance culture, relaxation, and budget while persuading your partner. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Present your priorities.",
+            "vocabThemes": [
+              "communication",
+              "preference",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Persuade and negotiate the itinerary.",
+            "vocabThemes": [
+              "persuasion",
+              "negotiation",
+              "decision",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Lock in the plan and manage expectations.",
+            "vocabThemes": [
+              "agreement",
+              "planning",
+              "communication"
+            ]
+          }
+        ]
+      }
+    }
   },
   {
     "id": "doctor-visit",
@@ -906,12 +2761,1918 @@
       },
       {
         "name": "主线",
-        "goal": "Answer the doctor's questionsThen Understand the doctor's advice Introduce organic twists or complications to keep the conversation natural."
+        "goal": [
+          "Answer the doctor's questions",
+          "Understand the doctor's advice",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
       },
       {
         "name": "收尾",
         "goal": "Thank and leave"
       }
-    ]
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A doctor's office. You are not feeling well and have come for a check-up.",
+        "twist": "The doctor is kind and asks simple questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the doctor and say you feel bad.",
+            "vocabThemes": [
+              "greeting",
+              "emotion",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Describe simple symptoms.",
+            "vocabThemes": [
+              "body",
+              "feel",
+              "description"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Understand advice and thank the doctor.",
+            "vocabThemes": [
+              "politeness",
+              "gratitude",
+              "health"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A doctor's office. You have had stomach pain for two days.",
+        "twist": "You are worried; the doctor asks about your diet and habits.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe when the pain started.",
+            "vocabThemes": [
+              "time",
+              "body",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer questions about diet and lifestyle.",
+            "vocabThemes": [
+              "food",
+              "habit",
+              "question",
+              "health"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Understand treatment advice.",
+            "vocabThemes": [
+              "health",
+              "advice",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "You are discussing test results with your doctor.",
+        "twist": "The results are unclear; you need to decide whether to do more tests.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Ask about the test results.",
+            "vocabThemes": [
+              "question",
+              "health",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss options and risks.",
+            "vocabThemes": [
+              "decision",
+              "risk",
+              "comparison",
+              "health"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree on the next step.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "health"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "You are getting a second opinion from a specialist.",
+        "twist": "The specialist contradicts your first doctor; you must ask for clarification.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your medical history and previous advice.",
+            "vocabThemes": [
+              "description",
+              "health",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare opinions and ask detailed questions.",
+            "vocabThemes": [
+              "comparison",
+              "question",
+              "clarity",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Choose a treatment plan and confirm follow-up.",
+            "vocabThemes": [
+              "decision",
+              "agreement",
+              "time"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A doctor's office. You are not feeling well and have come for a check-up.",
+        "twist": "The doctor is kind and asks simple questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet the doctor and say you feel bad.",
+            "vocabThemes": [
+              "greeting",
+              "emotion",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Describe simple symptoms.",
+            "vocabThemes": [
+              "body",
+              "feel",
+              "description"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Understand advice and thank the doctor.",
+            "vocabThemes": [
+              "politeness",
+              "gratitude",
+              "health"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "You are getting a second opinion from a specialist.",
+        "twist": "The specialist contradicts your first doctor; you must ask for clarification. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your medical history and previous advice.",
+            "vocabThemes": [
+              "description",
+              "health",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Compare opinions and ask detailed questions.",
+            "vocabThemes": [
+              "comparison",
+              "question",
+              "clarity",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Choose a treatment plan and confirm follow-up.",
+            "vocabThemes": [
+              "decision",
+              "agreement",
+              "time"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "airport-checkin",
+    "name": "机场值机",
+    "nameEn": "Airport Check-in",
+    "description": "你在机场办理值机手续，需要和地勤人员沟通行李、座位和登机口信息。",
+    "icon": "✈️",
+    "level": 1,
+    "topics": [
+      "travel",
+      "politeness",
+      "number"
+    ],
+    "targetWords": [
+      "ticket",
+      "passport",
+      "luggage",
+      "seat",
+      "window",
+      "aisle"
+    ],
+    "role": {
+      "student": "乘客 (Passenger)",
+      "teacher": "地勤人员 (Airline Staff)"
+    },
+    "setting": "An airport check-in counter. You are preparing to board an international flight.",
+    "objectives": [
+      {
+        "id": "greet",
+        "description": "向地勤人员打招呼",
+        "descriptionEn": "Greet the airline staff",
+        "keywords": [
+          "hello",
+          "hi",
+          "good morning",
+          "please"
+        ]
+      },
+      {
+        "id": "check-in",
+        "description": "办理值机手续",
+        "descriptionEn": "Check in for your flight",
+        "keywords": [
+          "ticket",
+          "passport",
+          "check in",
+          "flight"
+        ]
+      },
+      {
+        "id": "luggage-seat",
+        "description": "询问行李和座位",
+        "descriptionEn": "Ask about luggage and seat",
+        "keywords": [
+          "luggage",
+          "bag",
+          "seat",
+          "window",
+          "aisle"
+        ]
+      },
+      {
+        "id": "boarding",
+        "description": "确认登机口和时间",
+        "descriptionEn": "Confirm gate and time",
+        "keywords": [
+          "gate",
+          "time",
+          "boarding",
+          "thank"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Greet the airline staff and present your ticket."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Check in",
+          "Ask about luggage allowance and choose a seat",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Confirm gate and boarding time."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "An airport check-in counter. You are flying for the first time.",
+        "twist": "The staff is patient and speaks slowly.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and give your ticket.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "travel"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Check in and ask for a window seat.",
+            "vocabThemes": [
+              "travel",
+              "number",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the gate and say thank you.",
+            "vocabThemes": [
+              "time",
+              "place",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A busy airport. Your luggage is slightly overweight.",
+        "twist": "You need to decide whether to pay extra or move items to your carry-on.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and hand over passport and ticket.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "travel"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Handle the overweight luggage and choose a seat.",
+            "vocabThemes": [
+              "travel",
+              "money",
+              "decision",
+              "problem"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm boarding pass details and thank them.",
+            "vocabThemes": [
+              "time",
+              "place",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "An international airport. Your connecting flight was changed.",
+        "twist": "The new connection is tight; you need to ask about the fastest route.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain your connecting flight issue.",
+            "vocabThemes": [
+              "communication",
+              "travel",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask for route advice and a suitable seat.",
+            "vocabThemes": [
+              "travel",
+              "transport",
+              "decision",
+              "suggestion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm all details and express thanks.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A first-class check-in counter. Your seat assignment was downgraded.",
+        "twist": "You need to politely but firmly request compensation or a better seat.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State your booking and the downgrade issue.",
+            "vocabThemes": [
+              "complaint",
+              "politeness",
+              "travel"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate compensation or an upgrade.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "payment"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach a resolution and confirm details.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "An airport check-in counter. You are flying for the first time.",
+        "twist": "The staff is patient and speaks slowly. Ask a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and give your ticket.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "travel"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Check in and ask for a window seat.",
+            "vocabThemes": [
+              "travel",
+              "number",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the gate and say thank you.",
+            "vocabThemes": [
+              "time",
+              "place",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A first-class check-in counter. Your seat assignment was downgraded.",
+        "twist": "You need to politely but firmly request compensation or a better seat. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State your booking and the downgrade issue.",
+            "vocabThemes": [
+              "complaint",
+              "politeness",
+              "travel"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate compensation or an upgrade.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "decision",
+              "payment"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach a resolution and confirm details.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "technical-interview",
+    "name": "技术面试",
+    "nameEn": "Technical Interview",
+    "description": "你正在参加一场技术岗位面试，需要解释项目经验、回答技术问题并展示解决问题的能力。",
+    "icon": "💻",
+    "level": 3,
+    "topics": [
+      "communication",
+      "evaluation",
+      "success"
+    ],
+    "targetWords": [
+      "experience",
+      "skill",
+      "problem",
+      "solution",
+      "team",
+      "achieve"
+    ],
+    "role": {
+      "student": "求职者 (Candidate)",
+      "teacher": "技术面试官 (Tech Lead)"
+    },
+    "setting": "A tech company meeting room. You are interviewing for a software engineer role.",
+    "objectives": [
+      {
+        "id": "introduce",
+        "description": "自我介绍和技术背景",
+        "descriptionEn": "Introduce yourself and your background",
+        "keywords": [
+          "name",
+          "experience",
+          "work",
+          "project"
+        ]
+      },
+      {
+        "id": "technical",
+        "description": "回答技术问题",
+        "descriptionEn": "Answer technical questions",
+        "keywords": [
+          "problem",
+          "solution",
+          "code",
+          "design"
+        ]
+      },
+      {
+        "id": "behavioral",
+        "description": "描述团队合作经历",
+        "descriptionEn": "Describe teamwork experience",
+        "keywords": [
+          "team",
+          "conflict",
+          "cooperation",
+          "result"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Introduce yourself and your technical background."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Answer technical questions",
+          "Describe a team project",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Ask questions about the team and close the interview."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A small tech company. The interviewer asks very simple questions.",
+        "twist": "You can use basic words to describe your work.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say your name.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "work"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about your job.",
+            "vocabThemes": [
+              "work",
+              "basic",
+              "description"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you and goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A tech company meeting room. You are interviewing for a junior developer role.",
+        "twist": "You have never worked with one of their tools; be honest and show willingness to learn.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Introduce yourself and your experience.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "education"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Explain a project and address the missing skill.",
+            "vocabThemes": [
+              "work",
+              "skill",
+              "problem",
+              "learning"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask about the team and close politely.",
+            "vocabThemes": [
+              "question",
+              "politeness",
+              "work"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A video call for a remote developer position.",
+        "twist": "The interviewer asks about a failed project; you must explain what you learned.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Briefly introduce your background.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "technology"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss a failure and the lessons learned.",
+            "vocabThemes": [
+              "problem",
+              "experience",
+              "improvement",
+              "communication"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask follow-up questions and thank them.",
+            "vocabThemes": [
+              "question",
+              "politeness",
+              "time"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A senior engineering interview with system design questions.",
+        "twist": "The interviewer challenges your architecture decision; defend it with trade-offs.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your senior experience.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Defend an architecture choice under pressure.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "comparison",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask strategic questions and close strongly.",
+            "vocabThemes": [
+              "question",
+              "persuasion",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A small tech company. The interviewer asks very simple questions.",
+        "twist": "You can use basic words to describe your work. Add a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say your name.",
+            "vocabThemes": [
+              "greeting",
+              "people",
+              "work"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about your job.",
+            "vocabThemes": [
+              "work",
+              "basic",
+              "description"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you and goodbye.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A senior engineering interview with system design questions.",
+        "twist": "The interviewer challenges your architecture decision; defend it with trade-offs. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your senior experience.",
+            "vocabThemes": [
+              "communication",
+              "work",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Defend an architecture choice under pressure.",
+            "vocabThemes": [
+              "argument",
+              "evidence",
+              "comparison",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Ask strategic questions and close strongly.",
+            "vocabThemes": [
+              "question",
+              "persuasion",
+              "politeness"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "renting-apartment",
+    "name": "租房看房",
+    "nameEn": "Renting an Apartment",
+    "description": "你要租一套公寓，需要和房东或中介讨论租金、设施和合同条款。",
+    "icon": "🏠",
+    "level": 2,
+    "topics": [
+      "housing",
+      "money",
+      "description"
+    ],
+    "targetWords": [
+      "rent",
+      "room",
+      "kitchen",
+      "bathroom",
+      "price",
+      "month"
+    ],
+    "role": {
+      "student": "租客 (Tenant)",
+      "teacher": "房东 (Landlord)"
+    },
+    "setting": "Inside an apartment for rent. The landlord is showing you around.",
+    "objectives": [
+      {
+        "id": "greet",
+        "description": "打招呼并说明租房需求",
+        "descriptionEn": "Greet and state your needs",
+        "keywords": [
+          "hello",
+          "look for",
+          "rent",
+          "apartment"
+        ]
+      },
+      {
+        "id": "inspect",
+        "description": "询问设施和房间情况",
+        "descriptionEn": "Ask about facilities and rooms",
+        "keywords": [
+          "room",
+          "kitchen",
+          "bathroom",
+          "furniture"
+        ]
+      },
+      {
+        "id": "negotiate",
+        "description": "讨论租金和合同",
+        "descriptionEn": "Discuss rent and contract",
+        "keywords": [
+          "rent",
+          "price",
+          "month",
+          "contract"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Greet the landlord and state your needs."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Ask about the apartment",
+          "Discuss rent and conditions",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Express interest or politely decline."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A small apartment. The landlord is friendly.",
+        "twist": "You only need a simple place to sleep.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say you want to rent.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "housing"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about rooms and price.",
+            "vocabThemes": [
+              "housing",
+              "number",
+              "money"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A city apartment. You need a quiet room because you work from home.",
+        "twist": "The apartment is near a busy street; you must ask about noise.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and explain your needs.",
+            "vocabThemes": [
+              "greeting",
+              "housing",
+              "work"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about noise, furniture, and price.",
+            "vocabThemes": [
+              "housing",
+              "description",
+              "money",
+              "preference"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Decide and discuss the contract.",
+            "vocabThemes": [
+              "decision",
+              "time",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A shared apartment with two current roommates.",
+        "twist": "One roommate has a pet, and you are allergic.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Introduce yourself and ask about the shared areas.",
+            "vocabThemes": [
+              "communication",
+              "housing",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss the pet issue and house rules.",
+            "vocabThemes": [
+              "housing",
+              "problem",
+              "health",
+              "negotiation"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Negotiate rent or decide to look elsewhere.",
+            "vocabThemes": [
+              "decision",
+              "money",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A furnished apartment with hidden maintenance issues.",
+        "twist": "You notice water damage; you must negotiate repairs before signing.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Express interest but mention concerns.",
+            "vocabThemes": [
+              "communication",
+              "housing",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate repairs and rent adjustments.",
+            "vocabThemes": [
+              "negotiation",
+              "problem",
+              "money",
+              "persuasion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach an agreement or walk away politely.",
+            "vocabThemes": [
+              "agreement",
+              "decision",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A small apartment. The landlord is friendly.",
+        "twist": "You only need a simple place to sleep. Ask a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say you want to rent.",
+            "vocabThemes": [
+              "greeting",
+              "politeness",
+              "housing"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask about rooms and price.",
+            "vocabThemes": [
+              "housing",
+              "number",
+              "money"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A furnished apartment with hidden maintenance issues.",
+        "twist": "You notice water damage; you must negotiate repairs before signing. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Express interest but mention concerns.",
+            "vocabThemes": [
+              "communication",
+              "housing",
+              "evaluation"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate repairs and rent adjustments.",
+            "vocabThemes": [
+              "negotiation",
+              "problem",
+              "money",
+              "persuasion"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach an agreement or walk away politely.",
+            "vocabThemes": [
+              "agreement",
+              "decision",
+              "politeness"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "weather-small-talk",
+    "name": "天气闲聊",
+    "nameEn": "Weather Small Talk",
+    "description": "你用天气话题开启一段自然闲聊，适合练习寒暄和表达观点。",
+    "icon": "🌤️",
+    "level": 1,
+    "topics": [
+      "weather",
+      "social",
+      "opinion"
+    ],
+    "targetWords": [
+      "weather",
+      "sunny",
+      "rain",
+      "cold",
+      "hot",
+      "like"
+    ],
+    "role": {
+      "student": "同事 (Colleague)",
+      "teacher": "同事 (Colleague)"
+    },
+    "setting": "In the office kitchen on a Monday morning. You are making coffee next to a colleague.",
+    "objectives": [
+      {
+        "id": "greet",
+        "description": "用天气话题打招呼",
+        "descriptionEn": "Greet using weather",
+        "keywords": [
+          "hello",
+          "morning",
+          "weather",
+          "nice"
+        ]
+      },
+      {
+        "id": "chat",
+        "description": "闲聊天气和计划",
+        "descriptionEn": "Chat about weather and plans",
+        "keywords": [
+          "weekend",
+          "plan",
+          "rain",
+          "sunny"
+        ]
+      },
+      {
+        "id": "close",
+        "description": "自然结束对话",
+        "descriptionEn": "Close naturally",
+        "keywords": [
+          "see you",
+          "have a good day",
+          "bye"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Start with a weather-related greeting."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Expand the small talk",
+          "Connect weather to plans",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Close the conversation naturally."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "In the office kitchen. The colleague smiles at you.",
+        "twist": "Keep the chat short and friendly.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say hello and comment on the weather.",
+            "vocabThemes": [
+              "greeting",
+              "weather",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask a simple question about plans.",
+            "vocabThemes": [
+              "weather",
+              "time",
+              "social"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "Waiting for the elevator with a colleague you do not know well.",
+        "twist": "You want to be friendly but not too personal.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Comment on the weather to break the ice.",
+            "vocabThemes": [
+              "weather",
+              "greeting",
+              "social"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Talk about weekend plans related to the weather.",
+            "vocabThemes": [
+              "social",
+              "time",
+              "preference",
+              "weather"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "End the chat before the elevator arrives.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A video call starts with a client from another country.",
+        "twist": "The weather topic accidentally reveals a cultural difference.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Use weather as a polite opener.",
+            "vocabThemes": [
+              "weather",
+              "politeness",
+              "culture"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Navigate the cultural difference gracefully.",
+            "vocabThemes": [
+              "culture",
+              "communication",
+              "social",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Transition smoothly to business.",
+            "vocabThemes": [
+              "communication",
+              "politeness",
+              "work"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A networking event. You want to be memorable.",
+        "twist": "You steer the small talk toward a shared interest while keeping it light.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Open with an observation, not just the weather.",
+            "vocabThemes": [
+              "social",
+              "observation",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Connect weather to travel, hobbies, or work.",
+            "vocabThemes": [
+              "persuasion",
+              "social",
+              "comparison",
+              "culture"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Leave a positive impression and exchange contacts.",
+            "vocabThemes": [
+              "social",
+              "politeness",
+              "suggestion"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "In the office kitchen. The colleague smiles at you.",
+        "twist": "Keep the chat short and friendly. Add a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say hello and comment on the weather.",
+            "vocabThemes": [
+              "greeting",
+              "weather",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask a simple question about plans.",
+            "vocabThemes": [
+              "weather",
+              "time",
+              "social"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say goodbye.",
+            "vocabThemes": [
+              "greeting",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A networking event. You want to be memorable.",
+        "twist": "You steer the small talk toward a shared interest while keeping it light. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Open with an observation, not just the weather.",
+            "vocabThemes": [
+              "social",
+              "observation",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Connect weather to travel, hobbies, or work.",
+            "vocabThemes": [
+              "persuasion",
+              "social",
+              "comparison",
+              "culture"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Leave a positive impression and exchange contacts.",
+            "vocabThemes": [
+              "social",
+              "politeness",
+              "suggestion"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "online-shopping-return",
+    "name": "网购退货",
+    "nameEn": "Online Shopping Return",
+    "description": "你收到的网购商品有问题，需要和客服沟通退货或换货。",
+    "icon": "📦",
+    "level": 2,
+    "topics": [
+      "shopping",
+      "complaint",
+      "money"
+    ],
+    "targetWords": [
+      "order",
+      "return",
+      "exchange",
+      "refund",
+      "broken",
+      "wrong"
+    ],
+    "role": {
+      "student": "顾客 (Customer)",
+      "teacher": "客服 (Customer Service)"
+    },
+    "setting": "You are chatting with an online store customer service agent.",
+    "objectives": [
+      {
+        "id": "greet",
+        "description": "说明订单和商品问题",
+        "descriptionEn": "State order and product issue",
+        "keywords": [
+          "order",
+          "problem",
+          "broken",
+          "wrong"
+        ]
+      },
+      {
+        "id": "request",
+        "description": "请求退货或换货",
+        "descriptionEn": "Request return or exchange",
+        "keywords": [
+          "return",
+          "exchange",
+          "refund",
+          "please"
+        ]
+      },
+      {
+        "id": "confirm",
+        "description": "确认退货流程",
+        "descriptionEn": "Confirm return process",
+        "keywords": [
+          "address",
+          "shipping",
+          "money",
+          "time"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Greet and describe the problem with your order."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Request a return or exchange",
+          "Negotiate the solution",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Confirm the next steps."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A simple online store chat. The agent is helpful.",
+        "twist": "The item is the wrong color.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say hello and show the order.",
+            "vocabThemes": [
+              "greeting",
+              "shopping",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Say the item is wrong and ask for exchange.",
+            "vocabThemes": [
+              "shopping",
+              "problem",
+              "request"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the exchange.",
+            "vocabThemes": [
+              "agreement",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "An online store chat. The item arrived broken.",
+        "twist": "You need to provide a photo, but you are not sure how.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the broken item and provide order details.",
+            "vocabThemes": [
+              "shopping",
+              "problem",
+              "description"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Ask for a refund and clarify the photo requirement.",
+            "vocabThemes": [
+              "shopping",
+              "money",
+              "question",
+              "problem"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the refund process.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A large online marketplace. The seller refuses the return.",
+        "twist": "The return window has passed, but the item was defective from the start.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "State the defect and the return policy issue.",
+            "vocabThemes": [
+              "shopping",
+              "problem",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Persuade the agent to make an exception.",
+            "vocabThemes": [
+              "persuasion",
+              "negotiation",
+              "problem",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Reach a solution or escalate politely.",
+            "vocabThemes": [
+              "agreement",
+              "politeness",
+              "communication"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A premium brand customer service. The item was a gift and the receipt is missing.",
+        "twist": "You need to balance firmness with politeness to get a store credit.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the situation without a receipt.",
+            "vocabThemes": [
+              "communication",
+              "shopping",
+              "problem"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate store credit or an exchange.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "money",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the resolution and leave feedback.",
+            "vocabThemes": [
+              "agreement",
+              "evaluation",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A simple online store chat. The agent is helpful.",
+        "twist": "The item is the wrong color. Add a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Say hello and show the order.",
+            "vocabThemes": [
+              "greeting",
+              "shopping",
+              "politeness"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Say the item is wrong and ask for exchange.",
+            "vocabThemes": [
+              "shopping",
+              "problem",
+              "request"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the exchange.",
+            "vocabThemes": [
+              "agreement",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A premium brand customer service. The item was a gift and the receipt is missing.",
+        "twist": "You need to balance firmness with politeness to get a store credit. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Explain the situation without a receipt.",
+            "vocabThemes": [
+              "communication",
+              "shopping",
+              "problem"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Negotiate store credit or an exchange.",
+            "vocabThemes": [
+              "negotiation",
+              "persuasion",
+              "money",
+              "decision"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the resolution and leave feedback.",
+            "vocabThemes": [
+              "agreement",
+              "evaluation",
+              "politeness"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "doctor-appointment-followup",
+    "name": "复诊沟通",
+    "nameEn": "Doctor Appointment Follow-up",
+    "description": "你复诊时需要向医生反馈恢复情况，讨论是否需要调整治疗方案。",
+    "icon": "🏥",
+    "level": 3,
+    "topics": [
+      "health",
+      "description",
+      "advice"
+    ],
+    "targetWords": [
+      "feel",
+      "better",
+      "pain",
+      "medicine",
+      "side effect",
+      "appointment"
+    ],
+    "role": {
+      "student": "病人 (Patient)",
+      "teacher": "医生 (Doctor)"
+    },
+    "setting": "A doctor's office during a follow-up visit. You are discussing your recovery.",
+    "objectives": [
+      {
+        "id": "greet",
+        "description": "说明复诊原因",
+        "descriptionEn": "State reason for follow-up",
+        "keywords": [
+          "appointment",
+          "feel",
+          "better",
+          "worse"
+        ]
+      },
+      {
+        "id": "feedback",
+        "description": "反馈用药效果和副作用",
+        "descriptionEn": "Report medication effects",
+        "keywords": [
+          "medicine",
+          "side effect",
+          "pain",
+          "sleep"
+        ]
+      },
+      {
+        "id": "plan",
+        "description": "确认下一步治疗计划",
+        "descriptionEn": "Confirm next treatment plan",
+        "keywords": [
+          "continue",
+          "change",
+          "dose",
+          "next"
+        ]
+      }
+    ],
+    "acts": [
+      {
+        "name": "开场",
+        "goal": "Greet the doctor and state why you are back."
+      },
+      {
+        "name": "主线",
+        "goal": [
+          "Report symptoms and medication effects",
+          "Discuss whether to change treatment",
+          "Introduce organic twists or complications to keep the conversation natural."
+        ]
+      },
+      {
+        "name": "收尾",
+        "goal": "Confirm the next steps."
+      }
+    ],
+    "levelProfiles": {
+      "A1": {
+        "setting": "A doctor's office. You feel better after one week.",
+        "twist": "The doctor asks simple yes/no questions.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say you feel better.",
+            "vocabThemes": [
+              "greeting",
+              "health",
+              "emotion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about medicine.",
+            "vocabThemes": [
+              "health",
+              "medicine",
+              "basic"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "B1": {
+        "setting": "A follow-up visit. The medicine causes mild side effects.",
+        "twist": "You are unsure whether to keep taking the medicine.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Describe your recovery so far.",
+            "vocabThemes": [
+              "health",
+              "description",
+              "time"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Explain side effects and ask for advice.",
+            "vocabThemes": [
+              "health",
+              "medicine",
+              "problem",
+              "question"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Confirm the new dosage.",
+            "vocabThemes": [
+              "agreement",
+              "health",
+              "politeness"
+            ]
+          }
+        ]
+      },
+      "B2": {
+        "setting": "A follow-up after surgery. Your recovery is slower than expected.",
+        "twist": "You are worried and want more tests, but the doctor thinks it is normal.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Summarize your recovery concerns.",
+            "vocabThemes": [
+              "health",
+              "emotion",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Discuss whether more tests are needed.",
+            "vocabThemes": [
+              "health",
+              "decision",
+              "risk",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Agree on a monitoring plan.",
+            "vocabThemes": [
+              "agreement",
+              "time",
+              "health"
+            ]
+          }
+        ]
+      },
+      "C1": {
+        "setting": "A specialist follow-up with conflicting test results.",
+        "twist": "You must ask detailed questions to understand the risks of changing treatment.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Present your symptoms and test history clearly.",
+            "vocabThemes": [
+              "health",
+              "description",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Question the treatment options and risks.",
+            "vocabThemes": [
+              "question",
+              "risk",
+              "decision",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Choose a course of action and schedule the next visit.",
+            "vocabThemes": [
+              "decision",
+              "agreement",
+              "time"
+            ]
+          }
+        ]
+      },
+      "A2": {
+        "setting": "A doctor's office. You feel better after one week.",
+        "twist": "The doctor asks simple yes/no questions. Add a little more detail.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Greet and say you feel better.",
+            "vocabThemes": [
+              "greeting",
+              "health",
+              "emotion"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Answer simple questions about medicine.",
+            "vocabThemes": [
+              "health",
+              "medicine",
+              "basic"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Say thank you.",
+            "vocabThemes": [
+              "politeness",
+              "greeting"
+            ]
+          }
+        ]
+      },
+      "C2": {
+        "setting": "A specialist follow-up with conflicting test results.",
+        "twist": "You must ask detailed questions to understand the risks of changing treatment. Use nuanced and sophisticated language.",
+        "acts": [
+          {
+            "name": "开场",
+            "goal": "Present your symptoms and test history clearly.",
+            "vocabThemes": [
+              "health",
+              "description",
+              "communication"
+            ]
+          },
+          {
+            "name": "主线",
+            "goal": "Question the treatment options and risks.",
+            "vocabThemes": [
+              "question",
+              "risk",
+              "decision",
+              "comparison"
+            ]
+          },
+          {
+            "name": "收尾",
+            "goal": "Choose a course of action and schedule the next visit.",
+            "vocabThemes": [
+              "decision",
+              "agreement",
+              "time"
+            ]
+          }
+        ]
+      }
+    }
   }
 ]

@@ -152,6 +152,7 @@ export class ResponseOrchestrator {
           currentActIndex: computeCurrentActIndex(scenarioState),
           wordsUsed: Array.from(scenarioState.wordsUsed),
         },
+        scenarioState.levelProfile,
       )
     } else {
       messages = buildTeachingMessages(

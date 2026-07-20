@@ -642,15 +642,20 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
-   * 自动眨眼，支持可变频率覆盖
+   * 自动眨眼，支持可变频率覆盖。
+   *
+   * 优化：只在覆盖开始/结束时调用 setBlinkingInterval，避免每帧重复设置。
    */
   private applyEyeBlink(deltaTimeSeconds: number): void {
     if (!this._eyeBlink) return
 
     // 处理可变眨眼频率覆盖
     if (this._blinkIntervalOverride > 0) {
+      // 覆盖刚开始（timer 为 0）时才设置一次
+      if (this._blinkIntervalTimer === 0.0) {
+        this._eyeBlink.setBlinkingInterval(this._blinkIntervalOverride)
+      }
       this._blinkIntervalTimer += deltaTimeSeconds
-      this._eyeBlink.setBlinkingInterval(this._blinkIntervalOverride)
       if (this._blinkIntervalTimer >= 3.0) {
         this._blinkIntervalOverride = 0.0
         this._blinkIntervalTimer = 0.0
@@ -1198,8 +1203,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
     // 初始化 Cubism Framework
     this.initializeFramework()
 
-    // 设置 canvas 物理像素尺寸（考虑 DPR）并同步 WebGL viewport
-    const dpr = window.devicePixelRatio || 1
+    // 设置 canvas 物理像素尺寸（考虑 DPR，但限制上限避免 Retina 屏过度占用 GPU）
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     const rect = canvas.getBoundingClientRect()
     canvas.width = rect.width * dpr
     canvas.height = rect.height * dpr
@@ -1436,7 +1441,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
   private handleResize(): void {
     if (!this.canvas || !this.gl) return
 
-    const dpr = window.devicePixelRatio || 1
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     const rect = this.canvas.getBoundingClientRect()
     this.canvas.width = rect.width * dpr
     this.canvas.height = rect.height * dpr

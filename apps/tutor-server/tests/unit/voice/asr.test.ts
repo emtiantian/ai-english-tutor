@@ -22,10 +22,9 @@ describe('asr provider factory', () => {
     expect(browserProvider.name).toBe('browser')
   })
 
-  it('falls back to browser for unknown provider', () => {
+  it('throws for unknown provider', () => {
     config.ASR_PROVIDER = 'unknown-asr'
-    const fallback = createASRProvider()
-    expect(fallback.name).toBe('browser')
+    expect(() => createASRProvider()).toThrow(/不支持的 ASR 提供商/)
   })
 
   it('throws for volcengine without API key', () => {
@@ -41,12 +40,9 @@ describe('asr provider factory', () => {
     expect(volcengineProvider.name).toBe('volcengine')
   })
 
-  it('browser provider transcribes to empty result', async () => {
+  it('throws when browser provider receives audio', async () => {
     config.ASR_PROVIDER = 'browser'
     const browserProvider = createASRProvider()
-    const result = await browserProvider.transcribe(Buffer.alloc(1024), 'audio/webm')
-    expect(result.text).toBe('')
-    expect(result.confidence).toBe(0)
-    expect(result.language).toBe('en')
+    await expect(browserProvider.transcribe(Buffer.alloc(1024), 'audio/webm')).rejects.toThrow(/ASR_PROVIDER=browser/)
   })
 })

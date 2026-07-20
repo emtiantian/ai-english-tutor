@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pcmToWav, generateSilentWav, parseWavData } from '@/voice/wav-utils.js'
+import { pcmToWav, parseWavData } from '@/voice/wav-utils.js'
 
 describe('wav-utils', () => {
   it('builds a valid WAV header', () => {
@@ -30,18 +30,6 @@ describe('wav-utils', () => {
     expect(stereoWav.readUInt16LE(22)).toBe(2)
     expect(stereoWav.readUInt32LE(24)).toBe(48000)
     expect(stereoWav.readUInt16LE(32)).toBe(4)
-  })
-
-  it('generates a silent WAV that parses to all zeros', () => {
-    const silentWav = generateSilentWav(16000, 0.2)
-
-    expect(silentWav.toString('ascii', 0, 4)).toBe('RIFF')
-    expect(silentWav.toString('ascii', 8, 12)).toBe('WAVE')
-
-    const silentPcm = parseWavData(silentWav)
-
-    expect(silentPcm.length).toBeGreaterThan(0)
-    expect(silentPcm.every((byte) => byte === 0)).toBe(true)
   })
 
   it('locates data chunk after other chunks', () => {

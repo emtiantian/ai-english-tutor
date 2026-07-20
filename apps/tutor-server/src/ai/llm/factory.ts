@@ -1,5 +1,4 @@
 import { config } from '../../config.js'
-import { logger } from '../../logger.js'
 import { DeepSeekProvider } from '../providers/deepseek.js'
 import { VolcengineProvider } from '../providers/volcengine.js'
 import { XiaomiProvider } from '../providers/xiaomi.js'
@@ -31,7 +30,6 @@ export function createLLMProvider(): LLMProvider {
     case 'mock':
       return new MockProvider()
     default:
-      logger.warn({ provider }, '未知 LLM 提供商，回退到 mock')
-      return new MockProvider()
+      throw new Error(`不支持的 LLM 提供商: ${provider}。请在 .env 中设置正确的 LLM_PROVIDER。`)
   }
 }

@@ -75,10 +75,9 @@ describe('llm factory and utils', () => {
     expect(mockProvider.capabilities.supportsAudioInput).toBe(false)
   })
 
-  it('createLLMProvider falls back to mock for unknown provider', () => {
+  it('createLLMProvider throws for unknown provider', () => {
     config.LLM_PROVIDER = 'unknown-provider'
-    const fallback = createLLMProvider()
-    expect(fallback.name).toBe('mock')
+    expect(() => createLLMProvider()).toThrow(/不支持的 LLM 提供商/)
   })
 
   it('creates deepseek provider', () => {

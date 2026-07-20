@@ -52,7 +52,7 @@ describe('voice routes', () => {
     await app.close()
   })
 
-  it('returns WAV audio for valid TTS', async () => {
+  it('rejects browser TTS on the server side', async () => {
     const { config } = await import('@/config.js')
     const { voiceRoutes } = await import('@/routes/voice.js')
 
@@ -60,35 +60,15 @@ describe('voice routes', () => {
     await app.register(multipart, { limits: { fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024 } })
     await app.register(voiceRoutes)
 
-    const ttsOk = await app.inject({
+    const ttsBrowser = await app.inject({
       method: 'POST',
       url: '/api/tts',
       payload: { text: 'Hello', format: 'wav' },
     })
 
-    expect(ttsOk.statusCode).toBe(200)
-    expect(ttsOk.headers['content-type']).toBe('audio/wav')
-    expect(ttsOk.rawPayload.length).toBeGreaterThan(0)
-
-    await app.close()
-  })
-
-  it('defaults unknown TTS format to audio/mpeg', async () => {
-    const { config } = await import('@/config.js')
-    const { voiceRoutes } = await import('@/routes/voice.js')
-
-    const app = Fastify({ logger: false, bodyLimit: 25 * 1024 * 1024 })
-    await app.register(multipart, { limits: { fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024 } })
-    await app.register(voiceRoutes)
-
-    const ttsUnknownFormat = await app.inject({
-      method: 'POST',
-      url: '/api/tts',
-      payload: { text: 'Hello', format: 'unknown' },
-    })
-
-    expect(ttsUnknownFormat.statusCode).toBe(200)
-    expect(ttsUnknownFormat.headers['content-type']).toBe('audio/mpeg')
+    expect(ttsBrowser.statusCode).toBe(500)
+    const body = JSON.parse(ttsBrowser.body)
+    expect(body.code).toBe('TTS_ERROR')
 
     await app.close()
   })
@@ -141,7 +121,7 @@ describe('voice routes', () => {
     await app.close()
   })
 
-  it('returns empty transcript for browser ASR', async () => {
+  it('rejects browser ASR on the server side', async () => {
     const { config } = await import('@/config.js')
     const { voiceRoutes } = await import('@/routes/voice.js')
 
@@ -149,16 +129,16 @@ describe('voice routes', () => {
     await app.register(multipart, { limits: { fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024 } })
     await app.register(voiceRoutes)
 
-    const asrOk = await app.inject({
+    const asrBrowser = await app.inject({
       method: 'POST',
       url: '/api/asr',
-      headers: { 'content-type': 'multipart/form-data; boundary=----Ok' },
-      payload: buildMultipartBody('----Ok', 'file', 'test.webm', 'audio/webm', Buffer.alloc(1024)),
+      headers: { 'content-type': 'multipart/form-data; boundary=----Browser' },
+      payload: buildMultipartBody('----Browser', 'file', 'test.webm', 'audio/webm', Buffer.alloc(1024)),
     })
 
-    expect(asrOk.statusCode).toBe(200)
-    const body = JSON.parse(asrOk.body)
-    expect(body.text).toBe('')
+    expect(asrBrowser.statusCode).toBe(500)
+    const body = JSON.parse(asrBrowser.body)
+    expect(body.code).toBe('ASR_ERROR')
 
     await app.close()
   })

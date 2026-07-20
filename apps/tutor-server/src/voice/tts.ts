@@ -1,9 +1,7 @@
 import { config } from '../config.js'
-import { logger } from '../logger.js'
 import { CosyVoiceProvider } from './providers/cosyvoice.js'
 import { XiaomiTTSProvider } from './providers/xiaomi-tts.js'
 import { VolcengineTTSProvider } from './providers/volcengine-tts.js'
-import { generateSilentWav } from './wav-utils.js'
 
 /**
  * TTS（文本转语音）Provider 接口
@@ -46,26 +44,6 @@ export interface TTSSynthesizeOptions {
 }
 
 /**
- * 浏览器 TTS Provider（直接调用 API 时的占位 / 兜底）。
- *
- * 当 TTS_PROVIDER=browser 时，真正的音频输出由前端通过 Web Speech API 生成；
- * 后端不进行合成。该 provider 仅返回一段静音 WAV，以避免独立的 `/api/tts`
- * 调用崩溃。
- */
-class BrowserTTSProvider implements TTSProvider {
-  readonly name = 'browser'
-  // 浏览器 TTS 返回静音 WAV 兜底（见 generateSilentWav）。
-  readonly outputFormat = 'wav'
-
-  async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
-    logger.debug({ browser: true }, '浏览器 TTS 合成（静音兜底）')
-    // 返回一段最小化的有效静音 WAV，防止下游音频解码器失败。
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    return generateSilentWav()
-  }
-}
-
-/**
  * 根据配置创建 TTS provider
  */
 export function createTTSProvider(): TTSProvider {
@@ -79,10 +57,17 @@ export function createTTSProvider(): TTSProvider {
     case 'volcengine':
       return new VolcengineTTSProvider()
     case 'browser':
-      // 浏览器输出：前端走 SpeechSynthesis，后端不合成。这里仅作兜底。
-      return new BrowserTTSProvider()
+      // browser 模式由前端 Web Speech API 处理，后端不合成音频。
+      // 保留该配置值是为了让 /api/config 能向前端声明本地 TTS；
+      // 若服务端意外调用 synthesize 则直接抛错，避免生成无意义静音。
+      return {
+        name: 'browser',
+        outputFormat: 'wav',
+        async synthesize(): Promise<Buffer> {
+          throw new Error('TTS_PROVIDER=browser 时，语音合成应由前端 Web Speech API 完成，服务端不支持直接合成')
+        },
+      }
     default:
-      logger.warn({ provider }, '未知 TTS 提供商，回退到浏览器')
-      return new BrowserTTSProvider()
+      throw new Error(`不支持的 TTS 提供商: ${provider}。请在 .env 中设置正确的 TTS_PROVIDER。`)
   }
 }

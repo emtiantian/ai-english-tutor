@@ -1,7 +1,7 @@
 /**
  * WAV 容器工具函数
  *
- * 集中存放 PCM <-> WAV 转换、静音 WAV 生成、WAV data chunk 解析等通用逻辑，
+ * 集中存放 PCM <-> WAV 转换、WAV data chunk 解析等通用逻辑，
  * 供 voice 目录下的 TTS / ASR provider 复用。
  */
 
@@ -46,48 +46,6 @@ export function pcmToWav(
   header.writeUInt32LE(dataSize, offset)
 
   return Buffer.concat([header, pcm])
-}
-
-/**
- * 生成一段包含静音的最小有效 WAV 文件。
- *
- * 迁移自 tts.ts：用于浏览器 TTS 兜底且没有真实 API 音频产出的场景，
- * 防止下游音频解码器因空数据失败。
- *
- * @param sampleRate - 采样率（Hz），默认 16000
- * @param durationSeconds - 静音时长（秒），默认 0.1
- */
-export function generateSilentWav(sampleRate = 16000, durationSeconds = 0.1): Buffer {
-  const channels = 1
-  const bitsPerSample = 16
-  const byteRate = sampleRate * channels * bitsPerSample / 8
-  const blockAlign = channels * bitsPerSample / 8
-  const dataSize = Math.floor(sampleRate * durationSeconds) * blockAlign
-  const fileSize = 36 + dataSize
-
-  const buffer = Buffer.alloc(44 + dataSize)
-  let offset = 0
-
-  // RIFF chunk 描述符
-  buffer.write('RIFF', offset); offset += 4
-  buffer.writeUInt32LE(fileSize, offset); offset += 4
-  buffer.write('WAVE', offset); offset += 4
-
-  // fmt 子 chunk
-  buffer.write('fmt ', offset); offset += 4
-  buffer.writeUInt32LE(16, offset); offset += 4 // Subchunk1Size（PCM）
-  buffer.writeUInt16LE(1, offset); offset += 2 // AudioFormat（PCM）
-  buffer.writeUInt16LE(channels, offset); offset += 2
-  buffer.writeUInt32LE(sampleRate, offset); offset += 4
-  buffer.writeUInt32LE(byteRate, offset); offset += 4
-  buffer.writeUInt16LE(blockAlign, offset); offset += 2
-  buffer.writeUInt16LE(bitsPerSample, offset); offset += 2
-
-  // data 子 chunk（静音已由 Buffer.alloc 初始化为 0）
-  buffer.write('data', offset); offset += 4
-  buffer.writeUInt32LE(dataSize, offset); offset += 4
-
-  return buffer
 }
 
 /**

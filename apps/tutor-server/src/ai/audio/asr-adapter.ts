@@ -35,6 +35,10 @@ export class AsrAdapter {
     }
 
     // 使用 ASR 进行转写
+    if (this.asr.name === 'browser') {
+      throw new Error('ASR_PROVIDER=browser 时，音频转写应由前端 Web Speech API 完成，服务端不支持直接转写')
+    }
+
     try {
       const audioBuffer = Buffer.from(audioBase64, 'base64')
       logger.info({ provider: this.asr.name, audioSize: audioBuffer.length, format: audioFormat }, '[ASR] 开始转写...')
@@ -42,14 +46,8 @@ export class AsrAdapter {
       logger.info({ provider: this.asr.name, transcribed: asrResult.text.slice(0, 100), fullLength: asrResult.text.length }, '[ASR] 转写完成')
       return asrResult.text
     } catch (err) {
-      // ASR 失败时保留 return text 以维持调用方签名不变，但用 warn 明确标注失败，
-      // 并根据是否有文本兜底区分两种情况，避免失败被静默掩盖
-      const hasFallbackText = text.trim().length > 0
-      if (hasFallbackText) {
-        logger.warn({ err, provider: this.asr.name, text }, '[ASR] 转写失败，使用原始文本兜底')
-      } else {
-        logger.warn({ err, provider: this.asr.name }, '[ASR] 转写失败且无文本兜底，将返回空文本')
-      }
+      // ASR 失败时保留 return text 以维持调用方签名不变，但用 warn 明确标注失败
+      logger.warn({ err, provider: this.asr.name, text }, '[ASR] 转写失败，将返回原始文本')
       return text
     }
   }

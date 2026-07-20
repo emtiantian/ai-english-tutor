@@ -22,10 +22,9 @@ describe('tts provider factory', () => {
     expect(browserProvider.name).toBe('browser')
   })
 
-  it('falls back to browser for unknown provider', () => {
+  it('throws for unknown provider', () => {
     config.TTS_PROVIDER = 'unknown-tts'
-    const fallback = createTTSProvider()
-    expect(fallback.name).toBe('browser')
+    expect(() => createTTSProvider()).toThrow(/不支持的 TTS 提供商/)
   })
 
   it('throws for volcengine without API key', () => {
@@ -41,14 +40,9 @@ describe('tts provider factory', () => {
     expect(volcengineProvider.name).toBe('volcengine')
   })
 
-  it('browser provider returns a valid WAV', async () => {
+  it('throws when browser provider is asked to synthesize', async () => {
     config.TTS_PROVIDER = 'browser'
     const browserProvider = createTTSProvider()
-    const audio = await browserProvider.synthesize('hello')
-    expect(audio.length).toBeGreaterThanOrEqual(44)
-    expect(audio.toString('ascii', 0, 4)).toBe('RIFF')
-    expect(audio.toString('ascii', 8, 12)).toBe('WAVE')
-    expect(audio.toString('ascii', 12, 16)).toBe('fmt ')
-    expect(audio.toString('ascii', 36, 40)).toBe('data')
+    await expect(browserProvider.synthesize('hello')).rejects.toThrow(/TTS_PROVIDER=browser/)
   })
 })

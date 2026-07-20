@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useTutorStore } from '../tutor'
+import { useScenarioProgressStore } from '../scenario-progress'
 import {
   scenarioPausedDB,
   __resetScenarioPausedDBForTest,
@@ -16,6 +17,7 @@ describe('TutorStore', () => {
 
   it('should have default state', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     expect(store.phase).toBe('loading')
     expect(store.isConnected).toBe(false)
     expect(store.isThinking).toBe(false)
@@ -24,6 +26,7 @@ describe('TutorStore', () => {
 
   it('should add user message', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.addUserMessage('Hello')
 
     expect(store.messages).toHaveLength(1)
@@ -33,6 +36,7 @@ describe('TutorStore', () => {
 
   it('should start and append stream', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.startAssistantStream()
 
     expect(store.messages).toHaveLength(1)
@@ -46,6 +50,7 @@ describe('TutorStore', () => {
 
   it('should finalize stream', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.startAssistantStream()
     store.appendStreamChunk('Hello')
     store.finalizeStream({
@@ -63,6 +68,7 @@ describe('TutorStore', () => {
 
   it('should add complete message when no streaming exists', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     expect(store.messages).toHaveLength(0)
 
     store.finalizeStream({ text: 'Direct response!', vocabulary: ['direct'] })
@@ -76,6 +82,7 @@ describe('TutorStore', () => {
 
   it('should track connection state', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.isConnected = true
     expect(store.isConnected).toBe(true)
     store.isConnected = false
@@ -120,6 +127,7 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('computed: 派生 currentScenarioLevel/maxTurns/coverageRate', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ wordsLearned: ['hello', 'coffee', 'tea'] })) // 3/4 = 75%
     expect(store.currentScenarioLevel).toBe('A2')
     expect(store.maxTurns).toBe(20)
@@ -128,12 +136,14 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('coverageRate 后端下发优先于本地推断', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ coverageRate: 0.92 }))
     expect(store.coverageRate).toBeCloseTo(0.92)
   })
 
   it('pauseCurrentScenario: <6 轮直接放弃，不写 IndexedDB', async () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ turnsCount: 5 }))
     const ok = await store.pauseCurrentScenario('sess-1')
     expect(ok).toBe(false)
@@ -142,6 +152,7 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('pauseCurrentScenario: ≥6 轮保存到 IndexedDB 并填到 store map', async () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ turnsCount: 8 }))
     const ok = await store.pauseCurrentScenario('sess-2')
     expect(ok).toBe(true)
@@ -151,11 +162,12 @@ describe('TutorStore v2 — scenario redesign', () => {
     expect(snap.serverSessionId).toBe('sess-2')
     expect(snap.turnsCount).toBe(8)
 
-    expect(store.pausedSnapshots.has('restaurant-ordering')).toBe(true)
+    expect(scenarioProgress.pausedSnapshots.has('restaurant-ordering')).toBe(true)
   })
 
   it('switchScenario: 保存快照后切回 scenario-select', async () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ turnsCount: 8 }))
     store.phase = 'teaching'
 
@@ -167,6 +179,7 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('switchScenario: 当前 <6 轮，paused=false', async () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ turnsCount: 3 }))
     store.phase = 'teaching'
 
@@ -177,17 +190,19 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('discardPausedSnapshot: 同时清 IndexedDB 和 store map', async () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.setScenario(makeScenarioProgress({ turnsCount: 8 }))
     await store.pauseCurrentScenario('sess-x')
-    expect(store.pausedSnapshots.has('restaurant-ordering')).toBe(true)
+    expect(scenarioProgress.pausedSnapshots.has('restaurant-ordering')).toBe(true)
 
-    await store.discardPausedSnapshot('restaurant-ordering')
-    expect(store.pausedSnapshots.has('restaurant-ordering')).toBe(false)
+    await scenarioProgress.discardPausedSnapshot('restaurant-ordering')
+    expect(scenarioProgress.pausedSnapshots.has('restaurant-ordering')).toBe(false)
     expect(await scenarioPausedDB.getPausedSnapshot('restaurant-ordering')).toBeNull()
   })
 
   it('applyResumedSnapshot: 把快照还原到 currentScenario 并切到 teaching', () => {
     const store = useTutorStore()
+    const scenarioProgress = useScenarioProgressStore()
     store.applyResumedSnapshot({
       scenarioId: 'shopping',
       level: 'B1',
@@ -207,9 +222,10 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('recordScenarioCompletion: stars≥3 升级 highestClearedLevel + 持久化 localStorage', async () => {
     const store = useTutorStore()
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
+    const scenarioProgress = useScenarioProgressStore()
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
 
-    const progress = store.userScenarioProgress.get('restaurant-ordering')
+    const progress = scenarioProgress.userScenarioProgress.get('restaurant-ordering')
     expect(progress.highestClearedLevel).toBe('A2')
     expect(progress.starsByLevel.A2).toBe(4)
     expect(progress.attempts).toBe(1)
@@ -222,9 +238,10 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('recordScenarioCompletion: stars=0 不升级 highestClearedLevel，但 attempts 累加', async () => {
     const store = useTutorStore()
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 0)
+    const scenarioProgress = useScenarioProgressStore()
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 0)
 
-    const progress = store.userScenarioProgress.get('restaurant-ordering')
+    const progress = scenarioProgress.userScenarioProgress.get('restaurant-ordering')
     expect(progress.highestClearedLevel).toBeNull()
     expect(progress.starsByLevel.A2).toBeUndefined()
     expect(progress.attempts).toBe(1)
@@ -232,11 +249,12 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('recordScenarioCompletion: 多次通关取较高星数与较高 CEFR', async () => {
     const store = useTutorStore()
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 5)
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 3) // 不应降星
-    await store.recordScenarioCompletion('restaurant-ordering', 'B1', 4)
+    const scenarioProgress = useScenarioProgressStore()
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 5)
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 3) // 不应降星
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'B1', 4)
 
-    const progress = store.userScenarioProgress.get('restaurant-ordering')
+    const progress = scenarioProgress.userScenarioProgress.get('restaurant-ordering')
     expect(progress.starsByLevel.A2).toBe(5)
     expect(progress.starsByLevel.B1).toBe(4)
     expect(progress.highestClearedLevel).toBe('B1')
@@ -245,22 +263,24 @@ describe('TutorStore v2 — scenario redesign', () => {
 
   it('getNextChallengeLevel: 没通关过 → 返回 fallback；通关 A2 → B1；通关 C2 → null', async () => {
     const store = useTutorStore()
-    expect(store.getNextChallengeLevel('restaurant-ordering', 'A2')).toBe('A2')
+    const scenarioProgress = useScenarioProgressStore()
+    expect(scenarioProgress.getNextChallengeLevel('restaurant-ordering', 'A2')).toBe('A2')
 
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
-    expect(store.getNextChallengeLevel('restaurant-ordering', 'A2')).toBe('B1')
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
+    expect(scenarioProgress.getNextChallengeLevel('restaurant-ordering', 'A2')).toBe('B1')
 
-    await store.recordScenarioCompletion('restaurant-ordering', 'C2', 5)
-    expect(store.getNextChallengeLevel('restaurant-ordering', 'A2')).toBeNull()
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'C2', 5)
+    expect(scenarioProgress.getNextChallengeLevel('restaurant-ordering', 'A2')).toBeNull()
   })
 
   it('challengeNextLevel: 还有更高档 → phase=teaching；C2 已通关 → phase=scenario-select', async () => {
     const store = useTutorStore()
-    await store.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
+    const scenarioProgress = useScenarioProgressStore()
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'A2', 4)
     expect(store.challengeNextLevel('restaurant-ordering', 'A2')).toBe('B1')
     expect(store.phase).toBe('teaching')
 
-    await store.recordScenarioCompletion('restaurant-ordering', 'C2', 5)
+    await scenarioProgress.recordScenarioCompletion('restaurant-ordering', 'C2', 5)
     expect(store.challengeNextLevel('restaurant-ordering', 'A2')).toBeNull()
     expect(store.phase).toBe('scenario-select')
   })
@@ -285,11 +305,12 @@ describe('TutorStore v2 — scenario redesign', () => {
     })
 
     const store = useTutorStore()
-    expect(store.pausedSnapshots.size).toBe(0)
-    await store.loadPausedSnapshots()
-    expect(store.pausedSnapshots.size).toBe(2)
-    expect(store.pausedSnapshots.has('a')).toBe(true)
-    expect(store.pausedSnapshots.has('b')).toBe(true)
+    const scenarioProgress = useScenarioProgressStore()
+    expect(scenarioProgress.pausedSnapshots.size).toBe(0)
+    await scenarioProgress.loadPausedSnapshots()
+    expect(scenarioProgress.pausedSnapshots.size).toBe(2)
+    expect(scenarioProgress.pausedSnapshots.has('a')).toBe(true)
+    expect(scenarioProgress.pausedSnapshots.has('b')).toBe(true)
   })
 
   it('userScenarioProgress 启动时从 localStorage 还原', () => {
@@ -306,7 +327,8 @@ describe('TutorStore v2 — scenario redesign', () => {
       ]),
     )
     const store = useTutorStore()
-    const progress = store.userScenarioProgress.get('shopping')
+    const scenarioProgress = useScenarioProgressStore()
+    const progress = scenarioProgress.userScenarioProgress.get('shopping')
     expect(progress).toBeDefined()
     expect(progress.highestClearedLevel).toBe('B1')
     expect(progress.starsByLevel.A2).toBe(5)

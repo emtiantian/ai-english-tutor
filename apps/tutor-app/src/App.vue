@@ -35,8 +35,8 @@
       :style-name="pendingStyleName"
       :voice-style-selectable="voiceStyleSelectable"
       :user-level="userCEFRLevel"
-      :paused-snapshots="store.pausedSnapshots"
-      :user-scenario-progress="store.userScenarioProgress"
+      :paused-snapshots="scenarioProgress.pausedSnapshots"
+      :user-scenario-progress="scenarioProgress.userScenarioProgress"
       @select="handleScenarioSelect"
       @resume="handleScenarioResume"
       @free-chat="handleFreeChat"
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, provide, shallowRef } from 'vue'
 import { useTutorStore } from './stores/tutor'
+import { useScenarioProgressStore } from './stores/scenario-progress'
 import { useTutorClient } from './composables/useTutorClient'
 import { useCharacterProvider } from './composables/useCharacterProvider'
 import { useAudioPlayback } from './composables/useAudioPlayback'
@@ -146,6 +147,7 @@ import { createMessageId } from './lib/message-utils.js'
 import { useCurrentHint } from './composables/useCurrentHint'
 
 const store = useTutorStore()
+const scenarioProgress = useScenarioProgressStore()
 
 /** 仅开发环境显示动作/表情调试面板 */
 const isDev = import.meta.env.DEV
@@ -180,7 +182,7 @@ const userCEFRLevel = computed<CEFRLevel>(() => {
 /** v2: 当前场景是否已通关 C2（封顶） */
 const isScenarioCapped = computed(() => {
   if (!store.currentScenario) return false
-  return store.getNextChallengeLevel(store.currentScenario.id, userCEFRLevel.value) === null
+  return scenarioProgress.getNextChallengeLevel(store.currentScenario.id, userCEFRLevel.value) === null
 })
 
 // 待生效选项（评估前设置，等级确认后使用）
@@ -247,7 +249,7 @@ onMounted(async () => {
   setTimeout(async () => {
     await fetchScenarios()
     // 从 IndexedDB 恢复未过期的暂停快照，供 ScenarioPicker 显示「续玩」徽章
-    await store.loadPausedSnapshots()
+    await scenarioProgress.loadPausedSnapshots()
     store.phase = 'scenario-select'
   }, 600)
 })

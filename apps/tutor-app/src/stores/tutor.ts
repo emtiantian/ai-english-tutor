@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { TTSSource, CEFRLevel } from '@ai-english-tutor/shared'
-import type { ScenarioProgress, UserScenarioProgress } from '../client/types'
-import {
-  scenarioPausedDB,
-  type ScenarioPausedSnapshot,
-} from '../lib/scenario-paused-db'
+import type { ScenarioProgress } from '../client/types'
+import type { ScenarioPausedSnapshot } from '../lib/scenario-paused-db'
 import { createMessageId } from '../lib/message-utils.js'
 import { computeCoverageRate } from '../lib/scenario-utils.js'
+import {
+  useScenarioProgressStore,
+  MIN_TURNS_FOR_PAUSE,
+  DEFAULT_MAX_TURNS,
+} from './scenario-progress.js'
 
 export type AppPhase = 'loading' | 'ready' | 'assessing' | 'assess-result' | 'scenario-select' | 'teaching' | 'scenario-complete'
 
@@ -60,7 +62,7 @@ export const useTutorStore = defineStore('tutor', () => {
 
   // === Session ID（每个标签页唯一，标识本次浏览会话） ===
   // 持久化到 sessionStorage，页面刷新（F5）后仍然保留，但关闭标签页后丢失。
-  // 这是 SSE 连接键 — 不是后端返回的课程 sessionId。
+  // 这是 SSE 连接键 - 不是后端返回的课程 sessionId。
   const connectionId = getOrCreateConnectionId()
 
   function getOrCreateConnectionId(): string {
@@ -73,47 +75,10 @@ export const useTutorStore = defineStore('tutor', () => {
     return id
   }
 
-  // === 场景状态 ===
+  // === 场景运行时状态 ===
+  // 持久化层（暂停快照 / 用户通关进度）已拆到 useScenarioProgressStore，
+  // 这里只保留当前进行中的场景运行时状态 + 编排动作。
   const currentScenario = ref<ScenarioProgress | null>(null)
-
-  // === v2：场景重构 ===
-  /** v2: 暂停快照需要的最小轮次门槛（< 6 轮直接放弃） */
-  const MIN_TURNS_FOR_PAUSE = 6
-  /** v2: 默认硬上限轮次 */
-  const DEFAULT_MAX_TURNS = 20
-  /** v2：userScenarioProgress 的 localStorage 键 */
-  const USER_SCENARIO_PROGRESS_KEY = 'tutor_user_scenario_progress_v2'
-
-  /** v2: CEFR 顺序，用于晋级计算 */
-  const CEFR_ORDER: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-
-  /** v2: 启动时从 IndexedDB 加载的所有未过期暂停快照（场景 picker 用） */
-  const pausedSnapshots = ref<Map<string, ScenarioPausedSnapshot>>(new Map())
-
-  /** v2: 用户每个场景的累积进度（最高通关档 + 各档星数）。持久化到 localStorage */
-  const userScenarioProgress = ref<Map<string, UserScenarioProgress>>(
-    loadUserScenarioProgress(),
-  )
-
-  function loadUserScenarioProgress(): Map<string, UserScenarioProgress> {
-    try {
-      const raw = localStorage.getItem(USER_SCENARIO_PROGRESS_KEY)
-      if (!raw) return new Map()
-      const arr = JSON.parse(raw) as UserScenarioProgress[]
-      return new Map(arr.map((p) => [p.scenarioId, p]))
-    } catch {
-      return new Map()
-    }
-  }
-
-  function persistUserScenarioProgress() {
-    try {
-      const arr = Array.from(userScenarioProgress.value.values())
-      localStorage.setItem(USER_SCENARIO_PROGRESS_KEY, JSON.stringify(arr))
-    } catch {
-      // localStorage 写失败（容量/隐私模式）忽略
-    }
-  }
 
   /** v2 computed: 当前挑战的 CEFR 档（来自后端 scenario.level，未下发返回 null） */
   const currentScenarioLevel = computed<CEFRLevel | null>(() => {
@@ -217,9 +182,10 @@ export const useTutorStore = defineStore('tutor', () => {
     currentScenario.value = scenario
     if (scenario?.completed && !wasComplete) {
       phase.value = 'scenario-complete'
-      // 通关/失败后把结果持久化到 userScenarioProgress，并清理暂停快照
+      // 通关/失败后把结果持久化到 scenarioProgress store，并清理暂停快照
       if (scenario.level && scenario.stars !== undefined) {
-        await recordScenarioCompletion(scenario.id, scenario.level, scenario.stars)
+        const progress = useScenarioProgressStore()
+        await progress.recordScenarioCompletion(scenario.id, scenario.level, scenario.stars)
       }
     }
   }
@@ -230,28 +196,10 @@ export const useTutorStore = defineStore('tutor', () => {
     phase.value = 'ready'
   }
 
-  // === v2：场景重构 actions ===
-
-  /**
-   * v2: 启动时从 IndexedDB 加载所有未过期的暂停快照到 store，
-   * 并顺手清理过期的。供 ScenarioPicker 渲染暂停徽章。
-   */
-  async function loadPausedSnapshots(): Promise<void> {
-    try {
-      const list = await scenarioPausedDB.listAllPaused()
-      const map = new Map<string, ScenarioPausedSnapshot>()
-      for (const snap of list) map.set(snap.scenarioId, snap)
-      pausedSnapshots.value = map
-    } catch {
-      // IndexedDB 不可用（隐私模式）忽略
-      pausedSnapshots.value = new Map()
-    }
-  }
-
   /**
    * v2: 把当前进行中的场景保存为暂停快照（用户点"换场景"时调用）。
    * 仅当当前轮次 ≥ MIN_TURNS_FOR_PAUSE 才保存；否则视为放弃，仅清理本地。
-   * 返回是否保存了快照。
+   * 返回是否保存了快照。持久化写入由 scenarioProgress store 负责。
    */
   async function pauseCurrentScenario(serverSessionId?: string): Promise<boolean> {
     const sc = currentScenario.value
@@ -261,7 +209,8 @@ export const useTutorStore = defineStore('tutor', () => {
     // 后端未下发 level 时不保存快照（无法恢复）
     if (!sc.level) return false
 
-    const snapshot: Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'> = {
+    const progress = useScenarioProgressStore()
+    await progress.savePausedSnapshot({
       scenarioId: sc.id,
       level: sc.level,
       turnsCount: turns,
@@ -269,36 +218,8 @@ export const useTutorStore = defineStore('tutor', () => {
       wordsUsed: [...sc.wordsLearned],
       targetWords: [...sc.targetWords],
       serverSessionId,
-    }
-    try {
-      await scenarioPausedDB.savePausedSnapshot(snapshot)
-      // 同步更新 store map（不重新 list，避免 race）
-      const now = Date.now()
-      pausedSnapshots.value = new Map(pausedSnapshots.value).set(sc.id, {
-        ...snapshot,
-        savedAt: now,
-        expiresAt: now + 24 * 60 * 60 * 1000,
-      })
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  /**
-   * v2: 用户选"重新开始"或场景通关后，丢弃该场景的暂停快照（幂等）。
-   */
-  async function discardPausedSnapshot(scenarioId: string): Promise<void> {
-    try {
-      await scenarioPausedDB.deletePausedSnapshot(scenarioId)
-    } catch {
-      // 忽略
-    }
-    if (pausedSnapshots.value.has(scenarioId)) {
-      const next = new Map(pausedSnapshots.value)
-      next.delete(scenarioId)
-      pausedSnapshots.value = next
-    }
+    })
+    return true
   }
 
   /**
@@ -325,71 +246,6 @@ export const useTutorStore = defineStore('tutor', () => {
     phase.value = 'teaching'
   }
 
-  /**
-   * v2: 通关后调用——更新用户在该场景的累积进度（最高通关档 + 星数）。
-   * 仅当 stars >= 3（达标）才升级 highestClearedLevel。
-   * 同时清理该场景的暂停快照（已通关，旧暂停作废）。
-   */
-  async function recordScenarioCompletion(
-    scenarioId: string,
-    level: CEFRLevel,
-    stars: 0 | 3 | 4 | 5,
-  ): Promise<void> {
-    const existing = userScenarioProgress.value.get(scenarioId)
-    const next: UserScenarioProgress = existing
-      ? { ...existing, starsByLevel: { ...existing.starsByLevel } }
-      : {
-          scenarioId,
-          highestClearedLevel: null,
-          starsByLevel: {},
-          attempts: 0,
-          lastPlayedAt: 0,
-        }
-    next.attempts += 1
-    next.lastPlayedAt = Date.now()
-
-    if (stars >= 3) {
-      // stars >= 3 已在运行时排除 0，但 TS 不会从 0|3|4|5 narrow 掉 0，cast 一下
-      const passingStars = stars as 3 | 4 | 5
-      // 升级 starsByLevel：取较大值
-      const prevStars = next.starsByLevel[level] ?? 0
-      if (passingStars > prevStars) {
-        next.starsByLevel[level] = passingStars
-      }
-      // 升级 highestClearedLevel：取较高 CEFR
-      const prevIdx = next.highestClearedLevel
-        ? CEFR_ORDER.indexOf(next.highestClearedLevel)
-        : -1
-      const curIdx = CEFR_ORDER.indexOf(level)
-      if (curIdx > prevIdx) {
-        next.highestClearedLevel = level
-      }
-    }
-
-    userScenarioProgress.value = new Map(userScenarioProgress.value).set(scenarioId, next)
-    persistUserScenarioProgress()
-
-    // 通关后清理该场景的暂停快照
-    await discardPausedSnapshot(scenarioId)
-  }
-
-  /**
-   * v2: 算下一档要挑战的 CEFR。
-   * - 没通关过 → 返回用户档（fallbackLevel），让首次玩家从自己档开始
-   * - 已通关过 → 返回 highestClearedLevel + 1
-   * - 已通关 C2 → 返回 null（已封顶）
-   */
-  function getNextChallengeLevel(
-    scenarioId: string,
-    fallbackLevel: CEFRLevel,
-  ): CEFRLevel | null {
-    const progress = userScenarioProgress.value.get(scenarioId)
-    if (!progress || !progress.highestClearedLevel) return fallbackLevel
-    const idx = CEFR_ORDER.indexOf(progress.highestClearedLevel)
-    if (idx < 0 || idx >= CEFR_ORDER.length - 1) return null // C2 已通关
-    return CEFR_ORDER[idx + 1]
-  }
-
   /** 为最后一条用户语音消息设置识别文本 */
   function setLastUserTranscript(transcript: string) {
     for (let i = messages.value.length - 1; i >= 0; i--) {
@@ -401,11 +257,10 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-
   /**
    * v2: 用户在对话界面点"换场景"按钮的统一入口。
-   *  - 当前轮次 ≥ MIN_TURNS_FOR_PAUSE → 保存暂停快照
-   *  - 否则 → 直接放弃
+   *  - 当前轮次 ≥ MIN_TURNS_FOR_PAUSE -> 保存暂停快照
+   *  - 否则 -> 直接放弃
    * 之后切回 scenario-select phase，让用户重新挑场景。
    * 后端会话清理由调用方负责。
    */
@@ -423,7 +278,8 @@ export const useTutorStore = defineStore('tutor', () => {
    * 返回算出的下一档（C2 已通关时返回 null）。
    */
   function challengeNextLevel(scenarioId: string, fallbackLevel: CEFRLevel): CEFRLevel | null {
-    const next = getNextChallengeLevel(scenarioId, fallbackLevel)
+    const progress = useScenarioProgressStore()
+    const next = progress.getNextChallengeLevel(scenarioId, fallbackLevel)
     currentScenario.value = null
     phase.value = next ? 'teaching' : 'scenario-select'
     return next
@@ -449,11 +305,8 @@ export const useTutorStore = defineStore('tutor', () => {
     connectionId,
     // 文字显示时机
     showTextImmediately,
-    // 场景状态
+    // 场景运行时状态（持久化见 useScenarioProgressStore）
     currentScenario,
-    // v2：场景重新设计
-    pausedSnapshots,
-    userScenarioProgress,
     currentScenarioLevel,
     maxTurns,
     coverageRate,
@@ -466,15 +319,11 @@ export const useTutorStore = defineStore('tutor', () => {
     setShowTextImmediately,
     setScenario,
     clearScenario,
+    pauseCurrentScenario,
+    applyResumedSnapshot,
     setLastUserTranscript,
     confirmLevel,
-    // v2 操作
-    loadPausedSnapshots,
-    pauseCurrentScenario,
-    discardPausedSnapshot,
-    applyResumedSnapshot,
-    recordScenarioCompletion,
-    getNextChallengeLevel,
+    // v2 场景编排动作（持久化委托 useScenarioProgressStore）
     switchScenario,
     challengeNextLevel,
   }

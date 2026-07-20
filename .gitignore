@@ -41,6 +41,7 @@ temp/
 *.tmp
 .claude/
 .codegraph/
+export/
 
 # AI/model auto-generated artifacts (not committed)
 .context/

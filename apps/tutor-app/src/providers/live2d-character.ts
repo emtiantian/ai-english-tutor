@@ -64,6 +64,15 @@ const STRETCH_PRESET: Record<string, number> = {
 }
 
 /**
+ * Canvas 渲染缩放上限。
+ *
+ * 直接用 window.devicePixelRatio 在 Retina 屏(2x)上会让 WebGL 画布变成 4 倍像素，
+ * Live2D 每帧都要填充/采样这些像素，是 CPU/GPU 占用的主要来源。限制到 1.5 可以在
+ * 清晰度和性能之间取得平衡；若仍觉卡顿可进一步降到 1.0。
+ */
+const MAX_DPR = 1.5
+
+/**
  * Patch: CDN 上的 live2dcubismcore@1.0.2 没有 Memory.initializeAmountOfMemory，
  * 但 Framework R5 的 initialize() 会调用它。在 initializeFramework 之前手动 patch。
  */
@@ -118,6 +127,9 @@ class LAppModel extends CubismUserModel {
    * 不能硬编码,必须按模型声明驱动,否则口型不动。
    */
   private _lipSyncIds: CubismIdHandle[] = []
+
+  /** 参数 ID 字符串 → CubismIdHandle 缓存，避免每帧字符串查表 */
+  private _paramIdCache = new Map<string, CubismIdHandle>()
 
   /** Manifest 注入的视图缩放系数,在 resize 计算结果上额外乘,1=不变 */
   private _viewScale = 1.0
@@ -406,6 +418,20 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
+   * 获取参数 ID 的缓存版本，避免每帧重复字符串查表。
+   */
+  private getParamId(name: string): CubismIdHandle | undefined {
+    let id = this._paramIdCache.get(name)
+    if (id === undefined) {
+      id = CubismFramework.getIdManager().getId(name)
+      if (id) {
+        this._paramIdCache.set(name, id)
+      }
+    }
+    return id
+  }
+
+  /**
    * 每帧更新 —— 顺序:
    * loadParameters → motion → mouth → eyeBlink → breath → physics → pose → eyeTracking → expression → saveParameters
    * 表情放在 eyeBlink / eyeTracking 之后,确保 surprised/sad(眼开度)、curious/thoughtful(头部角度)
@@ -470,7 +496,10 @@ class LAppModel extends CubismUserModel {
   }
 
   /**
-   * 应用当前表情参数到模型，支持平滑融合与微动作叠加
+   * 应用当前表情参数到模型，支持平滑融合与微动作叠加。
+   *
+   * 优化：稳态（current == target）时直接遍历目标 preset，避免每帧创建 Set；
+   * 参数 ID 用 _paramIdCache 缓存，避免每帧字符串查表。
    */
   private applyExpression(deltaTimeSeconds: number): void {
     // 如果目标表情变化，启动渐变。
@@ -499,39 +528,58 @@ class LAppModel extends CubismUserModel {
     const targetPreset = this._expressionPresets[this._targetExpressionId] ?? fallbackPreset
     const currentPreset = this._expressionPresets[this._currentExpressionId] ?? fallbackPreset
 
-    // 每帧从 preset 重算并直接应用(不保留跨帧状态):
-    // 渐变中并集 current∪target,使被淡出的参数平滑回到各自静息默认;
-    // 稳态(current==target)只剩 target 的参数,其余参数自然交还给眨眼/跟随。
-    const paramIds = new Set([
-      ...Object.keys(targetPreset),
-      ...Object.keys(currentPreset),
-    ])
+    if (!this._isExpressionFading) {
+      // 稳态：直接应用目标表情，避免创建 Set 和遍历 currentPreset。
+      for (const [paramId, value] of Object.entries(targetPreset)) {
+        const id = this.getParamId(paramId)
+        if (!id) continue
+        this.applyExpressionValue(id, paramId, value, value, 1.0)
+      }
+    } else {
+      // 渐变中：先遍历 targetPreset，缺失的 current 值用静息默认值补齐。
+      for (const [paramId, to] of Object.entries(targetPreset)) {
+        const id = this.getParamId(paramId)
+        if (!id) continue
+        const rest = EXPRESSION_MULTIPLY_PARAMS.has(paramId) ? 1 : 0
+        const from = currentPreset[paramId] ?? rest
+        this.applyExpressionValue(id, paramId, from, to, t)
+      }
 
-    const idManager = CubismFramework.getIdManager()
-    for (const paramId of paramIds) {
-      const isMultiply = EXPRESSION_MULTIPLY_PARAMS.has(paramId)
-      const isAdd = EXPRESSION_ADD_PARAMS.has(paramId)
-      // 按模式取静息默认:MULTIPLY 缺省=1(不缩放),ADD/OVERWRITE 缺省=0
-      const rest = isMultiply ? 1 : 0
-      const from = currentPreset[paramId] ?? rest
-      const to = targetPreset[paramId] ?? rest
-      const exprValue = from * (1 - t) + to * t
-
-      const id = idManager.getId(paramId)
-      if (!id) continue
-      if (isMultiply) {
-        // 与眨眼写入的眼开度相乘 → 既体现表情又保留眨眼
-        this._model.setParameterValueById(id, this._model.getParameterValueById(id) * exprValue)
-      } else if (isAdd) {
-        // 叠加到头部跟随写入的角度上 → 既体现歪头又保留鼠标跟随
-        this._model.setParameterValueById(id, this._model.getParameterValueById(id) + exprValue)
-      } else {
-        this._model.setParameterValueById(id, exprValue)
+      // 再处理仅存在于 currentPreset 的参数，使其平滑回到静息默认值。
+      for (const [paramId, from] of Object.entries(currentPreset)) {
+        if (paramId in targetPreset) continue
+        const id = this.getParamId(paramId)
+        if (!id) continue
+        const rest = EXPRESSION_MULTIPLY_PARAMS.has(paramId) ? 1 : 0
+        this.applyExpressionValue(id, paramId, from, rest, t)
       }
     }
 
     // 叠加微动作预设（如打哈欠、伸懒腰）
     this.applyMicroAction(deltaTimeSeconds)
+  }
+
+  /**
+   * 把一个表情参数值按 MULTIPLY/ADD/OVERWRITE 模式应用到模型。
+   */
+  private applyExpressionValue(
+    id: CubismIdHandle,
+    paramId: string,
+    from: number,
+    to: number,
+    t: number,
+  ): void {
+    const value = from * (1 - t) + to * t
+
+    if (EXPRESSION_MULTIPLY_PARAMS.has(paramId)) {
+      // 与眨眼写入的眼开度相乘 → 既体现表情又保留眨眼
+      this._model.setParameterValueById(id, this._model.getParameterValueById(id) * value)
+    } else if (EXPRESSION_ADD_PARAMS.has(paramId)) {
+      // 叠加到头部跟随写入的角度上 → 既体现歪头又保留鼠标跟随
+      this._model.setParameterValueById(id, this._model.getParameterValueById(id) + value)
+    } else {
+      this._model.setParameterValueById(id, value)
+    }
   }
 
   /**

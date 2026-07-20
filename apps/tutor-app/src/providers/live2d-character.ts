@@ -68,9 +68,16 @@ const STRETCH_PRESET: Record<string, number> = {
  *
  * 直接用 window.devicePixelRatio 在 Retina 屏(2x)上会让 WebGL 画布变成 4 倍像素，
  * Live2D 每帧都要填充/采样这些像素，是 CPU/GPU 占用的主要来源。限制到 1.5 可以在
- * 清晰度和性能之间取得平衡；若仍觉卡顿可进一步降到 1.0。
+ * 清晰度和性能之间取得平衡；若仍觉卡顿可在 .env 设置 VITE_LIVE2D_MAX_DPR=1.0。
  */
-const MAX_DPR = 1.5
+const DEFAULT_MAX_DPR = 1.5
+const MAX_DPR = Math.min(
+  Math.max(
+    Number((import.meta.env.VITE_LIVE2D_MAX_DPR as string | undefined) ?? DEFAULT_MAX_DPR) || DEFAULT_MAX_DPR,
+    1.0,
+  ),
+  2.0,
+)
 
 /**
  * Patch: CDN 上的 live2dcubismcore@1.0.2 没有 Memory.initializeAmountOfMemory，
@@ -608,7 +615,7 @@ class LAppModel extends CubismUserModel {
     }
 
     for (const [paramId, value] of Object.entries(this._microActionPreset)) {
-      const id = CubismFramework.getIdManager().getId(paramId)
+      const id = this.getParamId(paramId)
       if (id) {
         const current = this._model.getParameterValueById(id)
         this._model.setParameterValueById(id, current + value * weight)
@@ -634,7 +641,7 @@ class LAppModel extends CubismUserModel {
         this._model.setParameterValueById(id, amplified)
       }
     } else {
-      const id = CubismFramework.getIdManager().getId('ParamMouthOpenY')
+      const id = this.getParamId('ParamMouthOpenY')
       if (id) {
         this._model.setParameterValueById(id, amplified)
       }
@@ -723,22 +730,22 @@ class LAppModel extends CubismUserModel {
     }
 
     // 眼球
-    const eyeBallX = CubismFramework.getIdManager().getId('ParamEyeBallX')
-    const eyeBallY = CubismFramework.getIdManager().getId('ParamEyeBallY')
+    const eyeBallX = this.getParamId('ParamEyeBallX')
+    const eyeBallY = this.getParamId('ParamEyeBallY')
     if (eyeBallX) this._model.setParameterValueById(eyeBallX, this._currentEyeX * this._eyeTrackingFactor)
     if (eyeBallY) this._model.setParameterValueById(eyeBallY, this._currentEyeY * this._eyeTrackingFactor)
 
     // 头部角度
-    const angleX = CubismFramework.getIdManager().getId('ParamAngleX')
-    const angleY = CubismFramework.getIdManager().getId('ParamAngleY')
-    const angleZ = CubismFramework.getIdManager().getId('ParamAngleZ')
+    const angleX = this.getParamId('ParamAngleX')
+    const angleY = this.getParamId('ParamAngleY')
+    const angleZ = this.getParamId('ParamAngleZ')
     if (angleX) this._model.setParameterValueById(angleX, this._currentHeadX * this._headTrackingFactor * 30 + errorShake)
     if (angleY) this._model.setParameterValueById(angleY, this._currentHeadY * this._headTrackingFactor * 30 + nodOffset)
     if (angleZ) this._model.setParameterValueById(angleZ, listenTilt)
 
     // 身体角度
-    const bodyAngleX = CubismFramework.getIdManager().getId('ParamBodyAngleX')
-    const bodyAngleY = CubismFramework.getIdManager().getId('ParamBodyAngleY')
+    const bodyAngleX = this.getParamId('ParamBodyAngleX')
+    const bodyAngleY = this.getParamId('ParamBodyAngleY')
     if (bodyAngleX) this._model.setParameterValueById(bodyAngleX, this._currentBodyX * this._bodyTrackingFactor * 10 + swayOffset)
     if (bodyAngleY) this._model.setParameterValueById(bodyAngleY, this._currentBodyY * this._bodyTrackingFactor * 10 + listenLeanY)
   }
@@ -1152,6 +1159,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
   /** MotionRegistry — 默认取自 manifest,可通过 setRegistry 运行时覆盖 */
   private _registry: MotionRegistry
 
+  /** 复用的投影矩阵，避免每帧 new CubismMatrix44 */
+  private _projectionMatrix: CubismMatrix44 | null = null
+
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
@@ -1182,15 +1192,20 @@ export class Live2DCharacterProvider implements CharacterProvider {
   /** 鼠标事件处理器引用（用于清理） */
   private _canvasMouseMove?: (e: MouseEvent) => void
   private _canvasClick?: (e: MouseEvent) => void
+  /** 待处理的鼠标移动事件（节流到每帧一次） */
+  private _pendingMouseMove: { x: number; y: number; width: number; height: number } | null = null
+  private _mouseRafScheduled = false
 
   /** 初始化: 等待 Core → Patch → 初始化 Framework → 加载模型 → 启动渲染 → 绑定鼠标事件 */
   async init(canvas: HTMLCanvasElement): Promise<void> {
     this.canvas = canvas
 
     // 获取 WebGL context
+    // powerPreference: 'high-performance' 让浏览器优先使用独显（如果有）
+    // antialias: false 避免浏览器对 canvas 做多重采样抗锯齿，Live2D 内部已做边缘处理
     const ctx =
-      canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true }) ||
-      canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true })
+      canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', antialias: false }) ||
+      canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', antialias: false })
     if (!ctx) throw new Error('WebGL not supported')
     this.gl = ctx
 
@@ -1235,6 +1250,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
     }
     document.addEventListener('visibilitychange', this._visibilityHandler)
 
+    // 预创建投影矩阵，避免渲染循环每帧分配
+    this._projectionMatrix = new CubismMatrix44()
+
     // 启动渲染循环
     this.lastFrameTime = performance.now()
     this.startRenderLoop()
@@ -1246,11 +1264,25 @@ export class Live2DCharacterProvider implements CharacterProvider {
   private bindMouseEvents(canvas: HTMLCanvasElement): void {
     // 鼠标移动：眼睛跟随。绑定到 window 而不是 canvas，这样即使聊天消息等
     // UI 元素覆盖在 canvas 上方，人物眼睛仍然能跟随鼠标。
+    // 用 requestAnimationFrame 节流到每帧一次，避免高频 mousemove 浪费 CPU。
     this._canvasMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      this.model?.onMouseMove(x, y, rect.width, rect.height)
+      this._pendingMouseMove = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        width: rect.width,
+        height: rect.height,
+      }
+
+      if (this._mouseRafScheduled) return
+      this._mouseRafScheduled = true
+      requestAnimationFrame(() => {
+        this._mouseRafScheduled = false
+        if (!this._pendingMouseMove || !this.model) return
+        const { x, y, width, height } = this._pendingMouseMove
+        this._pendingMouseMove = null
+        this.model.onMouseMove(x, y, width, height)
+      })
     }
     window.addEventListener('mousemove', this._canvasMouseMove)
 
@@ -1392,9 +1424,14 @@ export class Live2DCharacterProvider implements CharacterProvider {
       this.gl.clear(this.gl.COLOR_BUFFER_BIT)
 
       // 投影矩阵 — 使用正交投影补偿 canvas 宽高比，防止竖屏手机人物被拉伸变形
-      const projection = new CubismMatrix44()
+      // 复用 _projectionMatrix，避免每帧 new CubismMatrix44；每帧先重置为单位矩阵，
+      // 因为 draw() 内部会把它乘以 modelMatrix。
+      const projection = this._projectionMatrix ?? new CubismMatrix44()
       const aspect = this.canvas.width / this.canvas.height
       const arr = projection.getArray()
+      for (let i = 0; i < 16; i++) {
+        arr[i] = i % 5 === 0 ? 1.0 : 0.0
+      }
       arr[0] = 1.0 / aspect  // X: 映射 [-aspect, +aspect] → [-1, +1]
       arr[5] = 1.0            // Y: 映射 [-1, +1] → [-1, +1]
 

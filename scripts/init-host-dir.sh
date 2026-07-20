@@ -42,6 +42,9 @@ mkdir -p "$DATA_DIR/certs"
 mkdir -p "$DATA_DIR/whisper-models"
 mkdir -p "$DATA_DIR/cosyvoice-models"
 mkdir -p "$DATA_DIR/modelscope-cache"
+# CosyVoice 自定义音色目录：参考音频 + spk2info.pt
+# 通过 compose 只读挂载到容器 /opt/CosyVoice/spk2info，换机器随 data/ 迁移即可复用
+mkdir -p "$DATA_DIR/cosyvoice-spk2info"
 
 # 复制 .env 模板（不覆盖已有文件）
 if [ ! -f "$DATA_DIR/.env" ]; then
@@ -222,6 +225,7 @@ echo "       ├── tts-cache/        ← TTS 缓存（自动生成）"
 echo "       ├── whisper-models/   ← 本地 Whisper ASR 模型（ASR=whisper 时下载到此）"
 echo "       ├── cosyvoice-models/ ← CosyVoice 预置模型目录（pretrained_models）"
 echo "       ├── modelscope-cache/ ← CosyVoice 的 modelscope 下载缓存（命中即免重下 ~11G）"
+echo "       ├── cosyvoice-spk2info/ ← CosyVoice 自定义音色目录（参考音频 + spk2info.pt）"
 echo "       ├── certs/            ← TLS 证书（mkcert 自签；HTTPS 可选启用）"
 echo "       │   ├── fullchain.pem ←   gateway 容器挂载到 /etc/nginx/certs/"
 echo "       │   └── privkey.pem"

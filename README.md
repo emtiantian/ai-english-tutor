@@ -165,12 +165,48 @@ docker compose up -d
 
 ### 可选：启用 GPU 语音服务
 
-编辑 `docker-compose.yml`，取消注释 `cosyvoice` 和 `whisper` 服务，然后更新 `.env`：
+Whisper（ASR）和 CosyVoice（TTS）作为可选服务，通过 docker compose override 文件叠加（主 `docker-compose.yml` 不包含这两个服务定义）：
 
-```env
-TTS_PROVIDER=cosyvoice
-ASR_PROVIDER=whisper
+```bash
+# 在 .env 中设置
+TTS_PROVIDER=cosyvoice      # 启用 CosyVoice TTS（需 GPU）
+ASR_PROVIDER=whisper        # 启用 Whisper ASR
+COSYVOICE_BASE_URL=http://cosyvoice:50000
+WHISPER_BASE_URL=http://whisper:8080
+
+# 部署时 deploy-to-server.sh 会根据 .env 自动叠加对应 override 文件
+# 或手动：
+docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml -f docker-compose.whisper.yml up -d
 ```
+
+### 自定义音色（CosyVoice spk2info）
+
+CosyVoice 默认提供四个内置音色（英文女 / 英文男 / 中文女 / 中文男），开箱即用。若需使用自定义音色：
+
+1. 把参考音频 `<spk_id>.wav` 放进 `data/cosyvoice-spk2info/`（如 `data/cosyvoice-spk2info/EnglishTutor.wav`）
+2. 运行生成脚本（需 GPU + `cosyvoice:local` 镜像）：
+
+   ```bash
+   pnpm build:cosyvoice-spk2info -- --spk-id <spk_id> --audio <wav路径>
+   ```
+
+   脚本会调用 CosyVoice 容器提取音色特征，生成 `spk2info.pt`。
+
+3. 在 `.env` 中设置 `COSYVOICE_SPK_ID=<spk_id>`，重启后端即可使用。
+
+该目录通过 compose 只读挂载到容器；部署时把 `spk2info.pt` 和参考音频放到 `~/.ai-english-tutor/data/cosyvoice-spk2info/` 即可。
+
+### 开机自启（systemd）
+
+`docker-compose.cosyvoice.yml` 已设置 `restart: unless-stopped`，可保证容器崩溃后自动恢复。若还需保证**宿主机重启后**自动拉起 CosyVoice，可安装 systemd unit：
+
+```bash
+sudo cp scripts/cosyvoice.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now cosyvoice
+```
+
+与 `deploy-to-server.sh` 的关系：systemd 管开机自启与宿主机重启恢复，deploy 脚本管代码更新后的镜像重建与服务重启，两者幂等，互不冲突。
 
 ### 自定义配置
 
@@ -270,6 +306,23 @@ A: 修改 `apps/tutor-server/.env` 中的 `LLM_PROVIDER` 和对应 API Key，重
 
 **Q: 如何添加自定义角色模型？**
 A: 将 Live2D 模型放入 `apps/tutor-app/public/models/`，或 Spine 模型放入对应目录，修改 `src/providers/` 中的路径配置。
+
+**Q: 本地开发连远程 CosyVoice 时 TTS 失败？**
+A: 本地 `pnpm local` 开发时若连远程 CosyVoice（如 `COSYVOICE_BASE_URL=http://100.100.132.72:50000`），且本机设置了 HTTP 代理，需把远程 IP 加入 `NO_PROXY`，否则请求会被代理拦截导致 TTS 失败：
+
+```bash
+export NO_PROXY="localhost,127.0.0.1,::1,*.local,100.100.132.72"
+```
+
+可写入 shell profile（`~/.zshrc` / `~/.bashrc`）或 `.env`。
+
+**关于 Node.js fetch 的代理行为说明**：后端 CosyVoice Provider 使用 Node.js 原生 `fetch`（undici），它**默认不读取** `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` 环境变量。若你观察到请求确实被代理拦截，通常是以下原因之一：
+
+- 使用了透明代理工具（如 ClashX / Surge 增强模式），在系统网络层拦截所有 HTTP 流量
+- Node 启动时启用了 env proxy 支持（Node 24+ 的 `NODE_USE_ENV_PROXY=1` 或 `--use-env-proxy`）
+- 引入了 `global-agent` / undici `ProxyAgent` 等代理库
+
+对于透明代理场景，设置 `NO_PROXY` 会被代理工具读取并跳过对应 IP；若使用 `NODE_USE_ENV_PROXY=1`，Node 原生 fetch 也会尊重 `NO_PROXY`。最稳妥的做法是在 shell profile 中 export `NO_PROXY`，保证所有代理感知工具一致跳过远程 IP。
 
 ## 端口一览
 

@@ -4,9 +4,8 @@
 FROM node:22-alpine AS builder
 
 # 使用国内镜像，避免容器内访问国外源超时/断连
-ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
+RUN printf 'registry=https://registry.npmmirror.com\nbetter-sqlite3_binary_host=https://registry.npmmirror.com/-/binary/better-sqlite3\n' > /root/.npmrc
 ENV NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
-ENV BETTER_SQLITE3_BINARY_HOST=https://registry.npmmirror.com/-/binary/better-sqlite3
 RUN npm install -g pnpm@10.7.1
 
 # Install native addon build tooling

@@ -3,7 +3,7 @@
 # ── Build Stage ──
 FROM node:22-alpine AS builder
 # 使用国内镜像，避免容器内访问国外源超时/断连
-ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
+RUN echo "registry=https://registry.npmmirror.com" > /root/.npmrc
 RUN npm install -g pnpm@10.7.1
 
 WORKDIR /app

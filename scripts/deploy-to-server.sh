@@ -396,6 +396,70 @@ check_health() {
   return 1
 }
 
+# 等待 cosyvoice 容器健康。仅当 ENABLE_COSYVOICE=true 时执行。
+# 不阻塞部署成功判定：cosyvoice 是可选 TTS Provider，backend 健康才是关键。
+# 模型加载约 90-120s，超时给 180s 余量；超时后只 log_warn，不返回非零。
+wait_cosyvoice_healthy() {
+  if ! $ENABLE_COSYVOICE; then
+    return 0
+  fi
+  log_info "等待 cosyvoice 容器健康（模型加载约 90-120s）..."
+
+  # 用 dc ps -q 拿容器 ID（比硬编码 ai-english-tutor-cosyvoice-1 更稳健，
+  # 兼容 COMPOSE_COMPATIBILITY 或将来改名）
+  local cv_container
+  cv_container=$(dc "ps -q cosyvoice 2>/dev/null || true" | head -1 | tr -d '[:space:]')
+  if [ -z "${cv_container}" ]; then
+    log_warn "未找到 cosyvoice 容器，跳过健康等待（请检查 docker compose ps）"
+    return 0
+  fi
+
+  local timeout=180
+  local interval=10
+  local elapsed=0
+  local status=""
+  while [ ${elapsed} -lt ${timeout} ]; do
+    status=$(remote_exec "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
+    # 无 healthcheck 时 docker inspect 返回 "<no value>"，统一归为 unknown
+    case "${status}" in
+      ""|"<no value>") status="unknown" ;;
+    esac
+    if [ "${status}" = "healthy" ]; then
+      log_info "cosyvoice 已健康（耗时 ${elapsed}s）"
+      return 0
+    fi
+    log_warn "cosyvoice 状态: ${status}，已等待 ${elapsed}s"
+    sleep ${interval}
+    elapsed=$((elapsed + interval))
+  done
+
+  # 超时不回滚：cosyvoice 是可选 TTS，后端已健康即视为部署成功；
+  # cosyvoice 可能仍在加载，稍后会自动转 healthy，或需手动 docker logs 排查
+  log_warn "cosyvoice 未在 ${timeout}s 内健康（最后状态: ${status}），不阻塞部署；请稍后手动检查"
+  return 0
+}
+
+# 取 cosyvoice 当前健康状态字符串，供 print_report 展示。
+# 未启用返回"未启用"；找不到容器返回"未找到容器"；否则返回 healthy/starting/unhealthy/unknown。
+get_cosyvoice_health() {
+  if ! $ENABLE_COSYVOICE; then
+    echo "未启用"
+    return 0
+  fi
+  local cv_container status
+  cv_container=$(dc "ps -q cosyvoice 2>/dev/null || true" | head -1 | tr -d '[:space:]')
+  if [ -z "${cv_container}" ]; then
+    echo "未找到容器"
+    return 0
+  fi
+  status=$(remote_exec "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
+  # 无 healthcheck 时 docker inspect 返回 "<no value>"，统一归为 unknown
+  case "${status}" in
+    ""|"<no value>") echo "unknown" ;;
+    *) echo "${status}" ;;
+  esac
+}
+
 # 备份保留策略：仅保留最近 BACKUP_KEEP 份 data-*/app-* 备份
 cleanup_old_backups() {
   local keep=${BACKUP_KEEP}
@@ -448,6 +512,7 @@ print_report() {
   echo "部署耗时：          ${deploy_duration}s"
   echo "容器状态："
   dc "ps --format 'table {{.Name}}\t{{.Status}}'" || true
+  echo "CosyVoice：         $(get_cosyvoice_health)"
   echo "结果：              ${status}"
   echo "=========================================="
 }
@@ -479,6 +544,7 @@ main() {
   deploy_services
 
   if check_health; then
+    wait_cosyvoice_healthy
     cleanup_old_backups
     deploy_duration=$(($(date +%s) - start_time))
     print_report "成功" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"

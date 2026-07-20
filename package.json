@@ -11,7 +11,8 @@
     "dev:clean": "bash scripts/kill-ports.sh",
     "build": "pnpm --filter tutor-app build",
     "push:server": "bash scripts/deploy-to-server.sh",
-    "verify:cosyvoice": "pnpm --filter @ai-english-tutor/server exec tsx ../../scripts/verify-cosyvoice.mts"
+    "verify:cosyvoice": "pnpm --filter @ai-english-tutor/server exec tsx ../../scripts/verify-cosyvoice.mts",
+    "build:cosyvoice-spk2info": "pnpm --filter @ai-english-tutor/server exec tsx ../../scripts/build-cosyvoice-spk2info.mts"
   },
   "packageManager": "pnpm@10.7.1"
 }

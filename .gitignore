@@ -13,11 +13,19 @@ coverage/
 .env.*.local
 
 # Database files
-data/
+# 注意：写成 `data/*` 而非 `data/`，是为了让下面的 cosyvoice-spk2info 例外
+# 规则能生效——`data/` 会让 git 完全跳过目录扫描，子规则无机会匹配。
+data/*
 .dev-data/
 *.db
 *.db-shm
 *.db-wal
+# 例外：CosyVoice 音色目录的占位文件入 git，保证部署/脚本里有现成落点；
+# 真实的 .wav / .pt 是运行时数据，仍被上面的 data/* 规则忽略
+!data/cosyvoice-spk2info/
+data/cosyvoice-spk2info/*
+!data/cosyvoice-spk2info/.gitkeep
+!data/cosyvoice-spk2info/README.md
 
 # Logs
 logs/

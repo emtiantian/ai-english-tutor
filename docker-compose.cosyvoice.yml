@@ -8,9 +8,16 @@
 # - CosyVoice 强依赖 GPU，作为可选 TTS Provider 拆到此 override 文件
 # - 首次启动时会从 modelscope 拉取 iic/CosyVoice2-0.5B 模型到 modelscope 缓存
 # - 模型挂载随 AI_TUTOR_HOME（部署根）走，便于跨机/跨目录迁移并命中缓存：
-#     <root>/data/modelscope-cache → /root/.cache/modelscope（modelscope 下载缓存，
+#     <root>/data/modelscope-cache -> /root/.cache/modelscope（modelscope 下载缓存，
 #       镜像未设 MODELSCOPE_CACHE，默认落在 root HOME 下；命中即跳过 ~11G 重下）
-#     <root>/data/cosyvoice-models  → pretrained_models（代码侧预置模型目录）
+#     <root>/data/cosyvoice-models  -> pretrained_models（代码侧预置模型目录）
+# - 自定义音色 spk2info 挂载（只读）：
+#     <root>/data/cosyvoice-spk2info -> /opt/CosyVoice/spk2info
+#       存放参考音频 (<spk_id>.wav) 与由 `pnpm build:cosyvoice-spk2info` 生成的
+#       spk2info.pt；换机器部署时随 AI_TUTOR_HOME/data 一起迁移，无需重训。
+# - logging 限制单文件 50m × 5 份，避免长跑服务日志撑爆磁盘。
+# - healthcheck 用 POST /inference_sft 探测 FastAPI 是否就绪；
+#   模型加载约 90-120s，start_period 给到 120s。
 
 services:
   cosyvoice:
@@ -20,6 +27,8 @@ services:
     volumes:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/modelscope-cache:/root/.cache/modelscope
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-models:/opt/CosyVoice/CosyVoice/pretrained_models
+      # 自定义音色持久化目录（只读）：参考音频 + spk2info.pt，换机器随 data/ 迁移
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-spk2info:/opt/CosyVoice/spk2info:ro
     command:
       - bash
       - -c
@@ -34,6 +43,20 @@ services:
     networks:
       - tutor-net
     restart: unless-stopped
+    # 日志大小限制：单文件 50MB、最多 5 份，总上限 250MB
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    # 健康探测：POST /inference_sft 判断 FastAPI 已起且端口监听正常；
+    # 4GB 显存机器上 healthcheck 也会占显存，间隔不要太短（≥30s）
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:50000/inference_sft', data=b'tts_text=test&spk_id=EnglishTutor', timeout=10)\""]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
 
 networks:
   tutor-net:

@@ -1,5 +1,6 @@
 import { config } from '../../config.js'
 import { DeepSeekProvider } from '../providers/deepseek.js'
+import { OpenAIProvider } from '../providers/openai.js'
 import { VolcengineProvider } from '../providers/volcengine.js'
 import { XiaomiProvider } from '../providers/xiaomi.js'
 import { MockProvider } from './mock-provider.js'
@@ -14,6 +15,12 @@ export function createLLMProvider(): LLMProvider {
         apiKey: config.DEEPSEEK_API_KEY,
         baseURL: config.DEEPSEEK_BASE_URL,
         model: config.DEEPSEEK_MODEL,
+      })
+    case 'openai':
+      return new OpenAIProvider({
+        apiKey: config.OPENAI_API_KEY,
+        baseURL: config.OPENAI_BASE_URL,
+        model: config.OPENAI_MODEL,
       })
     case 'volcengine':
       return new VolcengineProvider({

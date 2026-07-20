@@ -8,6 +8,8 @@ import type {
   ProviderCapabilities,
 } from '../llm.js'
 import { normalizeToString } from '../llm.js'
+import { normalizeLLMError } from '../llm/errors.js'
+import { withRetry } from '../llm/retry.js'
 
 /**
  * OpenAI 兼容 LLM Provider 的通用构造选项。
@@ -37,6 +39,10 @@ export interface OpenAIBaseProviderOptions {
    * （其在 Linux 容器解压 gzip 响应时会抛 ERR_STREAM_PREMATURE_CLOSE）。
    */
   fetch?: typeof globalThis.fetch
+  /** 最大重试次数（不含首次），默认 2；仅对可重试错误（限流/5xx/网络/超时）生效 */
+  maxRetries?: number
+  /** 请求超时（毫秒），默认 30000；仅作用于非流式 complete */
+  timeout?: number
 }
 
 /**
@@ -52,6 +58,8 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
   protected readonly model: string
   protected readonly temperature: number
   protected readonly maxTokens: number
+  protected readonly maxRetries: number
+  protected readonly timeout: number
 
   constructor(options: OpenAIBaseProviderOptions) {
     if (!options.apiKey) {
@@ -63,10 +71,16 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     this.model = options.model
     this.temperature = options.temperature ?? 0.7
     this.maxTokens = options.maxTokens ?? 512
+    this.maxRetries = options.maxRetries ?? 2
+    this.timeout = options.timeout ?? 30_000
+    // maxRetries: 0 禁用 SDK 内置重试，由 withRetry 中间件统一接管（避免双重重试）。
+    // timeout 仅对非流式请求生效；流式依赖外部 AbortSignal 控制生命周期。
     this.client = new OpenAI({
       apiKey: options.apiKey,
       baseURL: options.baseURL,
       fetch: options.fetch ?? globalThis.fetch,
+      maxRetries: 0,
+      timeout: this.timeout,
     })
   }
 
@@ -79,10 +93,23 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     )
 
     const startTime = Date.now()
-    const response = (await this.client.chat.completions.create(
-      this.buildRequestOptions(normalizedMessages, false),
-      { signal },
-    )) as OpenAI.Chat.Completions.ChatCompletion
+    const response = await withRetry(
+      () =>
+        this.client.chat.completions.create(
+          this.buildRequestOptions(normalizedMessages, false),
+          { signal },
+        ) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
+      {
+        maxRetries: this.maxRetries,
+        signal,
+        onRetry: (err, attempt, delay) => {
+          logger.warn(
+            { provider: this.name, attempt, delay, code: err.code, status: err.status },
+            'LLM 请求重试',
+          )
+        },
+      },
+    )
     const duration = Date.now() - startTime
 
     const content = this.extractContent(response)
@@ -104,10 +131,6 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     options?: { signal?: AbortSignal },
   ): AsyncGenerator<LLMStreamChunk> {
     const signal = options?.signal
-    if (signal?.aborted) {
-      throw new Error('AbortError')
-    }
-
     const normalizedMessages = this.normalizeMessages(messages)
 
     logger.debug(
@@ -116,26 +139,37 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     )
 
     const startTime = Date.now()
-    const stream = await this.createStream(normalizedMessages, signal)
 
-    let totalTokens = 0
-
-    for await (const chunk of stream) {
+    // 流式请求不重试：重试会重复输出已 yield 的内容，导致前端气泡重复。
+    // 仅做错误归一化，把 SDK/网络错误统一成 LLMError 供上层处理。
+    try {
       if (signal?.aborted) {
         throw new Error('AbortError')
       }
-      const content = this.handleStreamChunk(chunk)
-      if (content) {
-        totalTokens += content.length
-        yield {
-          content,
-          isEnd: false,
+
+      const stream = await this.createStream(normalizedMessages, signal)
+
+      let totalTokens = 0
+
+      for await (const chunk of stream) {
+        if (signal?.aborted) {
+          throw new Error('AbortError')
+        }
+        const content = this.handleStreamChunk(chunk)
+        if (content) {
+          totalTokens += content.length
+          yield {
+            content,
+            isEnd: false,
+          }
         }
       }
-    }
 
-    const duration = Date.now() - startTime
-    this.logStreamComplete(duration, totalTokens)
+      const duration = Date.now() - startTime
+      this.logStreamComplete(duration, totalTokens)
+    } catch (err) {
+      throw normalizeLLMError(err)
+    }
 
     yield {
       content: '',

@@ -10,6 +10,7 @@ describe('llm factory and utils', () => {
   let originalVolcengineModel: string
   let originalXiaomiKey: string
   let originalXiaomiModel: string
+  let originalOpenaiKey: string
 
   beforeEach(() => {
     originalProvider = config.LLM_PROVIDER
@@ -18,6 +19,7 @@ describe('llm factory and utils', () => {
     originalVolcengineModel = config.VOLCENGINE_LLM_MODEL
     originalXiaomiKey = config.XIAOMI_API_KEY
     originalXiaomiModel = config.XIAOMI_MODEL
+    originalOpenaiKey = config.OPENAI_API_KEY
   })
 
   afterEach(() => {
@@ -27,6 +29,7 @@ describe('llm factory and utils', () => {
     config.VOLCENGINE_LLM_MODEL = originalVolcengineModel
     config.XIAOMI_API_KEY = originalXiaomiKey
     config.XIAOMI_MODEL = originalXiaomiModel
+    config.OPENAI_API_KEY = originalOpenaiKey
   })
 
   it('extractTextContent handles string content', () => {
@@ -107,6 +110,15 @@ describe('llm factory and utils', () => {
     expect(xiaomiProvider.name).toBe('xiaomi')
     expect(xiaomiProvider.capabilities.supportsStreaming).toBe(true)
     expect(xiaomiProvider.capabilities.supportsAudioInput).toBe(true)
+  })
+
+  it('creates openai provider', () => {
+    config.LLM_PROVIDER = 'openai'
+    config.OPENAI_API_KEY = 'fake-key'
+    const openaiProvider = createLLMProvider()
+    expect(openaiProvider.name).toBe('openai')
+    expect(openaiProvider.capabilities.supportsStreaming).toBe(true)
+    expect(openaiProvider.capabilities.supportsAudioInput).toBe(false)
   })
 
   it('mock provider rejects complete on aborted signal', async () => {

@@ -74,7 +74,7 @@ export const config = {
 
   // ── LLM 配置 ──
 
-  /** LLM 服务商：'xiaomi' | 'deepseek' | 'mock' */
+  /** LLM 服务商：'deepseek' | 'volcengine' | 'xiaomi' | 'openai' | 'mock' */
   LLM_PROVIDER: process.env.LLM_PROVIDER ?? 'mock',
 
   /** DeepSeek API 密钥 */
@@ -85,6 +85,17 @@ export const config = {
 
   /** DeepSeek 模型 */
   DEEPSEEK_MODEL: process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
+
+  // ── OpenAI 配置 ──
+
+  /** OpenAI API 密钥 */
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? '',
+
+  /** OpenAI API 基础地址（可指向 Azure OpenAI 或第三方兼容网关） */
+  OPENAI_BASE_URL: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1',
+
+  /** OpenAI 模型名称 */
+  OPENAI_MODEL: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
 
   // ── 火山方舟 LLM 配置 ──
 
@@ -210,6 +221,13 @@ export const config = {
    * 用于构建包裹服务端返回的无头 PCM 的 WAV 头。
    */
   COSYVOICE_SAMPLE_RATE: parseInt(process.env.COSYVOICE_SAMPLE_RATE ?? '22050', 10),
+
+  /**
+   * 后端启动时是否对 CosyVoice 做健康探测（默认 true）。
+   * 探测异步执行不阻塞启动；失败仅日志告警，不抛错、不退出进程。
+   * 仅当显式设为 'false' 时关闭，其他任意值（含未设置）均视为开启。
+   */
+  COSYVOICE_HEALTH_CHECK: (process.env.COSYVOICE_HEALTH_CHECK ?? 'true') !== 'false',
 
   // ── Volcengine (火山方舟 Agent Plan) 语音合成 TTS 配置 ──
   // 接口：openspeech.bytedance.com/api/v3/plan/tts/unidirectional

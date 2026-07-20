@@ -48,7 +48,7 @@ pnpm --filter @ai-english-tutor/server test:integration
 |------|------|
 | `ai/engine.ts` | 请求入口，按 `type` 分发到具体引擎 |
 | `ai/engines/{free-form,scenario,vocab}-engine.ts` | 自由对话 / 场景角色扮演 / 生词讲解 |
-| `ai/llm.ts` / `ai/llm/factory.ts` / `ai/providers/*.ts` | LLM Provider（`LLM_PROVIDER` 选择 deepseek / volcengine / xiaomi / mock） |
+| `ai/llm.ts` / `ai/llm/factory.ts` / `ai/providers/*.ts` | LLM Provider（`LLM_PROVIDER` 选择 deepseek / volcengine / xiaomi / openai / mock） |
 | `ai/session-manager.ts` | 内存 + SQLite 会话，LRU 过期与场景恢复 |
 | `ai/audio-pipeline.ts` / `ai/audio/*.ts` | TTS / ASR 编排与音频广播 |
 | `ai/vocab-tracker.ts` / `ai/scenario-vocab-picker.ts` | 生词跟踪、场景目标词进度 |
@@ -123,6 +123,8 @@ Shared 包内部相对 import 同样要带 `.js`。
 1. 在 `ai/providers/` 或 `voice/providers/` 新增实现文件
 2. 在 `ai/llm/factory.ts`、`voice/tts.ts`、`voice/asr.ts` 的工厂 switch 中注册
 3. 在 `.env.example` 补充 env 文档
+
+> **LLM Provider 统一基类**：OpenAI 兼容的 LLM（deepseek / volcengine / xiaomi / openai）统一继承 `ai/providers/openai-base.ts` 的 `OpenAIBaseProvider`，子类只需声明 `name` + `capabilities`（参考 `providers/openai.ts`，<30 行）。基类已内置流式 / 非流式 / AbortSignal / retry / timeout / 错误归一化（`ai/llm/retry.ts` + `ai/llm/errors.ts`）。非 OpenAI 兼容的（如 Claude / Gemini）需单独写 adapter。
 
 ### 新增场景
 

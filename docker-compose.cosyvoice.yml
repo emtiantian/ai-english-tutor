@@ -20,6 +20,10 @@ services:
     volumes:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/modelscope-cache:/root/.cache/modelscope
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-models:/opt/CosyVoice/CosyVoice/pretrained_models
+    command:
+      - bash
+      - -c
+      - "cd /workspace/CosyVoice && python runtime/python/fastapi/server.py --port 50000 --model_dir iic/CosyVoice2-0.5B"
     deploy:
       resources:
         reservations:
@@ -30,13 +34,7 @@ services:
     networks:
       - tutor-net
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    networks:
-      - tutor-net
-    restart: unless-stopped
+
+networks:
+  tutor-net:
+    external: true

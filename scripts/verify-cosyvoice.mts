@@ -1,14 +1,15 @@
 // 验证 CosyVoiceProvider，目标服务需可通过 COSYVOICE_BASE_URL 访问。
-// 运行：COSYVOICE_BASE_URL=http://localhost:50000 npx tsx <本文件>
+// 运行：COSYVOICE_BASE_URL=http://localhost:50000 COSYVOICE_SPK_ID=EnglishTutor npx tsx <本文件>
 import assert from 'node:assert'
 
+const { config } = await import('../apps/tutor-server/src/config.js')
 const { CosyVoiceProvider } = await import('../apps/tutor-server/src/voice/providers/cosyvoice.ts')
 
 async function main() {
   const provider = new CosyVoiceProvider()
   const text = 'Good morning! Welcome to your English lesson.'
   const t0 = Date.now()
-  const buf: Buffer = await provider.synthesize(text, { voice: '英文女' })
+  const buf: Buffer = await provider.synthesize(text, { voice: config.COSYVOICE_SPK_ID })
   const ms = Date.now() - t0
 
   // 1) form-data 请求成功并返回音频字节

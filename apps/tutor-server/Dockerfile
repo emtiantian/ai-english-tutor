@@ -2,7 +2,6 @@
 
 # ── Build Stage ──
 FROM node:22-alpine AS builder
-RUN npm install -g pnpm@10.7.1
 
 # 使用国内镜像，避免容器内访问国外源超时/断连
 ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
@@ -36,6 +35,9 @@ RUN pnpm --filter @ai-english-tutor/shared build
 # Build backend
 RUN pnpm --filter @ai-english-tutor/server build
 
+# 迁移 SQL 文件不会被 tsc 自动复制到 dist，需显式复制
+COPY apps/tutor-server/src/db/migrations/*.sql /app/dist/db/migrations/
+
 # Point shared package entry to compiled dist for deployment
 RUN sed -i 's#"./src/index.ts"#"./dist/index.js"#g' packages/shared/package.json
 
@@ -53,6 +55,9 @@ RUN apk add --no-cache wget ffmpeg
 COPY --from=builder /prod/server/dist ./dist
 COPY --from=builder /prod/server/package.json ./package.json
 COPY --from=builder /prod/server/node_modules ./node_modules
+
+# 迁移 SQL 文件不会被 pnpm deploy 复制到 /prod/server，需从 builder 显式复制
+COPY --from=builder /app/dist/db/migrations/*.sql ./dist/db/migrations/
 
 # Copy default vocabulary into the image. The loader falls back to
 # DEFAULT_VOCAB_DIR when CONFIG_DIR/vocab/<level>.json is absent.

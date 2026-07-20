@@ -84,9 +84,6 @@ else
 fi
 
 # ── mkcert 自签证书（HTTPS 可选启用）──
-if ! $SKIP_MKCERT; then
-  ensure_mkcert_certs
-fi
 
 ensure_mkcert_certs() {
   # 检测 mkcert，存在且未生成过证书时自动签一对覆盖 localhost 的证书
@@ -186,7 +183,9 @@ ensure_mkcert_certs() {
   esac
   echo ""
 }
-ensure_mkcert_certs
+if ! $SKIP_MKCERT; then
+  ensure_mkcert_certs
+fi
 
 # ── 旧布局迁移提示 ──
 # v1 把配置直接放在 $TUTOR_HOME 下，现在统一移到 data/。

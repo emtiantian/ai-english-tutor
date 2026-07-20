@@ -20,7 +20,7 @@ AI English Tutor — 基于 AI 的英语口语陪练 SPA，支持 Live2D / Spine
 pnpm local            # 后端(:3000) + 前端(:6173)，无网关 — 日常默认
 pnpm server           # 仅后端（tsx watch，读 <repo>/.env）
 pnpm dev              # 仅前端
-pnpm dev:clean        # 杀掉 3000/6173/8080 端口残留
+pnpm dev:clean        # 杀掉 3000/6173 端口残留
 
 # 构建
 pnpm build                                    # 前端：vue-tsc + vite build

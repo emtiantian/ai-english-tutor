@@ -16,9 +16,12 @@ set -euo pipefail
 # ════════════════════════════════════════
 REMOTE_HOST="100.100.132.72"
 REMOTE_USER="haohe"
-REMOTE_DIR="/home/haohe/.ai-english-tutor"
+# 与 deploy-to-server.sh 默认值保持一致；可用 AI_TUTOR_REMOTE_DIR 覆盖
+REMOTE_DIR="${AI_TUTOR_REMOTE_DIR:-/home/haohe/data/.ai-english-tutor}"
 REMOTE_APP_DIR="${REMOTE_DIR}/app"
 REMOTE_TMP_AUDIO="/tmp/ai-tutor-test-asr.mp3"
+# L4 后端 API 协议：默认 http；HTTPS（如 mkcert 自签）设 REMOTE_SCHEME=https
+REMOTE_SCHEME="${REMOTE_SCHEME:-http}"
 
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AUDIO_GENERATOR="${LOCAL_PROJECT_ROOT}/scripts/generate-test-audio.sh"
@@ -173,7 +176,8 @@ level4_backend_api() {
   log_step "4" "通过后端 API 测试 ASR"
 
   local result
-  result=$(curl -s -X POST "http://${REMOTE_HOST}/api/asr" \
+  # -k 允许 mkcert 自签证书；协议由 REMOTE_SCHEME 控制
+  result=$(curl -s -k -X POST "${REMOTE_SCHEME}://${REMOTE_HOST}/api/asr" \
     -F "file=@${TEST_AUDIO};type=audio/mpeg" 2>/dev/null || true)
 
   if [ -z "${result}" ]; then

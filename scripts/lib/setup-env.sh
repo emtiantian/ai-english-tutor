@@ -275,11 +275,7 @@ generate_env() {
       ;;
     whisper)
       GENERATED_ENABLE_WHISPER=true
-      if $noninteractive; then
-        log_warn "ASR=whisper：将以 -f docker-compose.whisper.yml 叠加启动 whisper.cpp 容器"
-      else
-        log_warn "ASR=whisper：将以 -f docker-compose.whisper.yml 叠加启动 whisper.cpp 容器"
-      fi
+      log_warn "ASR=whisper：将以 -f docker-compose.whisper.yml 叠加启动 whisper.cpp 容器"
       ;;
     volcengine)
       if $noninteractive; then
@@ -323,6 +319,10 @@ SERVER_NAME=${server_name}
 # ── 前端（Vite，构建期注入；compose --env-file 读取后传给 frontend build args）──
 VITE_BACKEND_URL=
 VITE_CHARACTER_PROVIDER=live2d
+# VITE_LIVE2D_MODEL_ID=hiyori
+# VITE_LIVE2D_MAX_DPR=1.5
+# VITE_RIVE_SRC=/models/rive/tutor.riv
+# VITE_RIVE_STATE_MACHINE="State Machine 1"
 
 # ── LLM ──
 LLM_PROVIDER=${llm_provider}
@@ -337,7 +337,7 @@ VOLCENGINE_LLM_API_KEY=${volcengine_llm_api_key}
 VOLCENGINE_LLM_BASE_URL=${volcengine_llm_base_url}
 VOLCENGINE_LLM_MODEL=${volcengine_llm_model}
 
-# 小米 LLM（已停用，仅作字段参考）
+# 小米 LLM（可选来源）
 XIAOMI_API_KEY=${xiaomi_api_key}
 XIAOMI_BASE_URL=${xiaomi_base_url}
 XIAOMI_MODEL=${xiaomi_model}
@@ -361,11 +361,13 @@ VOLCENGINE_TTS_RESOURCE_ID=${volcengine_tts_resource_id}
 VOLCENGINE_TTS_SPEAKER=${volcengine_tts_speaker}
 VOLCENGINE_TTS_FORMAT=${volcengine_tts_format}
 VOLCENGINE_TTS_SAMPLE_RATE=${volcengine_tts_sample_rate}
+# VOLCENGINE_TTS_BASE_URL=https://openspeech.bytedance.com/api/v3/plan/tts/unidirectional
 
 # CosyVoice（需 GPU + docker-compose.cosyvoice.yml 叠加）
 COSYVOICE_BASE_URL=http://cosyvoice:50000
 COSYVOICE_SPK_ID=英文女
 COSYVOICE_SPEED=0.9
+# COSYVOICE_SAMPLE_RATE=22050
 
 # ── ASR ──（browser / volcengine / whisper / xiaomi）
 ASR_PROVIDER=${asr_provider}
@@ -379,6 +381,8 @@ XIAOMI_ASR_BASE_URL=${asr_base_url}
 # ASR key 不填则回退到 TTS key
 VOLCENGINE_ASR_API_KEY=${volcengine_asr_api_key}
 VOLCENGINE_ASR_RESOURCE_ID=${volcengine_asr_resource_id}
+# VOLCENGINE_ASR_BASE_URL=wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_nostream
+# VOLCENGINE_ASR_SEGMENT_MS=200
 
 # Whisper（需 docker-compose.whisper.yml 叠加）
 WHISPER_BASE_URL=http://whisper:8080
@@ -397,6 +401,11 @@ DATA_DIR=/app/data
 TTS_CACHE_DIR=/app/data/tts-cache
 TTS_CACHE_MAX_MB=1024
 TTS_CACHE_MAX_FILES=5000
+
+# ── 句型池（按需开启）──
+# LINE_POOL_DIR=
+# LINE_POOL_MAX_LINES=200
+# LINE_POOL_INJECT_LIMIT=30
 EOF
 
   log_info "已生成 .env: ${output_file}"

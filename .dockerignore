@@ -44,8 +44,12 @@ temp/
 
 # Documentation
 doc/
-*.md
+# 只排除根目录 md（README/CHANGELOG 等）；保留子目录的 LICENSE-*.md 供镜像 COPY
+/*.md
 
 # Test files
 *.test.ts
 *.spec.ts
+
+# Local dev data (not for production image)
+.dev-data/

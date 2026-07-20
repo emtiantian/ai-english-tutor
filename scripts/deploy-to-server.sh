@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # AI English Tutor — 一键部署到服务器
-# 用法: ./scripts/deploy-to-server.sh
+# 用法: ./scripts/deploy-to-server.sh [--use-local-env] [--skip-tests]
 #
 # 流程: git clean → ssh 检查 → 交互式 .env → rsync → docker compose up → 健康检查 → 报告
 # 默认最小栈: 浏览器 ASR/TTS + DeepSeek LLM；需要时自动叠加 whisper / cosyvoice compose。
@@ -8,14 +8,17 @@
 set -euo pipefail
 
 USE_LOCAL_ENV=false
+SKIP_TESTS=false
 
-if [[ $# -gt 0 ]]; then
+while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
     --use-local-env) USE_LOCAL_ENV=true ;;
+    --skip-tests)    SKIP_TESTS=true ;;
     *)         echo "未知参数: $1" >&2; sed -n '2,5p' "$0"; exit 1 ;;
   esac
-fi
+  shift
+done
 
 # ════════════════════════════════════════
 # 配置
@@ -61,6 +64,8 @@ RSYNC_EXCLUDES=(
 
 HEALTH_CHECK_RETRIES=3
 HEALTH_CHECK_INTERVAL=10
+# 备份保留策略：仅保留最近 N 份 data-*/app-* 备份，避免 backups/ 无限膨胀
+BACKUP_KEEP=${BACKUP_KEEP:-5}
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DATA_DIR="${REMOTE_BACKUP_DIR}/data-${TIMESTAMP}"
@@ -192,7 +197,7 @@ configure_remote_env() {
     fi
     log_info "使用本地 .env: ${local_env}"
     scp "${local_env}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
-    detect_compose_overlays
+    # compose 叠加由 main 统一调 detect_compose_overlays 根据远端 .env 决定
     return 0
   fi
 
@@ -217,8 +222,6 @@ configure_remote_env() {
     fi
     if $reconfigure; then
       generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" false
-      ENABLE_WHISPER="${GENERATED_ENABLE_WHISPER:-false}"
-      ENABLE_COSYVOICE="${GENERATED_ENABLE_COSYVOICE:-false}"
       scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
     fi
     [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
@@ -227,8 +230,6 @@ configure_remote_env() {
     log_warn "服务器不存在 ${REMOTE_ENV_FILE}"
     if prompt_yes_no "是否交互式创建 .env"; then
       generate_env "${LOCAL_ENV_TEMP}" "" false
-      ENABLE_WHISPER="${GENERATED_ENABLE_WHISPER:-false}"
-      ENABLE_COSYVOICE="${GENERATED_ENABLE_COSYVOICE:-false}"
       scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
     else
       log_warn "跳过 .env 配置，将由 init-host-dir.sh 从模板复制（含占位符，需手动编辑）"
@@ -395,10 +396,29 @@ check_health() {
   return 1
 }
 
+# 备份保留策略：仅保留最近 BACKUP_KEEP 份 data-*/app-* 备份
+cleanup_old_backups() {
+  local keep=${BACKUP_KEEP}
+  log_info "清理旧备份（保留最近 ${keep} 份）..."
+  remote_exec "cd ${REMOTE_BACKUP_DIR} && ls -1d data-* 2>/dev/null | sort -r | tail -n +$((keep+1)) | xargs -r rm -rf"
+  remote_exec "cd ${REMOTE_BACKUP_DIR} && ls -1d app-* 2>/dev/null | sort -r | tail -n +$((keep+1)) | xargs -r rm -rf"
+}
+
 rollback() {
   log_error "健康检查连续 ${HEALTH_CHECK_RETRIES} 次失败，开始回滚到 ${BACKUP_APP_DIR}..."
   dc down
   remote_exec "find ${REMOTE_APP_DIR} -mindepth 1 -delete && cp -a ${BACKUP_APP_DIR}/. ${REMOTE_APP_DIR}/"
+
+  # 默认不回滚 data/：新版本可能已产生用户新数据，回滚数据会丢失。
+  # 设 RESTORE_DATA_ON_ROLLBACK=true 可同时恢复部署前的数据备份。
+  if [ "${RESTORE_DATA_ON_ROLLBACK:-false}" = "true" ]; then
+    log_warn "RESTORE_DATA_ON_ROLLBACK=true，恢复部署前数据备份 ${BACKUP_DATA_DIR}..."
+    remote_exec "rm -rf ${REMOTE_DATA_DIR} && cp -a ${BACKUP_DATA_DIR} ${REMOTE_DATA_DIR}"
+  else
+    log_warn "未恢复 data/（避免丢失新数据）；如需恢复，数据备份在 ${BACKUP_DATA_DIR}"
+    log_warn "  手动恢复: ssh ${REMOTE_USER}@${REMOTE_HOST} 'rm -rf ${REMOTE_DATA_DIR} && cp -a ${BACKUP_DATA_DIR} ${REMOTE_DATA_DIR}'"
+  fi
+
   dc "up -d"
 
   if check_health; then
@@ -440,7 +460,12 @@ main() {
   configure_remote_dir
   ensure_remote_dirs
 
-  run_local_tests
+  if $SKIP_TESTS; then
+    log_warn "已指定 --skip-tests，跳过本地测试"
+    TEST_DURATION=0
+  else
+    run_local_tests
+  fi
 
   configure_remote_env
   backup_remote
@@ -454,6 +479,7 @@ main() {
   deploy_services
 
   if check_health; then
+    cleanup_old_backups
     deploy_duration=$(($(date +%s) - start_time))
     print_report "成功" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
     exit 0

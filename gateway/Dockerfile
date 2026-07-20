@@ -15,6 +15,7 @@ RUN apk add --no-cache gettext
 # Copy templates and entrypoint script
 COPY gateway/nginx.conf        /etc/nginx/nginx.conf.template
 COPY gateway/ssl.conf.template /etc/nginx/ssl.conf.template
+COPY gateway/locations.conf    /etc/nginx/locations.conf
 COPY gateway/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

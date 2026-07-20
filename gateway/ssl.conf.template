@@ -1,4 +1,4 @@
-# ── AI English Tutor — HTTPS server block (rendered by docker-entrypoint.sh) ──
+# ── AI English Tutor - HTTPS server block (rendered by docker-entrypoint.sh) ──
 # This file is only materialised to /etc/nginx/conf.d/ssl.conf when TLS
 # certs are mounted at /etc/nginx/certs/{fullchain,privkey}.pem. When
 # the certs are missing the entrypoint deletes this file so HTTPS is
@@ -12,6 +12,8 @@
 # $frontend_target / $cors_allow_origin map variables, and we reuse
 # them so proxy_pass stays compatible with nginx's variable-upstream
 # requirement (resolver + map).
+#
+# location / CORS 配置抽到 gateway/locations.conf，与 HTTP server 共用。
 
 server {
     listen 443 ssl;
@@ -27,59 +29,5 @@ server {
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 1d;
 
-    # ── CORS for all requests ──
-    add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
-    add_header 'Access-Control-Allow-Credentials' 'true' always;
-    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS, PATCH' always;
-    add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, X-Requested-With, Accept, Origin' always;
-    add_header 'Access-Control-Expose-Headers' 'Content-Type, Authorization' always;
-    add_header 'Access-Control-Max-Age' '86400' always;
-
-    # ── Preflight ──
-    if ($request_method = 'OPTIONS') {
-        return 204;
-    }
-
-    # ── SSE endpoint (must be before generic /api/) ──
-    location /api/chat/stream {
-        proxy_pass $backend_target;
-
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Connection '';
-
-        # Disable buffering for SSE
-        proxy_buffering off;
-        proxy_cache off;
-        chunked_transfer_encoding off;
-
-        # Long timeout for SSE connections
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
-    }
-
-    # ── API proxy ──
-    location /api/ {
-        proxy_pass $backend_target;
-
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # ── Frontend proxy ──
-    location / {
-        proxy_pass $frontend_target;
-
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+    include /etc/nginx/locations.conf;
 }

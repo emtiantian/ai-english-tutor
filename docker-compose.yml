@@ -22,7 +22,7 @@ services:
       backend:
         condition: service_healthy
       frontend:
-        condition: service_started
+        condition: service_healthy
     networks:
       - tutor-net
     restart: unless-stopped
@@ -42,10 +42,20 @@ services:
       args:
         - VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
         - VITE_CHARACTER_PROVIDER=${VITE_CHARACTER_PROVIDER:-live2d}
+        - VITE_LIVE2D_MODEL_ID=${VITE_LIVE2D_MODEL_ID:-}
+        - VITE_LIVE2D_MAX_DPR=${VITE_LIVE2D_MAX_DPR:-}
+        - VITE_RIVE_SRC=${VITE_RIVE_SRC:-}
+        - VITE_RIVE_STATE_MACHINE=${VITE_RIVE_STATE_MACHINE:-}
     # 不暴露端口，通过 gateway 访问
     networks:
       - tutor-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:

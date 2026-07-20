@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: gateway/Dockerfile
+      cache_from:
+        - ai-english-tutor-gateway:latest
     ports:
       - "80:80"
       - "443:443"
@@ -35,6 +37,8 @@ services:
     build:
       context: .
       dockerfile: apps/tutor-app/Dockerfile
+      cache_from:
+        - ai-english-tutor-frontend:latest
       args:
         - VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
         - VITE_CHARACTER_PROVIDER=${VITE_CHARACTER_PROVIDER:-live2d}
@@ -47,6 +51,8 @@ services:
     build:
       context: .
       dockerfile: apps/tutor-server/Dockerfile
+      cache_from:
+        - ai-english-tutor-backend:latest
     env_file:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/.env
     environment:

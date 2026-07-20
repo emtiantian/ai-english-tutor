@@ -4,6 +4,12 @@
 FROM node:22-alpine AS builder
 RUN npm install -g pnpm@10.7.1
 
+# 使用国内镜像，避免容器内访问国外源超时/断连
+ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
+ENV NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+ENV BETTER_SQLITE3_BINARY_HOST=https://registry.npmmirror.com/-/binary/better-sqlite3
+RUN npm install -g pnpm@10.7.1
+
 # Install native addon build tooling
 RUN apk add --no-cache python3 make g++
 

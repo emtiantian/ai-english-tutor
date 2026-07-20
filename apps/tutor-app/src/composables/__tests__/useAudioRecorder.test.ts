@@ -54,18 +54,18 @@ describe('useAudioRecorder', () => {
       getChannelData: vi.fn().mockReturnValue(new Float32Array([0.1, -0.1, 0.2])),
     } as unknown as AudioBuffer
 
-    const mockAudioContext = {
-      decodeAudioData: vi.fn().mockResolvedValue(decodedBuffer),
-      close: vi.fn().mockResolvedValue(undefined),
-      createMediaStreamSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-      }),
-      createAnalyser: vi.fn().mockReturnValue({
-        fftSize: 256,
-        frequencyBinCount: 128,
-        getByteFrequencyData: vi.fn(),
-      }),
-    }
+    const mockAudioContext: any = {}
+    mockAudioContext.decodeAudioData = vi.fn().mockResolvedValue(decodedBuffer)
+    mockAudioContext.close = vi.fn().mockResolvedValue(undefined)
+    mockAudioContext.createMediaStreamSource = vi.fn().mockReturnValue({
+      connect: vi.fn(),
+      context: mockAudioContext,
+    })
+    mockAudioContext.createAnalyser = vi.fn().mockReturnValue({
+      fftSize: 256,
+      frequencyBinCount: 128,
+      getByteFrequencyData: vi.fn(),
+    })
 
     global.AudioContext = vi.fn(function () { return mockAudioContext }) as any
     global.OfflineAudioContext = vi.fn() as any

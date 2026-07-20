@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { CEFRLevel } from '@ai-english-tutor/shared'
+import { computeCoverageRate } from '../lib/scenario-utils.js'
 
 const props = defineProps<{
   level?: CEFRLevel
@@ -48,9 +49,8 @@ const emit = defineEmits<{
 }>()
 
 const coveragePercent = computed(() => {
-  if (typeof props.coverageRate === 'number') return Math.round(props.coverageRate * 100)
-  if (!props.targetWordsTotal) return 0
-  return Math.round((props.wordsLearned.length / props.targetWordsTotal) * 100)
+  const rate = computeCoverageRate(props.wordsLearned, props.targetWordsTotal, props.coverageRate)
+  return Math.round(rate * 100)
 })
 </script>
 

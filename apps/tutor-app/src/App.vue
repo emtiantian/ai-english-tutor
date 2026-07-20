@@ -1,7 +1,6 @@
 <template>
   <div class="app-root">
     <OfflineBanner />
-    <!-- <SvgLoading v-if="showSvg" /> -->
     <canvas
       ref="characterCanvas"
       class="absolute inset-0 w-full h-full opacity-0 transition-opacity-800ms z-1 md:(top-auto bottom-0 h-55% w-full)"
@@ -83,9 +82,7 @@
       :is-encoding="isEncoding"
       :recording-duration="recordingDuration"
       :scenario="store.currentScenario"
-      :student-reply-hints="lastStudentReplyHints"
-      :vocabulary-sentences="lastVocabularySentences"
-      :last-vocabulary="lastVocabulary"
+      :suggested-phrase="suggestedPhrase"
       @send-text="sendText"
       @record-start="startRecording"
       @record-stop="stopRecording"
@@ -109,7 +106,7 @@
 
     <!-- Live2D 模型切换器（仅在初始加载完成后显示；仅 Live2D 可用） -->
     <CharacterModelSwitcher
-      v-if="!showSvg && showCharacterCanvas"
+      v-if="showCharacterCanvas"
       :current-model-id="currentLive2DModelId"
       :is-switching="isSwitchingModel"
       :show-at-lower-position="store.phase === 'teaching'"
@@ -118,14 +115,14 @@
 
     <!-- DEV-only 动作/表情调试面板 -->
     <MotionDebugPanel
-      v-if="isDev && !showSvg && showCharacterCanvas"
+      v-if="isDev && showCharacterCanvas"
       :show-at-lower-position="store.phase === 'teaching'"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, provide, shallowRef } from 'vue'
 import { useTutorStore } from './stores/tutor'
 import { useTutorClient } from './composables/useTutorClient'
 import { useCharacterProvider } from './composables/useCharacterProvider'
@@ -133,7 +130,6 @@ import { useAudioPlayback } from './composables/useAudioPlayback'
 import { useAudioRecorder } from './composables/useAudioRecorder'
 import { useASRConfig } from './composables/useASRConfig'
 import { useVocabSync } from './composables/useVocabSync'
-import SvgLoading from './components/SvgLoading.vue'
 import ChatMessageList from './components/ChatMessageList.vue'
 import WordDetailModal from './components/WordDetailModal.vue'
 import ChatInputBar from './components/ChatInputBar.vue'
@@ -143,53 +139,26 @@ import OfflineBanner from './components/OfflineBanner.vue'
 import LevelResult from './components/LevelResult.vue'
 import CharacterModelSwitcher from './components/CharacterModelSwitcher.vue'
 import MotionDebugPanel from './components/MotionDebugPanel.vue'
-import { SpeechSynthesisTTSProvider } from './providers/speech-synthesis-tts'
-import { RemoteTeacherProvider } from './providers/remote-teacher'
 import type { ChatRequestBody, WordExplanation } from './client/types'
-import type { CEFRLevel } from '@ai-english-tutor/shared'
+import type { CEFRLevel, CharacterProvider } from '@ai-english-tutor/shared'
 import type { ScenarioPausedSnapshot } from './lib/scenario-paused-db'
+import { createMessageId } from './lib/message-utils.js'
+import { useCurrentHint } from './composables/useCurrentHint'
 
 const store = useTutorStore()
 
 /** 仅开发环境显示动作/表情调试面板 */
 const isDev = import.meta.env.DEV
 
-/** 取最近一条助教消息里的词汇例句 */
-const lastVocabularySentences = computed(() => {
-  for (let i = store.messages.length - 1; i >= 0; i--) {
-    const msg = store.messages[i]
-    if (msg.role === 'assistant' && msg.vocabularySentences && msg.vocabularySentences.length > 0) {
-      return msg.vocabularySentences
-    }
-  }
-  return undefined
-})
-
-/** 取最近一条助教消息里的学生回复提示（用于 💡 提示，主要来源） */
-const lastStudentReplyHints = computed(() => {
-  for (let i = store.messages.length - 1; i >= 0; i--) {
-    const msg = store.messages[i]
-    if (msg.role === 'assistant' && msg.studentReplyHints && msg.studentReplyHints.length > 0) {
-      return msg.studentReplyHints
-    }
-  }
-  return undefined
-})
-
-/** 取最近一条助教消息里的词汇列表（在没有例句时使用） */
-const lastVocabulary = computed(() => {
-  for (let i = store.messages.length - 1; i >= 0; i--) {
-    const msg = store.messages[i]
-    if (msg.role === 'assistant' && msg.vocabulary && msg.vocabulary.length > 0) {
-      return msg.vocabulary
-    }
-  }
-  return undefined
-})
-
-const showSvg = ref(false)
 const showCharacterCanvas = ref(false)
 const characterCanvas = ref<HTMLCanvasElement | null>(null)
+
+// --- 建议话术（💡 提示） ---
+const { suggestedPhrase } = useCurrentHint({
+  messages: computed(() => store.messages),
+  targetWords: computed(() => store.currentScenario?.targetWords),
+  wordsLearned: computed(() => store.currentScenario?.wordsLearned),
+})
 
 // 场景状态
 const availableScenarios = ref<Array<{ id: string; name: string; nameEn: string; icon: string }>>([])
@@ -223,7 +192,13 @@ const pendingTargetLevel = ref<CEFRLevel | undefined>(undefined)
 let _learnWords: ((words: string[]) => Promise<void>) | null = null
 
 // 后端通信 — 必须先初始化（会从环境变量设置 store.ttsSource）
+// 角色 Provider 响应式引用：前置声明，供 useTutorClient / useAudioPlayback /
+// useAudioRecorder 共享；useCharacterProvider 在 init/切换时写入实例。
+// Provider 实例不再经过 Pinia store 传递。
+const characterProvider = shallowRef<CharacterProvider | null>(null)
+
 const { client } = useTutorClient({
+  characterProvider,
   onLearnWords: (words) => { _learnWords?.(words) },
 })
 
@@ -231,11 +206,14 @@ const { client } = useTutorClient({
 const { learnWords } = useVocabSync(client)
 _learnWords = learnWords
 
-const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client)
+const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client, characterProvider)
 // 从 /api/config 加载 ASR/TTS 运行时配置。
-const { asrProvider, ttsProvider, voiceStyleSelectable } = useASRConfig()
-const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value)
-const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client)
+const { asrProvider, voiceStyleSelectable } = useASRConfig()
+const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value, characterProvider)
+const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client, characterProvider)
+
+// 向深层组件提供 character provider（避免通过 Pinia store 传递实例）
+provide('characterProvider', characterProvider)
 
 // --- 辅助函数 ---
 async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) {
@@ -252,23 +230,12 @@ async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatReq
 }
 
 onMounted(async () => {
-  // 创建远程教师 Provider
-  const teacher = new RemoteTeacherProvider(client)
-
   // 与加载动画并行开始加载角色 Provider。
-  // 测试时注掉 SVG 过渡动画，让 Live2D 直接显示。
   const characterLoad = initCharacter()
   await characterLoad
 
   // 角色 Provider 已就绪；显示画布。
   showCharacterCanvas.value = true
-
-  // 设置 Provider（角色已由可组合函数设置）
-  store.ttsProvider = new SpeechSynthesisTTSProvider()
-  store.teacherProvider = teacher
-
-  // SVG 淡出（已注掉）
-  // showSvg.value = false
 
   // 如果是回头用户，恢复已确认等级
   const confirmedLevel = localStorage.getItem('tutor_level_confirmed')
@@ -483,7 +450,7 @@ async function sendText(text: string) {
     console.error('[App] sendText failed:', err)
     store.isThinking = false
     store.messages.push({
-      id: `msg-${Date.now()}`,
+      id: createMessageId(),
       role: 'assistant',
       text: err instanceof Error ? err.message : '发送失败，请重试',
       timestamp: Date.now(),

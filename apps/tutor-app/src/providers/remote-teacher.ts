@@ -4,7 +4,7 @@ import type { TutorClient } from '../client/TutorClient'
 /**
  * 远程 AI 教师 Provider —— 与 tutor-server 后端通信。
  *
- * 实现现有的 AITeacherProvider 接口，可在本地（PresetTeacherProvider）与远程后端之间无缝切换。
+ * 实现 AITeacherProvider 接口，用于角色点击身体时的“帮我回答”等非流式交互。
  */
 export class RemoteTeacherProvider implements AITeacherProvider {
   constructor(private client: TutorClient) {}

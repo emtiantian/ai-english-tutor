@@ -1,4 +1,6 @@
 import { onUnmounted, watch } from 'vue'
+import type { Ref } from 'vue'
+import type { CharacterProvider } from '@ai-english-tutor/shared'
 import type { TutorClient } from '../client/TutorClient'
 import { useTutorStore } from '../stores/tutor'
 import { AudioPlayer } from '../audio/player'
@@ -6,7 +8,10 @@ import { AudioPlayer } from '../audio/player'
 /**
  * 管理 AudioPlayer 生命周期，并将 TutorClient SSE 流与播放器事件连接起来的 composable。
  */
-export function useAudioPlayback(client: TutorClient) {
+export function useAudioPlayback(
+  client: TutorClient,
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null,
+) {
   const store = useTutorStore()
   const audioPlayer = new AudioPlayer(store.ttsSource)
 
@@ -20,11 +25,26 @@ export function useAudioPlayback(client: TutorClient) {
     { immediate: true },
   )
 
-  // 将播放器事件连接到客户端事件
-  audioPlayer.onStart = () => client.emit('tts.start', { text: '', source: store.ttsSource })
-  audioPlayer.onEnd = () => client.emit('tts.end', { source: store.ttsSource })
+  // 将播放器事件连接到状态与角色 provider。
+  // AudioPlayer.onStart/onEnd/onVolume 是音频生命周期的唯一来源
+  // （local/remote TTS、重听都走这里），因此 isPlaying、setSpeaking、
+  // setMouthOpen、延迟显示文本统一在此驱动，不再走 tts.start/tts.end 事件链。
+  const getProvider = () => (characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider)
+
+  audioPlayer.onStart = () => {
+    store.isPlaying = true
+    getProvider()?.setSpeaking?.(true)
+  }
+  audioPlayer.onEnd = () => {
+    store.isPlaying = false
+    getProvider()?.setSpeaking?.(false)
+    // 如果开关关闭，语音结束后显示延迟的文本
+    if (!store.showTextImmediately) {
+      store.showDelayedMessage()
+    }
+  }
   audioPlayer.onVolume = (volume) => {
-    store.characterProvider?.setMouthOpen(volume)
+    getProvider()?.setMouthOpen?.(volume)
   }
 
   // 将远程音频片段连接到播放器

@@ -1,4 +1,5 @@
 import type { SpeakOptions, TTSSource } from '@ai-english-tutor/shared'
+import { base64ToArrayBuffer, createVolumeMeter } from './utils.js'
 
 export type { TTSSource }
 
@@ -28,7 +29,7 @@ export class AudioPlayer {
   private _onStart?: () => void
   private _onEnd?: () => void
   private _onVolume?: (volume: number) => void
-  private volumeInterval: ReturnType<typeof setInterval> | null = null
+  private volumeMeterCleanup: (() => void) | null = null
   /** AudioContext 是否已通过用户手势解锁（iOS 要求） */
   private audioUnlocked = false
   /** 为 iOS 异步加载缓存的语音列表 */
@@ -167,23 +168,11 @@ export class AudioPlayer {
       const source = this.audioContext.createBufferSource()
       source.buffer = audioBuffer
 
-      // 创建 AnalyserNode 用于实时音量检测（口型同步）
-      const analyser = this.audioContext.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-      analyser.connect(this.audioContext.destination)
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-
-      // 定期读取音量
-      this.volumeInterval = setInterval(() => {
-        if (!analyser) return
-        analyser.getByteFrequencyData(dataArray)
-        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-        // 放大 1.8 倍让口型更明显，clamp 到 [0, 1]
-        const volume = Math.min(average / 128 * 1.8, 1)
+      // 音量检测（口型同步）+ 输出到扬声器
+      source.connect(this.audioContext.destination)
+      this.volumeMeterCleanup = createVolumeMeter(source, (volume) => {
         this._onVolume?.(volume)
-      }, 50) // 20fps
+      }, { multiplier: 1.8 })
 
       source.onended = () => {
         this.stopVolumeDetection()
@@ -253,28 +242,18 @@ export class AudioPlayer {
   // --- 音量检测（用于口型同步） ---
 
   private stopVolumeDetection(): void {
-    if (this.volumeInterval) {
-      clearInterval(this.volumeInterval)
-      this.volumeInterval = null
-    }
+    this.volumeMeterCleanup?.()
+    this.volumeMeterCleanup = null
   }
 
   /** 本地 TTS 没有真实音频流，用随机脉冲模拟嘴型 */
   private startLocalVolumeSimulation(): void {
     this.stopVolumeDetection()
-    this.volumeInterval = setInterval(() => {
+    const interval = setInterval(() => {
       // 生成 0.15~0.85 的随机音量，模拟说话节奏（口型更大）
       const volume = Math.random() * 0.7 + 0.15
       this._onVolume?.(volume)
     }, 80)
+    this.volumeMeterCleanup = () => clearInterval(interval)
   }
-}
-
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes.buffer
 }

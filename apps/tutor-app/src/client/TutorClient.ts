@@ -222,8 +222,8 @@ export class TutorClient {
           // - vocab.new：抽出回复里的生词，供词汇面板/同步使用
           if (eventName === 'teacher.response') {
             this.emit('message.assistant', data)
-            // 注：state.idle 不再在这里自动触发，改为在 tts.start 时触发
-            // 这样 "加载中" 状态会持续到语音开始播放
+            // isThinking 的重置由 useTutorClient 在 teacher.response 时显式完成，
+            // 不再依赖 state.idle / tts 事件（二者已从事件链中移除）。
             if (data.vocabulary?.length) {
               this.emit('vocab.new', { words: data.vocabulary })
             }

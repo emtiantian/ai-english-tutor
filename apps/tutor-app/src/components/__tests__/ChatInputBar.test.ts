@@ -224,52 +224,20 @@ describe('ChatInputBar', () => {
       wordsLearned: [],
     }
 
-    it('优先用 studentReplyHints', () => {
+    it('显示传入的 suggestedPhrase', () => {
       const wrapper = mountComponent({
         scenario: SCENARIO,
-        studentReplyHints: ['Hi, could I have a coffee please?'],
-        vocabularySentences: ['You can say hello when you meet a friend.'],
+        suggestedPhrase: 'Hi, could I have a coffee please?',
       })
 
       const hint = wrapper.find('.suggested-phrase')
       expect(hint.exists()).toBe(true)
       expect(hint.text()).toContain('Hi, could I have a coffee please?')
-      expect(hint.text()).not.toContain('hello when you meet')
     })
 
-    it('没有 hints 时退化到 vocabularySentences', () => {
-      const wrapper = mountComponent({
-        scenario: SCENARIO,
-        vocabularySentences: ['Coffee is delicious.'],
-      })
-
-      const hint = wrapper.find('.suggested-phrase')
-      expect(hint.exists()).toBe(true)
-      expect(hint.text()).toContain('Coffee is delicious.')
-    })
-
-    it('hints 与 sentences 都没有时退化到 lastVocabulary', () => {
-      const wrapper = mountComponent({
-        scenario: SCENARIO,
-        lastVocabulary: ['coffee', 'tea'],
-      })
-
-      const hint = wrapper.find('.suggested-phrase')
-      expect(hint.exists()).toBe(true)
-      expect(hint.text()).toContain('coffee, tea')
-    })
-
-    it('hints 中包含未掌握的目标词时优先选中该条', () => {
-      const wrapper = mountComponent({
-        scenario: { ...SCENARIO, wordsLearned: ['coffee'] }, // coffee 已学
-        studentReplyHints: [
-          'Coffee was great, thanks.', // 含已学词
-          'Could I have some tea, please?', // 含未学词 tea + please
-        ],
-      })
-
-      // 应优先选第二条（含未学词）
-      expect(wrapper.find('.suggested-phrase').text()).toContain('tea')
+    it('没有 suggestedPhrase 时不显示提示', () => {
+      const wrapper = mountComponent({ scenario: SCENARIO })
+      expect(wrapper.find('.suggested-phrase').exists()).toBe(false)
     })
   })
 

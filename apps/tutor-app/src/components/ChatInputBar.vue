@@ -141,7 +141,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { ScenarioProgress } from '../client/types'
-import { pickBestStudentHint } from '../lib/hint-picker'
 import ScenarioStatusStrip from './ScenarioStatusStrip.vue'
 import TargetWordsPanel from './TargetWordsPanel.vue'
 import SwitchScenarioConfirm from './SwitchScenarioConfirm.vue'
@@ -151,11 +150,8 @@ const props = defineProps<{
   isEncoding: boolean
   recordingDuration: number
   scenario?: ScenarioProgress | null
-  /** 💡 提示的主要来源：学习者口吻的下一句回复建议 */
-  studentReplyHints?: string[]
-  /** 没有回复提示时 💡 提示的兜底：教学例句 */
-  vocabularySentences?: string[]
-  lastVocabulary?: string[]
+  /** 💡 提示 */
+  suggestedPhrase?: string
   recordError?: string | null
 }>()
 
@@ -251,36 +247,8 @@ function sendText() {
 }
 
 // --- 建议话术（💡 提示） ---
-const suggestedPhrase = computed(() => {
-  const hintOptions = {
-    targetWords: props.scenario?.targetWords,
-    wordsLearned: props.scenario?.wordsLearned,
-  }
-
-  // 主源：LLM 给的"学生下一句"建议（学生口吻、贴合当前对话）
-  const hints = props.studentReplyHints
-  if (hints && hints.length > 0) {
-    const picked = pickBestStudentHint(hints, hintOptions)
-    if (picked) return picked
-  }
-
-  // 退化 1：LLM 没给 reply hints，但给了 vocabularySentences（教学例句）→ 顶上用
-  const sentences = props.vocabularySentences
-  if (sentences && sentences.length > 0) {
-    const picked = pickBestStudentHint(sentences, hintOptions)
-    if (picked) return picked
-  }
-
-  // 退化 2：连例句都没有，但有 vocabulary 词列表 → 显示词
-  const vocab = props.lastVocabulary
-  if (vocab && vocab.length > 0) return vocab.join(', ')
-
-  // 退化 3：什么都没有 → 隐藏（v-if 自动处理）
-  return undefined
-})
-
 const inputPlaceholder = computed(() => {
-  if (props.scenario && suggestedPhrase.value) {
+  if (props.scenario && props.suggestedPhrase) {
     return '输入你的回复...'
   }
   return '输入英文...'

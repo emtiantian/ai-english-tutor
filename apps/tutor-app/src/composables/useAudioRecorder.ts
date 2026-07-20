@@ -1,11 +1,14 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, type Ref } from 'vue'
 import type { TutorClient } from '../client/TutorClient'
+import type { CharacterProvider } from '@ai-english-tutor/shared'
 import { useTutorStore } from '../stores/tutor'
 import { AudioRecorder } from '../audio/recorder'
 import { useAudioEncoder } from './useAudioEncoder'
 import { isBrowserASRSupported, recognizeSpeech } from '../audio/browser-asr'
 import type { ASRProvider } from './useASRConfig'
 import type { ChatRequestBody, ChatResponse } from '../client/types'
+import { blobToBase64, decodeToMonoPcm } from '../audio/utils.js'
+import { createMessageId } from '../lib/message-utils.js'
 
 /**
  * 管理录音生命周期的 composable，
@@ -23,9 +26,14 @@ export function useAudioRecorder(
   client: TutorClient,
   sendToBackend: (payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) => Promise<ChatResponse>,
   asrProvider: () => ASRProvider = () => 'xiaomi',
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null,
 ) {
   const store = useTutorStore()
   const { isEncoding, encode, terminate } = useAudioEncoder()
+
+  // 读取当前角色 provider（录音音量驱动口型 / 结束时复位）
+  const getProvider = () =>
+    characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider
 
   const isRecording = ref(false)
   const recordingDuration = ref(0)
@@ -72,7 +80,7 @@ export function useAudioRecorder(
         console.error('[useAudioRecorder] Browser ASR failed:', err)
         store.isThinking = false
         store.messages.push({
-          id: `msg-${Date.now()}`,
+          id: createMessageId(),
           role: 'assistant',
           text: `⚠️ 语音识别失败: ${err instanceof Error ? err.message : '未知错误'}`,
           timestamp: Date.now(),
@@ -81,7 +89,7 @@ export function useAudioRecorder(
         stopTimer()
         isRecording.value = false
         browserASRAbortController = null
-        store.characterProvider?.setMouthOpen(0)
+        getProvider()?.setMouthOpen(0)
       }
       return
     }
@@ -89,7 +97,7 @@ export function useAudioRecorder(
     // ── 云端 ASR 路径（基于音频）──
     try {
       recorder = new AudioRecorder({
-        onVolume: (volume) => store.characterProvider?.setMouthOpen(volume),
+        onVolume: (volume) => getProvider()?.setMouthOpen(volume),
       })
 
       await recorder.start()
@@ -138,7 +146,7 @@ export function useAudioRecorder(
       stopTimer()
       isRecording.value = false
       client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: true })
-      store.characterProvider?.setMouthOpen(0)
+      getProvider()?.setMouthOpen(0)
       return
     }
 
@@ -184,13 +192,13 @@ export function useAudioRecorder(
       store.isThinking = false
       // 向用户显示错误
       store.messages.push({
-        id: `msg-${Date.now()}`,
+        id: createMessageId(),
         role: 'assistant',
         text: `⚠️ 语音处理失败: ${err instanceof Error ? err.message : '未知错误'}`,
         timestamp: Date.now(),
       })
     } finally {
-      store.characterProvider?.setMouthOpen(0)
+      getProvider()?.setMouthOpen(0)
     }
   }
 
@@ -206,7 +214,7 @@ export function useAudioRecorder(
       isRecording.value = false
       recordingDuration.value = 0
       client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: true })
-      store.characterProvider?.setMouthOpen(0)
+      getProvider()?.setMouthOpen(0)
       return
     }
 
@@ -221,7 +229,7 @@ export function useAudioRecorder(
       isRecording.value = false
       recordingDuration.value = 0
       recorder = null
-      store.characterProvider?.setMouthOpen(0)
+      getProvider()?.setMouthOpen(0)
     }
   }
 
@@ -235,52 +243,4 @@ export function useAudioRecorder(
   })
 
   return { isRecording, isEncoding, recordingDuration, requestType, startRecording, stopRecording, cancelRecording }
-}
-
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const result = reader.result as string
-      resolve(result.split(',')[1])
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
-
-/**
- * 在主线程上将音频 Blob 解码为单声道 PCM 采样。
- * 异步 Web Audio API 在浏览器的音频线程中运行，
- * 因此不会像 MP3 编码循环那样严重阻塞 JavaScript 事件循环。
- */
-async function decodeToMonoPcm(
-  blob: Blob,
-  signal?: AbortSignal,
-): Promise<{ samples: Float32Array; sampleRate: number }> {
-  const audioContext = new AudioContext()
-  let onAbort: (() => void) | undefined
-  try {
-    if (signal?.aborted) {
-      throw new Error('AbortError')
-    }
-
-    onAbort = () => {
-      // 解码时关闭上下文应会使 decodeAudioData 拒绝，
-      // 从而防止 iOS Safari 上 AudioContext 泄漏。
-      audioContext.close().catch(() => {})
-    }
-    signal?.addEventListener('abort', onAbort, { once: true })
-
-    const arrayBuffer = await blob.arrayBuffer()
-    const decoded = await audioContext.decodeAudioData(arrayBuffer)
-    const channelData = decoded.getChannelData(0)
-    // 复制到新的 Float32Array，以便将底层 buffer 转移给 worker。
-    return { samples: new Float32Array(channelData), sampleRate: decoded.sampleRate }
-  } finally {
-    if (onAbort) {
-      signal?.removeEventListener('abort', onAbort)
-    }
-    await audioContext.close()
-  }
 }

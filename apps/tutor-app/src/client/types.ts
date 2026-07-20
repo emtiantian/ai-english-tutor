@@ -27,7 +27,6 @@ export interface TutorEventMap {
 
   // AI 状态
   'state.thinking': void
-  'state.idle': void
 
   // SSE 原始事件
   'teacher.response': TeachingResponse
@@ -38,11 +37,6 @@ export interface TutorEventMap {
   'recording.start': void
   'recording.stop': { durationMs: number; cancelled: boolean }
   'recording.volume': { volume: number }
-
-  // TTS 语音合成
-  'tts.start': { text: string; source: 'remote' | 'local' }
-  'tts.end': { source: 'remote' | 'local' }
-
 
   // 词汇
   'vocab.new': { words: string[] }

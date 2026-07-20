@@ -1,3 +1,5 @@
+import { resolveRecorderMimeType, createVolumeMeter } from './utils.js'
+
 export interface AudioBlob {
   blob: Blob
   mimeType: string
@@ -21,8 +23,7 @@ export class AudioRecorder {
   private audioChunks: Blob[] = []
   private stream: MediaStream | null = null
   private audioContext: AudioContext | null = null
-  private analyser: AnalyserNode | null = null
-  private volumeInterval: ReturnType<typeof setInterval> | null = null
+  private volumeMeterCleanup: (() => void) | null = null
   private startTime = 0
   private maxDurationTimer: ReturnType<typeof setTimeout> | null = null
   private pendingStop: { resolve: (value: AudioBlob) => void; reject: (reason?: unknown) => void } | null = null
@@ -49,7 +50,7 @@ export class AudioRecorder {
     })
 
     // 2. 创建兼容 Safari 的 mimeType 的 MediaRecorder
-    const finalMimeType = this.resolveMimeType()
+    const finalMimeType = resolveRecorderMimeType()
 
     this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: finalMimeType })
     this.audioChunks = []
@@ -125,50 +126,23 @@ export class AudioRecorder {
 
     this.audioContext = new AudioContext()
     const source = this.audioContext.createMediaStreamSource(this.stream)
-    this.analyser = this.audioContext.createAnalyser()
-    this.analyser.fftSize = 256
-    source.connect(this.analyser)
-
-    const dataArray = new Uint8Array(this.analyser.frequencyBinCount)
-
-    this.volumeInterval = setInterval(() => {
-      if (!this.analyser) return
-      this.analyser.getByteFrequencyData(dataArray)
-      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-      // 放大 1.8 倍让口型更明显
-      const volume = Math.min(average / 128 * 1.8, 1)
+    this.volumeMeterCleanup = createVolumeMeter(source, (volume) => {
       this.options.onVolume?.(volume)
-    }, 50) // 20fps
-  }
-
-  /**
-   * 解析录音最佳支持的 mimeType。
-   * Chrome/Firefox：audio/webm;codecs=opus
-   * Safari：audio/mp4
-   */
-  private resolveMimeType(): string {
-    const candidates = [
-      'audio/webm;codecs=opus',
-      'audio/mp4',
-      'audio/webm',
-      '',
-    ]
-    return candidates.find((type) => !type || MediaRecorder.isTypeSupported(type)) ?? ''
+    })
   }
 
   private cleanup(): void {
     this.stream?.getTracks().forEach((t) => t.stop())
     this.stream = null
+    this.volumeMeterCleanup?.()
+    this.volumeMeterCleanup = null
     this.audioContext?.close()
     this.audioContext = null
-    this.analyser = null
     this.mediaRecorder = null
   }
 
   private clearTimers(): void {
-    if (this.volumeInterval) clearInterval(this.volumeInterval)
     if (this.maxDurationTimer) clearTimeout(this.maxDurationTimer)
-    this.volumeInterval = null
     this.maxDurationTimer = null
   }
 }

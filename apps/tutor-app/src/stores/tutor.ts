@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef, computed } from 'vue'
-import type { CharacterProvider, TTSProvider, AITeacherProvider, TTSSource, CEFRLevel } from '@ai-english-tutor/shared'
+import { ref, computed } from 'vue'
+import type { TTSSource, CEFRLevel } from '@ai-english-tutor/shared'
 import type { ScenarioProgress, UserScenarioProgress } from '../client/types'
 import {
   scenarioPausedDB,
   type ScenarioPausedSnapshot,
 } from '../lib/scenario-paused-db'
+import { createMessageId } from '../lib/message-utils.js'
+import { computeCoverageRate } from '../lib/scenario-utils.js'
 
 export type AppPhase = 'loading' | 'ready' | 'assessing' | 'assess-result' | 'scenario-select' | 'teaching' | 'scenario-complete'
 
@@ -35,14 +37,6 @@ export const useTutorStore = defineStore('tutor', () => {
   // 各阶段对应组件：scenario-select=ScenarioPicker / teaching=ChatMessageList+ChatInputBar
   //   / scenario-complete=ScenarioComplete / assess-result=LevelResult
   const phase = ref<AppPhase>('loading')
-  // Provider 实例包装了 WebGL / Cubism / 音频对象。它们必须用 shallowRef 持有，
-  // 而不是 ref：深层 ref 会代理整个对象图（Live2D 模型、它的 Map 和 CubismMotionManager），
-  // 通过该 Proxy 调用 playMotion/setExpression 会静默无操作。shallowRef 让 .value 保持原始实例，
-  // 同时仍能对 Provider 替换（模型切换）作出响应。
-  const characterProvider = shallowRef<CharacterProvider | null>(null)
-  const ttsProvider = shallowRef<TTSProvider | null>(null)
-  const teacherProvider = shallowRef<AITeacherProvider | null>(null)
-
   const isConnected = ref(false)
   const isThinking = ref(false)
   const isPlaying = ref(false)
@@ -135,19 +129,16 @@ export const useTutorStore = defineStore('tutor', () => {
   const coverageRate = computed<number>(() => {
     const sc = currentScenario.value
     if (!sc) return 0
-    if (typeof sc.coverageRate === 'number') return sc.coverageRate
-    if (!sc.targetWordsTotal) return 0
-    return sc.wordsLearned.length / sc.targetWordsTotal
+    return computeCoverageRate(sc.wordsLearned, sc.targetWordsTotal, sc.coverageRate)
   })
 
   // === 文字显示时机开关 ===
   const showTextImmediately = ref(true)
-  const delayedText = ref('')
 
   // === 带副作用的操作 ===
   function addUserMessage(text: string) {
     messages.value.push({
-      id: `msg-${Date.now()}`,
+      id: createMessageId(),
       role: 'user',
       text,
       timestamp: Date.now(),
@@ -157,7 +148,7 @@ export const useTutorStore = defineStore('tutor', () => {
 
   function startAssistantStream() {
     const msg: ChatMessage = {
-      id: `msg-${Date.now()}`,
+      id: createMessageId(),
       role: 'assistant',
       text: '',
       isStreaming: true,
@@ -188,11 +179,10 @@ export const useTutorStore = defineStore('tutor', () => {
       lastMsg.scenario = scenarioSnapshot
       if (!showTextImmediately.value) {
         lastMsg.visible = false
-        delayedText.value = response.text
       }
     } else {
       messages.value.push({
-        id: `msg-${Date.now()}`,
+        id: createMessageId(),
         role: 'assistant',
         text: showTextImmediately.value ? response.text : '',
         textZh: response.textZh,
@@ -204,23 +194,17 @@ export const useTutorStore = defineStore('tutor', () => {
         scenario: scenarioSnapshot,
         timestamp: Date.now(),
       })
-      if (!showTextImmediately.value) {
-        delayedText.value = response.text
-      }
     }
   }
 
   function showDelayedMessage() {
-    if (!delayedText.value) return
     for (let i = messages.value.length - 1; i >= 0; i--) {
       const msg = messages.value[i]
       if (msg.role === 'assistant' && msg.visible === false) {
-        msg.text = delayedText.value
         msg.visible = true
         break
       }
     }
-    delayedText.value = ''
   }
 
   function setShowTextImmediately(value: boolean) {
@@ -454,9 +438,6 @@ export const useTutorStore = defineStore('tutor', () => {
   return {
     // 状态（refs 在 Pinia 中可直接修改）
     phase,
-    characterProvider,
-    ttsProvider,
-    teacherProvider,
     isConnected,
     isThinking,
     isPlaying,
@@ -468,7 +449,6 @@ export const useTutorStore = defineStore('tutor', () => {
     connectionId,
     // 文字显示时机
     showTextImmediately,
-    delayedText,
     // 场景状态
     currentScenario,
     // v2：场景重新设计

@@ -1,10 +1,11 @@
-import { onUnmounted, ref, type Ref } from 'vue'
+import { onUnmounted, ref, computed, type Ref } from 'vue'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
 import { createCharacterProviderSafe, type CharacterProviderType } from '../providers/factory'
+import { RemoteTeacherProvider } from '../providers/remote-teacher'
 import { useTutorStore } from '../stores/tutor'
 import type { TutorClient } from '../client/TutorClient'
 import { getLive2DModelId, setLive2DModelId } from '../lib/live2d-model-prefs'
-import { pickBestStudentHint } from '../lib/hint-picker'
+import { useCurrentHint } from './useCurrentHint'
 
 /** 角色被点击、且 LLM 没有给出 reply hints 时的趣味兜底文案。 */
 const TAP_BODY_FALLBACKS = [
@@ -30,13 +31,29 @@ function getTapFallbackText(): string {
  * 当 providerType='live2d' 时，从 localStorage / VITE_LIVE2D_MODEL_ID 读取模型 ID，
  * 并提供 switchLive2DModel(id) 在运行时切换。
  */
-export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, client: TutorClient) {
+export function useCharacterProvider(
+  canvasRef: Ref<HTMLCanvasElement | null>,
+  client: TutorClient,
+  /** 外部传入的响应式引用，init/切换模型时写入新实例。
+   *  Provider 不再放进 Pinia store，由 App.vue 前置声明并分发给各 composable。 */
+  providerRef: Ref<CharacterProvider | null>,
+) {
   const store = useTutorStore()
   const providerType: CharacterProviderType =
     (import.meta.env.VITE_CHARACTER_PROVIDER as CharacterProviderType) ?? 'live2d'
 
   let currentProvider: CharacterProvider | null = null
   let eventUnsubscribers: (() => void)[] = []
+
+  // 点击身体时代替用户发言的远程教师 Provider
+  const teacherProvider = new RemoteTeacherProvider(client)
+
+  // 当前最佳提示（用于点击角色身体时代替用户回答）
+  const { suggestedPhrase: currentHint } = useCurrentHint({
+    messages: computed(() => store.messages),
+    targetWords: computed(() => store.currentScenario?.targetWords),
+    wordsLearned: computed(() => store.currentScenario?.wordsLearned),
+  })
 
   /** 当前生效的 Live2D 模型 ID(响应式,UI 可以绑定) */
   const currentLive2DModelId = ref<string>(getLive2DModelId())
@@ -60,20 +77,8 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
     // 当 LLM 提供了 studentReplyHints 时，点击角色会为用户说出最佳提示（“帮我回答”）。
     // 否则回退到一小套有趣、以学习为导向的彩蛋文案。
     provider.onTapBody?.(() => {
-      let replyText: string | undefined
-      for (let i = store.messages.length - 1; i >= 0; i--) {
-        const msg = store.messages[i]
-        if (msg.role === 'assistant' && msg.studentReplyHints && msg.studentReplyHints.length > 0) {
-          replyText = pickBestStudentHint(msg.studentReplyHints, {
-            targetWords: store.currentScenario?.targetWords,
-            wordsLearned: store.currentScenario?.wordsLearned,
-          })
-          break
-        }
-      }
-
-      const text = replyText ?? getTapFallbackText()
-      store.teacherProvider?.generateResponse({
+      const text = currentHint.value ?? getTapFallbackText()
+      teacherProvider.generateResponse({
         text,
         level: store.currentLevel ?? undefined,
       }).catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
@@ -91,18 +96,18 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
     if (!canvasRef.value) return
 
     try {
-      const provider = await buildProvider(currentLive2DModelId.value)
-      if (!provider) return
+      const instance = await buildProvider(currentLive2DModelId.value)
+      if (!instance) return
 
-      currentProvider = provider
-      store.characterProvider = provider
+      currentProvider = instance
+      providerRef.value = instance
       console.log(`[CharacterProvider] Initialized: ${providerType}` +
         (providerType === 'live2d' ? ` (model=${currentLive2DModelId.value})` : ''))
       // DEV 调试:window.__char 实时返回当前 provider(切模型后自动跟随),
       // 方便控制台逐个测动作:__char.playMotion('wave') / __char.playMotion('_3')(原始 key 直通)
       if (import.meta.env.DEV) {
         Object.defineProperty(window, '__char', {
-          get: () => store.characterProvider,
+          get: () => providerRef.value,
           configurable: true,
         })
       }
@@ -148,7 +153,7 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
       eventUnsubscribers = []
       previousProvider?.dispose()
       currentProvider = null
-      store.characterProvider = null
+      providerRef.value = null
 
       // 2. 持久化用户选择 + 用新 ID 重建
       setLive2DModelId(newModelId)
@@ -161,7 +166,7 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
       }
 
       currentProvider = next
-      store.characterProvider = next
+      providerRef.value = next
       console.log(`[CharacterProvider] Switched live2d model: ${previousModelId} → ${newModelId}`)
     } catch (err) {
       console.error(
@@ -175,7 +180,7 @@ export function useCharacterProvider(canvasRef: Ref<HTMLCanvasElement | null>, c
         const fallback = await buildProvider('hiyori')
         if (fallback) {
           currentProvider = fallback
-          store.characterProvider = fallback
+          providerRef.value = fallback
         }
       } catch (fallbackErr) {
         console.error('[CharacterProvider] Even hiyori fallback failed:', fallbackErr)
@@ -206,12 +211,6 @@ function wireCharacterEvents(provider: CharacterProvider, client: TutorClient): 
   const unsubs: (() => void)[] = []
 
   unsubs.push(
-    client.on('tts.start', () => {
-      provider.setSpeaking?.(true)
-    }),
-    client.on('tts.end', () => {
-      provider.setSpeaking?.(false)
-    }),
     client.on('recording.start', () => {
       provider.setListening?.(true)
     }),
@@ -221,15 +220,12 @@ function wireCharacterEvents(provider: CharacterProvider, client: TutorClient): 
     client.on('state.thinking', () => {
       provider.setThinking?.(true)
     }),
-    client.on('state.idle', () => {
-      provider.setThinking?.(false)
-      provider.setSpeaking?.(false)
-    }),
     client.on('error', () => {
       provider.onError?.()
     }),
     client.on('message.assistant', (response) => {
       provider.setListening?.(false)
+      provider.setThinking?.(false)
       if (response.expressionId) {
         provider.setEmotion?.(response.expressionId)
       }

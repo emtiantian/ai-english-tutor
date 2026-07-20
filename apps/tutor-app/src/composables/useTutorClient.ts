@@ -1,12 +1,17 @@
-import { onUnmounted } from 'vue'
+import { onUnmounted, unref } from 'vue'
+import type { Ref } from 'vue'
 import { TutorClient } from '../client/TutorClient'
 import { useTutorStore } from '../stores/tutor'
 import type { TeachingResponse } from '@ai-english-tutor/shared'
+import type { CharacterProvider } from '@ai-english-tutor/shared'
+import { createMessageId } from '../lib/message-utils.js'
 
 export interface TutorClientConfig {
   baseUrl?: string
   /** 将学会的单词持久化到 IndexedDB 的回调。由 SSE teacher.response 处理器调用。 */
   onLearnWords?: (words: string[]) => void
+  /** 角色 Provider 实例，用于触发动作/表情。 */
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null
 }
 
 /**
@@ -51,7 +56,7 @@ export function useTutorClient(config?: TutorClientConfig) {
       // 避免在短暂重连尝试期间刷屏。
       if (code === 'RECONNECT_EXHAUSTED') {
         store.messages.push({
-          id: `msg-${Date.now()}`,
+          id: createMessageId(),
           role: 'assistant',
           text: message || '连接已断开，请刷新页面重试',
           timestamp: Date.now(),
@@ -63,7 +68,6 @@ export function useTutorClient(config?: TutorClientConfig) {
   // --- AI 状态事件 ---
   unsubs.push(
     client.on('state.thinking', () => store.isThinking = true),
-    client.on('state.idle', () => store.isThinking = false),
   )
 
   // --- 消息事件 ---
@@ -97,39 +101,25 @@ export function useTutorClient(config?: TutorClientConfig) {
 
       store.finalizeStream(response)
 
-      // 回复已就绪；始终清除思考状态。空文本或
-      // TTS 失败不会触发 tts.start，因此仅依赖音频事件
-      // 可能让 isThinking 永远卡住。
+      // 回复已就绪；始终清除思考状态。
+      // isThinking 不依赖音频回调——空回复或 TTS 失败时音频事件可能不触发，
+      // 所以在这里显式重置，避免 UI 卡在“思考中”。
       store.isThinking = false
 
       // 触发角色动画
+      const provider = unref(config?.characterProvider)
       if (response.motionId) {
-        store.characterProvider?.playMotion(response.motionId)
+        provider?.playMotion?.(response.motionId)
       }
       if (response.expressionId) {
-        store.characterProvider?.setExpression(response.expressionId)
+        provider?.setExpression?.(response.expressionId)
       }
     }),
   )
 
-  // --- TTS 事件 ---
-  unsubs.push(
-    client.on('tts.start', () => {
-      store.isPlaying = true
-      // 保持思考状态关闭（已在 teacher.response 时重置）；这也覆盖
-      // 音频在响应处理器运行前就开始的竞态情况。
-      store.isThinking = false
-    }),
-    client.on('tts.end', () => {
-      store.isPlaying = false
-      // 兜底：TTS 结束时也确保 thinking 状态已关闭
-      store.isThinking = false
-      // 如果开关关闭，语音结束后显示延迟的文本
-      if (!store.showTextImmediately) {
-        store.showDelayedMessage()
-      }
-    }),
-  )
+  // 注：isPlaying / showDelayedMessage / setSpeaking 全部由 useAudioPlayback 统一驱动
+  // （AudioPlayer.onStart/onEnd/onVolume 是音频生命周期的唯一来源，覆盖 local/remote
+  // TTS 与重听）。此处不再监听 tts.start/tts.end，避免与播放器回调重复设置状态。
 
   // --- 清理 ---
   function unsubscribeAll() {

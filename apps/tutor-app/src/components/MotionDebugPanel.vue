@@ -83,16 +83,15 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
-import { AVAILABLE_MOTIONS } from '@ai-english-tutor/shared'
-import { useTutorStore } from '../stores/tutor'
+import { inject, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { AVAILABLE_MOTIONS, type CharacterProvider } from '@ai-english-tutor/shared'
 
 defineProps<{
   /** 教学态下右上有其他控件,下移避免重叠 */
   showAtLowerPosition?: boolean
 }>()
 
-const store = useTutorStore()
+const characterProvider = inject<Ref<CharacterProvider | null>>('characterProvider')
 
 /** Live2D provider 上的调试方法不在 CharacterProvider 接口里,用 loose 类型访问 */
 interface DebugProvider {
@@ -102,7 +101,7 @@ interface DebugProvider {
   setEmotion?: (id: string) => void
 }
 function provider(): DebugProvider | null {
-  return store.characterProvider as unknown as DebugProvider | null
+  return characterProvider?.value as unknown as DebugProvider | null
 }
 
 const semanticMotions = AVAILABLE_MOTIONS

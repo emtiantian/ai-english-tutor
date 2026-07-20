@@ -37,17 +37,18 @@ describe('AudioRecorder', () => {
     global.MediaRecorder.isTypeSupported = vi.fn().mockReturnValue(true)
 
     global.AudioContext = vi.fn(function () {
-      return {
-        createMediaStreamSource: vi.fn().mockReturnValue({
-          connect: vi.fn(),
-        }),
-        createAnalyser: vi.fn().mockReturnValue({
-          fftSize: 256,
-          frequencyBinCount: 128,
-          getByteFrequencyData: vi.fn(),
-        }),
-        close: vi.fn(),
-      }
+      const ctx: any = {}
+      ctx.createMediaStreamSource = vi.fn().mockReturnValue({
+        connect: vi.fn(),
+        context: ctx,
+      })
+      ctx.createAnalyser = vi.fn().mockReturnValue({
+        fftSize: 256,
+        frequencyBinCount: 128,
+        getByteFrequencyData: vi.fn(),
+      })
+      ctx.close = vi.fn()
+      return ctx
     }) as any
 
     recorder = new AudioRecorder()

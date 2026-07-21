@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: gateway/Dockerfile
+      network: host
       cache_from:
         - ai-english-tutor-gateway:latest
     ports:
@@ -37,6 +38,7 @@ services:
     build:
       context: .
       dockerfile: apps/tutor-app/Dockerfile
+      network: host
       cache_from:
         - ai-english-tutor-frontend:latest
       args:
@@ -61,6 +63,7 @@ services:
     build:
       context: .
       dockerfile: apps/tutor-server/Dockerfile
+      network: host
       cache_from:
         - ai-english-tutor-backend:latest
     # 所有运行时配置均来自 env_file；不在 environment 中硬编码，避免静默覆盖 .env。

@@ -309,8 +309,20 @@ deploy_services() {
   log_info "在服务器上构建并启动服务..."
   log_info "compose 文件: $(compose_files)"
   dc down
-  if ! dc_tty "up --build -d"; then
-    log_error "docker compose up --build 失败（build 或启动失败）"
+  # build 期走宿主机 mihomo 代理拉取海外源（Alpine/pypi 等）。
+  # 通过 --build-arg 注入 HTTP_PROXY/HTTPS_PROXY：docker 会自动将其作为环境变量传入每个 RUN，
+  # 仅作用于 build 容器（配合 build.network: host，127.0.0.1:7890 即宿主机 mihomo）。
+  # 运行时容器不携带代理变量，避免 healthcheck（busybox wget 不认 NO_PROXY）走无效代理，
+  # 也避免 Node.js 应用被 127.0.0.1:7890（bridge 容器内不可达）污染。
+  # 注意：不能用 ~/.docker/config.json 的 proxies，它会被注入到运行时容器。
+  # 代理地址可通过 BUILD_PROXY 环境变量覆盖。
+  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
+  if ! dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy}"; then
+    log_error "docker compose build 失败"
+    return 1
+  fi
+  if ! dc_tty "up -d"; then
+    log_error "docker compose up 失败（启动失败）"
     return 1
   fi
   log_info "服务已启动（后台），等待健康检查"

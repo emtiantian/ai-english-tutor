@@ -44,6 +44,8 @@ SYNC_COUNT=0
 
 ENABLE_WHISPER=false
 ENABLE_COSYVOICE=false
+# 由 deploy-to-server.sh 通过 --non-interactive-env 传入；自动化部署时基于远端现有 .env 非交互升级格式
+NONINTERACTIVE_ENV="${NONINTERACTIVE_ENV:-false}"
 
 EXISTING_ENV_FILE=""
 
@@ -127,6 +129,16 @@ configure_remote_env() {
       log_warn "拉取远端 .env 失败，将以内置默认值进行交互"
       EXISTING_ENV_FILE=""
     fi
+    if $NONINTERACTIVE_ENV; then
+      log_info "非交互模式：基于远端现有 .env 重新生成为新格式（保留生产值，补齐新字段）"
+      generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" true
+      validate_env "${LOCAL_ENV_TEMP}" || true
+      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
+      EXISTING_ENV_FILE=""
+      rm -f "${LOCAL_ENV_TEMP}"
+      return 0
+    fi
     local reconfigure=false
     if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_API_KEY=$' ${REMOTE_ENV_FILE}"; then
       log_warn "检测到 .env 中存在占位符或空 API Key"
@@ -147,6 +159,14 @@ configure_remote_env() {
     EXISTING_ENV_FILE=""
   else
     log_warn "服务器不存在 ${REMOTE_ENV_FILE}"
+    if $NONINTERACTIVE_ENV; then
+      log_info "非交互模式：从模板生成默认 .env（占位符需后续手动编辑 API Key）"
+      generate_env "${LOCAL_ENV_TEMP}" "" true
+      validate_env "${LOCAL_ENV_TEMP}" || true
+      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      rm -f "${LOCAL_ENV_TEMP}"
+      return 0
+    fi
     if prompt_yes_no "是否交互式创建 .env"; then
       generate_env "${LOCAL_ENV_TEMP}" "" false
       validate_env "${LOCAL_ENV_TEMP}" || true
@@ -288,7 +308,10 @@ deploy_services() {
   log_info "在服务器上构建并启动服务..."
   log_info "compose 文件: $(compose_files)"
   dc down
-  dc_tty "up --build -d"
+  if ! dc_tty "up --build -d"; then
+    log_error "docker compose up --build 失败（build 或启动失败）"
+    return 1
+  fi
   log_info "服务已启动（后台），等待健康检查"
 }
 
@@ -440,7 +463,13 @@ deploy_main() {
   sync_certs
   detect_compose_overlays
   ensure_whisper_model
-  deploy_services
+
+  if ! deploy_services; then
+    rollback
+    deploy_duration=$(($(date +%s) - start_time))
+    print_report "失败并已回滚" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
+    exit 1
+  fi
 
   if check_health; then
     wait_cosyvoice_healthy

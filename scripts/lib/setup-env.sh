@@ -77,11 +77,14 @@ resolve_value() {
   local default_value="$4"
   local env_value=""
 
-  eval "env_value=\"\${${env_name}:-}\""
-
-  if [ -n "${env_value}" ]; then
-    echo "${env_value}"
-    return
+  # 仅交互式生成时读进程环境变量；非交互式（自动化部署）忽略，
+  # 避免部署者本地 shell 中的 *_API_KEY 等环境变量污染生产 .env。
+  if [ "${GENERATE_NONINTERACTIVE:-false}" != "true" ]; then
+    eval "env_value=\"\${${env_name}:-}\""
+    if [ -n "${env_value}" ]; then
+      echo "${env_value}"
+      return
+    fi
   fi
 
   local existing_value
@@ -105,6 +108,9 @@ generate_env() {
   local output_file="$1"
   local existing_file="${2:-}"
   local noninteractive="${3:-false}"
+
+  # 暴露给 resolve_value：非交互模式下不读进程环境变量，避免部署者环境污染
+  GENERATE_NONINTERACTIVE="${noninteractive}"
 
   local timestamp
   timestamp=$(date +%Y%m%d-%H%M%S)

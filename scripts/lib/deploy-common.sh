@@ -32,6 +32,7 @@ RSYNC_EXCLUDES=(
   '.env'
   '.env.deploy.generated'
   '.env.deploy.existing'
+  '.env.last-known-good'
   'docs/superpowers'
 )
 

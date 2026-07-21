@@ -498,7 +498,11 @@ generate_env() {
   # ── 校验并备份 last-known-good ──
   if command -v validate_env >/dev/null 2>&1; then
     if validate_env "${output_file}"; then
-      cp "${output_file}" "$(dirname "${output_file}")/.env.last-known-good"
+      # 仅正式部署 .env（*/data/.env）才写 last-known-good 备份；
+      # 临时文件（如 .env.deploy.generated）跳过，避免含 key 的备份残留在仓库根
+      if ${is_deploy_env}; then
+        cp "${output_file}" "$(dirname "${output_file}")/.env.last-known-good"
+      fi
     else
       log_warn ".env 校验发现必填项缺失，已跳过 last-known-good 备份"
     fi

@@ -11,6 +11,9 @@ coverage/
 .env
 .env.local
 .env.*.local
+.env.last-known-good
+.env.deploy.generated
+.env.deploy.existing
 
 # Database files
 # 注意：写成 `data/*` 而非 `data/`，是为了让下面的 cosyvoice-spk2info 例外

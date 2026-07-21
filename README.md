@@ -181,20 +181,28 @@ docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml -f docker-c
 
 ### 自定义音色（CosyVoice spk2info）
 
-CosyVoice 默认提供四个内置音色（英文女 / 英文男 / 中文女 / 中文男），开箱即用。若需使用自定义音色：
+CosyVoice2-0.5B 预置音色表里只有 `EnglishTutor` 一个音色（开箱即用）。若需使用自定义音色：
 
-1. 把参考音频 `<spk_id>.wav` 放进 `data/cosyvoice-spk2info/`（如 `data/cosyvoice-spk2info/EnglishTutor.wav`）
+1. 把参考音频 `<spk_id>.wav` 放进 `data/cosyvoice-spk2info/`（如 `data/cosyvoice-spk2info/MyVoice.wav`）
 2. 运行生成脚本（需 GPU + `cosyvoice:local` 镜像）：
 
    ```bash
    pnpm build:cosyvoice-spk2info -- --spk-id <spk_id> --audio <wav路径>
    ```
 
-   脚本会调用 CosyVoice 容器提取音色特征，生成 `spk2info.pt`。
+   脚本会调用 CosyVoice 容器提取音色特征，生成 `<spk_id>.pt`。
 
-3. 在 `.env` 中设置 `COSYVOICE_SPK_ID=<spk_id>`，重启后端即可使用。
+3. 在 `.env` 中设置 `COSYVOICE_SPK_ID=<spk_id>`，重启 **cosyvoice 容器**即可使用：
 
-该目录通过 compose 只读挂载到容器；部署时把 `spk2info.pt` 和参考音频放到 `~/.ai-english-tutor/data/cosyvoice-spk2info/` 即可。
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml restart cosyvoice
+   ```
+
+   `server.py` 经 `scripts/cosyvoice-server-wrapper.py` 启动，会自动扫描挂载目录的 `*.pt` 合并加载到 `frontend.spk2info`，无需手工注入 modelscope 缓存。
+
+该目录通过 compose 只读挂载到容器 `/opt/CosyVoice/spk2info`；部署时把 `<spk_id>.pt` 放到 `~/.ai-english-tutor/data/cosyvoice-spk2info/` 即可，换机器随 `data/` 迁移。
+
+> 注：CosyVoice2-0.5B 的 PCM 采样率为 24000，需在 `.env` 设 `COSYVOICE_SAMPLE_RATE=24000`（默认 22050 是旧版 CosyVoice-300M-SFT 的值）。
 
 ### 开机自启（systemd）
 

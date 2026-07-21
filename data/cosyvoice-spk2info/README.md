@@ -29,7 +29,11 @@
 ## 挂载与部署
 
 - 该目录通过 `docker-compose.cosyvoice.yml` **只读挂载**到容器
-  `/opt/CosyVoice/spk2info`，CosyVoice server.py 启动时自动扫描加载。
+  `/opt/CosyVoice/spk2info`。
+- `server.py` 经 `scripts/cosyvoice-server-wrapper.py` 启动，启动时自动扫描本目录
+  `*.pt`，逐个 `torch.load` 后合并到 `cosyvoice.frontend.spk2info`。官方 server.py
+  原生只加载 `{model_dir}/spk2info.pt` 单文件，wrapper 补上了对挂载目录的扫描，
+  无需手工把音色注入 modelscope 缓存。
 - 部署时目录随 `AI_TUTOR_HOME/data` 一起走，不随代码 rsync——
   `scripts/deploy-to-server.sh` 的 rsync 排除规则已包含 `data/`，
   运行时数据不会反向覆盖服务器。

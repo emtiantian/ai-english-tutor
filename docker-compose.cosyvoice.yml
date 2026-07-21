@@ -15,6 +15,8 @@
 #     <root>/data/cosyvoice-spk2info -> /opt/CosyVoice/spk2info
 #       存放参考音频 (<spk_id>.wav) 与由 `pnpm build:cosyvoice-spk2info` 生成的
 #       spk2info.pt；换机器部署时随 AI_TUTOR_HOME/data 一起迁移，无需重训。
+#       server.py 经 wrapper（scripts/cosyvoice-server-wrapper.py）启动时自动扫描
+#       本目录 *.pt 合并加载到 frontend.spk2info，无需手工注入 modelscope 缓存。
 # - logging 限制单文件 50m × 5 份，避免长跑服务日志撑爆磁盘。
 # - healthcheck 用 POST /inference_sft 探测 FastAPI 是否就绪；
 #   模型加载约 90-120s，start_period 给到 120s。
@@ -29,10 +31,12 @@ services:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-models:/opt/CosyVoice/CosyVoice/pretrained_models
       # 自定义音色持久化目录（只读）：参考音频 + spk2info.pt，换机器随 data/ 迁移
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-spk2info:/opt/CosyVoice/spk2info:ro
+      # server.py 启动包装器（只读）：自动扫描上方 spk2info 目录，合并 *.pt 到 frontend.spk2info
+      - ./scripts/cosyvoice-server-wrapper.py:/opt/cosyvoice-scripts/server-wrapper.py:ro
     command:
       - bash
       - -c
-      - "cd /workspace/CosyVoice && python runtime/python/fastapi/server.py --port 50000 --model_dir iic/CosyVoice2-0.5B"
+      - "cd /workspace/CosyVoice && python /opt/cosyvoice-scripts/server-wrapper.py --port 50000 --model_dir iic/CosyVoice2-0.5B"
     deploy:
       resources:
         reservations:

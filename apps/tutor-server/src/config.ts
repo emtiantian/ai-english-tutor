@@ -2,6 +2,11 @@
  * 配置 - 加载环境变量并提供合理默认值
  *
  * 若存在 .env 文件则自动加载（无需额外依赖）。
+ *
+ * 环境变量优先级（从高到低）：
+ *   进程环境变量 > docker-compose env_file > .env 文件 > 本文件内置默认值
+ * 注意：docker-compose.yml 中 backend 的 `environment` 会静默覆盖 `.env` 里的同名变量，
+ *       因此所有可由用户配置的项都应交给 `env_file` 注入，不再在 `environment` 中硬编码。
  */
 import { config as loadEnv } from 'dotenv'
 import { resolve, dirname, join } from 'path'
@@ -186,9 +191,6 @@ export const config = {
   /** TTS 服务商：'browser' | 'xiaomi' | 'cosyvoice' | 'volcengine' */
   TTS_PROVIDER: process.env.TTS_PROVIDER ?? 'browser',
 
-  /** 默认 TTS 音色 */
-  TTS_VOICE: process.env.TTS_VOICE ?? 'alloy',
-
   /** TTS 音频格式：'mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm' */
   TTS_FORMAT: process.env.TTS_FORMAT ?? 'mp3',
 
@@ -209,8 +211,8 @@ export const config = {
   /** CosyVoice API 基础地址 */
   COSYVOICE_BASE_URL: process.env.COSYVOICE_BASE_URL ?? 'http://localhost:50000',
 
-  /** CosyVoice 默认说话人 ID：英文女 | 英文男 | 中文女 | 中文男 */
-  COSYVOICE_SPK_ID: process.env.COSYVOICE_SPK_ID ?? '英文女',
+  /** CosyVoice 默认说话人 ID：EnglishTutor 为 CosyVoice2-0.5B 预置音色 */
+  COSYVOICE_SPK_ID: process.env.COSYVOICE_SPK_ID ?? 'EnglishTutor',
 
   /** CosyVoice 语速：0.25 ~ 4.0（教学场景建议 ~0.9） */
   COSYVOICE_SPEED: parseFloat(process.env.COSYVOICE_SPEED ?? '0.9'),
@@ -220,7 +222,7 @@ export const config = {
    * CosyVoice-300M-SFT = 22050，CosyVoice2-0.5B = 24000。
    * 用于构建包裹服务端返回的无头 PCM 的 WAV 头。
    */
-  COSYVOICE_SAMPLE_RATE: parseInt(process.env.COSYVOICE_SAMPLE_RATE ?? '22050', 10),
+  COSYVOICE_SAMPLE_RATE: parseInt(process.env.COSYVOICE_SAMPLE_RATE ?? '24000', 10),
 
   /**
    * 后端启动时是否对 CosyVoice 做健康探测（默认 true）。

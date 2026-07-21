@@ -7,19 +7,24 @@
  * - App.vue（角色动画）
  */
 
-import type { TeachingResponse, CEFRLevel, WordExplanation, WordSense } from '@ai-english-tutor/shared'
+import type {
+  TeachingResponse,
+  CEFRLevel,
+  WordExplanation,
+  WordSense
+} from '@ai-english-tutor/shared'
 export type { TeachingResponse, CEFRLevel, WordExplanation, WordSense }
 
 export interface TutorEventMap {
   [key: string]: unknown
   [key: symbol]: unknown
   // 连接状态
-  'connected': void
-  'disconnected': { reason: string }
-  'reconnecting': { attempt: number; delayMs: number }
+  connected: void
+  disconnected: { reason: string }
+  reconnecting: { attempt: number; delayMs: number }
 
   // 服务端配置（连接时发送一次）
-  'config': { ttsSource: 'local' | 'remote' }
+  config: { ttsSource: 'local' | 'remote' }
 
   // 消息（用于 UI 聊天记录）
   'message.user': { text: string; sessionId?: string; isVoice: boolean }
@@ -42,8 +47,8 @@ export interface TutorEventMap {
   'vocab.new': { words: string[] }
 
   // 系统
-  'error': { code: string; message: string }
-  'heartbeat': { timestamp: number }
+  error: { code: string; message: string }
+  heartbeat: { timestamp: number }
 }
 
 export interface ChatRequestBody {

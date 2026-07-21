@@ -4,7 +4,7 @@ import { parseTeachingResponse } from '@/ai/parsers/teaching-response.js'
 describe('parseTeachingResponse', () => {
   it('parses valid JSON object directly', () => {
     const validJson = parseTeachingResponse(
-      '{"text":"Hello!","textZh":"你好！","vocabulary":["hello"],"vocabularySentences":["Hello there."],"studentReplyHints":["Hi, nice to meet you!"]}',
+      '{"text":"Hello!","textZh":"你好！","vocabulary":["hello"],"vocabularySentences":["Hello there."],"studentReplyHints":["Hi, nice to meet you!"]}'
     )
     expect(validJson.text).toBe('Hello!')
     expect(validJson.textZh).toBe('你好！')
@@ -17,7 +17,7 @@ describe('parseTeachingResponse', () => {
 
   it('parses JSON inside markdown code block', () => {
     const markdown = parseTeachingResponse(
-      'Here is the response:\n```json\n{"text":"Excellent work!","vocabulary":[]}\n```',
+      'Here is the response:\n```json\n{"text":"Excellent work!","vocabulary":[]}\n```'
     )
     expect(markdown.text).toBe('Excellent work!')
     expect(markdown.intent).toBe('praise')
@@ -43,7 +43,7 @@ describe('parseTeachingResponse', () => {
 
   it('filters non-string and empty vocabulary sentences', () => {
     const mixed = parseTeachingResponse(
-      '{"text":"Ok","vocabulary":["a","b"],"vocabularySentences":["Good sentence", 123, "", "Another"]}',
+      '{"text":"Ok","vocabulary":["a","b"],"vocabularySentences":["Good sentence", 123, "", "Another"]}'
     )
     expect(mixed.vocabulary).toEqual(['a', 'b'])
     expect(mixed.vocabularySentences).toEqual(['Good sentence', 'Another'])
@@ -51,7 +51,7 @@ describe('parseTeachingResponse', () => {
 
   it('filters non-string and empty student reply hints', () => {
     const hintsMixed = parseTeachingResponse(
-      '{"text":"Ok","studentReplyHints":["Hi there", "", null, 42, "Sure!"]}',
+      '{"text":"Ok","studentReplyHints":["Hi there", "", null, 42, "Sure!"]}'
     )
     expect(hintsMixed.studentReplyHints).toEqual(['Hi there', 'Sure!'])
   })
@@ -68,7 +68,7 @@ describe('parseTeachingResponse', () => {
 
   it('uses valid LLM motion/expression over analyzer', () => {
     const llmDriven = parseTeachingResponse(
-      '{"text":"What is your name?","motionId":"point","expressionId":"curious"}',
+      '{"text":"What is your name?","motionId":"point","expressionId":"curious"}'
     )
     expect(llmDriven.motionId).toBe('point')
     expect(llmDriven.expressionId).toBe('curious')
@@ -77,7 +77,7 @@ describe('parseTeachingResponse', () => {
 
   it('falls back to analyzer when LLM motion/expression is invalid', () => {
     const llmInvalid = parseTeachingResponse(
-      '{"text":"What is your name?","motionId":"backflip","expressionId":"angry"}',
+      '{"text":"What is your name?","motionId":"backflip","expressionId":"angry"}'
     )
     expect(llmInvalid.motionId).toBe('think')
     expect(llmInvalid.intent).toBe('question')

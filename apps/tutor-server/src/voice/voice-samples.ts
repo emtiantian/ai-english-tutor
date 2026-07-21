@@ -44,10 +44,7 @@ export async function saveVoiceSample(voiceDesign: string, audio: Buffer): Promi
   const hash = hashVoiceDesign(voiceDesign)
   const path = samplePath(hash)
   await fs.writeFile(path, audio)
-  logger.info(
-    { hash: hash.slice(0, 12), size: audio.length, path },
-    '[音色样本] 参考样本已保存',
-  )
+  logger.info({ hash: hash.slice(0, 12), size: audio.length, path }, '[音色样本] 参考样本已保存')
 }
 
 /**
@@ -58,10 +55,7 @@ export async function loadVoiceSample(voiceDesign: string): Promise<Buffer> {
   const hash = hashVoiceDesign(voiceDesign)
   const path = samplePath(hash)
   const buffer = await fs.readFile(path)
-  logger.debug(
-    { hash: hash.slice(0, 12), size: buffer.length },
-    '[音色样本] 已从磁盘加载参考样本',
-  )
+  logger.debug({ hash: hash.slice(0, 12), size: buffer.length }, '[音色样本] 已从磁盘加载参考样本')
   return buffer
 }
 
@@ -73,7 +67,7 @@ export async function loadVoiceSample(voiceDesign: string): Promise<Buffer> {
  */
 export async function getOrGenerateVoiceSample(
   voiceDesign: string,
-  generator: () => Promise<Buffer>,
+  generator: () => Promise<Buffer>
 ): Promise<string> {
   const hash = hashVoiceDesign(voiceDesign)
 
@@ -82,10 +76,7 @@ export async function getOrGenerateVoiceSample(
     return buffer.toString('base64')
   }
 
-  logger.info(
-    { hash: hash.slice(0, 12) },
-    '[音色样本] 未找到参考样本，通过 voicedesign 标定...',
-  )
+  logger.info({ hash: hash.slice(0, 12) }, '[音色样本] 未找到参考样本，通过 voicedesign 标定...')
   const audio = await generator()
   await saveVoiceSample(voiceDesign, audio)
   return audio.toString('base64')

@@ -75,8 +75,4 @@ export interface HeartbeatEvent extends SSEEventBase {
 
 /** 所有 SSE 事件的联合类型 */
 export type SSEEvent =
-  | ConfigEvent
-  | TeacherResponseEvent
-  | TeacherChunkEvent
-  | TeacherAudioEvent
-  | HeartbeatEvent
+  ConfigEvent | TeacherResponseEvent | TeacherChunkEvent | TeacherAudioEvent | HeartbeatEvent

@@ -27,20 +27,20 @@ export default defineConfig({
           {
             src: '/icons/icon-192.png',
             sizes: '192x192',
-            type: 'image/png',
+            type: 'image/png'
+          },
+          {
+            src: '/icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png'
           },
           {
             src: '/icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-          },
-          {
-            src: '/icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
+            purpose: 'maskable'
+          }
+        ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
@@ -55,37 +55,37 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              expiration: { maxEntries: 50, maxAgeSeconds: 3600 },
-            },
+              expiration: { maxEntries: 50, maxAgeSeconds: 3600 }
+            }
           },
           {
             urlPattern: /\/models\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'model-cache',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
           },
           {
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'cdn-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-        ],
-      },
-    }),
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          }
+        ]
+      }
+    })
   ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@framework': resolve(__dirname, 'src/lib/cubism-framework'),
-    },
+      '@framework': resolve(__dirname, 'src/lib/cubism-framework')
+    }
   },
   define: {
-    'process.env': {},
+    'process.env': {}
   },
   server: {
     host: '0.0.0.0',
@@ -93,12 +93,12 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-    },
+        changeOrigin: true
+      }
+    }
   },
   preview: {
     host: '0.0.0.0',
-    port: 4173,
-  },
+    port: 4173
+  }
 })

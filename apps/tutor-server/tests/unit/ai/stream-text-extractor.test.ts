@@ -20,7 +20,7 @@ describe('JsonTextStreamExtractor', () => {
       '让我想想。用户在问候我，所以我应该用同样温暖的方式回应。',
       '{"text":"',
       'Hello',
-      '!","vocabulary":["hi"]}',
+      '!","vocabulary":["hi"]}'
     ])
     expect(r.combined).toBe('Hello!')
     expect(r.emitted[0]).toBe('')
@@ -67,16 +67,12 @@ describe('JsonTextStreamExtractor', () => {
   })
 
   it('skips nested object values and still finds text', () => {
-    const r = feed([
-      '{"meta":{"a":1,"b":[1,2,3]},"text":"after nested","x":"y"}',
-    ])
+    const r = feed(['{"meta":{"a":1,"b":[1,2,3]},"text":"after nested","x":"y"}'])
     expect(r.combined).toBe('after nested')
   })
 
   it('does not pick up fake text key inside another string', () => {
-    const r = feed([
-      '{"hint":"the field named \\"text\\" is special","text":"real"}',
-    ])
+    const r = feed(['{"hint":"the field named \\"text\\" is special","text":"real"}'])
     expect(r.combined).toBe('real')
   })
 

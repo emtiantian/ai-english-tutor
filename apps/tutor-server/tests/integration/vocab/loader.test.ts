@@ -30,7 +30,7 @@ describe('vocab loader', () => {
       levelNum: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].indexOf(level) + 1,
       description: 'test',
       wordCount: 1,
-      words: [{ word, meaning: 'test', pos: 'noun', topic: 'test' }],
+      words: [{ word, meaning: 'test', pos: 'noun', topic: 'test' }]
     }
     writeFileSync(join(vocabDir, `${level}.json`), JSON.stringify(data))
   }

@@ -15,7 +15,7 @@ export class AudioBroadcaster {
     audioBuffer: Buffer,
     format: string,
     sessionId: string | undefined,
-    eventName: string,
+    eventName: string
   ): void {
     // 6144 字节 -> 8192 个 base64 字符。使用 3 的倍数可保证每个分片的
     // base64 在客户端有效且可直接拼接。
@@ -27,7 +27,7 @@ export class AudioBroadcaster {
       const isLast = i + byteChunkSize >= total
       const event = {
         event: eventName as any,
-        data: { audioBase64: chunk.toString('base64'), format, isEnd: isLast },
+        data: { audioBase64: chunk.toString('base64'), format, isEnd: isLast }
       }
       if (sessionId) {
         const ok = broadcastToSession(sessionId, event as any)
@@ -51,8 +51,8 @@ export class AudioBroadcaster {
         data: {
           audioBase64: chunk,
           format,
-          isEnd: isLast,
-        },
+          isEnd: isLast
+        }
       }
       if (sessionId) {
         broadcastToSession(sessionId, event)

@@ -14,10 +14,7 @@ export class TtsOutput {
    * browser 模式下真正的音频由前端 Web Speech API 生成，后端无需合成；
    * 直接返回 {} 避免白等 300ms 静音兜底 + 广播无用静音。
    */
-  async handleOutput(
-    text: string,
-    voiceDesign?: string,
-  ): Promise<{ audioBase64?: string }> {
+  async handleOutput(text: string, voiceDesign?: string): Promise<{ audioBase64?: string }> {
     if (this.tts.name === 'browser') {
       return {}
     }
@@ -35,7 +32,15 @@ export class TtsOutput {
 
       return { audioBase64 }
     } catch (err) {
-      logger.error({ err, textLength: text.length, hasVoiceDesign: !!voiceDesign, textPreview: text.slice(0, 100) }, 'TTS 音频生成失败')
+      logger.error(
+        {
+          err,
+          textLength: text.length,
+          hasVoiceDesign: !!voiceDesign,
+          textPreview: text.slice(0, 100)
+        },
+        'TTS 音频生成失败'
+      )
       return {}
     }
   }

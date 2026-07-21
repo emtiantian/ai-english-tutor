@@ -26,7 +26,10 @@ export class AudioRecorder {
   private volumeMeterCleanup: (() => void) | null = null
   private startTime = 0
   private maxDurationTimer: ReturnType<typeof setTimeout> | null = null
-  private pendingStop: { resolve: (value: AudioBlob) => void; reject: (reason?: unknown) => void } | null = null
+  private pendingStop: {
+    resolve: (value: AudioBlob) => void
+    reject: (reason?: unknown) => void
+  } | null = null
 
   constructor(private options: AudioRecorderOptions = {}) {}
 
@@ -45,8 +48,8 @@ export class AudioRecorder {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
-        channelCount: 1,
-      },
+        channelCount: 1
+      }
     })
 
     // 2. 创建兼容 Safari 的 mimeType 的 MediaRecorder
@@ -56,7 +59,7 @@ export class AudioRecorder {
     this.audioChunks = []
     this.startTime = Date.now()
 
-    this.mediaRecorder.ondataavailable = (e) => {
+    this.mediaRecorder.ondataavailable = e => {
       if (e.data.size > 0) this.audioChunks.push(e.data)
     }
 
@@ -126,13 +129,13 @@ export class AudioRecorder {
 
     this.audioContext = new AudioContext()
     const source = this.audioContext.createMediaStreamSource(this.stream)
-    this.volumeMeterCleanup = createVolumeMeter(source, (volume) => {
+    this.volumeMeterCleanup = createVolumeMeter(source, volume => {
       this.options.onVolume?.(volume)
     })
   }
 
   private cleanup(): void {
-    this.stream?.getTracks().forEach((t) => t.stop())
+    this.stream?.getTracks().forEach(t => t.stop())
     this.stream = null
     this.volumeMeterCleanup?.()
     this.volumeMeterCleanup = null

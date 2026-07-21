@@ -11,13 +11,12 @@ export function useAudioEncoder() {
   const jobs = new Map<string, EncodeJob>()
   let idCounter = 0
 
-  const worker = new Worker(
-    new URL('../workers/audio-encoder.worker.ts', import.meta.url),
-    { type: 'module' },
-  )
+  const worker = new Worker(new URL('../workers/audio-encoder.worker.ts', import.meta.url), {
+    type: 'module'
+  })
 
   worker.onmessage = (
-    event: MessageEvent<{ id: string; mp3Chunks?: Uint8Array[]; error?: string }>,
+    event: MessageEvent<{ id: string; mp3Chunks?: Uint8Array[]; error?: string }>
   ) => {
     const { id, mp3Chunks, error: workerError } = event.data
     const job = jobs.get(id)
@@ -39,7 +38,7 @@ export function useAudioEncoder() {
     }
   }
 
-  worker.onerror = (err) => {
+  worker.onerror = err => {
     error.value = err.message
     isEncoding.value = false
     for (const [, job] of jobs) {
@@ -73,6 +72,6 @@ export function useAudioEncoder() {
     isEncoding,
     error,
     encode,
-    terminate,
+    terminate
   }
 }

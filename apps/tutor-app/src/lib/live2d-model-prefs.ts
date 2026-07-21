@@ -12,10 +12,7 @@
  * 的实现改成"从当前 teacher profile 读"即可,UI 层接口不变。
  */
 
-import {
-  AVAILABLE_LIVE2D_MODELS,
-  DEFAULT_LIVE2D_MODEL_ID,
-} from '@ai-english-tutor/shared'
+import { AVAILABLE_LIVE2D_MODELS, DEFAULT_LIVE2D_MODEL_ID } from '@ai-english-tutor/shared'
 
 const STORAGE_KEY = 'tutor.live2dModelId'
 
@@ -70,7 +67,7 @@ export function clearLive2DModelId(): void {
 }
 
 function isValidModelId(id: string): boolean {
-  return AVAILABLE_LIVE2D_MODELS.some((m) => m.id === id)
+  return AVAILABLE_LIVE2D_MODELS.some(m => m.id === id)
 }
 
 function readFromStorage(): string | null {

@@ -43,7 +43,10 @@ async function ensureDir(): Promise<void> {
  * 只有在相同音色下复用台词才能命中缓存。
  */
 export function lineGroupKey(scenarioId: string, level: string, voiceDesign?: string): string {
-  const voiceHash = createHash('sha256').update(voiceDesign ?? '').digest('hex').slice(0, 8)
+  const voiceHash = createHash('sha256')
+    .update(voiceDesign ?? '')
+    .digest('hex')
+    .slice(0, 8)
   return `${scenarioId}:${level}:${voiceHash}`
 }
 
@@ -54,11 +57,10 @@ function groupPath(group: string): string {
 
 async function acquireLock(group: string): Promise<() => void> {
   while (fileLocks.has(group)) {
-    // eslint-disable-next-line no-await-in-loop
     await fileLocks.get(group)
   }
   let release: () => void
-  const lockPromise = new Promise<void>((res) => {
+  const lockPromise = new Promise<void>(res => {
     release = () => {
       fileLocks.delete(group)
       res()
@@ -104,7 +106,7 @@ export async function recordTeacherLine(group: string, text: string): Promise<vo
   try {
     const pool = await loadPool(group)
     const norm = normalize(trimmed)
-    const existing = pool.lines.find((l) => normalize(l.text) === norm)
+    const existing = pool.lines.find(l => normalize(l.text) === norm)
     if (existing) {
       existing.count++
     } else {
@@ -130,14 +132,17 @@ export async function recordTeacherLine(group: string, text: string): Promise<vo
  * 返回某分组中使用最多的台词，按计数从高到低，用于注入 prompt。
  * 读取无锁（写入是原子重命名）。
  */
-export async function getReusableLines(group: string, limit = config.LINE_POOL_INJECT_LIMIT): Promise<string[]> {
+export async function getReusableLines(
+  group: string,
+  limit = config.LINE_POOL_INJECT_LIMIT
+): Promise<string[]> {
   try {
     const pool = await loadPool(group)
     return pool.lines
       .slice()
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
-      .map((l) => l.text)
+      .map(l => l.text)
   } catch (err) {
     logger.warn({ err, group }, 'Line pool read failed (non-fatal)')
     return []

@@ -23,20 +23,50 @@ git config --unset core.hooksPath
 
 ---
 
+## pre-commit：ESLint + Prettier 格式校验
+
+每次 `git commit` 之前，自动对**暂存文件**运行 `lint-staged`（配置见仓库根 `lint-staged.config.mjs`）：
+
+- `*.{ts,mts,cts,vue}` → `eslint --fix` + `prettier --write`
+- `*.{js,mjs,cjs,json,jsonc,md,css,scss,html,yml,yaml}` → `prettier --write`
+
+校验失败（含无法自动修复的 eslint error）会**阻塞提交**。手动修复后重新 `git add` 再提交即可。
+
+### 跳过本次校验
+
+```bash
+git commit --no-verify -m "..."
+```
+
+不建议日常使用，仅用于紧急绕过。
+
+### 手动触发（不全量提交也能跑）
+
+```bash
+pnpm lint          # 全仓库 eslint 检查
+pnpm lint:fix      # 全仓库 eslint 自动修复
+pnpm format        # 全仓库 prettier 格式化
+pnpm format:check  # 全仓库 prettier 检查（不写文件）
+pnpm lint-staged   # 仅对暂存文件跑（等价 pre-commit 行为）
+pnpm typecheck     # 全量 TS 类型检查（vue-tsc + tsc）
+```
+
+---
+
 ## post-commit：Context Memory 自动 link-commit
 
 每次 `git commit` 之后，自动把最近 60 分钟内创建的、还没有 SHA 关联的 context entry 绑到刚生成的 commit 上。
 
 ### 过滤器（6 层，任一命中即跳过）
 
-| # | 跳过 | 原因 |
-|---|---|---|
-| 1 | merge commit（多父） | 合并不该作为新决策 |
-| 2 | revert commit | 回退不应作为原决策的二次记录 |
-| 3 | message 含 `[skip-context]` 或 `[no-context]` | 显式 opt-out |
-| 4 | message 以 `chore(context):` / `chore(memory):` 开头 | context 系统自身的元提交（防循环） |
-| 5 | 改动**全部**在 `.context/` `docs/` `README` `.gitignore` `.gitattributes` `.githooks/*.md` | 纯文档 commit 没真实代码变更 |
-| 6 | numstat 总变更行数 < 5 | typo / 空行 / 格式化等 trivial 改动 |
+| #   | 跳过                                                                                       | 原因                                |
+| --- | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+| 1   | merge commit（多父）                                                                       | 合并不该作为新决策                  |
+| 2   | revert commit                                                                              | 回退不应作为原决策的二次记录        |
+| 3   | message 含 `[skip-context]` 或 `[no-context]`                                              | 显式 opt-out                        |
+| 4   | message 以 `chore(context):` / `chore(memory):` 开头                                       | context 系统自身的元提交（防循环）  |
+| 5   | 改动**全部**在 `.context/` `docs/` `README` `.gitignore` `.gitattributes` `.githooks/*.md` | 纯文档 commit 没真实代码变更        |
+| 6   | numstat 总变更行数 < 5                                                                     | typo / 空行 / 格式化等 trivial 改动 |
 
 ### 显式跳过本次 commit
 

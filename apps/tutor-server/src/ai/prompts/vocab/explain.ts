@@ -18,14 +18,17 @@ import type { LLMMessage } from '../../llm.js'
 export function buildVocabExplainMessages(
   word: string,
   sentence?: string,
-  hint?: { level?: string; meaning?: string; pos?: string },
+  hint?: { level?: string; meaning?: string; pos?: string }
 ): LLMMessage[] {
   const contextLines: string[] = []
   if (sentence) {
-    contextLines.push(`The word appeared in this sentence: "${sentence}". Put the sense that fits this context FIRST.`)
+    contextLines.push(
+      `The word appeared in this sentence: "${sentence}". Put the sense that fits this context FIRST.`
+    )
   }
   if (hint?.level) contextLines.push(`Known CEFR level: ${hint.level}.`)
-  if (hint?.meaning) contextLines.push(`A rough known Chinese gloss (refine, do not blindly copy): ${hint.meaning}.`)
+  if (hint?.meaning)
+    contextLines.push(`A rough known Chinese gloss (refine, do not blindly copy): ${hint.meaning}.`)
   if (hint?.pos) contextLines.push(`Likely part of speech: ${hint.pos}.`)
 
   const system = [
@@ -54,7 +57,7 @@ export function buildVocabExplainMessages(
     '- Provide 1-3 of the most common senses. Do not pad with rare meanings.',
     '- Every sense MUST have an English example and its Chinese translation.',
     '- synonyms: 0-4 items; omit the field if there are none.',
-    '- Keep it compact; this is shown in a small mobile popup.',
+    '- Keep it compact; this is shown in a small mobile popup.'
   ].join('\n')
 
   const userParts = [`Explain the English word: "${word}".`]
@@ -62,6 +65,6 @@ export function buildVocabExplainMessages(
 
   return [
     { role: 'system', content: system },
-    { role: 'user', content: userParts.join('\n\n') },
+    { role: 'user', content: userParts.join('\n\n') }
   ]
 }

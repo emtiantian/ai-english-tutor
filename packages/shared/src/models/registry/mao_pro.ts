@@ -34,14 +34,14 @@ import { defineLive2DModelManifest } from '../define-manifest.js'
  * 具体动作语义需在 D 阶段联调时看动画确认,这里给一个合理的初始映射。
  */
 const MAO_PRO_MOTION_MAP: Record<MotionId, string> = {
-  wave: '_3',           // special_01,夸张动作适合打招呼
-  nod: '_0',            // mtn_02,基础动作
-  think: '_1',          // mtn_03
-  gesture: '_2',        // mtn_04
-  clap: '_4',           // special_02
-  point: '_5',          // special_03
-  write: 'Idle_0',      // 没有专门的书写动作 → idle 兜底
-  surprised: '_3',      // special_01
+  wave: '_3', // special_01,夸张动作适合打招呼
+  nod: '_0', // mtn_02,基础动作
+  think: '_1', // mtn_03
+  gesture: '_2', // mtn_04
+  clap: '_4', // special_02
+  point: '_5', // special_03
+  write: 'Idle_0', // 没有专门的书写动作 → idle 兜底
+  surprised: '_3' // special_01
 }
 
 const MAO_PRO_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
@@ -52,7 +52,7 @@ const MAO_PRO_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
   clap: 'special_02 - 特殊动作',
   point: 'special_03 - 特殊动作',
   write: 'Idle 兜底(无书写)',
-  surprised: 'special_01 - 夸张反应',
+  surprised: 'special_01 - 夸张反应'
 }
 
 const MAO_PRO_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
@@ -61,7 +61,7 @@ const MAO_PRO_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
   curious: '好奇',
   surprised: '惊讶',
   encouraging: '鼓励',
-  thoughtful: '沉思',
+  thoughtful: '沉思'
 }
 
 const MAO_PRO_MOTION_REGISTRY: MotionRegistry = {
@@ -76,19 +76,19 @@ const MAO_PRO_MOTION_REGISTRY: MotionRegistry = {
   },
 
   getAvailableMotions(): MotionMapping[] {
-    return AVAILABLE_MOTIONS.map((id) => ({
+    return AVAILABLE_MOTIONS.map(id => ({
       semanticId: id,
       modelMotionKey: MAO_PRO_MOTION_MAP[id],
-      description: MAO_PRO_MOTION_DESCRIPTIONS[id],
+      description: MAO_PRO_MOTION_DESCRIPTIONS[id]
     }))
   },
 
   getAvailableExpressions(): ExpressionMapping[] {
-    return AVAILABLE_EXPRESSIONS.map((id) => ({
+    return AVAILABLE_EXPRESSIONS.map(id => ({
       semanticId: id,
-      description: MAO_PRO_EXPRESSION_DESCRIPTIONS[id],
+      description: MAO_PRO_EXPRESSION_DESCRIPTIONS[id]
     }))
-  },
+  }
 }
 
 /**
@@ -117,7 +117,7 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamEyeLSmile: 0.8,
     ParamEyeRSmile: 0.8,
     ParamBrowLY: -0.2,
-    ParamBrowRY: -0.2,
+    ParamBrowRY: -0.2
   },
   neutral: {
     ParamMouthUp: 0,
@@ -129,21 +129,21 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowLY: 0,
     ParamBrowRY: 0,
     ParamBrowLAngle: 0,
-    ParamBrowRAngle: 0,
+    ParamBrowRAngle: 0
   },
   curious: {
     ParamBrowLY: -0.3,
-    ParamBrowRY: -0.6,            // 单边挑眉
+    ParamBrowRY: -0.6, // 单边挑眉
     ParamBrowLAngle: 0.2,
     ParamMouthUp: 0.3,
-    ParamAngleZ: -3,
+    ParamAngleZ: -3
   },
   surprised: {
     ParamBrowLY: -1.0,
     ParamBrowRY: -1.0,
     ParamEyeLOpen: 1.3,
     ParamEyeROpen: 1.3,
-    ParamMouthUp: 0.4,            // 微张
+    ParamMouthUp: 0.4 // 微张
   },
   encouraging: {
     ParamMouthUp: 1.0,
@@ -151,7 +151,7 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamEyeLSmile: 0.9,
     ParamEyeRSmile: 0.9,
     ParamBrowLY: -0.3,
-    ParamBrowRY: -0.3,
+    ParamBrowRY: -0.3
   },
   thoughtful: {
     ParamBrowLY: 0.2,
@@ -160,7 +160,7 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowRAngle: 0.3,
     ParamMouthUp: 0.1,
     ParamAngleX: 3,
-    ParamAngleY: -2,
+    ParamAngleY: -2
   },
   sad: {
     ParamMouthDown: 0.6,
@@ -169,28 +169,28 @@ const MAO_PRO_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowLAngle: -0.2,
     ParamBrowRAngle: -0.2,
     ParamEyeLOpen: 0.7,
-    ParamEyeROpen: 0.7,
-  },
+    ParamEyeROpen: 0.7
+  }
 }
 
 export const MAO_PRO_MANIFEST = defineLive2DModelManifest({
   id: 'mao_pro',
   displayName: 'Mao Niziiro',
   type: 'live2d',
-  hasExpressions: false,                   // 先用 preset;TODO 后续支持 .exp3.json 加载
+  hasExpressions: false, // 先用 preset;TODO 后续支持 .exp3.json 加载
   expressionParamPresets: MAO_PRO_EXPRESSION_PRESETS,
   view: {
     // mao_pro 在模型坐标系里偏高(boundsH ~3.06),基础 scale 只有 0.59 左右,
     // 需要比 hiyori/shizuku 更大的 viewScale 才能在画布上看起来大小接近。
     scale: 1.6,
     offsetX: 0,
-    offsetY: 100,
+    offsetY: 100
   },
   motionRegistry: MAO_PRO_MOTION_REGISTRY,
   credit: {
     author: 'Live2D Inc.',
     license: 'Live2D Free Material License Agreement',
     licenseUrl: 'https://www.live2d.com/eula/live2d-sample-model-terms_en.html',
-    sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/mao_pro',
-  },
+    sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/mao_pro'
+  }
 })

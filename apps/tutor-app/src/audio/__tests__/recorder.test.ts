@@ -16,18 +16,18 @@ describe('AudioRecorder', () => {
       state: 'inactive',
       mimeType: 'audio/webm',
       ondataavailable: null as any,
-      onstop: null as any,
+      onstop: null as any
     }
 
     mockStream = {
-      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
+      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }])
     }
 
     Object.defineProperty(global.navigator, 'mediaDevices', {
       value: {
-        getUserMedia: vi.fn().mockResolvedValue(mockStream),
+        getUserMedia: vi.fn().mockResolvedValue(mockStream)
       },
-      writable: true,
+      writable: true
     })
 
     global.MediaRecorder = vi.fn(function () {
@@ -40,12 +40,12 @@ describe('AudioRecorder', () => {
       const ctx: any = {}
       ctx.createMediaStreamSource = vi.fn().mockReturnValue({
         connect: vi.fn(),
-        context: ctx,
+        context: ctx
       })
       ctx.createAnalyser = vi.fn().mockReturnValue({
         fftSize: 256,
         frequencyBinCount: 128,
-        getByteFrequencyData: vi.fn(),
+        getByteFrequencyData: vi.fn()
       })
       ctx.close = vi.fn()
       return ctx
@@ -62,15 +62,15 @@ describe('AudioRecorder', () => {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          channelCount: 1,
-        },
+          channelCount: 1
+        }
       })
     })
 
     it('should create MediaRecorder with correct mimeType', async () => {
       await recorder.start()
       expect(MediaRecorder).toHaveBeenCalledWith(mockStream, {
-        mimeType: 'audio/webm;codecs=opus',
+        mimeType: 'audio/webm;codecs=opus'
       })
     })
 

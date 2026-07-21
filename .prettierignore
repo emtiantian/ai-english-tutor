@@ -1,0 +1,29 @@
+# Prettier 忽略清单
+node_modules/
+dist/
+coverage/
+pnpm-lock.yaml
+*.tsbuildinfo
+
+# 第三方框架源码
+apps/tutor-app/src/lib/cubism-framework/
+
+# 前端静态资源（含第三方 min.js 库）/ 诊断脚本
+apps/tutor-app/public/
+apps/tutor-app/scripts/
+
+# 运行时数据 / 导出产物
+data/
+.dev-data/
+export/
+
+# AI / 文档自动生成产物（与 .gitignore 保持一致）
+.context/
+docs/
+doc/plans/
+doc/specs/
+doc/design/
+doc/PRD.md
+
+# 构建配置 / 部署（非源码）
+gateway/

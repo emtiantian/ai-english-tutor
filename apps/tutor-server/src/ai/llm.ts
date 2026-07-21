@@ -6,7 +6,7 @@ export type {
   LLMResponse,
   LLMStreamChunk,
   ProviderCapabilities,
-  LLMProvider,
+  LLMProvider
 } from './llm/types.js'
 
 export { MockProvider } from './llm/mock-provider.js'

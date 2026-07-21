@@ -21,7 +21,7 @@ export function migrate(db: Database.Database): void {
   `)
 
   const appliedVersions = new Set(
-    db.prepare(`SELECT version FROM ${MIGRATION_TABLE}`).pluck().all() as number[],
+    db.prepare(`SELECT version FROM ${MIGRATION_TABLE}`).pluck().all() as number[]
   )
 
   // 旧数据库兼容：若元数据表为空但业务表已存在，说明是升级场景，直接标记全部当前迁移为已应用。
@@ -46,10 +46,8 @@ export function migrate(db: Database.Database): void {
 
 function hasLegacyTables(db: Database.Database): boolean {
   const legacyTables = ['users', 'sessions', 'user_vocabulary', 'conversation_history']
-  const check = db.prepare(
-    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
-  )
-  return legacyTables.some((table) => check.get(table) !== undefined)
+  const check = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+  return legacyTables.some(table => check.get(table) !== undefined)
 }
 
 function bootstrapLegacyDb(db: Database.Database): void {

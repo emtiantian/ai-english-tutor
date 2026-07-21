@@ -6,8 +6,10 @@ import { OpenAIBaseProvider, type OpenAIBaseProviderOptions } from './openai-bas
 /**
  * 小米 MiMo Provider 构造选项。
  */
-export interface XiaomiProviderOptions
-  extends Omit<OpenAIBaseProviderOptions, 'name' | 'capabilities'> {}
+export interface XiaomiProviderOptions extends Omit<
+  OpenAIBaseProviderOptions,
+  'name' | 'capabilities'
+> {}
 
 /**
  * 小米 MiMo LLM Provider（OpenAI 兼容）。
@@ -34,22 +36,22 @@ export class XiaomiProvider extends OpenAIBaseProvider {
       name: 'xiaomi',
       capabilities: {
         supportsAudioInput: isVoiceModel,
-        supportsStreaming: true,
-      },
+        supportsStreaming: true
+      }
     })
 
     logger.info(
       {
         model: options.model,
-        audioInput: this.capabilities.supportsAudioInput,
+        audioInput: this.capabilities.supportsAudioInput
       },
-      '小米提供商初始化完成',
+      '小米提供商初始化完成'
     )
   }
 
   async *stream(
     messages: LLMMessage[],
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal }
   ): AsyncGenerator<LLMStreamChunk> {
     // 每轮流式请求前重置 reasoning 计数
     this.reasoningTokens = 0
@@ -63,18 +65,16 @@ export class XiaomiProvider extends OpenAIBaseProvider {
    * - 多模态内容：保留文本部分，音频部分转换为
    *   小米的 `input_audio` 格式（data URL）。
    */
-  protected normalizeMessages(
-    messages: LLMMessage[],
-  ): OpenAI.Chat.ChatCompletionMessageParam[] {
-    return messages.map((msg) => this.normalizeForXiaomi(msg)) as unknown as OpenAI.Chat.ChatCompletionMessageParam[]
+  protected normalizeMessages(messages: LLMMessage[]): OpenAI.Chat.ChatCompletionMessageParam[] {
+    return messages.map(msg =>
+      this.normalizeForXiaomi(msg)
+    ) as unknown as OpenAI.Chat.ChatCompletionMessageParam[]
   }
 
   /**
    * 从非流式响应中提取回复文本，并过滤 reasoning_content。
    */
-  protected extractContent(
-    response: OpenAI.Chat.Completions.ChatCompletion,
-  ): string {
+  protected extractContent(response: OpenAI.Chat.Completions.ChatCompletion): string {
     const message = response.choices[0]?.message
     // MiMo 可能同时返回 content（回复）和 reasoning_content（内部思考）。
     // 助手回复必须只使用 content；reasoning_content 不是面向用户的，
@@ -84,7 +84,7 @@ export class XiaomiProvider extends OpenAIBaseProvider {
     if (!content && raw?.reasoning_content) {
       logger.warn(
         { reasoningPreview: String(raw.reasoning_content).slice(0, 80) },
-        '小米返回 content 为空但存在 reasoning_content，已忽略思考内容',
+        '小米返回 content 为空但存在 reasoning_content，已忽略思考内容'
       )
     }
     return content
@@ -93,14 +93,11 @@ export class XiaomiProvider extends OpenAIBaseProvider {
   /**
    * 从流式 chunk 中提取回复文本，并过滤 reasoning_content。
    */
-  protected handleStreamChunk(
-    chunk: OpenAI.Chat.Completions.ChatCompletionChunk,
-  ): string | null {
+  protected handleStreamChunk(chunk: OpenAI.Chat.Completions.ChatCompletionChunk): string | null {
     // MiMo 流式：delta.content 是回复；delta.reasoning_content 是
     // 内部思考，绝不能发送给用户。
     const delta = chunk.choices[0]?.delta as
-      | (Record<string, unknown> & { content?: string })
-      | undefined
+      (Record<string, unknown> & { content?: string }) | undefined
     const content = (delta?.content as string | undefined) ?? ''
     const reasoning = (delta?.reasoning_content as string | undefined) ?? ''
     if (reasoning) {
@@ -114,12 +111,9 @@ export class XiaomiProvider extends OpenAIBaseProvider {
   /**
    * 流式完成日志，追加 reasoningTokens 统计。
    */
-  protected logStreamComplete(
-    duration: number,
-    totalTokens: number,
-  ): void {
+  protected logStreamComplete(duration: number, totalTokens: number): void {
     super.logStreamComplete(duration, totalTokens, {
-      reasoningTokens: this.reasoningTokens,
+      reasoningTokens: this.reasoningTokens
     })
   }
 
@@ -137,8 +131,8 @@ export class XiaomiProvider extends OpenAIBaseProvider {
         parts.push({
           type: 'input_audio',
           input_audio: {
-            data: `data:audio/${audio.format};base64,${audio.data}`,
-          },
+            data: `data:audio/${audio.format};base64,${audio.data}`
+          }
         })
       }
     }

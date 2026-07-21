@@ -9,10 +9,7 @@ import { SessionManager, type SessionData } from '../session-manager.js'
 import { VocabTracker, type ReviewWord } from '../vocab-tracker.js'
 import { parseTeachingResponse } from '../response-parser.js'
 import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
-import {
-  buildTeachingMessages,
-  buildScenarioTeachingMessages,
-} from '../prompts/teaching.js'
+import { buildTeachingMessages, buildScenarioTeachingMessages } from '../prompts/teaching.js'
 import { lineGroupKey, getReusableLines, recordTeacherLine } from '../line-pool.js'
 import { getScenarioById } from '../../vocab/loader.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
@@ -27,7 +24,7 @@ import { computeCurrentActIndex, buildScenarioProgress } from '../utils/scenario
 export function warnIfMissingVocabSentences(
   parsed: { vocabulary?: string[]; vocabularySentences?: string[] },
   sessionId: string,
-  origin: string,
+  origin: string
 ): void {
   // 按 prompt 约定：vocabulary 为空时允许省略 vocabularySentences，
   // 只在有词汇却缺少例句时报警，避免正常空回复也刷 WARN。
@@ -38,7 +35,7 @@ export function warnIfMissingVocabSentences(
   ) {
     logger.warn(
       { sessionId, origin, vocabulary: parsed.vocabulary },
-      'LLM 响应缺少 vocabularySentences',
+      'LLM 响应缺少 vocabularySentences'
     )
   }
 }
@@ -58,7 +55,7 @@ export class ResponseOrchestrator {
     private sessions: SessionManager,
     private audio: AudioPipeline,
     private vocabTracker: VocabTracker,
-    private persona: CharacterPersona,
+    private persona: CharacterPersona
   ) {}
 
   /**
@@ -74,7 +71,7 @@ export class ResponseOrchestrator {
       audioFormat?: string
       userId?: string
       signal?: AbortSignal
-    } = {},
+    } = {}
   ): Promise<{
     text: string
     transcript?: string
@@ -106,7 +103,7 @@ export class ResponseOrchestrator {
       stream = false,
       audioBase64,
       audioFormat = 'webm',
-      userId,
+      userId
     } = options
 
     logger.info(
@@ -117,9 +114,9 @@ export class ResponseOrchestrator {
         stream,
         hasAudio: !!audioBase64,
         provider: this.llm.name,
-        hasScenario: !!sessionId && !!this.sessions.getFromCache(sessionId)?.scenario,
+        hasScenario: !!sessionId && !!this.sessions.getFromCache(sessionId)?.scenario
       },
-      '处理用户发言',
+      '处理用户发言'
     )
 
     const sid = sessionId ?? generateSessionId()
@@ -143,7 +140,7 @@ export class ResponseOrchestrator {
     if (scenario && scenarioState) {
       const targetLevel = scenarioState.level ?? levelNumToCEFR(session.level)
       const reusableLines = await getReusableLines(
-        lineGroupKey(scenario.id, targetLevel, session.voiceDesign),
+        lineGroupKey(scenario.id, targetLevel, session.voiceDesign)
       )
       messages = buildScenarioTeachingMessages(
         userText,
@@ -158,9 +155,9 @@ export class ResponseOrchestrator {
         scenarioState.targetWords,
         {
           currentActIndex: computeCurrentActIndex(scenarioState),
-          wordsUsed: Array.from(scenarioState.wordsUsed),
+          wordsUsed: Array.from(scenarioState.wordsUsed)
         },
-        scenarioState.levelProfile,
+        scenarioState.levelProfile
       )
     } else {
       messages = buildTeachingMessages(
@@ -169,7 +166,7 @@ export class ResponseOrchestrator {
         session.history,
         session.openingStyle,
         this.persona,
-        reviewWords.length > 0 ? reviewWords : undefined,
+        reviewWords.length > 0 ? reviewWords : undefined
       )
     }
 
@@ -181,20 +178,40 @@ export class ResponseOrchestrator {
         const existingText = extractTextContent(lastMsg)
         lastMsg.content = [
           { type: 'text', text: existingText || 'Please listen to the audio and respond.' },
-          { type: 'audio', data: audioBase64, format: audioFormat },
+          { type: 'audio', data: audioBase64, format: audioFormat }
         ]
         logger.info(
           { llm: this.llm.name, audioFormat, base64Size: audioBase64.length },
-          '[LLM] 已为支持语音的 LLM 附加音频到用户轮次',
+          '[LLM] 已为支持语音的 LLM 附加音频到用户轮次'
         )
       }
     }
 
     // 调用 LLM 并收尾
     if (stream) {
-      return this.handleStreamingResponse(messages, session, userText, sid, userId, reviewWords, levelStr, isAudioInput, options.signal)
+      return this.handleStreamingResponse(
+        messages,
+        session,
+        userText,
+        sid,
+        userId,
+        reviewWords,
+        levelStr,
+        isAudioInput,
+        options.signal
+      )
     } else {
-      return this.handleCompleteResponse(messages, session, userText, sid, userId, reviewWords, levelStr, isAudioInput, options.signal)
+      return this.handleCompleteResponse(
+        messages,
+        session,
+        userText,
+        sid,
+        userId,
+        reviewWords,
+        levelStr,
+        isAudioInput,
+        options.signal
+      )
     }
   }
 
@@ -207,10 +224,19 @@ export class ResponseOrchestrator {
     reviewWords?: ReviewWord[],
     levelStr?: string,
     isAudioInput?: boolean,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ) {
     const response = await this.llm.complete(messages, signal)
-    return this.finalizeResponse(sessionId, session, userText, response.content, userId, reviewWords, levelStr, isAudioInput)
+    return this.finalizeResponse(
+      sessionId,
+      session,
+      userText,
+      response.content,
+      userId,
+      reviewWords,
+      levelStr,
+      isAudioInput
+    )
   }
 
   private async handleStreamingResponse(
@@ -222,7 +248,7 @@ export class ResponseOrchestrator {
     reviewWords?: ReviewWord[],
     levelStr?: string,
     isAudioInput?: boolean,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ) {
     const chunks: string[] = []
     const extractor = new JsonTextStreamExtractor()
@@ -237,9 +263,18 @@ export class ResponseOrchestrator {
       // 仍发送结束标记，让前端的流式状态 UI 清空。
       broadcastToSession(sessionId, {
         event: 'teacher.chunk',
-        data: { chunk: '', isEnd: true },
+        data: { chunk: '', isEnd: true }
       } satisfies TeacherChunkEvent)
-      return this.finalizeResponse(sessionId, session, userText, response.content, userId, reviewWords, levelStr, isAudioInput)
+      return this.finalizeResponse(
+        sessionId,
+        session,
+        userText,
+        response.content,
+        userId,
+        reviewWords,
+        levelStr,
+        isAudioInput
+      )
     }
 
     for await (const chunk of this.llm.stream(messages, { signal })) {
@@ -253,7 +288,7 @@ export class ResponseOrchestrator {
           visibleBytes += visible.length
           const event: TeacherChunkEvent = {
             event: 'teacher.chunk',
-            data: { chunk: visible, isEnd: false },
+            data: { chunk: visible, isEnd: false }
           }
           broadcastToSession(sessionId, event)
         }
@@ -264,12 +299,12 @@ export class ResponseOrchestrator {
           visibleBytes += tail.length
           broadcastToSession(sessionId, {
             event: 'teacher.chunk',
-            data: { chunk: tail, isEnd: false },
+            data: { chunk: tail, isEnd: false }
           } satisfies TeacherChunkEvent)
         }
         broadcastToSession(sessionId, {
           event: 'teacher.chunk',
-          data: { chunk: '', isEnd: true },
+          data: { chunk: '', isEnd: true }
         } satisfies TeacherChunkEvent)
         break
       }
@@ -277,10 +312,19 @@ export class ResponseOrchestrator {
 
     logger.debug(
       { sessionId, rawBytes, visibleBytes, droppedBytes: rawBytes - visibleBytes },
-      '流式过滤：在 SSE 前丢弃推理/JSON 语法字节',
+      '流式过滤：在 SSE 前丢弃推理/JSON 语法字节'
     )
 
-    return this.finalizeResponse(sessionId, session, userText, chunks.join(''), userId, reviewWords, levelStr, isAudioInput)
+    return this.finalizeResponse(
+      sessionId,
+      session,
+      userText,
+      chunks.join(''),
+      userId,
+      reviewWords,
+      levelStr,
+      isAudioInput
+    )
   }
 
   /**
@@ -294,7 +338,7 @@ export class ResponseOrchestrator {
     userId?: string,
     reviewWords?: ReviewWord[],
     levelStr?: string,
-    isAudioInput?: boolean,
+    isAudioInput?: boolean
   ) {
     const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
@@ -302,11 +346,9 @@ export class ResponseOrchestrator {
     // 在场景中使用 VocabTracker 匹配跟踪用户使用的词汇
     if (session.scenario) {
       session.scenario.turnsCount++
-      const { used } = this.vocabTracker.analyzeUserText(
-        userText,
-        session.scenario.targetWords,
-        { isAudioInput },
-      )
+      const { used } = this.vocabTracker.analyzeUserText(userText, session.scenario.targetWords, {
+        isAudioInput
+      })
       for (const word of used) {
         session.scenario.wordsUsed.add(word)
       }
@@ -337,7 +379,7 @@ export class ResponseOrchestrator {
       motionId: parsed.motionId,
       expressionId: parsed.expressionId,
       vocabulary: parsed.vocabulary,
-      vocabularySentences: parsed.vocabularySentences,
+      vocabularySentences: parsed.vocabularySentences
     })
 
     // 记住这句台词以复用（仅在场景中生效，台词池按场景/等级/音色分组，并在 prompt 中回传）。
@@ -345,38 +387,45 @@ export class ResponseOrchestrator {
       const targetLevel = session.scenario.level ?? levelNumToCEFR(session.level)
       await recordTeacherLine(
         lineGroupKey(session.scenario.id, targetLevel, session.voiceDesign),
-        parsed.text,
+        parsed.text
       )
     }
 
     // 跟踪词汇（间隔重复）
     if (userId && reviewWords && levelStr) {
       const vocabAnalysis = this.vocabTracker.processTurn(
-        userId, userText, parsed.vocabulary ?? [], reviewWords, levelStr,
-        { isAudioInput },
+        userId,
+        userText,
+        parsed.vocabulary ?? [],
+        reviewWords,
+        levelStr,
+        { isAudioInput }
       )
       if (vocabAnalysis.usedWords.length > 0 || vocabAnalysis.newWords.length > 0) {
-        logger.info({
-          userId,
-          isAudio: isAudioInput,
-          used: vocabAnalysis.usedWords,
-          missed: vocabAnalysis.missedWords,
-          new: vocabAnalysis.newWords,
-        }, '词汇跟踪更新')
+        logger.info(
+          {
+            userId,
+            isAudio: isAudioInput,
+            used: vocabAnalysis.usedWords,
+            missed: vocabAnalysis.missedWords,
+            new: vocabAnalysis.newWords
+          },
+          '词汇跟踪更新'
+        )
       }
     }
 
     const scenarioProgress = buildScenarioProgress(session)
     const completeEvent: TeacherResponseEvent = {
       event: 'teacher.response',
-      data: { ...parsed, scenario: scenarioProgress },
+      data: { ...parsed, scenario: scenarioProgress }
     }
     broadcastToSession(sessionId, completeEvent)
 
     // 生成英文 TTS
     logger.debug(
       { sessionId, textLength: parsed.text.length, hasVoiceDesign: !!session.voiceDesign },
-      '准备生成 TTS',
+      '准备生成 TTS'
     )
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
@@ -384,7 +433,7 @@ export class ResponseOrchestrator {
       ...parsed,
       transcript: userText,
       audioBase64: audioResult.audioBase64,
-      scenario: scenarioProgress,
+      scenario: scenarioProgress
     }
   }
 }

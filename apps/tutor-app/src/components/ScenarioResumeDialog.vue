@@ -29,20 +29,16 @@
         </div>
         <div class="stat-row">
           <span class="stat-label">剩余时间</span>
-          <span class="stat-value" :class="{ 'expiring-soon': hoursLeft <= 2 }">{{ remainingTimeText }}</span>
+          <span class="stat-value" :class="{ 'expiring-soon': hoursLeft <= 2 }">{{
+            remainingTimeText
+          }}</span>
         </div>
       </div>
 
       <div class="action-buttons">
-        <button class="btn-resume" @click="$emit('resume')">
-          ▶️ 继续练习
-        </button>
-        <button class="btn-restart" @click="$emit('restart')">
-          🔄 重新开始
-        </button>
-        <button class="btn-cancel" @click="$emit('cancel')">
-          取消
-        </button>
+        <button class="btn-resume" @click="$emit('resume')">▶️ 继续练习</button>
+        <button class="btn-restart" @click="$emit('restart')">🔄 重新开始</button>
+        <button class="btn-cancel" @click="$emit('cancel')">取消</button>
       </div>
     </div>
   </div>

@@ -6,11 +6,8 @@ export {
   buildScenarioContext,
   bucketWordsForActs,
   buildActsBlock,
-  buildObjectivesBlock,
+  buildObjectivesBlock
 } from './scenario/context-builder.js'
-export {
-  buildLineReuseBlock,
-  stripBaseOutputFormat,
-} from './scenario/line-reuse.js'
+export { buildLineReuseBlock, stripBaseOutputFormat } from './scenario/line-reuse.js'
 export { pickOpeningStyle } from './shared/persona.js'
 export type { OpeningStyle } from './shared/persona.js'

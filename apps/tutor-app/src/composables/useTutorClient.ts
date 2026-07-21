@@ -27,7 +27,7 @@ export function useTutorClient(config?: TutorClientConfig) {
   const client = new TutorClient({
     baseUrl,
     sessionId: store.connectionId,
-    autoReconnect: true,
+    autoReconnect: true
   })
 
   const onLearnWords = config?.onLearnWords
@@ -37,15 +37,15 @@ export function useTutorClient(config?: TutorClientConfig) {
 
   // --- 服务器配置（ttsSource 等）---
   unsubs.push(
-    client.on('config', (serverConfig) => {
+    client.on('config', serverConfig => {
       store.ttsSource = serverConfig.ttsSource
-    }),
+    })
   )
 
   // --- 连接事件 ---
   unsubs.push(
-    client.on('connected', () => store.isConnected = true),
-    client.on('disconnected', () => store.isConnected = false),
+    client.on('connected', () => (store.isConnected = true)),
+    client.on('disconnected', () => (store.isConnected = false)),
     client.on('error', ({ code, message }) => {
       // SSE 流错误（例如 LLM 服务中断、重连耗尽）
       // 可能让 UI 卡在“思考中”。重置状态并展示一条消息。
@@ -59,21 +59,17 @@ export function useTutorClient(config?: TutorClientConfig) {
           id: createMessageId(),
           role: 'assistant',
           text: message || '连接已断开，请刷新页面重试',
-          timestamp: Date.now(),
+          timestamp: Date.now()
         })
       }
-    }),
+    })
   )
 
   // --- AI 状态事件 ---
-  unsubs.push(
-    client.on('state.thinking', () => store.isThinking = true),
-  )
+  unsubs.push(client.on('state.thinking', () => (store.isThinking = true)))
 
   // --- 消息事件 ---
-  unsubs.push(
-    client.on('message.user', ({ text }) => store.addUserMessage(text)),
-  )
+  unsubs.push(client.on('message.user', ({ text }) => store.addUserMessage(text)))
 
   // --- 流式片段（合并：确保流式消息存在，然后追加）---
   unsubs.push(
@@ -85,7 +81,7 @@ export function useTutorClient(config?: TutorClientConfig) {
         store.startAssistantStream()
       }
       store.appendStreamChunk(chunk)
-    }),
+    })
   )
 
   // --- 完整回复事件 ---
@@ -114,7 +110,7 @@ export function useTutorClient(config?: TutorClientConfig) {
       if (response.expressionId) {
         provider?.setExpression?.(response.expressionId)
       }
-    }),
+    })
   )
 
   // 注：isPlaying / showDelayedMessage / setSpeaking 全部由 useAudioPlayback 统一驱动
@@ -123,7 +119,7 @@ export function useTutorClient(config?: TutorClientConfig) {
 
   // --- 清理 ---
   function unsubscribeAll() {
-    unsubs.forEach((fn) => fn())
+    unsubs.forEach(fn => fn())
     client.disconnect()
   }
 
@@ -136,6 +132,6 @@ export function useTutorClient(config?: TutorClientConfig) {
 
   return {
     client,
-    unsubscribeAll,
+    unsubscribeAll
   }
 }

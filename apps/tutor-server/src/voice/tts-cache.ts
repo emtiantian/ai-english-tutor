@@ -5,8 +5,8 @@ import { logger } from '../logger.js'
 import { config } from '../config.js'
 
 const CACHE_DIR = resolve(config.TTS_CACHE_DIR)
-const MAX_CACHE_SIZE_MB = config.TTS_CACHE_MAX_MB  // 缓存总大小上限
-const MAX_CACHE_FILES = config.TTS_CACHE_MAX_FILES  // 缓存文件数量上限
+const MAX_CACHE_SIZE_MB = config.TTS_CACHE_MAX_MB // 缓存总大小上限
+const MAX_CACHE_FILES = config.TTS_CACHE_MAX_FILES // 缓存文件数量上限
 
 /** 按缓存键索引的合成中 Promise */
 const inFlight = new Map<string, Promise<Buffer>>()
@@ -64,7 +64,7 @@ export function getCacheStats(): {
     hits: stats.hits,
     misses: stats.misses,
     total,
-    hitRate: total === 0 ? 0 : stats.hits / total,
+    hitRate: total === 0 ? 0 : stats.hits / total
   }
 }
 
@@ -94,10 +94,10 @@ export async function getCacheDiskUsage(): Promise<{
   try {
     const entries = await fs.readdir(CACHE_DIR, { withFileTypes: true })
     const wavs = entries.filter(
-      (e) => e.isFile() && e.name.endsWith('.wav') && !e.name.includes('.tmp.'),
+      e => e.isFile() && e.name.endsWith('.wav') && !e.name.includes('.tmp.')
     )
     const sizes = await Promise.all(
-      wavs.map(async (e) => (await fs.stat(resolve(CACHE_DIR, e.name))).size),
+      wavs.map(async e => (await fs.stat(resolve(CACHE_DIR, e.name))).size)
     )
     files = wavs.length
     totalBytes = sizes.reduce((sum, s) => sum + s, 0)
@@ -109,7 +109,7 @@ export async function getCacheDiskUsage(): Promise<{
     files,
     sizeMB: Number((totalBytes / 1024 / 1024).toFixed(2)),
     maxFiles: MAX_CACHE_FILES,
-    maxMB: MAX_CACHE_SIZE_MB,
+    maxMB: MAX_CACHE_SIZE_MB
   }
 }
 
@@ -121,9 +121,9 @@ function maybeLogStats(): void {
       hits: stats.hits,
       misses: stats.misses,
       total,
-      hitRate: Number((stats.hits / total).toFixed(3)),
+      hitRate: Number((stats.hits / total).toFixed(3))
     },
-    'TTS 缓存统计',
+    'TTS 缓存统计'
   )
 }
 
@@ -142,7 +142,7 @@ export function buildCacheKey(text: string, opts: CacheKeyOptions = {}): string 
     opts.format ?? '',
     opts.speed !== undefined ? String(opts.speed) : '',
     opts.voiceDesign ?? '',
-    opts.mode ?? '',
+    opts.mode ?? ''
   ]
   return createHash('sha256').update(parts.join('|')).digest('hex')
 }
@@ -157,7 +157,10 @@ function getCachePath(key: string): string {
  * setCachedAudio 已用 tmp+rename 原子写，读取 final path 永远
  * 拿不到半个文件，inFlight 已做并发去重，无需额外文件锁。
  */
-export async function getCachedAudio(text: string, opts: CacheKeyOptions = {}): Promise<Buffer | undefined> {
+export async function getCachedAudio(
+  text: string,
+  opts: CacheKeyOptions = {}
+): Promise<Buffer | undefined> {
   await ensureCacheDir()
   const key = buildCacheKey(text, opts)
   const path = getCachePath(key)
@@ -180,7 +183,11 @@ export async function getCachedAudio(text: string, opts: CacheKeyOptions = {}): 
  * 先写入临时文件，再重命名为目标文件，确保读取端永远不会
  * 看到部分写入的文件。写入后按计数触发周期性清理。
  */
-export async function setCachedAudio(text: string, buffer: Buffer, opts: CacheKeyOptions = {}): Promise<void> {
+export async function setCachedAudio(
+  text: string,
+  buffer: Buffer,
+  opts: CacheKeyOptions = {}
+): Promise<void> {
   await ensureCacheDir()
   const key = buildCacheKey(text, opts)
   const path = getCachePath(key)
@@ -205,7 +212,7 @@ export async function setCachedAudio(text: string, buffer: Buffer, opts: CacheKe
 export async function getOrSynthesizeCachedAudio(
   text: string,
   opts: CacheKeyOptions,
-  synthesize: () => Promise<Buffer>,
+  synthesize: () => Promise<Buffer>
 ): Promise<Buffer> {
   await ensureCacheDir()
   const key = buildCacheKey(text, opts)
@@ -241,15 +248,17 @@ async function cleanupIfNeeded(): Promise<void> {
 
   const files = await Promise.all(
     entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.wav') && !entry.name.includes('.tmp.'))
-      .map(async (entry) => {
+      .filter(
+        entry => entry.isFile() && entry.name.endsWith('.wav') && !entry.name.includes('.tmp.')
+      )
+      .map(async entry => {
         const path = resolve(CACHE_DIR, entry.name)
         const stat = await fs.stat(path)
         return { path, mtime: stat.mtimeMs, size: stat.size }
-      }),
+      })
   )
 
-  files.sort((a, b) => a.mtime - b.mtime)  // 最旧的排在前面
+  files.sort((a, b) => a.mtime - b.mtime) // 最旧的排在前面
 
   let totalSize = files.reduce((sum, f) => sum + f.size, 0)
   const maxSize = MAX_CACHE_SIZE_MB * 1024 * 1024

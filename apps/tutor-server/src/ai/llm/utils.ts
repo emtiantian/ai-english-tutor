@@ -13,7 +13,7 @@ export function extractTextContent(message: LLMMessage | undefined): string {
   // 多模态内容：提取文本部分
   return message.content
     .filter((c): c is TextContent => c.type === 'text')
-    .map((c) => c.text)
+    .map(c => c.text)
     .join('\n')
 }
 
@@ -27,6 +27,6 @@ export function normalizeToString(message: LLMMessage): LLMMessage {
 
   return {
     ...message,
-    content: extractTextContent(message),
+    content: extractTextContent(message)
   }
 }

@@ -31,9 +31,9 @@ describe('vocab routes', () => {
         userId,
         words: [
           { word: 'coffee', action: 'learn', timestamp: Date.now() },
-          { word: 'tea', action: 'learn', timestamp: Date.now() },
-        ],
-      },
+          { word: 'tea', action: 'learn', timestamp: Date.now() }
+        ]
+      }
     })
 
     expect(response.statusCode).toBe(200)
@@ -41,7 +41,7 @@ describe('vocab routes', () => {
     expect(body.success).toBe(true)
     expect(body.synced).toBe(2)
 
-    const words = vocabRepo.getAllWords(userId).map((r) => r.word)
+    const words = vocabRepo.getAllWords(userId).map(r => r.word)
     expect(words).toContain('coffee')
     expect(words).toContain('tea')
 

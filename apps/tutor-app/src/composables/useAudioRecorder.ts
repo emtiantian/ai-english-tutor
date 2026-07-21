@@ -24,9 +24,11 @@ import { createMessageId } from '../lib/message-utils.js'
  */
 export function useAudioRecorder(
   client: TutorClient,
-  sendToBackend: (payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) => Promise<ChatResponse>,
+  sendToBackend: (
+    payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }
+  ) => Promise<ChatResponse>,
   asrProvider: () => ASRProvider = () => 'xiaomi',
-  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null,
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null
 ) {
   const store = useTutorStore()
   const { isEncoding, encode, terminate } = useAudioEncoder()
@@ -64,7 +66,9 @@ export function useAudioRecorder(
     // ── 浏览器 ASR 路径 ──
     if (asrProvider() === 'browser') {
       if (!isBrowserASRSupported()) {
-        throw new Error('当前浏览器不支持语音识别，请改用 Chrome / Edge / Safari，或在后端切到云端 ASR。')
+        throw new Error(
+          '当前浏览器不支持语音识别，请改用 Chrome / Edge / Safari，或在后端切到云端 ASR。'
+        )
       }
       isRecording.value = true
       startTimer()
@@ -83,7 +87,7 @@ export function useAudioRecorder(
           id: createMessageId(),
           role: 'assistant',
           text: `⚠️ 语音识别失败: ${err instanceof Error ? err.message : '未知错误'}`,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         })
       } finally {
         stopTimer()
@@ -97,7 +101,7 @@ export function useAudioRecorder(
     // ── 云端 ASR 路径（基于音频）──
     try {
       recorder = new AudioRecorder({
-        onVolume: (volume) => getProvider()?.setMouthOpen(volume),
+        onVolume: volume => getProvider()?.setMouthOpen(volume)
       })
 
       await recorder.start()
@@ -111,7 +115,7 @@ export function useAudioRecorder(
       const msg = !isSecure
         ? '录音需要 HTTPS 环境。请通过 https:// 访问本页（iOS Safari 必须使用 HTTPS 才能访问麦克风）。'
         : `无法启动录音: ${err instanceof Error ? err.message : '未知错误'}`
-      throw new Error(msg)
+      throw new Error(msg, { cause: err })
     }
   }
 
@@ -132,7 +136,7 @@ export function useAudioRecorder(
     await sendToBackend({
       type: requestType,
       text: transcript,
-      stream: true,
+      stream: true
     })
   }
 
@@ -156,7 +160,10 @@ export function useAudioRecorder(
     try {
       const { blob, mimeType } = await recorder.stop()
       isRecording.value = false
-      client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: false })
+      client.emit('recording.stop', {
+        durationMs: recordingDuration.value * 1000,
+        cancelled: false
+      })
 
       // 在主线程上将录制的 Blob 解码为单声道 PCM（Web Audio 只能在主线程运行），
       // 然后将耗 CPU 的重采样和 MP3 编码交给 Web Worker。
@@ -176,7 +183,7 @@ export function useAudioRecorder(
         const payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] } = {
           type: requestType,
           audioBase64: base64,
-          audioFormat,
+          audioFormat
         }
 
         // 语音路径与文本路径使用相同的流式投递：HTTP 立即确认，
@@ -195,7 +202,7 @@ export function useAudioRecorder(
         id: createMessageId(),
         role: 'assistant',
         text: `⚠️ 语音处理失败: ${err instanceof Error ? err.message : '未知错误'}`,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       })
     } finally {
       getProvider()?.setMouthOpen(0)
@@ -242,5 +249,13 @@ export function useAudioRecorder(
     terminate()
   })
 
-  return { isRecording, isEncoding, recordingDuration, requestType, startRecording, stopRecording, cancelRecording }
+  return {
+    isRecording,
+    isEncoding,
+    recordingDuration,
+    requestType,
+    startRecording,
+    stopRecording,
+    cancelRecording
+  }
 }

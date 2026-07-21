@@ -9,12 +9,8 @@
       </p>
 
       <div class="dialog-actions">
-        <button class="btn-cancel" @click="$emit('cancel')">
-          取消
-        </button>
-        <button class="btn-confirm" @click="$emit('confirm')">
-          确认切换
-        </button>
+        <button class="btn-cancel" @click="$emit('cancel')">取消</button>
+        <button class="btn-confirm" @click="$emit('confirm')">确认切换</button>
       </div>
     </div>
   </div>
@@ -23,12 +19,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = withDefaults(defineProps<{
-  turnsCount: number
-  minTurnsForPause?: number
-}>(), {
-  minTurnsForPause: 6,
-})
+const props = withDefaults(
+  defineProps<{
+    turnsCount: number
+    minTurnsForPause?: number
+  }>(),
+  {
+    minTurnsForPause: 6
+  }
+)
 
 const emit = defineEmits<{
   confirm: []

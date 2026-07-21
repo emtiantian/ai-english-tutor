@@ -52,14 +52,11 @@ export interface CharacterPersona {
     level: number,
     personality?: string,
     motionBlock?: string,
-    expressionBlock?: string,
+    expressionBlock?: string
   ): string
 
   /** 水平评估的系统提示词（可共用同一评估者，也可使用角色专属评估者） */
-  buildLevelAssessPrompt(
-    motionBlock?: string,
-    expressionBlock?: string,
-  ): string
+  buildLevelAssessPrompt(motionBlock?: string, expressionBlock?: string): string
 }
 
 // ────────────────────────────────────────────────────────────
@@ -87,7 +84,7 @@ const defaultPersonaJson: PersonaJson = defaultPersonaJsonRaw as PersonaJson
 export const LEVEL_DESCRIPTIONS: Record<number, string> = Object.fromEntries(
   Object.entries(defaultPersonaJson.levelDescriptions).map(([level, description]) => [
     Number(level),
-    description,
+    description
   ])
 ) as Record<number, string>
 
@@ -117,7 +114,8 @@ export function buildSystemPromptFromTemplate(
   const personaBlock = data.personality
     ? `\nPERSONALITY (stay in character for the entire session):\n${data.personality}\n`
     : ''
-  const levelDescription = data.levelDescriptions[String(data.level)] ?? data.levelDescriptions['3'] ?? ''
+  const levelDescription =
+    data.levelDescriptions[String(data.level)] ?? data.levelDescriptions['3'] ?? ''
   const motionBlock = data.motionBlock ? `\n\n${data.motionBlock}` : ''
   const expressionBlock = data.expressionBlock ? `\n\n${data.expressionBlock}` : ''
 
@@ -143,7 +141,7 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
       level: number,
       personality?: string,
       motionBlock?: string,
-      expressionBlock?: string,
+      expressionBlock?: string
     ): string {
       return buildSystemPromptFromTemplate(json.systemPromptTemplate, {
         name: json.name,
@@ -151,14 +149,11 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
         personality,
         levelDescriptions: json.levelDescriptions,
         motionBlock,
-        expressionBlock,
+        expressionBlock
       })
     },
 
-    buildLevelAssessPrompt(
-      motionBlock?: string,
-      expressionBlock?: string,
-    ): string {
+    buildLevelAssessPrompt(motionBlock?: string, expressionBlock?: string): string {
       // levelAssessPrompt 模板不使用 {level} 或 {levelDescription} 占位符，
       // 因此使用虚拟值是安全的。复用模板构建器是为了支持 {motionBlock}
       // 与 {expressionBlock} 的替换。
@@ -167,9 +162,9 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
         level: 0,
         levelDescriptions: {},
         motionBlock,
-        expressionBlock,
+        expressionBlock
       })
-    },
+    }
   }
 }
 

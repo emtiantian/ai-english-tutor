@@ -16,10 +16,12 @@ describe('useAudioEncoder', () => {
       postMessage: vi.fn(),
       terminate: vi.fn(),
       onmessage: null,
-      onerror: null,
+      onerror: null
     }
 
-    global.Worker = vi.fn(function () { return mockWorker }) as unknown as typeof Worker
+    global.Worker = vi.fn(function () {
+      return mockWorker
+    }) as unknown as typeof Worker
   })
 
   afterEach(() => {
@@ -29,10 +31,7 @@ describe('useAudioEncoder', () => {
 
   it('should create a module worker', () => {
     useAudioEncoder()
-    expect(Worker).toHaveBeenCalledWith(
-      expect.any(URL),
-      { type: 'module' },
-    )
+    expect(Worker).toHaveBeenCalledWith(expect.any(URL), { type: 'module' })
   })
 
   it('should set isEncoding to true while encoding', () => {
@@ -57,8 +56,8 @@ describe('useAudioEncoder', () => {
     const mp3Chunk = new Uint8Array([1, 2, 3])
     mockWorker.onmessage?.(
       new MessageEvent('message', {
-        data: { id: postedMessage.id, mp3Chunks: [mp3Chunk] },
-      }),
+        data: { id: postedMessage.id, mp3Chunks: [mp3Chunk] }
+      })
     )
 
     const result = await promise
@@ -74,8 +73,8 @@ describe('useAudioEncoder', () => {
     const postedMessage = mockWorker.postMessage.mock.calls[0][0]
     mockWorker.onmessage?.(
       new MessageEvent('message', {
-        data: { id: postedMessage.id, error: 'Encoding failed' },
-      }),
+        data: { id: postedMessage.id, error: 'Encoding failed' }
+      })
     )
 
     await expect(promise).rejects.toThrow('Encoding failed')
@@ -89,8 +88,8 @@ describe('useAudioEncoder', () => {
 
     mockWorker.onmessage?.(
       new MessageEvent('message', {
-        data: { id: postedMessage.id, mp3Chunks: [new Uint8Array([1])] },
-      }),
+        data: { id: postedMessage.id, mp3Chunks: [new Uint8Array([1])] }
+      })
     )
 
     await promise

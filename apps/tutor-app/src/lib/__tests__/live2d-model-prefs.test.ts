@@ -9,11 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import {
-  getLive2DModelId,
-  setLive2DModelId,
-  clearLive2DModelId,
-} from '../live2d-model-prefs'
+import { getLive2DModelId, setLive2DModelId, clearLive2DModelId } from '../live2d-model-prefs'
 
 const STORAGE_KEY = 'tutor.live2dModelId'
 

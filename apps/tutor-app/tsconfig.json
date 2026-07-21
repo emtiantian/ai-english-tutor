@@ -13,8 +13,5 @@
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "src/**/*.d.ts"],
-  "exclude": [
-    "src/lib/cubism-framework/**/*",
-    "src/**/__tests__/**/*"
-  ]
+  "exclude": ["src/lib/cubism-framework/**/*", "src/**/__tests__/**/*"]
 }

@@ -26,11 +26,11 @@ describe('SessionManager scenario state restore', () => {
           description: '点一杯饮品',
           descriptionEn: 'Order a drink',
           keywords: ['coffee', 'tea', 'water'],
-          targetWords: ['coffee', 'tea', 'water'],
-        },
+          targetWords: ['coffee', 'tea', 'water']
+        }
       ],
       turnsCount: 3,
-      wordsUsed: new Set(['coffee', 'please']),
+      wordsUsed: new Set(['coffee', 'please'])
     }
   }
 
@@ -48,7 +48,7 @@ describe('SessionManager scenario state restore', () => {
       history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
       vocabulary: new Set<string>(),
       voiceDesign: 'calm-friendly',
-      scenario,
+      scenario
     }
 
     manager.set(sessionId, session)

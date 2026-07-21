@@ -11,13 +11,10 @@ describe('pickBestStudentHint', () => {
   })
 
   it('优先选择包含未掌握目标词的候选', () => {
-    const candidates = [
-      'Coffee was great, thanks.',
-      'Could I have some tea, please?',
-    ]
+    const candidates = ['Coffee was great, thanks.', 'Could I have some tea, please?']
     const result = pickBestStudentHint(candidates, {
       targetWords: ['coffee', 'tea', 'please'],
-      wordsLearned: ['coffee'],
+      wordsLearned: ['coffee']
     })
     expect(result).toBe('Could I have some tea, please?')
   })
@@ -26,7 +23,7 @@ describe('pickBestStudentHint', () => {
     const candidates = ['Good morning.', 'I would like a coffee.']
     const result = pickBestStudentHint(candidates, {
       targetWords: ['coffee', 'tea'],
-      wordsLearned: ['coffee', 'tea'],
+      wordsLearned: ['coffee', 'tea']
     })
     expect(result).toBe('I would like a coffee.')
   })
@@ -35,7 +32,7 @@ describe('pickBestStudentHint', () => {
     const candidates = ['Could I have a COFFEE, please?']
     const result = pickBestStudentHint(candidates, {
       targetWords: ['coffee'],
-      wordsLearned: [],
+      wordsLearned: []
     })
     expect(result).toBe('Could I have a COFFEE, please?')
   })
@@ -44,7 +41,7 @@ describe('pickBestStudentHint', () => {
     const candidates = ['Tea please.', 'Coffee please.']
     const result = pickBestStudentHint(candidates, {
       targetWords: ['coffee', 'tea'],
-      wordsLearned: ['TEA'],
+      wordsLearned: ['TEA']
     })
     expect(result).toBe('Coffee please.')
   })

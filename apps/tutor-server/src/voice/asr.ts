@@ -48,8 +48,10 @@ export function createASRProvider(): ASRProvider {
       return {
         name: 'browser',
         async transcribe(): Promise<ASRResult> {
-          throw new Error('ASR_PROVIDER=browser 时，音频转写应由前端 Web Speech API 完成，服务端不支持直接转写')
-        },
+          throw new Error(
+            'ASR_PROVIDER=browser 时，音频转写应由前端 Web Speech API 完成，服务端不支持直接转写'
+          )
+        }
       }
     default:
       throw new Error(`不支持的 ASR 提供商: ${provider}。请在 .env 中设置正确的 ASR_PROVIDER。`)

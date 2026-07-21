@@ -13,8 +13,12 @@
       </div>
 
       <div class="panel-stats">
-        <span class="stat">已掌握 <strong>{{ wordsLearned.length }}</strong> / {{ targetWords.length }}</span>
-        <span class="stat">覆盖率 <strong>{{ coveragePercent }}%</strong></span>
+        <span class="stat"
+          >已掌握 <strong>{{ wordsLearned.length }}</strong> / {{ targetWords.length }}</span
+        >
+        <span class="stat"
+          >覆盖率 <strong>{{ coveragePercent }}%</strong></span
+        >
       </div>
 
       <div class="words-grid">
@@ -22,7 +26,7 @@
           v-for="word in targetWords"
           :key="word"
           class="word-chip"
-          :class="{ 'learned': isLearned(word) }"
+          :class="{ learned: isLearned(word) }"
         >
           {{ isLearned(word) ? `✓ ${word}` : word }}
         </span>
@@ -49,7 +53,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const learnedSet = computed(() => new Set(props.wordsLearned.map((w) => w.toLowerCase())))
+const learnedSet = computed(() => new Set(props.wordsLearned.map(w => w.toLowerCase())))
 
 const coveragePercent = computed(() => {
   if (!props.targetWords.length) return 0

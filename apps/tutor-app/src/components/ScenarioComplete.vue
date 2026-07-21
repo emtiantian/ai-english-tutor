@@ -18,7 +18,7 @@
           v-for="i in 5"
           :key="i"
           class="star"
-          :class="{ 'filled': i <= displayStars, 'empty': i > displayStars }"
+          :class="{ filled: i <= displayStars, empty: i > displayStars }"
         >
           ★
         </span>
@@ -38,11 +38,7 @@
       <div class="words-section">
         <h3 class="words-title">本场景学到的词汇</h3>
         <div class="words-list">
-          <span
-            v-for="word in wordsUsed"
-            :key="word"
-            class="word-tag"
-          >
+          <span v-for="word in wordsUsed" :key="word" class="word-tag">
             {{ word }}
           </span>
           <span v-if="wordsUsed.length === 0" class="words-empty">暂无</span>
@@ -51,11 +47,7 @@
 
       <div class="action-buttons">
         <!-- 未达标：重试当前档 -->
-        <button
-          v-if="resultState === 'retry'"
-          class="btn-retry"
-          @click="$emit('retry')"
-        >
+        <button v-if="resultState === 'retry'" class="btn-retry" @click="$emit('retry')">
           🔄 重试当前档
         </button>
 
@@ -69,17 +61,9 @@
         </button>
 
         <!-- 已封顶 -->
-        <button
-          v-else-if="resultState === 'capped'"
-          class="btn-capped"
-          disabled
-        >
-          🏆 已封顶
-        </button>
+        <button v-else-if="resultState === 'capped'" class="btn-capped" disabled>🏆 已封顶</button>
 
-        <button class="btn-next" @click="$emit('next')">
-          返回场景列表 →
-        </button>
+        <button class="btn-next" @click="$emit('next')">返回场景列表 →</button>
       </div>
     </div>
   </div>
@@ -127,8 +111,8 @@ const resultIcon = computed(() => {
   return '🎉'
 })
 
-const wordsUsed = computed(() =>
-  props.scenario.summary?.wordsUsed ?? props.scenario.wordsLearned ?? [],
+const wordsUsed = computed(
+  () => props.scenario.summary?.wordsUsed ?? props.scenario.wordsLearned ?? []
 )
 
 const wordsUsedCount = computed(() => wordsUsed.value.length)
@@ -160,8 +144,13 @@ const wordsUsedCount = computed(() => wordsUsed.value.length)
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 .complete-title {

@@ -13,8 +13,8 @@ describe('TargetWordsPanel', () => {
         targetWords: ['coffee', 'tea', 'water', 'bread'],
         wordsLearned: ['coffee', 'tea'],
         level: 'A2',
-        ...props,
-      },
+        ...props
+      }
     })
   }
 

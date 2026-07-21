@@ -110,7 +110,10 @@ export class AudioPlayer {
   /**
    * 统一的 speak 接口 — 根据配置自动选择 remote 或 local
    */
-  async speak(text: string, options?: { audioChunks?: AudioChunk[]; lang?: string } & SpeakOptions): Promise<void> {
+  async speak(
+    text: string,
+    options?: { audioChunks?: AudioChunk[]; lang?: string } & SpeakOptions
+  ): Promise<void> {
     if (this.ttsSource === 'remote' && options?.audioChunks) {
       for (const chunk of options.audioChunks) {
         this.feedAudioChunk(chunk)
@@ -170,9 +173,13 @@ export class AudioPlayer {
 
       // 音量检测（口型同步）+ 输出到扬声器
       source.connect(this.audioContext.destination)
-      this.volumeMeterCleanup = createVolumeMeter(source, (volume) => {
-        this._onVolume?.(volume)
-      }, { multiplier: 1.8 })
+      this.volumeMeterCleanup = createVolumeMeter(
+        source,
+        volume => {
+          this._onVolume?.(volume)
+        },
+        { multiplier: 1.8 }
+      )
 
       source.onended = () => {
         this.stopVolumeDetection()
@@ -191,10 +198,13 @@ export class AudioPlayer {
   }
 
   // --- 内部：通过 speechSynthesis 播放本地 TTS ---
-  private async speakLocal(text: string, options?: SpeakOptions & { lang?: string }): Promise<void> {
+  private async speakLocal(
+    text: string,
+    options?: SpeakOptions & { lang?: string }
+  ): Promise<void> {
     if (!this.synth) return
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.synth!.cancel()
 
       const utterance = new SpeechSynthesisUtterance(text)
@@ -209,9 +219,9 @@ export class AudioPlayer {
       const langPrefix = lang.split('-')[0]
       const preferredVoice =
         langPrefix === 'zh'
-          ? voices.find((v) => v.lang.startsWith('zh'))
-          : voices.find((v) => v.lang.startsWith('en') && v.voiceURI.includes('Samantha')) ||
-            voices.find((v) => v.lang.startsWith('en'))
+          ? voices.find(v => v.lang.startsWith('zh'))
+          : voices.find(v => v.lang.startsWith('en') && v.voiceURI.includes('Samantha')) ||
+            voices.find(v => v.lang.startsWith('en'))
       if (preferredVoice) utterance.voice = preferredVoice
 
       utterance.onstart = () => {

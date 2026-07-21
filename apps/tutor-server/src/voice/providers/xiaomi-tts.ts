@@ -5,7 +5,8 @@ import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 import { getOrGenerateVoiceSample } from '../voice-samples.js'
 
 /** 默认英文音色设计描述：session 未提供 voiceDesign 时的兜底音色。 */
-const DEFAULT_VOICE_DESIGN = '成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声'
+const DEFAULT_VOICE_DESIGN =
+  '成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声'
 
 /** fetch 超时时间（毫秒） */
 const FETCH_TIMEOUT_MS = 30_000
@@ -14,7 +15,11 @@ const FETCH_TIMEOUT_MS = 30_000
  * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
  * 超时覆盖从发起到收到响应头的时间；响应体读取不受限。
  */
-function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
@@ -45,10 +50,7 @@ export class XiaomiTTSProvider implements TTSProvider {
     }
     this.baseUrl = config.XIAOMI_TTS_BASE_URL ?? 'https://token-plan-cn.xiaomimimo.com/v1'
     this.mode = config.XIAOMI_TTS_MODE ?? 'preset'
-    logger.info(
-      { baseUrl: this.baseUrl, mode: this.mode },
-      '小米 MiMo TTS 提供商初始化完成',
-    )
+    logger.info({ baseUrl: this.baseUrl, mode: this.mode }, '小米 MiMo TTS 提供商初始化完成')
   }
 
   async synthesize(text: string, options?: TTSSynthesizeOptions): Promise<Buffer> {
@@ -61,7 +63,7 @@ export class XiaomiTTSProvider implements TTSProvider {
         const voiceDesign = options?.voiceDesign
 
         // voiceclone 模式：自动标定 -- 首次使用时用 voicedesign 生成参考样本，之后固定使用
-        let effectiveMode = this.mode
+        const effectiveMode = this.mode
         let cloneSource: string | undefined
         if (this.mode === 'voiceclone' && voiceDesign) {
           cloneSource = await this.ensureVoiceSample(voiceDesign)
@@ -76,9 +78,9 @@ export class XiaomiTTSProvider implements TTSProvider {
             hasVoiceDesign: !!voiceDesign,
             voiceDesignPreview: voiceDesign?.slice(0, 60),
             usedCloneSample: !!cloneSource,
-            textPreview: text.slice(0, 60),
+            textPreview: text.slice(0, 60)
           },
-          '[小米 TTS] 合成请求',
+          '[小米 TTS] 合成请求'
         )
 
         const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
@@ -87,9 +89,9 @@ export class XiaomiTTSProvider implements TTSProvider {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'api-key': config.XIAOMI_TTS_API_KEY,
+            'api-key': config.XIAOMI_TTS_API_KEY
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify(body)
         })
 
         if (!response.ok) {
@@ -101,7 +103,7 @@ export class XiaomiTTSProvider implements TTSProvider {
         const audioBase64 = result.choices?.[0]?.message?.audio?.data
 
         if (!audioBase64) {
-            throw new Error('小米 TTS 响应缺少音频数据')
+          throw new Error('小米 TTS 响应缺少音频数据')
         }
 
         const buffer = Buffer.from(audioBase64, 'base64')
@@ -109,11 +111,11 @@ export class XiaomiTTSProvider implements TTSProvider {
 
         logger.info(
           { provider: this.name, mode: effectiveMode, duration, size: buffer.length },
-          '[小米 TTS] 合成完成',
+          '[小米 TTS] 合成完成'
         )
 
         return buffer
-      },
+      }
     )
   }
 
@@ -132,18 +134,18 @@ export class XiaomiTTSProvider implements TTSProvider {
         model: 'mimo-v2.5-tts-voicedesign',
         messages: [
           { role: 'user' as const, content: voiceDesign },
-          { role: 'assistant' as const, content: calibrationText },
+          { role: 'assistant' as const, content: calibrationText }
         ],
-        audio: { format: 'wav' as const },
+        audio: { format: 'wav' as const }
       }
 
       const response = await fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': config.XIAOMI_TTS_API_KEY,
+          'api-key': config.XIAOMI_TTS_API_KEY
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       })
 
       if (!response.ok) {
@@ -161,14 +163,11 @@ export class XiaomiTTSProvider implements TTSProvider {
     })
   }
 
-  async *synthesizeStream(
-    text: string,
-    options?: TTSSynthesizeOptions,
-  ): AsyncGenerator<Buffer> {
+  async *synthesizeStream(text: string, options?: TTSSynthesizeOptions): AsyncGenerator<Buffer> {
     const voiceDesign = options?.voiceDesign
 
     // voiceclone 自动标定
-    let effectiveMode = this.mode
+    const effectiveMode = this.mode
     let cloneSource: string | undefined
     if (this.mode === 'voiceclone' && voiceDesign) {
       cloneSource = await this.ensureVoiceSample(voiceDesign)
@@ -176,7 +175,7 @@ export class XiaomiTTSProvider implements TTSProvider {
 
     logger.debug(
       { provider: this.name, mode: effectiveMode, textLength: text.length },
-      '小米 TTS 流式请求',
+      '小米 TTS 流式请求'
     )
 
     const body = await this.buildRequestBody(text, effectiveMode, options, cloneSource)
@@ -186,9 +185,9 @@ export class XiaomiTTSProvider implements TTSProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-key': config.XIAOMI_TTS_API_KEY,
+        'api-key': config.XIAOMI_TTS_API_KEY
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(body)
     })
 
     if (!response.ok || !response.body) {
@@ -240,7 +239,7 @@ export class XiaomiTTSProvider implements TTSProvider {
     text: string,
     mode: string,
     options?: TTSSynthesizeOptions,
-    cloneSource?: string,
+    cloneSource?: string
   ): Promise<unknown> {
     const voice = options?.voice ?? config.XIAOMI_TTS_VOICE ?? 'Chloe'
     const format = 'wav'
@@ -256,17 +255,17 @@ export class XiaomiTTSProvider implements TTSProvider {
           messages: [
             {
               role: 'user',
-              content: designDesc,
+              content: designDesc
             },
             {
               role: 'assistant',
-              content: text,
-            },
+              content: text
+            }
           ],
           audio: {
-            format,
+            format
             // 注意：voiceDesign 模式不支持 audio.voice
-          },
+          }
         }
       }
 
@@ -280,32 +279,30 @@ export class XiaomiTTSProvider implements TTSProvider {
         if (!sample) {
           logger.warn(
             { voice },
-            '[小米 TTS] voiceclone 缺少参考样本（未提供 voiceDesign），回退到 preset 模型',
+            '[小米 TTS] voiceclone 缺少参考样本（未提供 voiceDesign），回退到 preset 模型'
           )
           return {
             model: 'mimo-v2.5-tts',
             messages: [{ role: 'assistant', content: text }],
-            audio: { format, voice },
+            audio: { format, voice }
           }
         }
 
         // 原始 base64 需补上 DataURL 前缀；已是 data: 开头则原样使用
-        const voiceDataUrl = sample.startsWith('data:')
-          ? sample
-          : `data:audio/wav;base64,${sample}`
+        const voiceDataUrl = sample.startsWith('data:') ? sample : `data:audio/wav;base64,${sample}`
 
         return {
           model: 'mimo-v2.5-tts-voiceclone',
           messages: [
             {
               role: 'assistant',
-              content: text,
-            },
+              content: text
+            }
           ],
           audio: {
             format,
-            voice: voiceDataUrl,
-          },
+            voice: voiceDataUrl
+          }
         }
       }
 
@@ -316,13 +313,13 @@ export class XiaomiTTSProvider implements TTSProvider {
           messages: [
             {
               role: 'assistant',
-              content: text,
-            },
+              content: text
+            }
           ],
           audio: {
             format,
-            voice,
-          },
+            voice
+          }
         }
       }
     }

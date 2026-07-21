@@ -41,7 +41,9 @@
         >
           <span
             class="w-18px h-18px shrink-0 rounded-full border-2 flex items-center justify-center mt-2px"
-            :class="model.id === currentModelId ? 'border-primary-80 bg-primary-80' : 'border-white/30'"
+            :class="
+              model.id === currentModelId ? 'border-primary-80 bg-primary-80' : 'border-white/30'
+            "
           >
             <span
               v-if="model.id === currentModelId"
@@ -55,7 +57,9 @@
             </div>
           </div>
         </button>
-        <div class="text-white/40 text-10px px-8px py-6px mt-4px leading-relaxed border-t border-white/10">
+        <div
+          class="text-white/40 text-10px px-8px py-6px mt-4px leading-relaxed border-t border-white/10"
+        >
           素材遵循 Live2D Free Material License,仅供个人学习使用。
         </div>
       </div>
@@ -85,14 +89,12 @@ const emit = defineEmits<{
  * spine / rive / svg 不在本计划范围内,后续多 provider 支持时再扩展。
  */
 const providerIsLive2D = computed(
-  () => (import.meta.env.VITE_CHARACTER_PROVIDER ?? 'live2d') === 'live2d',
+  () => (import.meta.env.VITE_CHARACTER_PROVIDER ?? 'live2d') === 'live2d'
 )
 
 const availableModels = AVAILABLE_LIVE2D_MODELS
 
-const currentModel = computed(() =>
-  availableModels.find((m) => m.id === props.currentModelId),
-)
+const currentModel = computed(() => availableModels.find(m => m.id === props.currentModelId))
 
 const isOpen = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
@@ -136,7 +138,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 .fade-enter-from,
 .fade-leave-to {

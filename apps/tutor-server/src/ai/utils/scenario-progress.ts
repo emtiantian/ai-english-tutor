@@ -36,7 +36,7 @@ export function computeCurrentActIndex(scenarioState: ScenarioState): number {
   const usedSet = scenarioState.wordsUsed
   for (let i = 0; i < actsCount - 1; i++) {
     const bucket = scenarioState.targetWords.slice(i * bucketSize, (i + 1) * bucketSize)
-    const usedInBucket = bucket.filter((w) => usedSet.has(w.toLowerCase())).length
+    const usedInBucket = bucket.filter(w => usedSet.has(w.toLowerCase())).length
     if (usedInBucket / bucket.length < 0.5) return i
   }
   return actsCount - 1
@@ -80,16 +80,19 @@ export function buildScenarioProgress(session: { scenario?: ScenarioState }) {
     maxTurns: scenario.maxTurns,
     coverageRate: coverage,
     stars,
-    completed,
+    completed
   }
 
   if (completed) {
     result.summary = {
       wordsUsed: wordsLearned,
       wordsTotal: scenario.targetWords.length,
-      turnsCount: scenario.turnsCount,
+      turnsCount: scenario.turnsCount
     }
-    logger.info({ scenarioId: scenario.id, turnsCount: scenario.turnsCount, coverage, stars }, '场景完成！')
+    logger.info(
+      { scenarioId: scenario.id, turnsCount: scenario.turnsCount, coverage, stars },
+      '场景完成！'
+    )
   }
 
   return result

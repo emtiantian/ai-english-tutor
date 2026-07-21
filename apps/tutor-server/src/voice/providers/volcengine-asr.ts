@@ -38,16 +38,13 @@ export class VolcengineASRProvider implements ASRProvider {
     this.segmentMs = config.VOLCENGINE_ASR_SEGMENT_MS
     logger.info(
       { baseUrl: this.baseUrl, resourceId: this.resourceId, segmentMs: this.segmentMs },
-      '火山方舟 ASR 提供商初始化完成',
+      '火山方舟 ASR 提供商初始化完成'
     )
   }
 
   async transcribe(audioBuffer: Buffer, mimeType?: string): Promise<ASRResult> {
     const startTime = Date.now()
-    logger.info(
-      { provider: this.name, size: audioBuffer.length, mimeType },
-      '[火山 ASR] 转写请求',
-    )
+    logger.info({ provider: this.name, size: audioBuffer.length, mimeType }, '[火山 ASR] 转写请求')
 
     // 确保音频为 WAV 16kHz 16bit mono raw
     const wavBuffer = await ensureWav16kMono(audioBuffer, mimeType)
@@ -62,8 +59,8 @@ export class VolcengineASRProvider implements ASRProvider {
         'X-Api-Resource-Id': this.resourceId,
         'X-Api-Request-Id': requestId,
         'X-Api-Connect-Id': connectId,
-        'X-Api-Sequence': '-1',
-      },
+        'X-Api-Sequence': '-1'
+      }
     })
 
     return new Promise((resolve, reject) => {
@@ -100,13 +97,13 @@ export class VolcengineASRProvider implements ASRProvider {
             enable_punc: true,
             enable_ddc: true,
             show_utterances: true,
-            enable_nonstream: false,
-          },
+            enable_nonstream: false
+          }
         })
         ws.send(fullRequest)
 
         // 异步发送音频分段，避免阻塞接收
-        sendAudioSegments(ws, rawAudio, this.segmentMs).catch((err) => {
+        sendAudioSegments(ws, rawAudio, this.segmentMs).catch(err => {
           logger.error({ err }, '[火山 ASR] 发送音频分段失败')
           // reject 前先关闭连接，避免 close 事件再次触发 settle
           if (ws.readyState === WebSocket.OPEN) {
@@ -153,7 +150,7 @@ export class VolcengineASRProvider implements ASRProvider {
         }
       })
 
-      ws.on('error', (err) => {
+      ws.on('error', err => {
         logger.error({ err: err.message }, '[火山 ASR] WebSocket 错误')
         settleReject(new Error(`火山 ASR WebSocket 错误：${err.message}`))
       })
@@ -167,12 +164,17 @@ export class VolcengineASRProvider implements ASRProvider {
           return
         }
         logger.info(
-          { provider: this.name, duration, text: fullText.slice(0, 100), textLength: fullText.length },
-          '[火山 ASR] 转写完成',
+          {
+            provider: this.name,
+            duration,
+            text: fullText.slice(0, 100),
+            textLength: fullText.length
+          },
+          '[火山 ASR] 转写完成'
         )
         settleResolve({
           text: fullText,
-          language: config.ASR_LANGUAGE === 'auto' ? undefined : config.ASR_LANGUAGE,
+          language: config.ASR_LANGUAGE === 'auto' ? undefined : config.ASR_LANGUAGE
         })
       })
 
@@ -192,38 +194,38 @@ export class VolcengineASRProvider implements ASRProvider {
 // ── 二进制帧构造 ──
 
 const ProtocolVersion = {
-  V1: 0b0001,
+  V1: 0b0001
 }
 
 const MessageType = {
   CLIENT_FULL_REQUEST: 0b0001,
   CLIENT_AUDIO_ONLY_REQUEST: 0b0010,
   SERVER_FULL_RESPONSE: 0b1001,
-  SERVER_ERROR_RESPONSE: 0b1111,
+  SERVER_ERROR_RESPONSE: 0b1111
 }
 
 const MessageTypeSpecificFlags = {
   NO_SEQUENCE: 0b0000,
   POS_SEQUENCE: 0b0001,
   NEG_SEQUENCE: 0b0010,
-  NEG_WITH_SEQUENCE: 0b0011,
+  NEG_WITH_SEQUENCE: 0b0011
 }
 
 const SerializationType = {
   NO_SERIALIZATION: 0b0000,
-  JSON: 0b0001,
+  JSON: 0b0001
 }
 
 const CompressionType = {
   NO_COMPRESSION: 0b0000,
-  GZIP: 0b0001,
+  GZIP: 0b0001
 }
 
 function buildHeader(
   messageType: number,
   specificFlags: number,
   serialization = SerializationType.JSON,
-  compression = CompressionType.GZIP,
+  compression = CompressionType.GZIP
 ): Buffer {
   const header = Buffer.alloc(4)
   header[0] = (ProtocolVersion.V1 << 4) | 1 // header 大小 = 1
@@ -236,10 +238,7 @@ function buildHeader(
 function buildFullClientRequest(payload: unknown): Buffer {
   const payloadBytes = Buffer.from(JSON.stringify(payload), 'utf-8')
   const compressed = gzipCompress(payloadBytes)
-  const header = buildHeader(
-    MessageType.CLIENT_FULL_REQUEST,
-    MessageTypeSpecificFlags.POS_SEQUENCE,
-  )
+  const header = buildHeader(MessageType.CLIENT_FULL_REQUEST, MessageTypeSpecificFlags.POS_SEQUENCE)
   const seq = Buffer.alloc(4)
   seq.writeInt32BE(1)
   const size = Buffer.alloc(4)
@@ -264,7 +263,7 @@ function buildAudioOnlyRequest(seq: number, audio: Buffer, isLast: boolean): Buf
 async function sendAudioSegments(
   ws: WebSocket,
   rawAudio: Buffer,
-  segmentMs: number,
+  segmentMs: number
 ): Promise<void> {
   const bytesPerSecond = 16000 * 1 * 2 // 16kHz、单声道、16bit
   const segmentSize = Math.floor((bytesPerSecond * segmentMs) / 1000)
@@ -303,7 +302,7 @@ class AsrResponse {
       isLastPackage: this.isLastPackage,
       payloadSequence: this.payloadSequence,
       payloadSize: this.payloadSize,
-      payloadMsg: this.payloadMsg,
+      payloadMsg: this.payloadMsg
     }
   }
 }
@@ -368,7 +367,7 @@ function extractText(msg: unknown): string | undefined {
     if (typeof r.text === 'string') return r.text
     if (Array.isArray(r.utterances)) {
       return r.utterances
-        .map((u) => (typeof u === 'object' && u ? (u as Record<string, unknown>).text : ''))
+        .map(u => (typeof u === 'object' && u ? (u as Record<string, unknown>).text : ''))
         .filter(Boolean)
         .join(' ')
     }
@@ -387,30 +386,38 @@ async function ensureWav16kMono(audioBuffer: Buffer, mimeType?: string): Promise
     return convertWithFfmpeg(audioBuffer, 'wav')
   }
 
-  logger.info(
-    { mimeType: mimeType ?? 'unknown' },
-    '[火山 ASR] 输入不是 WAV，使用 ffmpeg 转换',
-  )
+  logger.info({ mimeType: mimeType ?? 'unknown' }, '[火山 ASR] 输入不是 WAV，使用 ffmpeg 转换')
   return convertWithFfmpeg(audioBuffer, mimeType?.split('/').pop() ?? 'mp3')
 }
 
 function isValidWav(data: Buffer): boolean {
-  return data.length >= 12 && data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WAVE'
+  return (
+    data.length >= 12 &&
+    data.toString('ascii', 0, 4) === 'RIFF' &&
+    data.toString('ascii', 8, 12) === 'WAVE'
+  )
 }
 
 function convertWithFfmpeg(inputBuffer: Buffer, inputFormat: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const ffmpeg = spawn('ffmpeg', [
       '-hide_banner',
-      '-loglevel', 'error',
+      '-loglevel',
+      'error',
       '-y',
-      '-f', inputFormat,
-      '-i', 'pipe:0',
-      '-acodec', 'pcm_s16le',
-      '-ac', '1',
-      '-ar', '16000',
-      '-f', 'wav',
-      'pipe:1',
+      '-f',
+      inputFormat,
+      '-i',
+      'pipe:0',
+      '-acodec',
+      'pcm_s16le',
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      '-f',
+      'wav',
+      'pipe:1'
     ])
 
     const chunks: Buffer[] = []
@@ -419,11 +426,11 @@ function convertWithFfmpeg(inputBuffer: Buffer, inputFormat: string): Promise<Bu
     ffmpeg.stdout.on('data', (chunk: Buffer) => chunks.push(chunk))
     ffmpeg.stderr.on('data', (chunk: Buffer) => errChunks.push(chunk))
 
-    ffmpeg.on('error', (err) => {
+    ffmpeg.on('error', err => {
       reject(new Error(`ffmpeg 不可用：${err.message}。使用火山 ASR 请先安装 ffmpeg。`))
     })
 
-    ffmpeg.on('close', (code) => {
+    ffmpeg.on('close', code => {
       if (code !== 0) {
         const err = Buffer.concat(errChunks).toString('utf-8')
         reject(new Error(`ffmpeg 转换失败（code=${code}）：${err || '未知错误'}`))
@@ -440,7 +447,7 @@ function convertWithFfmpeg(inputBuffer: Buffer, inputFormat: string): Promise<Bu
 // ── 工具函数 ──
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 function gzipCompress(data: Buffer): Buffer {

@@ -8,13 +8,13 @@ function buildMultipartBody(
   fieldName: string,
   filename: string,
   contentType: string,
-  data: Buffer,
+  data: Buffer
 ): Buffer {
   const prefix = Buffer.from(
     `--${boundary}\r\n` +
       `Content-Disposition: form-data; name="${fieldName}"; filename="${filename}"\r\n` +
       `Content-Type: ${contentType}\r\n\r\n`,
-    'utf8',
+    'utf8'
   )
   const suffix = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8')
   return Buffer.concat([prefix, data, suffix])
@@ -42,7 +42,7 @@ describe('voice routes', () => {
     const ttsMissing = await app.inject({
       method: 'POST',
       url: '/api/tts',
-      payload: { text: '   ' },
+      payload: { text: '   ' }
     })
 
     expect(ttsMissing.statusCode).toBe(400)
@@ -63,7 +63,7 @@ describe('voice routes', () => {
     const ttsBrowser = await app.inject({
       method: 'POST',
       url: '/api/tts',
-      payload: { text: 'Hello', format: 'wav' },
+      payload: { text: 'Hello', format: 'wav' }
     })
 
     expect(ttsBrowser.statusCode).toBe(500)
@@ -85,7 +85,7 @@ describe('voice routes', () => {
       method: 'POST',
       url: '/api/asr',
       headers: { 'content-type': 'multipart/form-data; boundary=----Missing' },
-      payload: '',
+      payload: ''
     })
 
     expect(asrMissing.statusCode).toBe(400)
@@ -110,7 +110,13 @@ describe('voice routes', () => {
       method: 'POST',
       url: '/api/asr',
       headers: { 'content-type': 'multipart/form-data; boundary=----Large' },
-      payload: buildMultipartBody('----Large', 'file', 'large.webm', 'audio/webm', Buffer.alloc(2048)),
+      payload: buildMultipartBody(
+        '----Large',
+        'file',
+        'large.webm',
+        'audio/webm',
+        Buffer.alloc(2048)
+      )
     })
 
     expect(asrLarge.statusCode).toBe(413)
@@ -133,7 +139,13 @@ describe('voice routes', () => {
       method: 'POST',
       url: '/api/asr',
       headers: { 'content-type': 'multipart/form-data; boundary=----Browser' },
-      payload: buildMultipartBody('----Browser', 'file', 'test.webm', 'audio/webm', Buffer.alloc(1024)),
+      payload: buildMultipartBody(
+        '----Browser',
+        'file',
+        'test.webm',
+        'audio/webm',
+        Buffer.alloc(1024)
+      )
     })
 
     expect(asrBrowser.statusCode).toBe(500)

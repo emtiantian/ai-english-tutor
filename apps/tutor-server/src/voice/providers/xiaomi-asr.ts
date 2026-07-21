@@ -30,8 +30,13 @@ export class XiaomiASRProvider implements ASRProvider {
     const audioBase64 = audioBuffer.toString('base64')
 
     logger.info(
-      { provider: this.name, size: audioBuffer.length, base64Size: audioBase64.length, mimeType: mime },
-      '[小米 ASR] 开始转写...',
+      {
+        provider: this.name,
+        size: audioBuffer.length,
+        base64Size: audioBase64.length,
+        mimeType: mime
+      },
+      '[小米 ASR] 开始转写...'
     )
 
     const startTime = Date.now()
@@ -47,12 +52,12 @@ export class XiaomiASRProvider implements ASRProvider {
           content: [
             {
               type: 'input_audio',
-              input_audio: { data: dataUrl },
-            },
-          ],
-        },
+              input_audio: { data: dataUrl }
+            }
+          ]
+        }
       ],
-      ...(language ? { asr_options: { language } } : {}),
+      ...(language ? { asr_options: { language } } : {})
     }
 
     const url = `${this.baseUrl}/chat/completions`
@@ -64,19 +69,22 @@ export class XiaomiASRProvider implements ASRProvider {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': this.apiKey,
+          'api-key': this.apiKey
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(body)
       })
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       logger.error({ err: errMsg, url }, '[小米 ASR] 连接失败')
-      throw new Error(`小米 ASR 连接失败：${errMsg}`)
+      throw new Error(`小米 ASR 连接失败：${errMsg}`, { cause: err })
     }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      logger.error({ status: response.status, errorText: errorText.slice(0, 300) }, '[小米 ASR] 服务器返回错误')
+      logger.error(
+        { status: response.status, errorText: errorText.slice(0, 300) },
+        '[小米 ASR] 服务器返回错误'
+      )
       throw new Error(`小米 ASR 错误：${response.status} - ${errorText}`)
     }
 
@@ -86,7 +94,7 @@ export class XiaomiASRProvider implements ASRProvider {
 
     logger.info(
       { provider: this.name, duration, text: text.slice(0, 100), textLength: text.length },
-      '[小米 ASR] 转写完成',
+      '[小米 ASR] 转写完成'
     )
 
     return { text }

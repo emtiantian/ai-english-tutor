@@ -25,7 +25,7 @@ services:
   cosyvoice:
     image: cosyvoice:local
     ports:
-      - "50000:50000"
+      - '50000:50000'
     volumes:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/modelscope-cache:/root/.cache/modelscope
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/cosyvoice-models:/opt/CosyVoice/CosyVoice/pretrained_models
@@ -36,7 +36,7 @@ services:
     command:
       - bash
       - -c
-      - "cd /workspace/CosyVoice && python /opt/cosyvoice-scripts/server-wrapper.py --port 50000 --model_dir iic/CosyVoice2-0.5B"
+      - 'cd /workspace/CosyVoice && python /opt/cosyvoice-scripts/server-wrapper.py --port 50000 --model_dir iic/CosyVoice2-0.5B'
     deploy:
       resources:
         reservations:
@@ -51,12 +51,16 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "50m"
-        max-file: "5"
+        max-size: '50m'
+        max-file: '5'
     # 健康探测：POST /inference_sft 判断 FastAPI 已起且端口监听正常；
     # 4GB 显存机器上 healthcheck 也会占显存，间隔不要太短（≥30s）
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:50000/inference_sft', data=b'tts_text=test&spk_id=EnglishTutor', timeout=10)\""]
+      test:
+        [
+          'CMD-SHELL',
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:50000/inference_sft'', data=b''tts_text=test&spk_id=EnglishTutor'', timeout=10)"'
+        ]
       interval: 30s
       timeout: 15s
       retries: 5

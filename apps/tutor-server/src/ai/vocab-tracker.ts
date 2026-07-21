@@ -32,9 +32,9 @@ export class VocabTracker {
    */
   getReviewWords(userId: string, limit: number = 5): ReviewWord[] {
     const dueWords = vocabRepo.getDueForReview(userId, limit)
-    return dueWords.map((w) => ({
+    return dueWords.map(w => ({
       ...w,
-      contextCount: 0,
+      contextCount: 0
     }))
   }
 
@@ -44,7 +44,7 @@ export class VocabTracker {
   buildReviewPrompt(reviewWords: ReviewWord[]): string {
     if (reviewWords.length === 0) return ''
 
-    const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
+    const wordList = reviewWords.map(w => `"${w.word}"`).join(', ')
     return `
 词汇复习 —— 学生需要练习这些单词。请自然地把它们融入你的回复中，使用全新的语境（不同于之前的对话）。不要生硬堆砌，有机地穿插即可；如果某个词不适合当前语境，就跳过它。
 
@@ -64,10 +64,10 @@ export class VocabTracker {
   analyzeUserText(
     userText: string,
     targetWords: string[],
-    options: { isAudioInput?: boolean } = {},
+    options: { isAudioInput?: boolean } = {}
   ): { used: string[]; missed: string[] } {
     const normalizedText = userText.toLowerCase()
-    const tokens = normalizedText.split(/\s+/).map((t) => t.replace(/[^a-z']/g, ''))
+    const tokens = normalizedText.split(/\s+/).map(t => t.replace(/[^a-z']/g, ''))
     const used: string[] = []
     const missed: string[] = []
 
@@ -91,14 +91,14 @@ export class VocabTracker {
       // 2. 词干匹配 — 检查是否有 token 共享同一词干
       if (!found) {
         const wordStem = simpleStem(normalizedWord)
-        found = tokens.some((token) => simpleStem(token) === wordStem)
+        found = tokens.some(token => simpleStem(token) === wordStem)
       }
 
       // 3. 音频输入：模糊匹配（Levenshtein 距离 ≤ 2）
       if (!found && options.isAudioInput) {
         const MAX_FUZZY_LEN = 50
         const clampedWord = normalizedWord.slice(0, MAX_FUZZY_LEN)
-        found = tokens.some((token) => {
+        found = tokens.some(token => {
           const clampedToken = token.slice(0, MAX_FUZZY_LEN)
           if (Math.abs(clampedToken.length - clampedWord.length) > 2) return false
           return levenshtein(clampedToken, clampedWord) <= 2
@@ -124,9 +124,9 @@ export class VocabTracker {
     aiResponseWords: string[],
     reviewWords: ReviewWord[],
     level: string,
-    options: { isAudioInput?: boolean } = {},
+    options: { isAudioInput?: boolean } = {}
   ): VocabAnalysis {
-    const targetWords = reviewWords.map((w) => w.word)
+    const targetWords = reviewWords.map(w => w.word)
     const { used, missed } = this.analyzeUserText(userText, targetWords, options)
 
     // 标记正确使用的词
@@ -144,7 +144,7 @@ export class VocabTracker {
     // 记录 AI 响应中的新词
     const newWords: string[] = []
     for (const word of aiResponseWords) {
-      const existing = vocabRepo.getAllWords(userId).find((w) => w.word === word.toLowerCase())
+      const existing = vocabRepo.getAllWords(userId).find(w => w.word === word.toLowerCase())
       if (!existing) {
         vocabRepo.recordWord(userId, word, level, 'learning')
         newWords.push(word)
@@ -182,9 +182,26 @@ function isValidWord(word: string): boolean {
 function simpleStem(word: string): string {
   // 顺序很重要：长的后缀优先
   const suffixes = [
-    'tion', 'sion', 'ment', 'ness', 'able', 'ible', 'ful', 'less',
-    'ous', 'ive', 'ing', 'ied', 'ies', 'ers', 'est', 'ly', 'ed',
-    'er', 'es', 's',
+    'tion',
+    'sion',
+    'ment',
+    'ness',
+    'able',
+    'ible',
+    'ful',
+    'less',
+    'ous',
+    'ive',
+    'ing',
+    'ied',
+    'ies',
+    'ers',
+    'est',
+    'ly',
+    'ed',
+    'er',
+    'es',
+    's'
   ]
 
   let stem = word
@@ -214,7 +231,7 @@ function levenshtein(a: string, b: string): number {
       dp[i][j] = Math.min(
         dp[i - 1][j] + 1,
         dp[i][j - 1] + 1,
-        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
       )
     }
   }

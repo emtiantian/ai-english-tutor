@@ -24,7 +24,7 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamMouthForm: 1.0,
     ParamCheek: 0.6,
     ParamEyeLSmile: 1.0,
-    ParamEyeRSmile: 1.0,
+    ParamEyeRSmile: 1.0
   },
   neutral: {
     ParamBrowLY: 0,
@@ -32,7 +32,7 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamMouthForm: 0,
     ParamCheek: 0,
     ParamEyeLSmile: 0,
-    ParamEyeRSmile: 0,
+    ParamEyeRSmile: 0
   },
   curious: {
     ParamBrowLY: -0.2,
@@ -40,14 +40,14 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowLAngle: 0.2,
     ParamBrowRAngle: -0.2,
     ParamMouthForm: 0.3,
-    ParamAngleZ: -5,
+    ParamAngleZ: -5
   },
   surprised: {
     ParamBrowLY: -1.0,
     ParamBrowRY: -1.0,
     ParamEyeLOpen: 1.5,
     ParamEyeROpen: 1.5,
-    ParamMouthForm: 0.5,
+    ParamMouthForm: 0.5
   },
   encouraging: {
     ParamBrowLY: -0.4,
@@ -55,7 +55,7 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamMouthForm: 1.0,
     ParamCheek: 0.5,
     ParamEyeLSmile: 1.0,
-    ParamEyeRSmile: 1.0,
+    ParamEyeRSmile: 1.0
   },
   thoughtful: {
     ParamBrowLY: 0.2,
@@ -64,7 +64,7 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowRAngle: 0.3,
     ParamMouthForm: 0.2,
     ParamAngleX: 3,
-    ParamAngleY: -2,
+    ParamAngleY: -2
   },
   sad: {
     ParamBrowLY: 0.3,
@@ -73,8 +73,8 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     ParamBrowRAngle: -0.2,
     ParamMouthForm: -0.3,
     ParamEyeLOpen: 0.7,
-    ParamEyeROpen: 0.7,
-  },
+    ParamEyeROpen: 0.7
+  }
 }
 
 /**
@@ -85,14 +85,14 @@ const HIYORI_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
  * 我们把 8 个语义 ID 映射到 Idle_0 至 Idle_7。
  */
 const HIYORI_MOTION_MAP: Record<MotionId, string> = {
-  wave: 'Idle_0',       // Hiyori_m01 — 挥手
-  nod: 'Idle_1',        // Hiyori_m02 — 点头
-  think: 'Idle_2',      // Hiyori_m03 — 思考
-  gesture: 'Idle_3',    // Hiyori_m05 — 手势
-  clap: 'Idle_4',       // Hiyori_m06 — 鼓掌
-  point: 'Idle_5',      // Hiyori_m07 — 指向
-  write: 'Idle_6',      // Hiyori_m08 — 书写
-  surprised: 'Idle_7',  // Hiyori_m09 — 惊讶
+  wave: 'Idle_0', // Hiyori_m01 — 挥手
+  nod: 'Idle_1', // Hiyori_m02 — 点头
+  think: 'Idle_2', // Hiyori_m03 — 思考
+  gesture: 'Idle_3', // Hiyori_m05 — 手势
+  clap: 'Idle_4', // Hiyori_m06 — 鼓掌
+  point: 'Idle_5', // Hiyori_m07 — 指向
+  write: 'Idle_6', // Hiyori_m08 — 书写
+  surprised: 'Idle_7' // Hiyori_m09 — 惊讶
 }
 
 const HIYORI_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
@@ -103,7 +103,7 @@ const HIYORI_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
   clap: '鼓掌',
   point: '指向',
   write: '书写动作',
-  surprised: '惊讶',
+  surprised: '惊讶'
 }
 
 const HIYORI_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
@@ -112,7 +112,7 @@ const HIYORI_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
   curious: '好奇',
   surprised: '惊讶',
   encouraging: '鼓励',
-  thoughtful: '沉思',
+  thoughtful: '沉思'
 }
 
 /**
@@ -135,19 +135,19 @@ const HIYORI_MOTION_REGISTRY: MotionRegistry = {
   },
 
   getAvailableMotions(): MotionMapping[] {
-    return AVAILABLE_MOTIONS.map((id) => ({
+    return AVAILABLE_MOTIONS.map(id => ({
       semanticId: id,
       modelMotionKey: HIYORI_MOTION_MAP[id],
-      description: HIYORI_MOTION_DESCRIPTIONS[id],
+      description: HIYORI_MOTION_DESCRIPTIONS[id]
     }))
   },
 
   getAvailableExpressions(): ExpressionMapping[] {
-    return AVAILABLE_EXPRESSIONS.map((id) => ({
+    return AVAILABLE_EXPRESSIONS.map(id => ({
       semanticId: id,
-      description: HIYORI_EXPRESSION_DESCRIPTIONS[id],
+      description: HIYORI_EXPRESSION_DESCRIPTIONS[id]
     }))
-  },
+  }
 }
 
 export const HIYORI_MANIFEST = defineLive2DModelManifest({
@@ -159,13 +159,13 @@ export const HIYORI_MANIFEST = defineLive2DModelManifest({
   view: {
     scale: 1.0,
     offsetX: 0,
-    offsetY: 0,
+    offsetY: 0
   },
   motionRegistry: HIYORI_MOTION_REGISTRY,
   credit: {
     author: 'Live2D Inc.',
     license: 'Live2D Free Material License Agreement',
     licenseUrl: 'https://www.live2d.com/eula/live2d-sample-model-terms_en.html',
-    sourceUrl: 'https://www.live2d.com/download/sample-data/',
-  },
+    sourceUrl: 'https://www.live2d.com/download/sample-data/'
+  }
 })

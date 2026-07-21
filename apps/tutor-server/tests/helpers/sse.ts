@@ -22,13 +22,13 @@ export async function createSSEServer(): Promise<{ server: FastifyInstance; port
 
 export function collectSSE(
   url: string,
-  options: { timeoutMs?: number; minEvents?: number } = {},
+  options: { timeoutMs?: number; minEvents?: number } = {}
 ): Promise<{ events: SSEvent[]; req: http.ClientRequest }> {
   const { timeoutMs = 3000, minEvents = 0 } = options
 
   return new Promise((resolve, reject) => {
     const events: SSEvent[] = []
-    const req = http.get(url, (res) => {
+    const req = http.get(url, res => {
       let buffer = ''
       res.on('data', (chunk: Buffer) => {
         buffer += chunk.toString('utf8')

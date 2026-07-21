@@ -4,7 +4,7 @@ export class SvgCharacterProvider implements CharacterProvider {
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
-    mouthOpen: 0,
+    mouthOpen: 0
   }
 
   async init(_canvas: HTMLCanvasElement): Promise<void> {

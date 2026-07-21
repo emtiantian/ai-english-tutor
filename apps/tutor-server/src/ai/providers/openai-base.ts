@@ -5,7 +5,7 @@ import type {
   LLMMessage,
   LLMResponse,
   LLMStreamChunk,
-  ProviderCapabilities,
+  ProviderCapabilities
 } from '../llm.js'
 import { normalizeToString } from '../llm.js'
 import { normalizeLLMError } from '../llm/errors.js'
@@ -66,7 +66,9 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
       throw new Error(`未配置 ${options.name} API Key`)
     }
     if (!options.model) {
-      throw new Error(`未配置 ${options.name} 模型（${options.name === 'volcengine' ? 'VOLCENGINE_LLM_MODEL' : 'MODEL'}）`)
+      throw new Error(
+        `未配置 ${options.name} 模型（${options.name === 'volcengine' ? 'VOLCENGINE_LLM_MODEL' : 'MODEL'}）`
+      )
     }
 
     this.name = options.name
@@ -83,63 +85,53 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
       baseURL: options.baseURL,
       fetch: options.fetch ?? globalThis.fetch,
       maxRetries: 0,
-      timeout: this.timeout,
+      timeout: this.timeout
     })
   }
 
   async complete(messages: LLMMessage[], signal?: AbortSignal): Promise<LLMResponse> {
     const normalizedMessages = this.normalizeMessages(messages)
 
-    logger.debug(
-      { provider: this.name, messageCount: normalizedMessages.length },
-      'LLM 完整请求',
-    )
+    logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 完整请求')
 
     const startTime = Date.now()
     const response = await withRetry(
       () =>
-        this.client.chat.completions.create(
-          this.buildRequestOptions(normalizedMessages, false),
-          { signal },
-        ) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
+        this.client.chat.completions.create(this.buildRequestOptions(normalizedMessages, false), {
+          signal
+        }) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
       {
         maxRetries: this.maxRetries,
         signal,
         onRetry: (err, attempt, delay) => {
           logger.warn(
             { provider: this.name, attempt, delay, code: err.code, status: err.status },
-            'LLM 请求重试',
+            'LLM 请求重试'
           )
-        },
-      },
+        }
+      }
     )
     const duration = Date.now() - startTime
 
     const content = this.extractContent(response)
     const usage = response.usage
 
-    logger.info(
-      { provider: this.name, duration, tokens: usage?.total_tokens },
-      'LLM 完整响应',
-    )
+    logger.info({ provider: this.name, duration, tokens: usage?.total_tokens }, 'LLM 完整响应')
 
     return {
       content,
-      usage: this.parseUsage(usage),
+      usage: this.parseUsage(usage)
     }
   }
 
   async *stream(
     messages: LLMMessage[],
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal }
   ): AsyncGenerator<LLMStreamChunk> {
     const signal = options?.signal
     const normalizedMessages = this.normalizeMessages(messages)
 
-    logger.debug(
-      { provider: this.name, messageCount: normalizedMessages.length },
-      'LLM 流式请求',
-    )
+    logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 流式请求')
 
     const startTime = Date.now()
 
@@ -163,7 +155,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
           totalTokens += content.length
           yield {
             content,
-            isEnd: false,
+            isEnd: false
           }
         }
       }
@@ -176,7 +168,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
 
     yield {
       content: '',
-      isEnd: true,
+      isEnd: true
     }
   }
 
@@ -185,14 +177,14 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    */
   protected buildRequestOptions(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    stream: boolean,
+    stream: boolean
   ): OpenAI.Chat.ChatCompletionCreateParams {
     return {
       model: this.model,
       messages,
       temperature: this.temperature,
       max_tokens: this.maxTokens,
-      stream,
+      stream
     } as OpenAI.Chat.ChatCompletionCreateParams
   }
 
@@ -201,11 +193,11 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    */
   protected async createStream(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     return this.client.chat.completions.create(
       this.buildRequestOptions(messages, true) as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
-      { signal },
+      { signal }
     )
   }
 
@@ -215,32 +207,26 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    * 默认实现丢弃多模态音频，只保留文本。
    * 子类可覆盖以支持音频输入（如小米）。
    */
-  protected normalizeMessages(
-    messages: LLMMessage[],
-  ): OpenAI.Chat.ChatCompletionMessageParam[] {
+  protected normalizeMessages(messages: LLMMessage[]): OpenAI.Chat.ChatCompletionMessageParam[] {
     return messages.map(normalizeToString) as OpenAI.Chat.ChatCompletionMessageParam[]
   }
 
   /**
    * 解析 token 使用量。
    */
-  protected parseUsage(
-    usage: OpenAI.CompletionUsage | undefined,
-  ): LLMResponse['usage'] {
+  protected parseUsage(usage: OpenAI.CompletionUsage | undefined): LLMResponse['usage'] {
     if (!usage) return undefined
     return {
       promptTokens: usage.prompt_tokens,
       completionTokens: usage.completion_tokens,
-      totalTokens: usage.total_tokens,
+      totalTokens: usage.total_tokens
     }
   }
 
   /**
    * 从非流式响应中提取回复文本。
    */
-  protected extractContent(
-    response: OpenAI.Chat.Completions.ChatCompletion,
-  ): string {
+  protected extractContent(response: OpenAI.Chat.Completions.ChatCompletion): string {
     return response.choices[0]?.message?.content ?? ''
   }
 
@@ -249,9 +235,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    *
    * 返回 null 表示该 chunk 没有有效内容，不需要 yield。
    */
-  protected handleStreamChunk(
-    chunk: OpenAI.Chat.Completions.ChatCompletionChunk,
-  ): string | null {
+  protected handleStreamChunk(chunk: OpenAI.Chat.Completions.ChatCompletionChunk): string | null {
     return chunk.choices[0]?.delta?.content ?? null
   }
 
@@ -261,11 +245,8 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
   protected logStreamComplete(
     duration: number,
     totalTokens: number,
-    extra?: Record<string, unknown>,
+    extra?: Record<string, unknown>
   ): void {
-    logger.info(
-      { provider: this.name, duration, totalTokens, ...extra },
-      'LLM 流式完成',
-    )
+    logger.info({ provider: this.name, duration, totalTokens, ...extra }, 'LLM 流式完成')
   }
 }

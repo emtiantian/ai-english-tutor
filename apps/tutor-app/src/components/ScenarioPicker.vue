@@ -7,7 +7,9 @@
 
     <!-- 风格选择器：挑选人格预设。火山 TTS 使用固定音色时仍可选择（仅影响 LLM 人格），标签会随之切换。 -->
     <div class="style-section">
-      <span class="style-label">{{ voiceStyleSelectable === false ? '选择性格风格' : '选择语音风格' }}</span>
+      <span class="style-label">{{
+        voiceStyleSelectable === false ? '选择性格风格' : '选择语音风格'
+      }}</span>
       <select v-model="localStyle" class="style-select">
         <option value="">🎲 随机风格</option>
         <option value="cheeky-cute">😜 俏皮可爱</option>
@@ -30,13 +32,11 @@
         v-for="scenario in visibleScenarios"
         :key="scenario.id"
         class="scenario-card"
-        :class="{ 'selected': selectedScenarioId === scenario.id }"
+        :class="{ selected: selectedScenarioId === scenario.id }"
         @click="handleCardClick(scenario)"
       >
         <!-- 暂停徽章 -->
-        <span v-if="pausedSnapshots.get(scenario.id)" class="pause-badge">
-          ⏸ 可续玩
-        </span>
+        <span v-if="pausedSnapshots.get(scenario.id)" class="pause-badge"> ⏸ 可续玩 </span>
 
         <span class="scenario-icon">{{ scenario.icon }}</span>
         <span class="scenario-name">{{ scenario.name }}</span>
@@ -60,7 +60,9 @@
                 {{ dotStarCount(scenario.id, level) }}
               </span>
             </span>
-            <span class="level-label" :class="{ 'active': isNextLevel(scenario.id, level) }">{{ level }}</span>
+            <span class="level-label" :class="{ active: isNextLevel(scenario.id, level) }">{{
+              level
+            }}</span>
           </div>
         </div>
 
@@ -75,11 +77,7 @@
       </div>
     </div>
 
-    <button
-      v-if="scenarios.length > INITIAL_COUNT"
-      class="btn-toggle"
-      @click="showAll = !showAll"
-    >
+    <button v-if="scenarios.length > INITIAL_COUNT" class="btn-toggle" @click="showAll = !showAll">
       {{ showAll ? '收起' : `更多场景 (${scenarios.length - INITIAL_COUNT})` }}
       <span class="toggle-arrow" :class="{ 'arrow-up': showAll }">▼</span>
     </button>
@@ -145,7 +143,7 @@ const selectedScenarioId = ref<string | null>(null)
 const selectedLevel = ref<CEFRLevel | null>(null)
 
 const visibleScenarios = computed(() =>
-  showAll.value ? props.scenarios : props.scenarios.slice(0, INITIAL_COUNT),
+  showAll.value ? props.scenarios : props.scenarios.slice(0, INITIAL_COUNT)
 )
 
 function getProgress(scenarioId: string): UserScenarioProgress | undefined {
@@ -178,9 +176,9 @@ function dotClass(scenarioId: string, level: CEFRLevel): Record<string, boolean>
   const cleared = isCleared(scenarioId, level)
   const selected = selectedScenarioId.value === scenarioId && selectedLevel.value === level
   return {
-    'cleared': cleared,
-    'next': next,
-    'selected': selected,
+    cleared: cleared,
+    next: next,
+    selected: selected
   }
 }
 
@@ -221,7 +219,7 @@ function buttonState(scenarioId: string): ButtonState {
       const isFirst = !progress || !progress.highestClearedLevel
       return {
         text: isFirst ? `开始 ${level}` : `挑战 ${level}`,
-        variant: 'primary',
+        variant: 'primary'
       }
     }
     return { text: `开始 ${level}`, variant: 'primary' }
@@ -230,7 +228,7 @@ function buttonState(scenarioId: string): ButtonState {
     const isFirst = !progress || !progress.highestClearedLevel
     return {
       text: isFirst ? `开始 ${next}` : `挑战 ${next}`,
-      variant: 'primary',
+      variant: 'primary'
     }
   }
   return { text: '重玩 C2', variant: 'completed' }
@@ -257,9 +255,10 @@ function handleLevelClick(scenario: ScenarioInfo, level: CEFRLevel) {
 }
 
 function handleStart(scenario: ScenarioInfo) {
-  const level = selectedScenarioId.value === scenario.id
-    ? (selectedLevel.value ?? getEntryLevel(scenario.id))
-    : getEntryLevel(scenario.id)
+  const level =
+    selectedScenarioId.value === scenario.id
+      ? (selectedLevel.value ?? getEntryLevel(scenario.id))
+      : getEntryLevel(scenario.id)
   emit('select', scenario.id, { styleName: localStyle.value || undefined, level })
 }
 
@@ -275,7 +274,7 @@ function handleRestart() {
     // 重新开始时保持快照原来的 CEFR 档，避免从暂停的 A2 掉回 A1
     emit('select', activeScenario.value.id, {
       styleName: localStyle.value || undefined,
-      level: activeSnapshot.value.level,
+      level: activeSnapshot.value.level
     })
   }
   closeDialog()
@@ -604,5 +603,4 @@ function closeDialog() {
     height: 24px;
   }
 }
-
 </style>

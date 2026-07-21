@@ -36,7 +36,7 @@ export function useSpineRenderer(): SpineRendererAPI {
     isReady: false,
     currentAnimation: null,
     currentSkin: null,
-    error: null,
+    error: null
   })
 
   let spineCanvas: any = null
@@ -46,7 +46,10 @@ export function useSpineRenderer(): SpineRendererAPI {
   let disposed = false
   let renderCount = 0
 
-  async function init(targetCanvas: HTMLCanvasElement, modelConfig: SpineModelConfig): Promise<void> {
+  async function init(
+    targetCanvas: HTMLCanvasElement,
+    modelConfig: SpineModelConfig
+  ): Promise<void> {
     if (disposed) return
     config = modelConfig
     state.value.isLoading = true
@@ -87,10 +90,14 @@ export function useSpineRenderer(): SpineRendererAPI {
             let skeletonData
             if (skeletonPath.endsWith('.json')) {
               const skeletonJson = new spine.SkeletonJson(atlasLoader)
-              skeletonData = skeletonJson.readSkeletonData(canvas.assetManager.require(skeletonPath))
+              skeletonData = skeletonJson.readSkeletonData(
+                canvas.assetManager.require(skeletonPath)
+              )
             } else {
               const skeletonBinary = new spine.SkeletonBinary(atlasLoader)
-              skeletonData = skeletonBinary.readSkeletonData(canvas.assetManager.require(skeletonPath))
+              skeletonData = skeletonBinary.readSkeletonData(
+                canvas.assetManager.require(skeletonPath)
+              )
             }
 
             skeleton = new spine.Skeleton(skeletonData)
@@ -105,7 +112,10 @@ export function useSpineRenderer(): SpineRendererAPI {
             state.value.isLoading = false
             state.value.isReady = true
 
-            console.log('[Spine] Init complete, animations:', skeletonData.animations.map((a: any) => a.name).join(', '))
+            console.log(
+              '[Spine] Init complete, animations:',
+              skeletonData.animations.map((a: any) => a.name).join(', ')
+            )
 
             playAnimation('idle')
           },
@@ -135,7 +145,7 @@ export function useSpineRenderer(): SpineRendererAPI {
                 camViewport: `${cam.viewportWidth}x${cam.viewportHeight}`,
                 skelPos: `(${skeleton.x.toFixed(1)}, ${skeleton.y.toFixed(1)})`,
                 skelScale: skeleton.scaleX.toFixed(4),
-                bounds: `${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.width.toFixed(0)}x${b.height.toFixed(0)}`,
+                bounds: `${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.width.toFixed(0)}x${b.height.toFixed(0)}`
               })
               renderCount++
             }
@@ -143,8 +153,8 @@ export function useSpineRenderer(): SpineRendererAPI {
           error: (_canvas: any, errors: any) => {
             console.error('[Spine] Asset errors:', errors)
             state.value.error = JSON.stringify(errors)
-          },
-        },
+          }
+        }
       })
     } catch (err) {
       state.value.isLoading = false
@@ -173,10 +183,7 @@ export function useSpineRenderer(): SpineRendererAPI {
     const canvasH = canvas.htmlCanvas.height
 
     // 让角色占 canvas 高度的 50%，宽度不超过 75%
-    const autoScale = Math.min(
-      (canvasH * 0.5) / bounds.height,
-      (canvasW * 0.75) / bounds.width,
-    )
+    const autoScale = Math.min((canvasH * 0.5) / bounds.height, (canvasW * 0.75) / bounds.width)
 
     const scale = modelConfig.scale ?? autoScale
     skeleton.scaleX = scale
@@ -193,7 +200,7 @@ export function useSpineRenderer(): SpineRendererAPI {
       bounds: `${bounds.x.toFixed(0)},${bounds.y.toFixed(0)} ${bounds.width.toFixed(0)}x${bounds.height.toFixed(0)}`,
       canvas: `${canvasW}x${canvasH}`,
       scale: scale.toFixed(4),
-      skeletonXY: `(${skeleton.x.toFixed(1)}, ${skeleton.y.toFixed(1)})`,
+      skeletonXY: `(${skeleton.x.toFixed(1)}, ${skeleton.y.toFixed(1)})`
     })
   }
 
@@ -311,6 +318,6 @@ export function useSpineRenderer(): SpineRendererAPI {
     findBone,
     hitTest,
     resize,
-    dispose,
+    dispose
   }
 }

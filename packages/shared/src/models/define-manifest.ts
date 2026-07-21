@@ -9,8 +9,9 @@ import type { Live2DModelManifest } from './types.js'
  * 如果某个模型因历史原因无法遵循约定，可显式传入 modelJsonPath 覆盖。
  */
 export function defineLive2DModelManifest(
-  manifest: Omit<Live2DModelManifest, 'modelJsonPath'> & { modelJsonPath?: string },
+  manifest: Omit<Live2DModelManifest, 'modelJsonPath'> & { modelJsonPath?: string }
 ): Live2DModelManifest {
-  const modelJsonPath = manifest.modelJsonPath ?? `/models/${manifest.id}/${manifest.id}.model3.json`
+  const modelJsonPath =
+    manifest.modelJsonPath ?? `/models/${manifest.id}/${manifest.id}.model3.json`
   return { ...manifest, modelJsonPath }
 }

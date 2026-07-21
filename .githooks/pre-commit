@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# ── pre-commit：ESLint + Prettier 校验 ──
+# 对 git 暂存文件运行 lint-staged（eslint --fix + prettier --write）。
+# 校验失败（含无法自动修复的 eslint error）会阻塞提交。
+#
+# 安装：scripts/install-githooks.sh（本目录所有非 .md 文件自动 chmod +x）
+# 跳过本次：git commit --no-verify
+# 卸载：git config --unset core.hooksPath
+
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# 仓库根 package.json 里有 lint-staged 脚本才执行（避免无配置时空跑报错）
+if ! grep -q '"lint-staged"' "$REPO_ROOT/package.json" 2>/dev/null; then
+  echo "[pre-commit] 未找到 lint-staged 配置，跳过校验" >&2
+  exit 0
+fi
+
+echo "[pre-commit] 运行 lint-staged (eslint + prettier)..." >&2
+
+# 在仓库根执行 lint-staged，仅校验暂存文件
+cd "$REPO_ROOT"
+pnpm exec lint-staged

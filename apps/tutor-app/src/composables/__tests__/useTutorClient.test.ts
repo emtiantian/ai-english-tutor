@@ -16,7 +16,7 @@ vi.mock('../../client/TutorClient', () => ({
     on = mockOn
     sendMessage = mockSendMessage
     isConnected = false
-  },
+  }
 }))
 
 describe('useTutorClient', () => {
@@ -35,7 +35,7 @@ describe('useTutorClient', () => {
     const { client } = useTutorClient()
 
     const connectedHandler = (client.on as any).mock.calls.find(
-      (call: any[]) => call[0] === 'connected',
+      (call: any[]) => call[0] === 'connected'
     )?.[1]
 
     expect(store.isConnected).toBe(false)
@@ -48,7 +48,7 @@ describe('useTutorClient', () => {
     const { client } = useTutorClient()
 
     const thinkingHandler = (client.on as any).mock.calls.find(
-      (call: any[]) => call[0] === 'state.thinking',
+      (call: any[]) => call[0] === 'state.thinking'
     )?.[1]
 
     expect(store.isThinking).toBe(false)
@@ -61,7 +61,7 @@ describe('useTutorClient', () => {
     const { client } = useTutorClient()
 
     const messageHandler = (client.on as any).mock.calls.find(
-      (call: any[]) => call[0] === 'message.user',
+      (call: any[]) => call[0] === 'message.user'
     )?.[1]
 
     expect(store.messages).toHaveLength(0)

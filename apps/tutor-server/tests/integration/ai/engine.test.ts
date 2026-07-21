@@ -27,7 +27,7 @@ describe('TutorEngine', () => {
     const nonStream = await engine.handleUserSpeak('Hello', {
       level: 2,
       stream: false,
-      userId,
+      userId
     })
 
     expect(nonStream.text.length).toBeGreaterThan(0)
@@ -48,19 +48,22 @@ describe('TutorEngine', () => {
 
     const { server, port } = await createSSEServer()
     const sessionId = 'stream-test-session'
-    const collector = await collectSSE(`http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`, { minEvents: 1 })
+    const collector = await collectSSE(
+      `http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`,
+      { minEvents: 1 }
+    )
 
     const streamResult = await engine.handleUserSpeak('How are you?', {
       sessionId,
       level: 2,
       stream: true,
-      userId,
+      userId
     })
     expect(streamResult.text.length).toBeGreaterThan(0)
 
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-    const chunkEvents = collector.events.filter((e) => e.event === 'teacher.chunk')
+    const chunkEvents = collector.events.filter(e => e.event === 'teacher.chunk')
     expect(chunkEvents.length).toBeGreaterThan(0)
     const lastChunk = chunkEvents[chunkEvents.length - 1].data as { chunk: string; isEnd: boolean }
     expect(lastChunk.isEnd).toBe(true)
@@ -81,11 +84,21 @@ describe('TutorEngine', () => {
     const userId = 'engine-test-user'
 
     const sessionA = 'persist-session'
-    await engine.handleUserSpeak('First message', { sessionId: sessionA, level: 2, stream: false, userId })
+    await engine.handleUserSpeak('First message', {
+      sessionId: sessionA,
+      level: 2,
+      stream: false,
+      userId
+    })
     const info1 = engine.getSession(sessionA)
     expect(info1?.historyCount).toBe(2)
 
-    await engine.handleUserSpeak('Second message', { sessionId: sessionA, level: 2, stream: false, userId })
+    await engine.handleUserSpeak('Second message', {
+      sessionId: sessionA,
+      level: 2,
+      stream: false,
+      userId
+    })
     const info2 = engine.getSession(sessionA)
     expect(info2?.historyCount).toBe(4)
   })
@@ -103,7 +116,7 @@ describe('TutorEngine', () => {
     controller.abort()
 
     await expect(
-      engine.handleUserSpeak('Ignore me', { level: 2, stream: false, signal: controller.signal }),
+      engine.handleUserSpeak('Ignore me', { level: 2, stream: false, signal: controller.signal })
     ).rejects.toThrow(/AbortError/)
   })
 
@@ -119,7 +132,12 @@ describe('TutorEngine', () => {
     const userId = 'engine-test-user'
 
     const scenarioSession = 'scenario-session'
-    const scenarioStart = await engine.startLesson(1, scenarioSession, userId, 'restaurant-ordering')
+    const scenarioStart = await engine.startLesson(
+      1,
+      scenarioSession,
+      userId,
+      'restaurant-ordering'
+    )
     expect(scenarioStart.scenario).toBeDefined()
     expect(scenarioStart.scenario?.targetWords.length).toBe(30)
     expect(scenarioStart.scenario?.maxTurns).toBe(20)
@@ -128,7 +146,7 @@ describe('TutorEngine', () => {
       sessionId: scenarioSession,
       level: 1,
       stream: false,
-      userId,
+      userId
     })
     expect(scenarioTurn.scenario).toBeDefined()
     expect(scenarioTurn.scenario!.wordsLearned.length).toBeGreaterThan(0)

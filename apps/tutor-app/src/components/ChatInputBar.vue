@@ -34,8 +34,8 @@
         v-if="inputMode === 'voice'"
         class="voice-talk-btn"
         :class="{
-          'recording': isRecordingLocal,
-          'cancelled': isCancelled,
+          recording: isRecordingLocal,
+          cancelled: isCancelled
         }"
         aria-label="按住说话"
         :disabled="isEncoding"
@@ -66,13 +66,7 @@
           @keydown.enter="sendText"
         />
 
-        <button
-          class="btn-primary"
-          :disabled="!inputText.trim()"
-          @click="sendText"
-        >
-          发送
-        </button>
+        <button class="btn-primary" :disabled="!inputText.trim()" @click="sendText">发送</button>
       </template>
     </div>
 
@@ -81,7 +75,7 @@
       <div
         v-if="isRecordingLocal"
         class="recording-overlay"
-        :class="{ 'cancelled': isCancelled }"
+        :class="{ cancelled: isCancelled }"
         role="status"
         aria-live="polite"
       >
@@ -96,9 +90,7 @@
         </div>
 
         <!-- 倒计时文案 -->
-        <div class="recording-text">
-          录音中... ({{ recordingDuration }}s)
-        </div>
+        <div class="recording-text">录音中... ({{ recordingDuration }}s)</div>
 
         <!-- 提示文案 -->
         <div class="recording-hint">
@@ -109,7 +101,10 @@
 
     <!-- 编码指示器 -->
     <Teleport to="body">
-      <div v-if="isEncoding" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-32px py-16px bg-primary-90 text-white rounded-12px text-16px flex items-center gap-10px animate-fade-in">
+      <div
+        v-if="isEncoding"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-32px py-16px bg-primary-90 text-white rounded-12px text-16px flex items-center gap-10px animate-fade-in"
+      >
         <span class="w-12px h-12px bg-white rounded-full animate-blink"></span>
         处理中...
       </div>
@@ -260,12 +255,15 @@ function handleSwitchScenario() {
 }
 
 // --- 录音错误处理 ---
-watch(() => props.recordError, (err) => {
-  if (err) {
-    alert(err)
-    nextTick(() => emit('update:record-error', null))
+watch(
+  () => props.recordError,
+  err => {
+    if (err) {
+      alert(err)
+      nextTick(() => emit('update:record-error', null))
+    }
   }
-})
+)
 
 // --- iOS 键盘处理 ---
 function updateBottomOffset() {
@@ -514,11 +512,21 @@ onUnmounted(() => {
 }
 
 /* 音量条错开动画 */
-.volume-bar:nth-child(1) { animation-delay: 0s; }
-.volume-bar:nth-child(2) { animation-delay: 0.1s; }
-.volume-bar:nth-child(3) { animation-delay: 0.2s; }
-.volume-bar:nth-child(4) { animation-delay: 0.3s; }
-.volume-bar:nth-child(5) { animation-delay: 0.4s; }
+.volume-bar:nth-child(1) {
+  animation-delay: 0s;
+}
+.volume-bar:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.volume-bar:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.volume-bar:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.volume-bar:nth-child(5) {
+  animation-delay: 0.4s;
+}
 
 .recording-text {
   color: white;

@@ -74,7 +74,7 @@ self.onmessage = (event: MessageEvent<EncodeRequest>) => {
 
   try {
     const mp3Chunks = encodeMp3(samples, sampleRate)
-    const transferables = mp3Chunks.map((chunk) => chunk.buffer)
+    const transferables = mp3Chunks.map(chunk => chunk.buffer)
     ;(self as any).postMessage({ id, mp3Chunks } satisfies EncodeSuccess, transferables)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

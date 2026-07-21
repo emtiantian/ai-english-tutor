@@ -52,11 +52,11 @@ const INTENT_RULES: IntentRule[] = [
     patterns: [
       /\b(hi|hello|hey|welcome|good\s+(morning|afternoon|evening)|greetings)\b/i,
       /\b(nice to (meet|see)|glad.*(here|back)|ready to (start|learn|go))\b/i,
-      /\b(let'?s (get )?(start|go|begin))\b/i,
+      /\b(let'?s (get )?(start|go|begin))\b/i
     ],
     motionId: 'wave',
     expressionId: 'happy',
-    priority: 10,
+    priority: 10
   },
 
   // ─── 告别 ────────────────────────────────────────────
@@ -64,11 +64,11 @@ const INTENT_RULES: IntentRule[] = [
     intent: 'farewell',
     patterns: [
       /\b(bye|goodbye|see you|farewell|take care|until next)\b/i,
-      /\b(great (session|job|work)|that'?s (all|it) for today)\b/i,
+      /\b(great (session|job|work)|that'?s (all|it) for today)\b/i
     ],
     motionId: 'wave',
     expressionId: 'happy',
-    priority: 10,
+    priority: 10
   },
 
   // ─── 惊讶 ────────────────────────────────────────────
@@ -77,11 +77,11 @@ const INTENT_RULES: IntentRule[] = [
     patterns: [
       /\b(wow|whoa|amazing|incredible|unbelievable|unexpected)\b/i,
       /\b(?!.*\bnot\b)(surpris|astonish|shock)\w*\b/i,
-      /[!！]{2,}/,
+      /[!！]{2,}/
     ],
     motionId: 'surprised',
     expressionId: 'surprised',
-    priority: 8,
+    priority: 8
   },
 
   // ─── 表扬 / 祝贺 ─────────────────────────────────────
@@ -92,11 +92,11 @@ const INTENT_RULES: IntentRule[] = [
       /\b(brilliant|outstanding|impressive|superb|terrific)\b/i,
       /\b(you (got|did|nailed|crushed) it|that'?s (right|correct|perfect))\b/i,
       /\b(congratulat|proud of you|keep it up)\b/i,
-      /[🎉👏✨🌟💪🔥]{1,}/,
+      /[🎉👏✨🌟💪🔥]{1,}/u
     ],
     motionId: 'clap',
     expressionId: 'happy',
-    priority: 7,
+    priority: 7
   },
 
   // ─── 纠正错误 ────────────────────────────────────────
@@ -107,11 +107,11 @@ const INTENT_RULES: IntentRule[] = [
       /\b(the (correct|right) (way|form|answer|word) (is|would be))\b/i,
       /\b(try (again|this instead)|actually|it should be|we say)\b/i,
       /\b(small (mistake|error|correction)|just a (minor|tiny))\b/i,
-      /\b(remember to|careful with|watch out for)\b/i,
+      /\b(remember to|careful with|watch out for)\b/i
     ],
     motionId: 'gesture',
     expressionId: 'encouraging',
-    priority: 6,
+    priority: 6
   },
 
   // ─── 提问 ───────────────────────────────────────────
@@ -122,11 +122,11 @@ const INTENT_RULES: IntentRule[] = [
       /\b(can you|could you|would you|do you|did you|have you)\b/i,
       /\b(what|how|why|when|where|who|which)\b.*[?？]/i,
       /\b(tell me|think about|guess|try to)\b/i,
-      /\b(what (do you|does|is|are)|how (do|does|can|would))\b/i,
+      /\b(what (do you|does|is|are)|how (do|does|can|would))\b/i
     ],
     motionId: 'think',
     expressionId: 'curious',
-    priority: 5,
+    priority: 5
   },
 
   // ─── 指向 / 示例 ─────────────────────────────────────
@@ -135,11 +135,11 @@ const INTENT_RULES: IntentRule[] = [
     patterns: [
       /\b(look at|see (this|here|below)|for example|for instance|such as)\b/i,
       /\b(here (is|are)|notice (that|how)|as you can see)\b/i,
-      /\b(this (word|phrase|sentence|means))\b/i,
+      /\b(this (word|phrase|sentence|means))\b/i
     ],
     motionId: 'point',
     expressionId: 'neutral',
-    priority: 4,
+    priority: 4
   },
 
   // ─── 书写 / 记笔记 ───────────────────────────────────
@@ -148,11 +148,11 @@ const INTENT_RULES: IntentRule[] = [
     patterns: [
       /\b(write (it|this|that|down)|note(down)?|jot down|take notes)\b/i,
       /\b(let me write|on the board|let'?s spell)\b/i,
-      /\b(remember this|write it out)\b/i,
+      /\b(remember this|write it out)\b/i
     ],
     motionId: 'write',
     expressionId: 'thoughtful',
-    priority: 4,
+    priority: 4
   },
 
   // ─── 引入新内容 ──────────────────────────────────────
@@ -161,11 +161,11 @@ const INTENT_RULES: IntentRule[] = [
     patterns: [
       /\b(today we'?ll|let'?s learn|new (word|vocabulary|grammar|topic))\b/i,
       /\b(introducing|first (up|thing)|we'?re going to (learn|explore|discover))\b/i,
-      /\b(here'?s a (new|useful)|pay attention to)\b/i,
+      /\b(here'?s a (new|useful)|pay attention to)\b/i
     ],
     motionId: 'gesture',
     expressionId: 'curious',
-    priority: 3,
+    priority: 3
   },
 
   // ─── 解释 / 教学 ─────────────────────────────────────
@@ -175,11 +175,11 @@ const INTENT_RULES: IntentRule[] = [
       /\b(this means|the meaning|in (other words|English|simple terms))\b/i,
       /\b(explain|let me (show|help)|basically|essentially|in short)\b/i,
       /\b(you (can|should|need to)|it'?s (used|like|similar))\b/i,
-      /\b(the (difference|rule|structure|pattern))\b/i,
+      /\b(the (difference|rule|structure|pattern))\b/i
     ],
     motionId: 'gesture',
     expressionId: 'neutral',
-    priority: 2,
+    priority: 2
   },
 
   // ─── 学生答错（轻微） ────────────────────────────────
@@ -187,12 +187,12 @@ const INTENT_RULES: IntentRule[] = [
     intent: 'mild-wrong',
     patterns: [
       /\b(hmm|well|not exactly|not really|that'?s not quite)\b/i,
-      /\b(try again|let'?s try|one more time|think again)\b/i,
+      /\b(try again|let'?s try|one more time|think again)\b/i
     ],
     motionId: 'nod',
     expressionId: 'thoughtful',
-    priority: 1,
-  },
+    priority: 1
+  }
 ]
 
 /**
@@ -207,7 +207,7 @@ export class KeywordMotionAnalyzer implements MotionAnalyzer {
   constructor(customRules?: IntentRule[]) {
     // 按优先级降序排序，确保高优先级规则先被检查
     this.rules = [...(customRules ?? INTENT_RULES)].sort(
-      (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
+      (a, b) => (b.priority ?? 0) - (a.priority ?? 0)
     )
   }
 
@@ -223,7 +223,7 @@ export class KeywordMotionAnalyzer implements MotionAnalyzer {
           return {
             motionId: rule.motionId,
             expressionId: rule.expressionId,
-            intent: rule.intent,
+            intent: rule.intent
           }
         }
       }

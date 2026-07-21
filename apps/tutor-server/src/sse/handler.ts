@@ -68,113 +68,123 @@ function formatSSE(event: SSEEvent): string {
  * 在 Fastify 实例上注册 SSE 路由。
  */
 export async function registerSSE(server: FastifyInstance): Promise<void> {
-  server.get('/api/chat/stream', async (request: FastifyRequest<{ Querystring: { sessionId?: string } }>, reply: FastifyReply) => {
-    const sessionId = (request.query as { sessionId?: string }).sessionId
-    if (!sessionId) {
-      reply.status(400).send({ error: '必须提供 sessionId 查询参数' })
-      return
-    }
-
-    // 如果该 session 已有连接，先关闭它（标签页刷新 / 重连）
-    const existing = connections.get(sessionId)
-    if (existing) {
-      try { existing.raw.end() } catch { /* 忽略 */ }
-      connections.delete(sessionId)
-    }
-
-    // 设置 SSE 响应头（为浏览器 EventSource 包含 CORS）
-    // 遵循全局 CORS 策略：通配符来源不能发送凭据。
-    const isWildcardCors = config.CORS_ORIGIN.includes('*')
-    const allowOrigin = resolveCorsOrigin(request.headers.origin as string | undefined)
-    const headers: Record<string, string> = {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // 禁用 Nginx 缓冲
-    }
-    if (allowOrigin) {
-      headers['Access-Control-Allow-Origin'] = allowOrigin
-      if (!isWildcardCors) {
-        headers['Access-Control-Allow-Credentials'] = 'true'
-      }
-    }
-    reply.hijack()
-    reply.raw.writeHead(200, headers)
-
-    connections.set(sessionId, reply)
-    logger.debug({ sessionId, totalConnections: connections.size }, 'SSE 连接已打开')
-
-    // 将服务端配置作为第一个事件发送（在心跳之前）
-    reply.raw.write(
-      formatSSE({
-        event: 'config',
-        data: { ttsSource: getTtsSource() },
-      }),
-    )
-
-    // 发送初始心跳
-    reply.raw.write(
-      formatSSE({
-        event: 'heartbeat',
-        data: { timestamp: Date.now() },
-      }),
-    )
-
-    // 启动心跳间隔
-    const heartbeatInterval = setInterval(() => {
-      if (reply.raw.destroyed || reply.raw.writableEnded || !reply.raw.writable) {
-        clearInterval(heartbeatInterval)
-        if (connections.get(sessionId) === reply) {
-          connections.delete(sessionId)
-        }
-        destroyRaw(reply)
-        logger.debug({ sessionId }, 'SSE 心跳停止：连接已不可写')
+  server.get(
+    '/api/chat/stream',
+    async (
+      request: FastifyRequest<{ Querystring: { sessionId?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const sessionId = (request.query as { sessionId?: string }).sessionId
+      if (!sessionId) {
+        reply.status(400).send({ error: '必须提供 sessionId 查询参数' })
         return
       }
 
-      try {
-        reply.raw.write(
-          formatSSE({
-            event: 'heartbeat',
-            data: { timestamp: Date.now() },
-          }),
-        )
-      } catch (err) {
+      // 如果该 session 已有连接，先关闭它（标签页刷新 / 重连）
+      const existing = connections.get(sessionId)
+      if (existing) {
+        try {
+          existing.raw.end()
+        } catch {
+          /* 忽略 */
+        }
+        connections.delete(sessionId)
+      }
+
+      // 设置 SSE 响应头（为浏览器 EventSource 包含 CORS）
+      // 遵循全局 CORS 策略：通配符来源不能发送凭据。
+      const isWildcardCors = config.CORS_ORIGIN.includes('*')
+      const allowOrigin = resolveCorsOrigin(request.headers.origin as string | undefined)
+      const headers: Record<string, string> = {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no' // 禁用 Nginx 缓冲
+      }
+      if (allowOrigin) {
+        headers['Access-Control-Allow-Origin'] = allowOrigin
+        if (!isWildcardCors) {
+          headers['Access-Control-Allow-Credentials'] = 'true'
+        }
+      }
+      reply.hijack()
+      reply.raw.writeHead(200, headers)
+
+      connections.set(sessionId, reply)
+      logger.debug({ sessionId, totalConnections: connections.size }, 'SSE 连接已打开')
+
+      // 将服务端配置作为第一个事件发送（在心跳之前）
+      reply.raw.write(
+        formatSSE({
+          event: 'config',
+          data: { ttsSource: getTtsSource() }
+        })
+      )
+
+      // 发送初始心跳
+      reply.raw.write(
+        formatSSE({
+          event: 'heartbeat',
+          data: { timestamp: Date.now() }
+        })
+      )
+
+      // 启动心跳间隔
+      const heartbeatInterval = setInterval(() => {
+        if (reply.raw.destroyed || reply.raw.writableEnded || !reply.raw.writable) {
+          clearInterval(heartbeatInterval)
+          if (connections.get(sessionId) === reply) {
+            connections.delete(sessionId)
+          }
+          destroyRaw(reply)
+          logger.debug({ sessionId }, 'SSE 心跳停止：连接已不可写')
+          return
+        }
+
+        try {
+          reply.raw.write(
+            formatSSE({
+              event: 'heartbeat',
+              data: { timestamp: Date.now() }
+            })
+          )
+        } catch (err) {
+          clearInterval(heartbeatInterval)
+          if (connections.get(sessionId) === reply) {
+            connections.delete(sessionId)
+          }
+          destroyRaw(reply)
+          logger.warn({ sessionId, err }, 'SSE 心跳失败，关闭连接')
+        }
+      }, config.SSE_HEARTBEAT_INTERVAL)
+
+      // 检测半开 TCP 连接：若 3 个心跳内没有成功 I/O 则销毁 socket
+      const socketTimeoutMs = Math.max(config.SSE_HEARTBEAT_INTERVAL * 3, 60000)
+      request.raw.setTimeout(socketTimeoutMs, () => {
+        logger.warn({ sessionId }, 'SSE 连接空闲超时，销毁连接')
         clearInterval(heartbeatInterval)
         if (connections.get(sessionId) === reply) {
           connections.delete(sessionId)
         }
         destroyRaw(reply)
-        logger.warn({ sessionId, err }, 'SSE 心跳失败，关闭连接')
-      }
-    }, config.SSE_HEARTBEAT_INTERVAL)
-
-    // 检测半开 TCP 连接：若 3 个心跳内没有成功 I/O 则销毁 socket
-    const socketTimeoutMs = Math.max(config.SSE_HEARTBEAT_INTERVAL * 3, 60000)
-    request.raw.setTimeout(socketTimeoutMs, () => {
-      logger.warn({ sessionId }, 'SSE 连接空闲超时，销毁连接')
-      clearInterval(heartbeatInterval)
-      if (connections.get(sessionId) === reply) {
-        connections.delete(sessionId)
-      }
-      destroyRaw(reply)
-    })
-
-    // 处理客户端断开，并保持请求打开直到断开
-    await new Promise<void>((resolve) => {
-      request.raw.on('close', () => {
-        clearInterval(heartbeatInterval)
-        request.raw.setTimeout(0) // 禁用空闲超时
-        // 只有仍是我们的连接时才删除（避免被重连覆盖）
-        if (connections.get(sessionId) === reply) {
-          connections.delete(sessionId)
-        }
-        emitSessionDisconnect(sessionId)
-        logger.debug({ sessionId, totalConnections: connections.size }, 'SSE 连接已关闭')
-        resolve()
       })
-    })
-  })
+
+      // 处理客户端断开，并保持请求打开直到断开
+      await new Promise<void>(resolve => {
+        request.raw.on('close', () => {
+          clearInterval(heartbeatInterval)
+          request.raw.setTimeout(0) // 禁用空闲超时
+          // 只有仍是我们的连接时才删除（避免被重连覆盖）
+          if (connections.get(sessionId) === reply) {
+            connections.delete(sessionId)
+          }
+          emitSessionDisconnect(sessionId)
+          logger.debug({ sessionId, totalConnections: connections.size }, 'SSE 连接已关闭')
+          resolve()
+        })
+      })
+    }
+  )
 }
 
 /**

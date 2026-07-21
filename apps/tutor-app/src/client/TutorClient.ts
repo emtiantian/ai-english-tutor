@@ -8,7 +8,7 @@ import type {
   VocabProgress,
   ReviewWord,
   VocabSyncItem,
-  WordExplanation,
+  WordExplanation
 } from './types'
 
 export interface TutorClientOptions {
@@ -72,17 +72,20 @@ export class TutorClient {
    * 流式回复由 SSE 推送；stream=false 同步等待完整 ChatResponse。
    * 语音请求（带 audioBase64）建议传更长 timeoutMs（ASR+LLM+TTS 可能 30-60s）。
    */
-  async sendMessage(body: ChatRequestBody & { stream: true }, timeoutMs?: number): Promise<{ accepted: true }>
+  async sendMessage(
+    body: ChatRequestBody & { stream: true },
+    timeoutMs?: number
+  ): Promise<{ accepted: true }>
   async sendMessage(body: ChatRequestBody, timeoutMs?: number): Promise<ChatResponse>
   async sendMessage(
     body: ChatRequestBody,
-    timeoutMs?: number,
+    timeoutMs?: number
   ): Promise<ChatResponse | { accepted: true }> {
     const result = await this.fetchJson<ChatResponse | { accepted: true }>('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      timeout: timeoutMs,
+      timeout: timeoutMs
     })
 
     if (body.stream) {
@@ -104,26 +107,28 @@ export class TutorClient {
 
   // --- 词汇接口 ---
   async getVocabProgress(userId: string): Promise<VocabProgress> {
-    return this.fetchJson(`/api/vocab/progress/${userId}`, { timeout: this.options.requestTimeoutMs ?? 15000 })
+    return this.fetchJson(`/api/vocab/progress/${userId}`, {
+      timeout: this.options.requestTimeoutMs ?? 15000
+    })
   }
 
   async getDueReviewWords(userId: string, limit = 10): Promise<ReviewWord[]> {
     const data = await this.fetchJson<{ dueCount: number; words: ReviewWord[] }>(
       `/api/vocab/review/due/${userId}?limit=${limit}`,
-      { timeout: this.options.requestTimeoutMs ?? 15000 },
+      { timeout: this.options.requestTimeoutMs ?? 15000 }
     )
     return data.words
   }
 
   async syncVocabulary(
     userId: string,
-    words: VocabSyncItem[],
+    words: VocabSyncItem[]
   ): Promise<{ success: boolean; synced: number }> {
     return this.fetchJson('/api/vocab/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, words }),
-      timeout: 15000,
+      timeout: 15000
     })
   }
 
@@ -132,20 +137,20 @@ export class TutorClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ word, sentence }),
-      timeout: 30000,
+      timeout: 30000
     })
   }
 
   // --- 内部方法 ---
   private async fetchJson<T>(
     path: string,
-    init: RequestInit & { timeout?: number } = {},
+    init: RequestInit & { timeout?: number } = {}
   ): Promise<T> {
     const timeout = init.timeout ?? this.options.requestTimeoutMs ?? 30000
     try {
       const res = await fetchWithTimeout(`${this.options.baseUrl}${path}`, {
         ...init,
-        timeout,
+        timeout
       })
 
       if (!res.ok) {
@@ -158,7 +163,7 @@ export class TutorClient {
       })
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error(`Request timeout after ${timeout}ms`)
+        throw new Error(`Request timeout after ${timeout}ms`, { cause: err })
       }
       throw err
     }
@@ -167,16 +172,13 @@ export class TutorClient {
   // --- 事件系统（mitt 包装） ---
   on<K extends keyof TutorEventMap>(
     event: K,
-    handler: (data: TutorEventMap[K]) => void,
+    handler: (data: TutorEventMap[K]) => void
   ): () => void {
     this.emitter.on(event, handler as any)
     return () => this.emitter.off(event, handler as any)
   }
 
-  off<K extends keyof TutorEventMap>(
-    event: K,
-    handler: (data: TutorEventMap[K]) => void,
-  ): void {
+  off<K extends keyof TutorEventMap>(event: K, handler: (data: TutorEventMap[K]) => void): void {
     this.emitter.off(event, handler as any)
   }
 
@@ -206,7 +208,7 @@ export class TutorClient {
       'teacher.chunk',
       'teacher.audio',
       'error',
-      'heartbeat',
+      'heartbeat'
     ] as const
 
     for (const eventName of sseEvents) {
@@ -267,7 +269,7 @@ export class TutorClient {
       this.emit('disconnected', { reason: 'reconnect_exhausted' })
       this.emit('error', {
         code: 'RECONNECT_EXHAUSTED',
-        message: 'Max reconnection attempts reached',
+        message: 'Max reconnection attempts reached'
       })
       return
     }

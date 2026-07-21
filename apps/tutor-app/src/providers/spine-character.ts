@@ -20,7 +20,7 @@ export class SpineCharacterProvider implements CharacterProvider {
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
-    mouthOpen: 0,
+    mouthOpen: 0
   }
 
   /** 口型同步目标值（平滑插值用） */
@@ -40,9 +40,7 @@ export class SpineCharacterProvider implements CharacterProvider {
   /** MotionRegistry — 支持运行时切换动作映射 */
   private _registry?: MotionRegistry
 
-  constructor(
-    private config: SpineModelConfig,
-  ) {}
+  constructor(private config: SpineModelConfig) {}
 
   async init(canvas: HTMLCanvasElement): Promise<void> {
     await this.renderer.init(canvas, this.config)
@@ -60,7 +58,7 @@ export class SpineCharacterProvider implements CharacterProvider {
 
   /** 绑定鼠标点击事件 */
   private bindMouseEvents(canvas: HTMLCanvasElement): void {
-    canvas.addEventListener('click', (e) => {
+    canvas.addEventListener('click', e => {
       const rect = canvas.getBoundingClientRect()
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
@@ -125,7 +123,8 @@ export class SpineCharacterProvider implements CharacterProvider {
   private startMouthSyncLoop(): void {
     const loop = () => {
       // 指数平滑：current = current + (target - current) * factor
-      this.currentMouthOpen += (this.targetMouthOpen - this.currentMouthOpen) * this.mouthSmoothFactor
+      this.currentMouthOpen +=
+        (this.targetMouthOpen - this.currentMouthOpen) * this.mouthSmoothFactor
 
       // 映射到 Spine 骨骼
       this.applyMouthSync(this.currentMouthOpen)

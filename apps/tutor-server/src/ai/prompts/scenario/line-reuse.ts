@@ -20,7 +20,7 @@ export function stripBaseOutputFormat(prompt: string): string {
  */
 export function buildLineReuseBlock(reusableLines?: string[]): string {
   if (!reusableLines || reusableLines.length === 0) return ''
-  const list = reusableLines.map((l) => `- ${JSON.stringify(l)}`).join('\n')
+  const list = reusableLines.map(l => `- ${JSON.stringify(l)}`).join('\n')
   // 提示词：台词复用规则 —— 让模型在自然且符合角色时，逐字复用已说过的台词以命中 TTS 缓存
   const lineReuseRule = `
 

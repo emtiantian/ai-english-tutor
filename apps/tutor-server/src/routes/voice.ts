@@ -35,47 +35,41 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
    * 请求体：{ text: string, voice?: string, format?: string, speed?: number }
    * 响应：音频文件（Content-Type 根据 format 决定）
    */
-  server.post(
-    '/api/tts',
-    async (request: FastifyRequest<{ Body: TTSRequestBody }>, reply) => {
-      const { text, voice, format, speed } = request.body
+  server.post('/api/tts', async (request: FastifyRequest<{ Body: TTSRequestBody }>, reply) => {
+    const { text, voice, format, speed } = request.body
 
-      if (!text || text.trim().length === 0) {
-        return reply.status(400).send({
-          error: 'Text is required',
-          code: 'MISSING_TEXT',
-        })
-      }
+    if (!text || text.trim().length === 0) {
+      return reply.status(400).send({
+        error: 'Text is required',
+        code: 'MISSING_TEXT'
+      })
+    }
 
-      logger.info(
-        { provider: tts.name, textLength: text.length, voice, format },
-        'TTS 请求',
-      )
+    logger.info({ provider: tts.name, textLength: text.length, voice, format }, 'TTS 请求')
 
-      try {
-        const audioBuffer = await tts.synthesize(text, {
-          voice,
-          format,
-          speed,
-        })
+    try {
+      const audioBuffer = await tts.synthesize(text, {
+        voice,
+        format,
+        speed
+      })
 
-        // 用 provider 实际产出格式作为 Content-Type，保证与返回字节一致。
-        const responseFormat = format ?? tts.outputFormat
-        const contentType = getAudioContentType(responseFormat)
+      // 用 provider 实际产出格式作为 Content-Type，保证与返回字节一致。
+      const responseFormat = format ?? tts.outputFormat
+      const contentType = getAudioContentType(responseFormat)
 
-        return reply
-          .header('Content-Type', contentType)
-          .header('Content-Length', audioBuffer.length)
-          .send(audioBuffer)
-      } catch (err) {
-        logger.error({ err }, 'TTS 合成失败')
-        return reply.status(500).send({
-          error: err instanceof Error ? err.message : 'TTS 合成失败',
-          code: 'TTS_ERROR',
-        })
-      }
-    },
-  )
+      return reply
+        .header('Content-Type', contentType)
+        .header('Content-Length', audioBuffer.length)
+        .send(audioBuffer)
+    } catch (err) {
+      logger.error({ err }, 'TTS 合成失败')
+      return reply.status(500).send({
+        error: err instanceof Error ? err.message : 'TTS 合成失败',
+        code: 'TTS_ERROR'
+      })
+    }
+  })
 
   /**
    * GET /api/tts/stats
@@ -100,13 +94,13 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
     if (!data) {
       return reply.status(400).send({
         error: 'Audio file is required',
-        code: 'MISSING_AUDIO',
+        code: 'MISSING_AUDIO'
       })
     }
 
     logger.info(
       { provider: asr.name, filename: data.filename, mimetype: data.mimetype },
-      'ASR 请求',
+      'ASR 请求'
     )
 
     try {
@@ -119,7 +113,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
         if (totalSize > maxSize) {
           return reply.status(413).send({
             error: `音频文件过大，最大 ${config.MAX_AUDIO_SIZE_MB}MB`,
-            code: 'AUDIO_TOO_LARGE',
+            code: 'AUDIO_TOO_LARGE'
           })
         }
         chunks.push(chunk)
@@ -131,7 +125,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
       const response: ASRResponse = {
         text: result.text,
         confidence: result.confidence,
-        language: result.language,
+        language: result.language
       }
 
       return reply.send(response)
@@ -139,11 +133,10 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
       logger.error({ err }, 'ASR 识别失败')
       return reply.status(500).send({
         error: err instanceof Error ? err.message : 'ASR 识别失败',
-        code: 'ASR_ERROR',
+        code: 'ASR_ERROR'
       })
     }
   })
-
 }
 
 function getAudioContentType(format: string): string {
@@ -154,7 +147,7 @@ function getAudioContentType(format: string): string {
     flac: 'audio/flac',
     wav: 'audio/wav',
     pcm: 'audio/pcm',
-    webm: 'audio/webm',
+    webm: 'audio/webm'
   }
   return map[format] ?? 'audio/mpeg'
 }

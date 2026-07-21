@@ -13,13 +13,13 @@ export function buildTeachingMessages(
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
   style?: OpeningStyle,
   persona: CharacterPersona = LUNA_PERSONA,
-  reviewWords?: ReviewWord[],
+  reviewWords?: ReviewWord[]
 ): LLMMessage[] {
   const personality = style?.persona
   let systemPrompt = persona.buildSystemPrompt(level, personality)
 
   if (reviewWords && reviewWords.length > 0) {
-    const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
+    const wordList = reviewWords.map(w => `"${w.word}"`).join(', ')
     // 提示词：复习指令标题 —— 告诉模型这些单词需要复习，要求自然融入，不要生硬插入
     const reviewHeader = `
 
@@ -36,9 +36,7 @@ When you use a review word, include it in the JSON "vocabulary" field, and provi
     systemPrompt += reviewBlock
   }
 
-  const messages: LLMMessage[] = [
-    { role: 'system', content: systemPrompt },
-  ]
+  const messages: LLMMessage[] = [{ role: 'system', content: systemPrompt }]
 
   // 添加对话历史（取最近 10 条以控制上下文长度）
   for (const h of history.slice(-10)) {

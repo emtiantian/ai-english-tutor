@@ -7,11 +7,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@framework': resolve(__dirname, 'src/lib/cubism-framework'),
-    },
+      '@framework': resolve(__dirname, 'src/lib/cubism-framework')
+    }
   },
   test: {
     environment: 'jsdom',
-    globals: true,
-  },
+    globals: true
+  }
 })

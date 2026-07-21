@@ -14,7 +14,7 @@ import { MAO_PRO_MANIFEST } from './registry/mao_pro.js'
 export const AVAILABLE_LIVE2D_MODELS: readonly Live2DModelManifest[] = [
   HIYORI_MANIFEST,
   SHIZUKU_MANIFEST,
-  MAO_PRO_MANIFEST,
+  MAO_PRO_MANIFEST
 ]
 
 /** 默认模型 ID — 未指定时使用,保持向后兼容 */
@@ -25,7 +25,7 @@ export const DEFAULT_LIVE2D_MODEL_ID = 'mao_pro'
  * 找不到返回 undefined,调用方负责 fallback。
  */
 export function getLive2DModelManifest(id: string): Live2DModelManifest | undefined {
-  return AVAILABLE_LIVE2D_MODELS.find((m) => m.id === id)
+  return AVAILABLE_LIVE2D_MODELS.find(m => m.id === id)
 }
 
 /**

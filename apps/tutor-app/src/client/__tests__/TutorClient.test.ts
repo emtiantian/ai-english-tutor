@@ -17,7 +17,7 @@ describe('TutorClient', () => {
       addEventListener: vi.fn(),
       onopen: null as any,
       onerror: null as any,
-      readyState: 0,
+      readyState: 0
     }
 
     const MockES = vi.fn(function () {
@@ -29,7 +29,7 @@ describe('TutorClient', () => {
     client = new TutorClient({
       baseUrl: 'http://localhost:3000',
       sessionId: 'test-session',
-      autoReconnect: false,
+      autoReconnect: false
     })
   })
 
@@ -41,7 +41,7 @@ describe('TutorClient', () => {
     it('should create EventSource with correct URL', () => {
       client.connect()
       expect(global.EventSource).toHaveBeenCalledWith(
-        'http://localhost:3000/api/chat/stream?sessionId=test-session',
+        'http://localhost:3000/api/chat/stream?sessionId=test-session'
       )
     })
 
@@ -71,19 +71,19 @@ describe('TutorClient', () => {
   describe('sendMessage', () => {
     it('should POST to /api/chat with correct body', async () => {
       const mockResponse = {
-        accepted: true,
+        accepted: true
       }
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve(mockResponse)
       })
 
       const result = await client.sendMessage({
         type: 'user.speak',
         text: 'Hi',
         level: 3,
-        stream: true,
+        stream: true
       })
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -95,9 +95,9 @@ describe('TutorClient', () => {
             type: 'user.speak',
             text: 'Hi',
             level: 3,
-            stream: true,
-          }),
-        }),
+            stream: true
+          })
+        })
       )
       expect(result).toEqual(mockResponse)
     })
@@ -106,12 +106,12 @@ describe('TutorClient', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
-        json: () => Promise.resolve({ error: 'Server error' }),
+        json: () => Promise.resolve({ error: 'Server error' })
       })
 
-      await expect(
-        client.sendMessage({ type: 'user.speak', text: 'Hi' }),
-      ).rejects.toThrow('Server error')
+      await expect(client.sendMessage({ type: 'user.speak', text: 'Hi' })).rejects.toThrow(
+        'Server error'
+      )
     })
   })
 
@@ -123,7 +123,7 @@ describe('TutorClient', () => {
       client.connect()
 
       const eventHandler = mockES.addEventListener.mock.calls.find(
-        (call: any[]) => call[0] === 'teacher.response',
+        (call: any[]) => call[0] === 'teacher.response'
       )?.[1]
 
       eventHandler({ data: JSON.stringify({ text: 'Hello', motionId: 'wave' }) })
@@ -138,7 +138,7 @@ describe('TutorClient', () => {
       client.connect()
 
       const eventHandler = mockES.addEventListener.mock.calls.find(
-        (call: any[]) => call[0] === 'teacher.chunk',
+        (call: any[]) => call[0] === 'teacher.chunk'
       )?.[1]
 
       eventHandler({ data: JSON.stringify({ chunk: 'Hello', isEnd: false }) })
@@ -153,7 +153,7 @@ describe('TutorClient', () => {
       client.connect()
 
       const eventHandler = mockES.addEventListener.mock.calls.find(
-        (call: any[]) => call[0] === 'teacher.response',
+        (call: any[]) => call[0] === 'teacher.response'
       )?.[1]
 
       eventHandler({ data: JSON.stringify({ text: 'Hello' }) })
@@ -168,7 +168,7 @@ describe('TutorClient', () => {
       client.connect()
 
       const eventHandler = mockES.addEventListener.mock.calls.find(
-        (call: any[]) => call[0] === 'teacher.response',
+        (call: any[]) => call[0] === 'teacher.response'
       )?.[1]
 
       eventHandler({ data: JSON.stringify({ text: 'Hello', vocabulary: ['hello'] }) })
@@ -194,7 +194,7 @@ describe('TutorClient', () => {
         sessionId: 'test-session',
         autoReconnect: true,
         maxReconnectAttempts: 3,
-        reconnectDelayMs: 1000,
+        reconnectDelayMs: 1000
       })
 
       const reconnectingHandler = vi.fn()
@@ -224,7 +224,7 @@ describe('TutorClient', () => {
       mockES.onerror()
       expect(errorHandler).toHaveBeenCalledWith({
         code: 'RECONNECT_EXHAUSTED',
-        message: 'Max reconnection attempts reached',
+        message: 'Max reconnection attempts reached'
       })
     })
   })

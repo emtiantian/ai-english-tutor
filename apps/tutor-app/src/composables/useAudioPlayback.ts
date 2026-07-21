@@ -10,7 +10,7 @@ import { AudioPlayer } from '../audio/player'
  */
 export function useAudioPlayback(
   client: TutorClient,
-  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null,
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null
 ) {
   const store = useTutorStore()
   const audioPlayer = new AudioPlayer(store.ttsSource)
@@ -19,17 +19,18 @@ export function useAudioPlayback(
   // 因此当真实来源已知时需要更新初始的 'local' 默认值）。
   watch(
     () => store.ttsSource,
-    (source) => {
+    source => {
       audioPlayer.setTTSSource(source)
     },
-    { immediate: true },
+    { immediate: true }
   )
 
   // 将播放器事件连接到状态与角色 provider。
   // AudioPlayer.onStart/onEnd/onVolume 是音频生命周期的唯一来源
   // （local/remote TTS、重听都走这里），因此 isPlaying、setSpeaking、
   // setMouthOpen、延迟显示文本统一在此驱动，不再走 tts.start/tts.end 事件链。
-  const getProvider = () => (characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider)
+  const getProvider = () =>
+    characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider
 
   audioPlayer.onStart = () => {
     store.isPlaying = true
@@ -43,7 +44,7 @@ export function useAudioPlayback(
       store.showDelayedMessage()
     }
   }
-  audioPlayer.onVolume = (volume) => {
+  audioPlayer.onVolume = volume => {
     getProvider()?.setMouthOpen?.(volume)
   }
 
@@ -58,9 +59,7 @@ export function useAudioPlayback(
     if (pendingAudioChunks.length === 0) return true
 
     // 查找目标消息：使用已捕获的 ID，或回退到最后一条助手消息
-    let msg = audioTargetMsgId
-      ? store.messages.find(m => m.id === audioTargetMsgId)
-      : null
+    let msg = audioTargetMsgId ? store.messages.find(m => m.id === audioTargetMsgId) : null
     if (!msg) {
       // 回退：查找最后一条助手消息（处理音频片段比消息更早到达的竞态条件）
       for (let i = store.messages.length - 1; i >= 0; i--) {
@@ -93,10 +92,10 @@ export function useAudioPlayback(
           flushPendingAudio()
         }
       }
-    },
+    }
   )
 
-  client.on('teacher.audio', (chunk) => {
+  client.on('teacher.audio', chunk => {
     if (store.ttsSource === 'remote') {
       audioPlayer.feedAudioChunk(chunk)
       pendingAudioChunks.push(chunk.audioBase64)
@@ -117,7 +116,7 @@ export function useAudioPlayback(
   })
 
   // 将助手消息连接到本地 TTS 播放
-  client.on('message.assistant', (response) => {
+  client.on('message.assistant', response => {
     if (store.ttsSource === 'local') {
       audioPlayer.speak(response.text)
     }

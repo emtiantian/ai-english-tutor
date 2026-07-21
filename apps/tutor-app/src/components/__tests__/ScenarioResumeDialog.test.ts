@@ -4,7 +4,12 @@ import ScenarioResumeDialog from '../ScenarioResumeDialog.vue'
 import type { ScenarioPausedSnapshot } from '../../lib/scenario-paused-db'
 
 describe('ScenarioResumeDialog', () => {
-  const scenario = { id: 'restaurant-ordering', name: '餐厅点餐', nameEn: 'Restaurant Ordering', icon: '🍽️' }
+  const scenario = {
+    id: 'restaurant-ordering',
+    name: '餐厅点餐',
+    nameEn: 'Restaurant Ordering',
+    icon: '🍽️'
+  }
   const snapshot: ScenarioPausedSnapshot = {
     scenarioId: 'restaurant-ordering',
     level: 'A2',
@@ -14,7 +19,7 @@ describe('ScenarioResumeDialog', () => {
     targetWords: Array.from({ length: 30 }, (_, i) => `word-${i}`),
     serverSessionId: 'sess-123',
     savedAt: Date.now(),
-    expiresAt: Date.now() + 12 * 60 * 60 * 1000,
+    expiresAt: Date.now() + 12 * 60 * 60 * 1000
   }
 
   beforeEach(() => {
@@ -23,7 +28,7 @@ describe('ScenarioResumeDialog', () => {
 
   function mountComponent() {
     return mount(ScenarioResumeDialog, {
-      props: { scenario, snapshot },
+      props: { scenario, snapshot }
     })
   }
 
@@ -36,11 +41,11 @@ describe('ScenarioResumeDialog', () => {
   it('渲染暂停统计信息', () => {
     const wrapper = mountComponent()
     const rows = wrapper.findAll('.stat-row')
-    const texts = rows.map((r) => r.text())
-    expect(texts.some((t) => t.includes('A2'))).toBe(true)
-    expect(texts.some((t) => t.includes('8 / 20'))).toBe(true)
-    expect(texts.some((t) => t.includes('10%'))).toBe(true)
-    expect(texts.some((t) => t.includes('小时'))).toBe(true)
+    const texts = rows.map(r => r.text())
+    expect(texts.some(t => t.includes('A2'))).toBe(true)
+    expect(texts.some(t => t.includes('8 / 20'))).toBe(true)
+    expect(texts.some(t => t.includes('10%'))).toBe(true)
+    expect(texts.some(t => t.includes('小时'))).toBe(true)
   })
 
   it('点击「继续练习」发出 resume 事件', async () => {

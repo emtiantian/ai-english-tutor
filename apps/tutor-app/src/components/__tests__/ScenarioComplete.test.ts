@@ -22,7 +22,7 @@ describe('ScenarioComplete', () => {
       coverageRate: 0.5,
       stars: 3,
       completed: true,
-      ...overrides,
+      ...overrides
     }
   }
 
@@ -30,8 +30,8 @@ describe('ScenarioComplete', () => {
     return mount(ScenarioComplete, {
       props: {
         scenario: makeScenario(),
-        ...props,
-      },
+        ...props
+      }
     })
   }
 
@@ -39,8 +39,8 @@ describe('ScenarioComplete', () => {
     const wrapper = mountComponent()
     const stars = wrapper.findAll('.star')
     expect(stars).toHaveLength(5)
-    expect(stars.filter((s) => s.classes().includes('filled')).length).toBe(3)
-    expect(stars.filter((s) => s.classes().includes('empty')).length).toBe(2)
+    expect(stars.filter(s => s.classes().includes('filled')).length).toBe(3)
+    expect(stars.filter(s => s.classes().includes('empty')).length).toBe(2)
   })
 
   it('0 星显示 0 颗点亮星（重试态）', () => {

@@ -5,17 +5,21 @@
 ## 一、问题详述
 
 ### 现象
+
 - `docker compose up --build`（deploy 脚本 `deploy_services` 触发）卡死在 `apk add` 阶段：36 分钟仅 10s CPU，纯 I/O 等待。
 - 独立 alpine 容器 `docker run --rm alpine apk add ...` 60 秒完成 → **排除网络问题**。
 - `docker builder prune` 两次超时（60s / 180s）→ buildkit 缓存删除极慢，状态受损。
 - 测试构建 alpine+apk，150 秒仅完成 6/32 个包 → buildkit 构建极慢。
 
 ### 根因
+
 buildkit 内嵌缓存状态损坏（推测：此前一次构建被 `pkill`/kill 中断，buildkit 内部 gc / 索引不一致）。损坏的缓存导致：
+
 - 后续构建读取缓存层时卡在 I/O；
 - `prune` 删除损坏记录时同样卡死。
 
 ### 当前状态（2026-07-21 诊断）
+
 ```
 builder:    仅 default（driver=docker，内嵌 buildkit v0.26.2），无独立 buildkit 容器
 Build Cache: 10.59GB / 232 条，reclaimable 7.58GB（膨胀且疑似损坏）

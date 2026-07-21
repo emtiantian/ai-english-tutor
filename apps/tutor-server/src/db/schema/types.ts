@@ -52,7 +52,7 @@ export interface TableSchemaOptions {
 
 export interface TableSchema<
   Name extends string = string,
-  Columns extends NamedColumnMap = NamedColumnMap,
+  Columns extends NamedColumnMap = NamedColumnMap
 > {
   name: Name
   columns: Columns
@@ -60,13 +60,10 @@ export interface TableSchema<
   uniques?: string[][]
 }
 
-export function defineTable<
-  const Name extends string,
-  const Columns extends ColumnMap,
->(
+export function defineTable<const Name extends string, const Columns extends ColumnMap>(
   name: Name,
   columns: Columns,
-  options: TableSchemaOptions = {},
+  options: TableSchemaOptions = {}
 ): TableSchema<Name, { [K in keyof Columns]: NamedColumnDef<K & string> }> {
   const namedColumns = {} as Record<string, NamedColumnDef>
   for (const [key, column] of Object.entries(columns)) {
@@ -77,29 +74,32 @@ export function defineTable<
     name,
     columns: namedColumns as { [K in keyof Columns]: NamedColumnDef<K & string> },
     indexes: options.indexes,
-    uniques: options.uniques,
+    uniques: options.uniques
   }
 }
 
 /** 将 snake_case 字符串转为 camelCase 的类型工具。 */
-type CamelCase<S extends string> =
-  S extends `${infer Head}_${infer Tail}`
-    ? `${Head}${CamelCase<Capitalize<Tail>>}`
-    : S
+type CamelCase<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${CamelCase<Capitalize<Tail>>}`
+  : S
 
 /** 根据 SQL 类型推导 TS 类型。 */
-type InferSqlType<T extends SqlType> =
-  T extends 'INTEGER' ? number
-  : T extends 'TEXT' ? string
-  : T extends 'REAL' ? number
-  : T extends 'BLOB' ? Buffer
-  : never
+type InferSqlType<T extends SqlType> = T extends 'INTEGER'
+  ? number
+  : T extends 'TEXT'
+    ? string
+    : T extends 'REAL'
+      ? number
+      : T extends 'BLOB'
+        ? Buffer
+        : never
 
 /** 根据列定义判断是否应为 `| null`。 */
-type InferNullable<C extends ColumnDef> =
-  C['nullable'] extends false ? never
-  : C['primaryKey'] extends true ? never
-  : null
+type InferNullable<C extends ColumnDef> = C['nullable'] extends false
+  ? never
+  : C['primaryKey'] extends true
+    ? never
+    : null
 
 /** 从表声明推导出行类型（camelCase 属性名）。 */
 export type InferRow<T extends TableSchema> = {
@@ -108,9 +108,7 @@ export type InferRow<T extends TableSchema> = {
 }
 
 /** 按 snake_case 名提取列定义。 */
-export type ColumnByName<T extends TableSchema, N extends keyof T['columns']> =
-  T['columns'][N]
+export type ColumnByName<T extends TableSchema, N extends keyof T['columns']> = T['columns'][N]
 
 /** 提取列对应的 camelCase 属性名。 */
-export type ColumnKey<T extends TableSchema, N extends keyof T['columns']> =
-  CamelCase<N & string>
+export type ColumnKey<T extends TableSchema, N extends keyof T['columns']> = CamelCase<N & string>

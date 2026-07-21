@@ -105,14 +105,13 @@ export interface Scenario {
 /** 所有可用场景 */
 export const scenarios: Scenario[] = scenariosDefault as Scenario[]
 
-
 /**
  * 获取场景在指定 CEFR 等级下的变体配置。
  * 若该等级没有配置，则返回 undefined（调用方应回退到顶层字段）。
  */
 export function getScenarioProfile(
   scenario: Scenario,
-  level: CEFRLevel,
+  level: CEFRLevel
 ): ScenarioLevelProfile | undefined {
   return scenario.levelProfiles?.[level]
 }
@@ -121,27 +120,24 @@ export function getScenarioProfile(
  * 获取场景在指定 CEFR 等级下应使用的 Act 列表。
  * 优先使用 levelProfiles[level].acts，否则回退到顶层 acts，最后回退到 objectives。
  */
-export function getScenarioActs(
-  scenario: Scenario,
-  level: CEFRLevel,
-): ActDef[] {
+export function getScenarioActs(scenario: Scenario, level: CEFRLevel): ActDef[] {
   const profile = getScenarioProfile(scenario, level)
   if (profile?.acts && profile.acts.length > 0) return profile.acts
   if (scenario.acts && scenario.acts.length > 0) return scenario.acts
-  return (scenario.objectives ?? []).map((obj) => ({
+  return (scenario.objectives ?? []).map(obj => ({
     name: obj.description,
-    goal: obj.descriptionEn,
+    goal: obj.descriptionEn
   }))
 }
 
 /** 获取指定等级的场景 */
 export function getScenariosForLevel(levelNum: number): Scenario[] {
-  return scenarios.filter((s) => s.level === levelNum)
+  return scenarios.filter(s => s.level === levelNum)
 }
 
 /** 按 ID 获取场景 */
 export function getScenarioById(id: string): Scenario | undefined {
-  return scenarios.find((s) => s.id === id)
+  return scenarios.find(s => s.id === id)
 }
 
 /** 获取所有可用场景 */

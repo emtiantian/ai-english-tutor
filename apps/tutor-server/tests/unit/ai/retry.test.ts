@@ -24,17 +24,19 @@ describe('withRetry', () => {
 
   it('重试耗尽后抛出归一化错误', async () => {
     const fn = vi.fn().mockRejectedValue(serverErr())
-    await expect(
-      withRetry(fn, { maxRetries: 2, baseDelay: 1 }),
-    ).rejects.toMatchObject({ code: 'server', retryable: true })
+    await expect(withRetry(fn, { maxRetries: 2, baseDelay: 1 })).rejects.toMatchObject({
+      code: 'server',
+      retryable: true
+    })
     expect(fn).toHaveBeenCalledTimes(3) // 首次 + 2 次重试
   })
 
   it('不可重试错误立即抛出（fn 只调一次）', async () => {
     const fn = vi.fn().mockRejectedValue(authErr())
-    await expect(
-      withRetry(fn, { maxRetries: 3, baseDelay: 1 }),
-    ).rejects.toMatchObject({ code: 'auth', retryable: false })
+    await expect(withRetry(fn, { maxRetries: 3, baseDelay: 1 })).rejects.toMatchObject({
+      code: 'auth',
+      retryable: false
+    })
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
@@ -42,9 +44,9 @@ describe('withRetry', () => {
     const fn = vi.fn()
     const controller = new AbortController()
     controller.abort()
-    await expect(
-      withRetry(fn, { maxRetries: 3, signal: controller.signal }),
-    ).rejects.toMatchObject({ code: 'abort' })
+    await expect(withRetry(fn, { maxRetries: 3, signal: controller.signal })).rejects.toMatchObject(
+      { code: 'abort' }
+    )
     expect(fn).not.toHaveBeenCalled()
   })
 
@@ -55,7 +57,7 @@ describe('withRetry', () => {
       return Promise.reject(serverErr())
     })
     await expect(
-      withRetry(fn, { maxRetries: 3, signal: controller.signal, baseDelay: 1 }),
+      withRetry(fn, { maxRetries: 3, signal: controller.signal, baseDelay: 1 })
     ).rejects.toMatchObject({ code: 'abort' })
     expect(fn).toHaveBeenCalledTimes(1)
   })
@@ -68,8 +70,8 @@ describe('withRetry', () => {
       withRetry(fn, {
         maxRetries: 2,
         baseDelay: 10,
-        onRetry: (_err, _attempt, delay) => delays.push(delay),
-      }),
+        onRetry: (_err, _attempt, delay) => delays.push(delay)
+      })
     ).rejects.toMatchObject({ code: 'server' })
     // 2 次重试：baseDelay * 2^0 = 10, baseDelay * 2^1 = 20
     expect(delays).toEqual([10, 20])

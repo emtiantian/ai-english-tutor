@@ -5,8 +5,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@tests': resolve(__dirname, 'tests'),
-    },
+      '@tests': resolve(__dirname, 'tests')
+    }
   },
   test: {
     environment: 'node',
@@ -22,11 +22,11 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.d.ts'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.d.ts']
     },
     typecheck: {
       enabled: false,
-      tsconfig: './tsconfig.test.json',
-    },
-  },
+      tsconfig: './tsconfig.test.json'
+    }
+  }
 })

@@ -34,11 +34,11 @@ async function main() {
 
   console.log(
     `OK  wav=${buf.length}B  fmt=PCM/${channels}ch/${sampleRate}Hz/${bitsPerSample}bit  ` +
-      `audio=${audioSec.toFixed(2)}s  gen=${(ms / 1000).toFixed(2)}s  rtf=${(ms / 1000 / audioSec).toFixed(2)}`,
+      `audio=${audioSec.toFixed(2)}s  gen=${(ms / 1000).toFixed(2)}s  rtf=${(ms / 1000 / audioSec).toFixed(2)}`
   )
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('FAIL:', err)
   process.exit(1)
 })

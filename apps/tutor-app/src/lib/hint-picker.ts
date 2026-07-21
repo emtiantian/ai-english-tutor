@@ -21,18 +21,16 @@ export interface PickHintOptions {
  */
 export function pickBestStudentHint(
   candidates: string[],
-  options: PickHintOptions = {},
+  options: PickHintOptions = {}
 ): string | undefined {
   if (candidates.length === 0) return undefined
 
-  const learnedSet = new Set((options.wordsLearned ?? []).map((w) => w.toLowerCase()))
+  const learnedSet = new Set((options.wordsLearned ?? []).map(w => w.toLowerCase()))
   const targetWords = options.targetWords ?? []
-  const unlearnedWords = targetWords.filter((w) => !learnedSet.has(w.toLowerCase()))
+  const unlearnedWords = targetWords.filter(w => !learnedSet.has(w.toLowerCase()))
 
   const findMatch = (words: string[]) =>
-    candidates.find((s) =>
-      words.some((w) => s.toLowerCase().includes(w.toLowerCase())),
-    )
+    candidates.find(s => words.some(w => s.toLowerCase().includes(w.toLowerCase())))
 
   return findMatch(unlearnedWords) || findMatch(targetWords) || candidates[0]
 }

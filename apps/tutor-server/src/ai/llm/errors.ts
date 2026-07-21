@@ -17,7 +17,7 @@ import {
   NotFoundError,
   PermissionDeniedError,
   RateLimitError,
-  UnprocessableEntityError,
+  UnprocessableEntityError
 } from 'openai'
 
 /**
@@ -33,14 +33,7 @@ import {
  * - `unknown`：其他未识别错误，不可重试
  */
 export type LLMErrorCode =
-  | 'abort'
-  | 'auth'
-  | 'rate-limit'
-  | 'bad-request'
-  | 'timeout'
-  | 'network'
-  | 'server'
-  | 'unknown'
+  'abort' | 'auth' | 'rate-limit' | 'bad-request' | 'timeout' | 'network' | 'server' | 'unknown'
 
 /**
  * 统一 LLM 错误类型。
@@ -118,7 +111,8 @@ export function normalizeLLMError(e: unknown): LLMError {
     if (typeof status === 'number') {
       if (status >= 500) return createLLMError('server', 'LLM 服务端错误', true, e, status)
       if (status === 429) return createLLMError('rate-limit', 'LLM 触发限流', true, e, status)
-      if (status === 401 || status === 403) return createLLMError('auth', 'LLM 鉴权失败', false, e, status)
+      if (status === 401 || status === 403)
+        return createLLMError('auth', 'LLM 鉴权失败', false, e, status)
       if (status >= 400) return createLLMError('bad-request', 'LLM 请求参数错误', false, e, status)
     }
     return createLLMError('unknown', 'LLM 未知错误', false, e, status)
@@ -141,7 +135,7 @@ function createLLMError(
   message: string,
   retryable: boolean,
   cause: unknown,
-  status?: number,
+  status?: number
 ): LLMError {
   const err = new Error(message) as LLMError
   err.name = 'LLMError'

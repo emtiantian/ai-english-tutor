@@ -43,9 +43,9 @@ describe('llm factory and utils', () => {
         content: [
           { type: 'text', text: 'hello' },
           { type: 'audio', data: 'abc', format: 'wav' },
-          { type: 'text', text: 'world' },
-        ],
-      }),
+          { type: 'text', text: 'world' }
+        ]
+      })
     ).toBe('hello\nworld')
   })
 
@@ -63,8 +63,8 @@ describe('llm factory and utils', () => {
       role: 'user' as const,
       content: [
         { type: 'text' as const, text: 'say' },
-        { type: 'audio' as const, data: 'abc', format: 'wav' },
-      ],
+        { type: 'audio' as const, data: 'abc', format: 'wav' }
+      ]
     }
     const normalized = normalizeToString(multiMessage)
     expect(normalized.content).toBe('say')
@@ -126,7 +126,9 @@ describe('llm factory and utils', () => {
     const mockProvider = createLLMProvider()
     const controller = new AbortController()
     controller.abort()
-    await expect(mockProvider.complete([{ role: 'user', content: 'hi' }], controller.signal)).rejects.toThrow(/AbortError/)
+    await expect(
+      mockProvider.complete([{ role: 'user', content: 'hi' }], controller.signal)
+    ).rejects.toThrow(/AbortError/)
   })
 
   it('mock provider rejects stream on aborted signal', async () => {
@@ -137,10 +139,12 @@ describe('llm factory and utils', () => {
 
     await expect(
       (async () => {
-        for await (const _ of mockProvider.stream!([{ role: 'user', content: 'hi' }], { signal: streamController.signal })) {
+        for await (const _ of mockProvider.stream!([{ role: 'user', content: 'hi' }], {
+          signal: streamController.signal
+        })) {
           // no-op
         }
-      })(),
+      })()
     ).rejects.toThrow(/AbortError/)
   })
 })

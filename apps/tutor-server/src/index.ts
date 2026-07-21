@@ -21,28 +21,27 @@ async function main(): Promise<void> {
     // - **失败只 logger.warn，不抛错、不退出进程**：
     //   TTS 不可用时前端可降级到 browser TTS，后端不应因此启动失败。
     if (config.TTS_PROVIDER === 'cosyvoice' && config.COSYVOICE_HEALTH_CHECK) {
-      void checkCosyVoiceHealth(config.COSYVOICE_BASE_URL, config.COSYVOICE_SPK_ID)
-        .then((result) => {
-          if (result.ok) {
-            logger.info(
-              {
-                provider: 'cosyvoice',
-                status: result.status,
-                baseUrl: config.COSYVOICE_BASE_URL,
-              },
-              'CosyVoice 健康探测通过',
-            )
-          } else {
-            logger.warn(
-              {
-                provider: 'cosyvoice',
-                error: result.error,
-                baseUrl: config.COSYVOICE_BASE_URL,
-              },
-              'CosyVoice 健康探测失败；TTS 不可用时前端可降级到 browser TTS，不阻塞后端运行。请检查 CosyVoice 容器是否已启动。',
-            )
-          }
-        })
+      void checkCosyVoiceHealth(config.COSYVOICE_BASE_URL, config.COSYVOICE_SPK_ID).then(result => {
+        if (result.ok) {
+          logger.info(
+            {
+              provider: 'cosyvoice',
+              status: result.status,
+              baseUrl: config.COSYVOICE_BASE_URL
+            },
+            'CosyVoice 健康探测通过'
+          )
+        } else {
+          logger.warn(
+            {
+              provider: 'cosyvoice',
+              error: result.error,
+              baseUrl: config.COSYVOICE_BASE_URL
+            },
+            'CosyVoice 健康探测失败；TTS 不可用时前端可降级到 browser TTS，不阻塞后端运行。请检查 CosyVoice 容器是否已启动。'
+          )
+        }
+      })
     }
   } catch (err) {
     logger.error({ err }, '启动服务器失败')

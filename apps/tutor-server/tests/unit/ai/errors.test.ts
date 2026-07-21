@@ -8,7 +8,7 @@ import {
   InternalServerError,
   NotFoundError,
   PermissionDeniedError,
-  RateLimitError,
+  RateLimitError
 } from 'openai'
 import { normalizeLLMError, isLLMError } from '@/ai/llm/errors.js'
 

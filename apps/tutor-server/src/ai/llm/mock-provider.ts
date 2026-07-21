@@ -1,12 +1,18 @@
 import { logger } from '../../logger.js'
-import type { LLMMessage, LLMProvider, LLMResponse, LLMStreamChunk, ProviderCapabilities } from './types.js'
+import type {
+  LLMMessage,
+  LLMProvider,
+  LLMResponse,
+  LLMStreamChunk,
+  ProviderCapabilities
+} from './types.js'
 import { extractTextContent } from './utils.js'
 
 export class MockProvider implements LLMProvider {
   readonly name = 'mock'
   readonly capabilities: ProviderCapabilities = {
     supportsAudioInput: false,
-    supportsStreaming: true,
+    supportsStreaming: true
   }
 
   async complete(messages: LLMMessage[], signal?: AbortSignal): Promise<LLMResponse> {
@@ -34,12 +40,15 @@ export class MockProvider implements LLMProvider {
         text: "Hello! I'm your AI English teacher. Let's practice speaking together!",
         motionId: 'wave',
         expressionId: 'happy',
-        vocabulary: ['practice', 'speaking', 'together'],
-      }),
+        vocabulary: ['practice', 'speaking', 'together']
+      })
     }
   }
 
-  async *stream(messages: LLMMessage[], options?: { signal?: AbortSignal }): AsyncGenerator<LLMStreamChunk> {
+  async *stream(
+    messages: LLMMessage[],
+    options?: { signal?: AbortSignal }
+  ): AsyncGenerator<LLMStreamChunk> {
     const signal = options?.signal
     if (signal?.aborted) {
       throw new Error('AbortError')
@@ -56,10 +65,10 @@ export class MockProvider implements LLMProvider {
       textZh: '你好！我是你的 AI 英语老师。让我们一起练习口语吧！',
       motionId: 'wave',
       expressionId: 'happy',
-      vocabulary: ['practice', 'speaking', 'together'],
+      vocabulary: ['practice', 'speaking', 'together']
     })
 
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise(resolve => setTimeout(resolve, 300))
     if (signal?.aborted) {
       throw new Error('AbortError')
     }

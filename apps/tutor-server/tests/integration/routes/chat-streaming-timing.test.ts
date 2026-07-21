@@ -6,7 +6,7 @@ class SlowStreamProvider implements LLMProvider {
   readonly name = 'slow-stream-mock'
   readonly capabilities: ProviderCapabilities = {
     supportsAudioInput: false,
-    supportsStreaming: true,
+    supportsStreaming: true
   }
 
   async complete(): Promise<LLMResponse> {
@@ -15,13 +15,13 @@ class SlowStreamProvider implements LLMProvider {
         text: 'slow response',
         motionId: 'wave',
         expressionId: 'happy',
-        vocabulary: ['slow'],
-      }),
+        vocabulary: ['slow']
+      })
     }
   }
 
   async *stream(): AsyncGenerator<{ content: string; isEnd: boolean }> {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 2000))
     yield { content: 'slow', isEnd: false }
     yield { content: '', isEnd: true }
   }
@@ -58,8 +58,8 @@ describe('chat streaming timing', () => {
           stream: true,
           sessionId: 'stream-timing-session',
           level: 2,
-          userId: 'stream-timing-user',
-        },
+          userId: 'stream-timing-user'
+        }
       })
       const elapsed = Date.now() - start
 

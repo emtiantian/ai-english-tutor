@@ -13,7 +13,7 @@ export class RemoteTeacherProvider implements AITeacherProvider {
     // 通知 UI：用户消息已发送
     this.client.emit('message.user', {
       text: input.text,
-      isVoice: false,
+      isVoice: false
     })
 
     // 通知 UI：AI 正在思考
@@ -25,14 +25,14 @@ export class RemoteTeacherProvider implements AITeacherProvider {
     const response = await this.client.sendMessage({
       type: 'user.speak',
       text: input.text,
-      level: input.level,
+      level: input.level
     })
 
     return {
       text: response.text,
       motionId: response.motionId,
       expressionId: response.expressionId,
-      vocabulary: response.vocabulary,
+      vocabulary: response.vocabulary
     }
   }
 }

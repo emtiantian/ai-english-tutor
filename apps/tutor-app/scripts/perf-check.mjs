@@ -11,13 +11,12 @@ async function main() {
   const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
-    ignoreHTTPSErrors: true,
+    ignoreHTTPSErrors: true
   })
   const page = await context.newPage()
 
   // 采集 Performance 指标
   await page.evaluate(() => {
-    // eslint-disable-next-line no-undef
     performance.mark('start')
   })
 
@@ -32,20 +31,19 @@ async function main() {
 
   // 读取 Performance 指标
   const metrics = await page.evaluate(() => {
-    // eslint-disable-next-line no-undef
     const entries = performance.getEntriesByType('navigation')
     const nav = entries[0] || {}
     return {
       domContentLoaded: nav.domContentLoadedEventEnd - nav.domContentLoadedEventStart,
       loadComplete: nav.loadEventEnd - nav.loadEventStart,
-      fps: null, // 需要在 page 里用 rAF 采样
+      fps: null // 需要在 page 里用 rAF 采样
     }
   })
   console.log('导航性能指标:', metrics)
 
   // 在页面内采样 Live2D 渲染帧时间
   const frameMetrics = await page.evaluate(async () => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const samples = []
       let last = performance.now()
       let count = 0
@@ -73,7 +71,7 @@ async function main() {
   await browser.close()
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

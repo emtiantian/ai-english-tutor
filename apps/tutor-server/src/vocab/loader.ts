@@ -10,7 +10,7 @@ import {
   type Scenario as SharedScenario,
   type ScenarioObjective as SharedScenarioObjective,
   type CharacterPersona,
-  type PersonaJson,
+  type PersonaJson
 } from '@ai-english-tutor/shared'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -51,10 +51,7 @@ export function loadAllVocabulary(): void {
   for (const level of LEVELS) {
     loadVocabularyLevel(level)
   }
-  logger.info(
-    { levels: LEVELS.length, totalWords: getTotalWordCount() },
-    'Vocabulary loaded',
-  )
+  logger.info({ levels: LEVELS.length, totalWords: getTotalWordCount() }, 'Vocabulary loaded')
 }
 
 /**
@@ -82,7 +79,7 @@ function loadVocabularyLevel(level: string): VocabLevel {
 
   const candidates = [
     join(resolveConfigDir(), 'vocab', `${level}.json`),
-    join(getDefaultVocabDir(), `${level}.json`),
+    join(getDefaultVocabDir(), `${level}.json`)
   ]
 
   for (const filePath of candidates) {
@@ -100,10 +97,10 @@ function loadVocabularyLevel(level: string): VocabLevel {
   logger.error({ level }, `Failed to load vocabulary level ${level}`)
   return {
     level,
-    levelNum: LEVELS.indexOf(level as typeof LEVELS[number]) + 1,
+    levelNum: LEVELS.indexOf(level as (typeof LEVELS)[number]) + 1,
     description: '',
     wordCount: 0,
-    words: [],
+    words: []
   }
 }
 
@@ -141,7 +138,7 @@ export function lookupWord(word: string): { level: string; data: VocabWord } | u
   const normalized = word.toLowerCase().trim()
   for (const level of LEVELS) {
     const vocab = getVocabularyByLevel(level)
-    const found = vocab.words.find((w) => w.word.toLowerCase() === normalized)
+    const found = vocab.words.find(w => w.word.toLowerCase() === normalized)
     if (found) {
       return { level, data: found }
     }
@@ -154,7 +151,7 @@ export function lookupWord(word: string): { level: string; data: VocabWord } | u
  */
 export function getWordsByTopic(levelNum: number, topic: string): VocabWord[] {
   const vocab = getVocabularyByLevelNum(levelNum)
-  return vocab.words.filter((w) => w.topic === topic)
+  return vocab.words.filter(w => w.topic === topic)
 }
 
 /**
@@ -162,7 +159,7 @@ export function getWordsByTopic(levelNum: number, topic: string): VocabWord[] {
  */
 export function getTopicsForLevel(levelNum: number): string[] {
   const vocab = getVocabularyByLevelNum(levelNum)
-  const topics = new Set(vocab.words.map((w) => w.topic))
+  const topics = new Set(vocab.words.map(w => w.topic))
   return Array.from(topics).sort()
 }
 
@@ -194,14 +191,19 @@ export function getRandomWords(levelNum: number, count: number): VocabWord[] {
 /**
  * 获取所有等级信息。
  */
-export function getLevelsInfo(): Array<{ level: string; levelNum: number; wordCount: number; description: string }> {
-  return LEVELS.map((level) => {
+export function getLevelsInfo(): Array<{
+  level: string
+  levelNum: number
+  wordCount: number
+  description: string
+}> {
+  return LEVELS.map(level => {
     const vocab = getVocabularyByLevel(level)
     return {
       level,
       levelNum: vocab.levelNum,
       wordCount: vocab.wordCount,
-      description: vocab.description,
+      description: vocab.description
     }
   })
 }
@@ -222,7 +224,10 @@ export function loadAllScenarios(): void {
     if (existsSync(filePath)) {
       const data = readFileSync(filePath, 'utf-8')
       runtimeScenarios = JSON.parse(data)
-      logger.info({ count: runtimeScenarios!.length, source: filePath }, 'Scenarios loaded from JSON file')
+      logger.info(
+        { count: runtimeScenarios!.length, source: filePath },
+        'Scenarios loaded from JSON file'
+      )
       return
     }
   } catch (err) {
@@ -242,14 +247,14 @@ function ensureScenarios(): Scenario[] {
  * 获取指定等级的所有场景。
  */
 export function getScenariosForLevel(levelNum: number): Scenario[] {
-  return ensureScenarios().filter((s) => s.level === levelNum)
+  return ensureScenarios().filter(s => s.level === levelNum)
 }
 
 /**
  * 按 ID 获取场景。
  */
 export function getScenarioById(id: string): Scenario | undefined {
-  return ensureScenarios().find((s) => s.id === id)
+  return ensureScenarios().find(s => s.id === id)
 }
 
 /**

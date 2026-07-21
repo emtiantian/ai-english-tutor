@@ -29,14 +29,20 @@ export class TutorEngine {
   private persona = loadPersona()
 
   private freeForm = new FreeFormEngine(this.llm, this.sessions, this.audio, this.persona)
-  private scenario = new ScenarioEngine(this.llm, this.sessions, this.audio, this.vocabTracker, this.persona)
+  private scenario = new ScenarioEngine(
+    this.llm,
+    this.sessions,
+    this.audio,
+    this.vocabTracker,
+    this.persona
+  )
   private vocab = new VocabEngine(this.llm)
   private orchestrator = new ResponseOrchestrator(
     this.llm,
     this.sessions,
     this.audio,
     this.vocabTracker,
-    this.persona,
+    this.persona
   )
 
   /**
@@ -49,7 +55,7 @@ export class TutorEngine {
     scenarioId?: string,
     styleName?: string,
     targetLevel?: CEFRLevel,
-    resumeFrom?: string,
+    resumeFrom?: string
   ): Promise<{
     text: string
     textZh?: string
@@ -74,16 +80,27 @@ export class TutorEngine {
     }
   }> {
     const sid = sessionId ?? `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    logger.info({ sessionId: sid, level, scenarioId, styleName, targetLevel, resumeFrom }, '开始课程')
+    logger.info(
+      { sessionId: sid, level, scenarioId, styleName, targetLevel, resumeFrom },
+      '开始课程'
+    )
 
     // 按名称解析风格（未指定则随机）
     const requestedStyle = styleName
-      ? this.persona.styles.find((s) => s.name === styleName)
+      ? this.persona.styles.find(s => s.name === styleName)
       : undefined
 
     // 若提供了 scenarioId，则开始场景化课程
     if (scenarioId) {
-      return this.scenario.startScenarioLesson(scenarioId, level, sid, userId, requestedStyle, targetLevel, resumeFrom)
+      return this.scenario.startScenarioLesson(
+        scenarioId,
+        level,
+        sid,
+        userId,
+        requestedStyle,
+        targetLevel,
+        resumeFrom
+      )
     }
 
     // 否则开始自由对话课程
@@ -103,7 +120,7 @@ export class TutorEngine {
       audioFormat?: string
       userId?: string
       signal?: AbortSignal
-    } = {},
+    } = {}
   ) {
     return this.orchestrator.handleUserSpeak(text, options)
   }

@@ -32,7 +32,7 @@ export interface ProviderFactoryOptions {
  * @throws 如果指定类型的 Provider 初始化失败
  */
 export async function createCharacterProvider(
-  options: ProviderFactoryOptions,
+  options: ProviderFactoryOptions
 ): Promise<CharacterProvider> {
   const { type, canvas, spineConfig, live2dModelId } = options
 
@@ -73,7 +73,7 @@ export async function createCharacterProvider(
  * 安全创建 Provider，失败时自动降级到 SVG
  */
 export async function createCharacterProviderSafe(
-  options: ProviderFactoryOptions,
+  options: ProviderFactoryOptions
 ): Promise<CharacterProvider> {
   try {
     return await createCharacterProvider(options)

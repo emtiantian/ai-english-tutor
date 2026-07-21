@@ -47,7 +47,7 @@ function getDB(): Promise<IDBPDatabase> {
         if (!db.objectStoreNames.contains(STORE)) {
           db.createObjectStore(STORE, { keyPath: 'scenarioId' })
         }
-      },
+      }
     })
   }
   return dbPromise
@@ -64,14 +64,14 @@ export const scenarioPausedDB = {
    * 自动填 savedAt = now、expiresAt = now + 24h。
    */
   async savePausedSnapshot(
-    snapshot: Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'>,
+    snapshot: Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'>
   ): Promise<void> {
     const db = await getDB()
     const now = Date.now()
     const full: ScenarioPausedSnapshot = {
       ...snapshot,
       savedAt: now,
-      expiresAt: now + SCENARIO_PAUSED_TTL_MS,
+      expiresAt: now + SCENARIO_PAUSED_TTL_MS
     }
     await db.put(STORE, full)
   },
@@ -125,11 +125,11 @@ export const scenarioPausedDB = {
     const db = await getDB()
     const all = (await db.getAll(STORE)) as ScenarioPausedSnapshot[]
     const now = Date.now()
-    const expiredIds = all.filter((r) => r.expiresAt <= now).map((r) => r.scenarioId)
+    const expiredIds = all.filter(r => r.expiresAt <= now).map(r => r.scenarioId)
     if (!expiredIds.length) return 0
     const tx = db.transaction(STORE, 'readwrite')
     for (const id of expiredIds) await tx.store.delete(id)
     await tx.done
     return expiredIds.length
-  },
+  }
 }

@@ -44,11 +44,9 @@ const DEFAULT_DATA_DIR = IS_DEPLOY ? DEPLOY_DATA_DIR : DEV_DATA_DIR
 const envPaths = IS_DEPLOY
   ? [
       join(process.env.DATA_DIR ?? DEPLOY_DATA_DIR, '.env'),
-      join(homedir(), '.ai-english-tutor', '.env'),
+      join(homedir(), '.ai-english-tutor', '.env')
     ]
-  : [
-      join(REPO_ROOT, '.env'),
-    ]
+  : [join(REPO_ROOT, '.env')]
 for (const envPath of envPaths) {
   if (existsSync(envPath)) {
     loadEnv({ path: envPath })
@@ -71,7 +69,7 @@ export const config = {
   /** CORS 允许的源（环境中用逗号分隔） */
   CORS_ORIGIN: (process.env.CORS_ORIGIN ?? '*')
     .split(',')
-    .map((s) => s.trim())
+    .map(s => s.trim())
     .filter(Boolean),
 
   /** SSE 心跳间隔，单位毫秒 */
@@ -108,7 +106,8 @@ export const config = {
   VOLCENGINE_LLM_API_KEY: process.env.VOLCENGINE_LLM_API_KEY ?? '',
 
   /** 火山方舟 LLM Base URL（OpenAI 兼容） */
-  VOLCENGINE_LLM_BASE_URL: process.env.VOLCENGINE_LLM_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3',
+  VOLCENGINE_LLM_BASE_URL:
+    process.env.VOLCENGINE_LLM_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3',
 
   /** 火山方舟 LLM 模型（推理接入点 ID，如 ep-xxxxxxxxxxxxx） */
   VOLCENGINE_LLM_MODEL: process.env.VOLCENGINE_LLM_MODEL ?? '',
@@ -150,7 +149,10 @@ export const config = {
   XIAOMI_ASR_API_KEY: process.env.XIAOMI_ASR_API_KEY ?? process.env.XIAOMI_API_KEY ?? '',
 
   /** 小米 ASR Base URL（回退到 XIAOMI_BASE_URL） */
-  XIAOMI_ASR_BASE_URL: process.env.XIAOMI_ASR_BASE_URL ?? process.env.XIAOMI_BASE_URL ?? 'https://api.xiaomimimo.com/v1',
+  XIAOMI_ASR_BASE_URL:
+    process.env.XIAOMI_ASR_BASE_URL ??
+    process.env.XIAOMI_BASE_URL ??
+    'https://api.xiaomimimo.com/v1',
 
   /** 小米 ASR 模型名称 */
   XIAOMI_ASR_MODEL: process.env.XIAOMI_ASR_MODEL ?? 'mimo-v2.5-asr',
@@ -261,10 +263,12 @@ export const config = {
   // 鉴权：X-Api-Key + X-Api-Resource-Id；二进制 WebSocket 帧协议
 
   /** Volcengine 方舟 Agent Plan 专属 API Key（ASR 可独立配置；为空则回退到 TTS key） */
-  VOLCENGINE_ASR_API_KEY: process.env.VOLCENGINE_ASR_API_KEY ?? process.env.VOLCENGINE_TTS_API_KEY ?? '',
+  VOLCENGINE_ASR_API_KEY:
+    process.env.VOLCENGINE_ASR_API_KEY ?? process.env.VOLCENGINE_TTS_API_KEY ?? '',
 
   /** Volcengine ASR Resource ID（模型标识） */
-  VOLCENGINE_ASR_RESOURCE_ID: process.env.VOLCENGINE_ASR_RESOURCE_ID ?? 'volc.seedasr.sauc.duration',
+  VOLCENGINE_ASR_RESOURCE_ID:
+    process.env.VOLCENGINE_ASR_RESOURCE_ID ?? 'volc.seedasr.sauc.duration',
 
   /** Volcengine ASR WebSocket 端点 */
   VOLCENGINE_ASR_BASE_URL:
@@ -280,7 +284,7 @@ export const config = {
   WHISPER_BASE_URL: process.env.WHISPER_BASE_URL ?? 'http://localhost:8080',
 
   /** Whisper 模型文件名（docker-compose.whisper.yml 与部署脚本下载/挂载用） */
-  WHISPER_MODEL: process.env.WHISPER_MODEL ?? 'ggml-base.en.bin',
+  WHISPER_MODEL: process.env.WHISPER_MODEL ?? 'ggml-base.en.bin'
 }
 
 export type Config = typeof config

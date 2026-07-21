@@ -13,7 +13,7 @@ function asString(v: unknown): string | undefined {
  */
 export function parseVocabExplainResponse(
   content: string,
-  fallbackWord: string,
+  fallbackWord: string
 ): WordExplanation | null {
   const jsonText = extractFirstJson(content)
   if (!jsonText) return null
@@ -36,7 +36,7 @@ export function parseVocabExplainResponse(
         pos: asString(obj.pos) ?? '',
         meaningZh,
         exampleEn: asString(obj.exampleEn),
-        exampleZh: asString(obj.exampleZh),
+        exampleZh: asString(obj.exampleZh)
       }
     })
     .filter((s): s is WordSense => s !== null)
@@ -44,7 +44,9 @@ export function parseVocabExplainResponse(
   if (senses.length === 0) return null
 
   const synonyms = Array.isArray(parsed.synonyms)
-    ? (parsed.synonyms.filter((w) => typeof w === 'string' && w.trim().length > 0) as string[]).map((w) => w.trim())
+    ? (parsed.synonyms.filter(w => typeof w === 'string' && w.trim().length > 0) as string[]).map(
+        w => w.trim()
+      )
     : undefined
 
   return {
@@ -53,6 +55,6 @@ export function parseVocabExplainResponse(
     level: asString(parsed.level),
     senses,
     synonyms: synonyms && synonyms.length > 0 ? synonyms : undefined,
-    usageNoteZh: asString(parsed.usageNoteZh),
+    usageNoteZh: asString(parsed.usageNoteZh)
   }
 }

@@ -60,18 +60,18 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
   return new Promise<BrowserASRResult>((resolve, reject) => {
     let settled = false
 
-    recognition.onresult = (event) => {
+    recognition.onresult = event => {
       const result = event.results[0]?.[0]
       if (result) {
         settled = true
         resolve({
           transcript: result.transcript,
-          confidence: result.confidence ?? 0,
+          confidence: result.confidence ?? 0
         })
       }
     }
 
-    recognition.onerror = (event) => {
+    recognition.onerror = event => {
       if (settled) return
       settled = true
       reject(new Error(`语音识别失败: ${event.error}`))

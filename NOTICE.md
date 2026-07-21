@@ -7,11 +7,11 @@ and distributed under the **Live2D Free Material License Agreement**.
 The full license text is included in this repository at [`LICENSE-Live2D.md`](./LICENSE-Live2D.md)
 and also copied to each model directory under `apps/tutor-app/public/models/`.
 
-| Model | Directory | Source | Notes |
-|---|---|---|---|
-| Hiyori Momose | `apps/tutor-app/public/models/hiyori/` | [Live2D Cubism SDK Sample](https://www.live2d.com/download/sample-data/) | Default teaching character; do not alter character design |
-| Shizuku | `apps/tutor-app/public/models/shizuku/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/shizuku) | Keep character name and setting unchanged |
-| Mao Pro (Mao Niziiro) | `apps/tutor-app/public/models/mao_pro/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/mao_pro) | No additional restrictions |
+| Model                 | Directory                               | Source                                                                                                | Notes                                                     |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Hiyori Momose         | `apps/tutor-app/public/models/hiyori/`  | [Live2D Cubism SDK Sample](https://www.live2d.com/download/sample-data/)                              | Default teaching character; do not alter character design |
+| Shizuku               | `apps/tutor-app/public/models/shizuku/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/shizuku) | Keep character name and setting unchanged                 |
+| Mao Pro (Mao Niziiro) | `apps/tutor-app/public/models/mao_pro/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/mao_pro) | No additional restrictions                                |
 
 Each model directory retains the original `ReadMe.txt` file as required by the license.
 

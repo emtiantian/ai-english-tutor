@@ -1,5 +1,11 @@
 import { logger } from '../../logger.js'
-import { defaultMotionAnalyzer, isMotionId, isExpressionId, normalizeMotionId, normalizeExpressionId } from '@ai-english-tutor/shared'
+import {
+  defaultMotionAnalyzer,
+  isMotionId,
+  isExpressionId,
+  normalizeMotionId,
+  normalizeExpressionId
+} from '@ai-english-tutor/shared'
 import { extractFirstJson } from './shared/json-extractor.js'
 
 export interface ParsedResponse {
@@ -48,14 +54,11 @@ export function parseTeachingResponse(content: string): ParsedResponse {
       if (isExpressionId(parsed.expressionId)) llmExpressionId = parsed.expressionId
       logger.debug(
         { hasText: !!parsed.text, hasTextZh: !!parsed.textZh, textZhPreview: textZh?.slice(0, 30) },
-        'Parsed LLM response',
+        'Parsed LLM response'
       )
     }
   } catch (err) {
-    logger.warn(
-      { content: content.slice(0, 100), err },
-      'Failed to parse LLM response as JSON',
-    )
+    logger.warn({ content: content.slice(0, 100), err }, 'Failed to parse LLM response as JSON')
   }
 
   // 若 JSON 解析失败，尝试从纯文本中提取尾部分析字段
@@ -77,9 +80,21 @@ export function parseTeachingResponse(content: string): ParsedResponse {
   const expressionId = llmExpressionId ?? normalizeExpressionId(analyzed.expressionId)
   const intent = llmMotionId ? 'llm' : analyzed.intent
 
-  logger.debug({ intent, motionId, expressionId, source: llmMotionId ? 'llm' : 'analyzer' }, 'Motion determined')
+  logger.debug(
+    { intent, motionId, expressionId, source: llmMotionId ? 'llm' : 'analyzer' },
+    'Motion determined'
+  )
 
-  return { text, textZh, motionId, expressionId, vocabulary, vocabularySentences, studentReplyHints, intent }
+  return {
+    text,
+    textZh,
+    motionId,
+    expressionId,
+    vocabulary,
+    vocabularySentences,
+    studentReplyHints,
+    intent
+  }
 }
 
 /**

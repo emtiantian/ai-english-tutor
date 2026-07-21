@@ -23,7 +23,7 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
         if (isNaN(levelNum) || levelNum < 1 || levelNum > 6) {
           return reply.status(400).send({
             error: 'Level must be 1-6',
-            code: 'INVALID_LEVEL',
+            code: 'INVALID_LEVEL'
           })
         }
         scenarios = getScenariosForLevel(levelNum)
@@ -32,7 +32,7 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
       }
 
       return reply.send({
-        scenarios: scenarios.map((s) => ({
+        scenarios: scenarios.map(s => ({
           id: s.id,
           name: s.name,
           nameEn: s.nameEn,
@@ -41,14 +41,14 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
           level: s.level,
           targetWords: s.targetWords,
           role: s.role,
-          objectives: s.objectives.map((obj) => ({
+          objectives: s.objectives.map(obj => ({
             id: obj.id,
             description: obj.description,
-            descriptionEn: obj.descriptionEn,
-          })),
-        })),
+            descriptionEn: obj.descriptionEn
+          }))
+        }))
       })
-    },
+    }
   )
 
   /**
@@ -63,7 +63,7 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
       if (!scenario) {
         return reply.status(404).send({
           error: 'Scenario not found',
-          code: 'SCENARIO_NOT_FOUND',
+          code: 'SCENARIO_NOT_FOUND'
         })
       }
 
@@ -78,8 +78,8 @@ export async function scenarioRoutes(server: FastifyInstance): Promise<void> {
         targetWords: scenario.targetWords,
         role: scenario.role,
         setting: scenario.setting,
-        objectives: scenario.objectives,
+        objectives: scenario.objectives
       })
-    },
+    }
   )
 }

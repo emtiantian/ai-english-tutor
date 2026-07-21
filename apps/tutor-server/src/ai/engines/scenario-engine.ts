@@ -23,7 +23,7 @@ export class ScenarioEngine {
     private sessions: SessionManager,
     private audio: AudioPipeline,
     private vocabTracker: VocabTracker,
-    private persona: CharacterPersona,
+    private persona: CharacterPersona
   ) {}
 
   async startScenarioLesson(
@@ -33,14 +33,17 @@ export class ScenarioEngine {
     userId?: string,
     style?: OpeningStyle,
     targetLevel?: CEFRLevel,
-    resumeFrom?: string,
+    resumeFrom?: string
   ) {
     const scenario = getScenarioById(scenarioId)
     if (!scenario) {
       throw new Error(`场景不存在：${scenarioId}`)
     }
 
-    logger.info({ sessionId, scenarioId: scenario.id, scenarioName: scenario.name, targetLevel, resumeFrom }, '开始场景化课程')
+    logger.info(
+      { sessionId, scenarioId: scenario.id, scenarioName: scenario.name, targetLevel, resumeFrom },
+      '开始场景化课程'
+    )
 
     // v2: 确定 CEFR 目标等级
     const cefrLevel = targetLevel ?? levelNumToCEFR(level)
@@ -70,7 +73,16 @@ export class ScenarioEngine {
     const lineGroup = lineGroupKey(scenario.id, cefrLevel, resolvedStyle.voiceDesign)
     const reusableLines = await getReusableLines(lineGroup)
 
-    const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(scenario, level, cefrLevel, resolvedStyle, this.persona, reusableLines, scenarioState.targetWords, scenarioState.levelProfile)
+    const { messages: startMessages, style: chosenStyle } = buildScenarioStartMessages(
+      scenario,
+      level,
+      cefrLevel,
+      resolvedStyle,
+      this.persona,
+      reusableLines,
+      scenarioState.targetWords,
+      scenarioState.levelProfile
+    )
 
     const session = this.sessions.getOrCreate(sessionId, level)
     session.userId = userId
@@ -94,18 +106,22 @@ export class ScenarioEngine {
 
     const messages = [
       { role: 'system' as const, content: startMessages[0].content },
-      { role: 'user' as const, content: userPrompt },
+      { role: 'user' as const, content: userPrompt }
     ]
 
     const response = await this.llm.complete(messages)
     const parsed = parseTeachingResponse(response.content)
-    warnIfMissingVocabSentences(parsed, sessionId, isResume ? 'resumeScenarioLesson' : 'startScenarioLesson')
+    warnIfMissingVocabSentences(
+      parsed,
+      sessionId,
+      isResume ? 'resumeScenarioLesson' : 'startScenarioLesson'
+    )
 
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
       motionId: parsed.motionId,
       expressionId: parsed.expressionId,
       vocabulary: parsed.vocabulary,
-      vocabularySentences: parsed.vocabularySentences,
+      vocabularySentences: parsed.vocabularySentences
     })
 
     // 记住这句台词，便于后续复用（并命中 TTS 缓存）。
@@ -114,9 +130,7 @@ export class ScenarioEngine {
     // 跟踪词汇
     if (userId && parsed.vocabulary?.length) {
       const levelStr = cefrLevel
-      this.vocabTracker.processTurn(
-        userId, '', parsed.vocabulary, [], levelStr,
-      )
+      this.vocabTracker.processTurn(userId, '', parsed.vocabulary, [], levelStr)
     }
 
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
@@ -124,7 +138,7 @@ export class ScenarioEngine {
     return {
       ...parsed,
       audioBase64: audioResult.audioBase64,
-      scenario: this.buildScenarioResponse(scenarioState),
+      scenario: this.buildScenarioResponse(scenarioState)
     }
   }
 
@@ -143,17 +157,17 @@ export class ScenarioEngine {
       level,
       targetWords,
       maxTurns: profile?.maxTurns ?? DEFAULT_MAX_TURNS,
-      objectives: (scenario.objectives ?? []).map((obj) => ({
+      objectives: (scenario.objectives ?? []).map(obj => ({
         id: obj.id,
         description: obj.description,
         descriptionEn: obj.descriptionEn,
         keywords: obj.keywords,
-        targetWords: obj.targetWords ?? [],
+        targetWords: obj.targetWords ?? []
       })),
       turnsCount: 0,
       wordsUsed: new Set(),
       levelProfile: profile,
-      actThemes: acts.map((act) => act.vocabThemes ?? []),
+      actThemes: acts.map(act => act.vocabThemes ?? [])
     }
   }
 
@@ -172,7 +186,7 @@ export class ScenarioEngine {
       turnsCount: scenario.turnsCount,
       maxTurns: scenario.maxTurns,
       coverageRate: 0,
-      stars: 0 as 0 | 3 | 4 | 5,
+      stars: 0 as 0 | 3 | 4 | 5
     }
   }
 }

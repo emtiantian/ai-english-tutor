@@ -15,7 +15,7 @@ export function createMessageId(): string {
  */
 export function findLastAssistantMessage(
   messages: ChatMessage[],
-  predicate?: (msg: ChatMessage) => boolean,
+  predicate?: (msg: ChatMessage) => boolean
 ): ChatMessage | undefined {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]

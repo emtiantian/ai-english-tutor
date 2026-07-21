@@ -3,8 +3,10 @@ import { OpenAIBaseProvider, type OpenAIBaseProviderOptions } from './openai-bas
 /**
  * 火山引擎（火山方舟）Provider 构造选项。
  */
-export interface VolcengineProviderOptions
-  extends Omit<OpenAIBaseProviderOptions, 'name' | 'capabilities'> {}
+export interface VolcengineProviderOptions extends Omit<
+  OpenAIBaseProviderOptions,
+  'name' | 'capabilities'
+> {}
 
 /**
  * 火山引擎（火山方舟）LLM Provider。
@@ -19,8 +21,8 @@ export class VolcengineProvider extends OpenAIBaseProvider {
       name: 'volcengine',
       capabilities: {
         supportsAudioInput: false,
-        supportsStreaming: true,
-      },
+        supportsStreaming: true
+      }
     })
   }
 }

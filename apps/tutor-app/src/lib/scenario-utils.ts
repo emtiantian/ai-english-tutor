@@ -6,7 +6,7 @@
 export function computeCoverageRate(
   wordsLearned: string[],
   targetWordsTotal: number,
-  coverageRate?: number,
+  coverageRate?: number
 ): number {
   if (typeof coverageRate === 'number') return coverageRate
   if (!targetWordsTotal) return 0

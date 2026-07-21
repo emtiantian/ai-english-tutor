@@ -1,8 +1,4 @@
-import {
-  LUNA_PERSONA,
-  type CharacterPersona,
-  type OpeningStyle,
-} from '@ai-english-tutor/shared'
+import { LUNA_PERSONA, type CharacterPersona, type OpeningStyle } from '@ai-english-tutor/shared'
 
 export type { OpeningStyle }
 
@@ -13,5 +9,5 @@ export type { OpeningStyle }
  */
 export function pickOpeningStyle(persona: CharacterPersona = LUNA_PERSONA): OpeningStyle {
   const styles = persona.styles
-  return styles.find((s) => s.name === 'lazy-mature') ?? styles[0]
+  return styles.find(s => s.name === 'lazy-mature') ?? styles[0]
 }

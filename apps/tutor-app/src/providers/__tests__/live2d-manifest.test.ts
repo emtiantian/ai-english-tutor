@@ -6,7 +6,7 @@ import {
   SHIZUKU_MANIFEST,
   MAO_PRO_MANIFEST,
   getLive2DModelManifest,
-  getLive2DModelManifestOrDefault,
+  getLive2DModelManifestOrDefault
 } from '@ai-english-tutor/shared'
 
 describe('Live2D model manifests', () => {
@@ -18,7 +18,15 @@ describe('Live2D model manifests', () => {
     expect(HIYORI_MANIFEST.expressionParamPresets).toBeDefined()
     // 必须保留 重构前的 7 个表情
     const presets = HIYORI_MANIFEST.expressionParamPresets!
-    for (const expr of ['happy', 'neutral', 'curious', 'surprised', 'encouraging', 'thoughtful', 'sad']) {
+    for (const expr of [
+      'happy',
+      'neutral',
+      'curious',
+      'surprised',
+      'encouraging',
+      'thoughtful',
+      'sad'
+    ]) {
       expect(presets[expr]).toBeDefined()
     }
     // neutral 必须把所有参数都设为 0(防止表情漂移)
@@ -47,12 +55,20 @@ describe('Live2D model manifests', () => {
     expect(SHIZUKU_MANIFEST.expressionParamPresets).toBeDefined()
     // 全部 7 个语义表情都要有
     const presets = SHIZUKU_MANIFEST.expressionParamPresets!
-    for (const expr of ['happy', 'neutral', 'curious', 'surprised', 'encouraging', 'thoughtful', 'sad']) {
+    for (const expr of [
+      'happy',
+      'neutral',
+      'curious',
+      'surprised',
+      'encouraging',
+      'thoughtful',
+      'sad'
+    ]) {
       expect(presets[expr]).toBeDefined()
     }
     // 必须用 PARAM_* 命名(shizuku 是 Cubism 2.1 风格)
     expect(presets.happy.PARAM_MOUTH_FORM).toBeDefined()
-    expect(presets.happy.PARAM_TERE).toBeDefined()    // shizuku 的"脸颊"参数
+    expect(presets.happy.PARAM_TERE).toBeDefined() // shizuku 的"脸颊"参数
     // neutral 要清零关键参数
     expect(presets.neutral.PARAM_MOUTH_FORM).toBe(0)
     expect(presets.neutral.PARAM_TERE).toBe(0)
@@ -65,7 +81,7 @@ describe('Live2D model manifests', () => {
     expect(reg.getMotion('wave')).toBe('FlickUp_0')
     expect(reg.getMotion('clap')).toBe('Tap_0')
     expect(reg.getMotion('gesture')).toBe('Flick3_0')
-    expect(reg.getMotion('nod')).toBe('Idle_0')   // 回退
+    expect(reg.getMotion('nod')).toBe('Idle_0') // 回退
     expect(reg.getMotion('write')).toBe('Idle_0') // 回退
   })
 
@@ -83,7 +99,15 @@ describe('Live2D model manifests', () => {
     expect(MAO_PRO_MANIFEST.hasExpressions).toBe(false)
     expect(MAO_PRO_MANIFEST.expressionParamPresets).toBeDefined()
     const presets = MAO_PRO_MANIFEST.expressionParamPresets!
-    for (const expr of ['happy', 'neutral', 'curious', 'surprised', 'encouraging', 'thoughtful', 'sad']) {
+    for (const expr of [
+      'happy',
+      'neutral',
+      'curious',
+      'surprised',
+      'encouraging',
+      'thoughtful',
+      'sad'
+    ]) {
       expect(presets[expr]).toBeDefined()
     }
     // mao_pro 没有 ParamMouthForm,用 ParamMouthUp / ParamMouthDown
@@ -98,10 +122,10 @@ describe('Live2D model manifests', () => {
     const reg = MAO_PRO_MANIFEST.motionRegistry
     expect(reg.characterId).toBe('mao_pro')
     // mao_pro 的非 Idle motion 在空字符串组里,key 是 _0 ~ _5
-    expect(reg.getMotion('wave')).toBe('_3')          // special_01
-    expect(reg.getMotion('nod')).toBe('_0')           // mtn_02
-    expect(reg.getMotion('clap')).toBe('_4')          // special_02
-    expect(reg.getMotion('write')).toBe('Idle_0')     // 回退
+    expect(reg.getMotion('wave')).toBe('_3') // special_01
+    expect(reg.getMotion('nod')).toBe('_0') // mtn_02
+    expect(reg.getMotion('clap')).toBe('_4') // special_02
+    expect(reg.getMotion('write')).toBe('Idle_0') // 回退
   })
 
   it('MAO_PRO_MANIFEST credit points to Open-LLM-VTuber', () => {
@@ -113,13 +137,13 @@ describe('Live2D model manifests', () => {
 
   it('AVAILABLE_LIVE2D_MODELS includes all three models', () => {
     expect(AVAILABLE_LIVE2D_MODELS.length).toBe(3)
-    expect(AVAILABLE_LIVE2D_MODELS.find((m) => m.id === 'hiyori')).toBe(HIYORI_MANIFEST)
-    expect(AVAILABLE_LIVE2D_MODELS.find((m) => m.id === 'shizuku')).toBe(SHIZUKU_MANIFEST)
-    expect(AVAILABLE_LIVE2D_MODELS.find((m) => m.id === 'mao_pro')).toBe(MAO_PRO_MANIFEST)
+    expect(AVAILABLE_LIVE2D_MODELS.find(m => m.id === 'hiyori')).toBe(HIYORI_MANIFEST)
+    expect(AVAILABLE_LIVE2D_MODELS.find(m => m.id === 'shizuku')).toBe(SHIZUKU_MANIFEST)
+    expect(AVAILABLE_LIVE2D_MODELS.find(m => m.id === 'mao_pro')).toBe(MAO_PRO_MANIFEST)
   })
 
   it('每个 manifest 的 id 唯一', () => {
-    const ids = AVAILABLE_LIVE2D_MODELS.map((m) => m.id)
+    const ids = AVAILABLE_LIVE2D_MODELS.map(m => m.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
 

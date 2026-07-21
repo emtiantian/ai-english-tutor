@@ -47,7 +47,7 @@ export function base64ToBlob(base64: string, mimeType: string): Blob {
  */
 export async function decodeToMonoPcm(
   blob: Blob,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<{ samples: Float32Array; sampleRate: number }> {
   const audioContext = new AudioContext()
   let onAbort: (() => void) | undefined
@@ -80,13 +80,8 @@ export async function decodeToMonoPcm(
  * Safari：audio/mp4
  */
 export function resolveRecorderMimeType(): string {
-  const candidates = [
-    'audio/webm;codecs=opus',
-    'audio/mp4',
-    'audio/webm',
-    '',
-  ]
-  return candidates.find((type) => !type || MediaRecorder.isTypeSupported(type)) ?? ''
+  const candidates = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', '']
+  return candidates.find(type => !type || MediaRecorder.isTypeSupported(type)) ?? ''
 }
 
 /**
@@ -115,7 +110,7 @@ export interface VolumeMeterOptions {
 export function createVolumeMeter(
   source: AudioNode,
   onVolume: (volume: number) => void,
-  options: VolumeMeterOptions = {},
+  options: VolumeMeterOptions = {}
 ): () => void {
   const audioContext = source.context
   const analyser = audioContext.createAnalyser()
@@ -129,7 +124,7 @@ export function createVolumeMeter(
   const interval = setInterval(() => {
     analyser.getByteFrequencyData(dataArray)
     const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-    const volume = Math.min(average / 128 * multiplier, 1)
+    const volume = Math.min((average / 128) * multiplier, 1)
     onVolume(volume)
   }, intervalMs)
 

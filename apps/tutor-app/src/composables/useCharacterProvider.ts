@@ -10,12 +10,12 @@ import { useCurrentHint } from './useCurrentHint'
 /** 角色被点击、且 LLM 没有给出 reply hints 时的趣味兜底文案。 */
 const TAP_BODY_FALLBACKS = [
   "I'm all ears—give it a try!",
-  "Need a hint? Check the lightbulb above the input!",
+  'Need a hint? Check the lightbulb above the input!',
   "Don't be shy, say something in English!",
   "Tap the 💡 if you'd like a suggestion!",
   "I'm ready when you are!",
-  "Your turn—say it in your own words!",
-  "Stuck? Try the hint first, then tap me again.",
+  'Your turn—say it in your own words!',
+  'Stuck? Try the hint first, then tap me again.'
 ]
 
 function getTapFallbackText(): string {
@@ -36,7 +36,7 @@ export function useCharacterProvider(
   client: TutorClient,
   /** 外部传入的响应式引用，init/切换模型时写入新实例。
    *  Provider 不再放进 Pinia store，由 App.vue 前置声明并分发给各 composable。 */
-  providerRef: Ref<CharacterProvider | null>,
+  providerRef: Ref<CharacterProvider | null>
 ) {
   const store = useTutorStore()
   const providerType: CharacterProviderType =
@@ -52,7 +52,7 @@ export function useCharacterProvider(
   const { suggestedPhrase: currentHint } = useCurrentHint({
     messages: computed(() => store.messages),
     targetWords: computed(() => store.currentScenario?.targetWords),
-    wordsLearned: computed(() => store.currentScenario?.wordsLearned),
+    wordsLearned: computed(() => store.currentScenario?.wordsLearned)
   })
 
   /** 当前生效的 Live2D 模型 ID(响应式,UI 可以绑定) */
@@ -70,7 +70,7 @@ export function useCharacterProvider(
     const provider = await createCharacterProviderSafe({
       type: providerType,
       canvas: canvasRef.value,
-      live2dModelId: providerType === 'live2d' ? modelId : undefined,
+      live2dModelId: providerType === 'live2d' ? modelId : undefined
     })
 
     // 连接点击身体交互。
@@ -78,10 +78,12 @@ export function useCharacterProvider(
     // 否则回退到一小套有趣、以学习为导向的彩蛋文案。
     provider.onTapBody?.(() => {
       const text = currentHint.value ?? getTapFallbackText()
-      teacherProvider.generateResponse({
-        text,
-        level: store.currentLevel ?? undefined,
-      }).catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
+      teacherProvider
+        .generateResponse({
+          text,
+          level: store.currentLevel ?? undefined
+        })
+        .catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
     })
 
     eventUnsubscribers = wireCharacterEvents(provider, client)
@@ -101,14 +103,16 @@ export function useCharacterProvider(
 
       currentProvider = instance
       providerRef.value = instance
-      console.log(`[CharacterProvider] Initialized: ${providerType}` +
-        (providerType === 'live2d' ? ` (model=${currentLive2DModelId.value})` : ''))
+      console.log(
+        `[CharacterProvider] Initialized: ${providerType}` +
+          (providerType === 'live2d' ? ` (model=${currentLive2DModelId.value})` : '')
+      )
       // DEV 调试:window.__char 实时返回当前 provider(切模型后自动跟随),
       // 方便控制台逐个测动作:__char.playMotion('wave') / __char.playMotion('_3')(原始 key 直通)
       if (import.meta.env.DEV) {
         Object.defineProperty(window, '__char', {
           get: () => providerRef.value,
-          configurable: true,
+          configurable: true
         })
       }
     } catch (err) {
@@ -149,7 +153,7 @@ export function useCharacterProvider(
 
     try {
       // 1. 拆旧的事件订阅 + 释放 WebGL/Framework
-      previousUnsubs.forEach((unsub) => unsub())
+      previousUnsubs.forEach(unsub => unsub())
       eventUnsubscribers = []
       previousProvider?.dispose()
       currentProvider = null
@@ -171,7 +175,7 @@ export function useCharacterProvider(
     } catch (err) {
       console.error(
         `[CharacterProvider] Failed to switch to ${newModelId}, falling back to hiyori:`,
-        err,
+        err
       )
       // 失败兜底:尝试用 hiyori 重建。如果连 hiyori 都建不出来,记录但保持空。
       try {
@@ -191,7 +195,7 @@ export function useCharacterProvider(
   }
 
   onUnmounted(() => {
-    eventUnsubscribers.forEach((unsub) => unsub())
+    eventUnsubscribers.forEach(unsub => unsub())
     currentProvider?.dispose()
     currentProvider = null
   })
@@ -200,7 +204,7 @@ export function useCharacterProvider(
     init,
     switchLive2DModel,
     currentLive2DModelId,
-    isSwitching,
+    isSwitching
   }
 }
 
@@ -223,7 +227,7 @@ function wireCharacterEvents(provider: CharacterProvider, client: TutorClient): 
     client.on('error', () => {
       provider.onError?.()
     }),
-    client.on('message.assistant', (response) => {
+    client.on('message.assistant', response => {
       provider.setListening?.(false)
       provider.setThinking?.(false)
       if (response.expressionId) {
@@ -232,7 +236,7 @@ function wireCharacterEvents(provider: CharacterProvider, client: TutorClient): 
     }),
     client.on('message.user', () => {
       provider.setEmotion?.('neutral')
-    }),
+    })
   )
 
   return unsubs

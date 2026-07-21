@@ -15,10 +15,15 @@ export class FreeFormEngine {
     private llm: LLMProvider,
     private sessions: SessionManager,
     private audio: AudioPipeline,
-    private persona: CharacterPersona,
+    private persona: CharacterPersona
   ) {}
 
-  async startFreeFormLesson(level: number, sessionId: string, userId?: string, style?: OpeningStyle) {
+  async startFreeFormLesson(
+    level: number,
+    sessionId: string,
+    userId?: string,
+    style?: OpeningStyle
+  ) {
     const { messages, style: chosenStyle } = buildLessonStartMessages(level, style, this.persona)
 
     const session: SessionData = {
@@ -27,14 +32,11 @@ export class FreeFormEngine {
       vocabulary: new Set(),
       openingStyle: chosenStyle,
       voiceDesign: chosenStyle.voiceDesign,
-      userId,
+      userId
     }
     this.sessions.set(sessionId, session)
 
-    logger.info(
-      { sessionId, style: chosenStyle.name },
-      '课程人格已选择',
-    )
+    logger.info({ sessionId, style: chosenStyle.name }, '课程人格已选择')
 
     this.sessions.saveSessionToDb(sessionId, level, chosenStyle.name, chosenStyle.voiceDesign)
 
@@ -46,7 +48,7 @@ export class FreeFormEngine {
       motionId: parsed.motionId,
       expressionId: parsed.expressionId,
       vocabulary: parsed.vocabulary,
-      vocabularySentences: parsed.vocabularySentences,
+      vocabularySentences: parsed.vocabularySentences
     })
 
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)

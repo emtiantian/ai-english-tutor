@@ -32,15 +32,12 @@ function shuffleArray<T>(arr: T[]): T[] {
 /**
  * 从指定等级的指定主题中随机抽取候选词。
  */
-function candidatesForLevelAndThemes(
-  level: CEFRLevel | undefined,
-  themes: Set<string>,
-): string[] {
+function candidatesForLevelAndThemes(level: CEFRLevel | undefined, themes: Set<string>): string[] {
   if (!level) return []
   const vocab = getVocabularyByLevel(level)
   const words = vocab.words
-    .filter((w) => themes.size === 0 || themes.has(w.topic.toLowerCase()))
-    .map((w) => w.word)
+    .filter(w => themes.size === 0 || themes.has(w.topic.toLowerCase()))
+    .map(w => w.word)
   return shuffleArray(words)
 }
 
@@ -53,9 +50,9 @@ function pickWordsForAct(
   targetLevel: CEFRLevel,
   themes: string[],
   count: number,
-  globalUsed?: Set<string>,
+  globalUsed?: Set<string>
 ): string[] {
-  const themeSet = new Set(themes.map((t) => t.toLowerCase()))
+  const themeSet = new Set(themes.map(t => t.toLowerCase()))
   const primaryLevel = targetLevel
   const reviewLevel = prevLevel(targetLevel)
   const challengeLevel = nextLevel(targetLevel)
@@ -90,14 +87,12 @@ function pickWordsForAct(
   // 3) 挑战档主题词
   addUnique(
     candidatesForLevelAndThemes(challengeLevel, themeSet),
-    primaryTarget + reviewTarget + challengeTarget,
+    primaryTarget + reviewTarget + challengeTarget
   )
 
   // 4) 还不足则 fallback：本档全部词随机补齐
   if (picked.length < count) {
-    const allPrimary = shuffleArray(
-      getVocabularyByLevel(primaryLevel).words.map((w) => w.word),
-    )
+    const allPrimary = shuffleArray(getVocabularyByLevel(primaryLevel).words.map(w => w.word))
     addUnique(allPrimary, count)
   }
 
@@ -110,16 +105,14 @@ function pickWordsForAct(
 function pickVocabularyByGlobalTopics(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetCount: number,
+  targetCount: number
 ): string[] {
-  const topics = new Set((scenario.topics ?? []).map((t) => t.toLowerCase()))
+  const topics = new Set((scenario.topics ?? []).map(t => t.toLowerCase()))
 
   function wordsForLevel(level: CEFRLevel): string[] {
     const vocab = getVocabularyByLevel(level)
-    if (topics.size === 0) return vocab.words.map((w) => w.word)
-    return vocab.words
-      .filter((w) => topics.has(w.topic.toLowerCase()))
-      .map((w) => w.word)
+    if (topics.size === 0) return vocab.words.map(w => w.word)
+    return vocab.words.filter(w => topics.has(w.topic.toLowerCase())).map(w => w.word)
   }
 
   const picked: string[] = []
@@ -142,15 +135,16 @@ function pickVocabularyByGlobalTopics(
     const nxt = nextLevel(targetLevel)
     if (nxt) {
       const borrowCount = Math.ceil(targetCount * BORROW_RATIO)
-      addUnique(shuffleArray(wordsForLevel(nxt)), Math.min(targetCount, picked.length + borrowCount))
+      addUnique(
+        shuffleArray(wordsForLevel(nxt)),
+        Math.min(targetCount, picked.length + borrowCount)
+      )
     }
   }
 
   // 3. fallback：本档全部词随机补齐
   if (picked.length < targetCount) {
-    const allLevelWords = shuffleArray(
-      getVocabularyByLevel(targetLevel).words.map((w) => w.word),
-    )
+    const allLevelWords = shuffleArray(getVocabularyByLevel(targetLevel).words.map(w => w.word))
     addUnique(allLevelWords, targetCount)
   }
 
@@ -164,7 +158,7 @@ function pickVocabularyByActs(
   scenario: Scenario,
   targetLevel: CEFRLevel,
   profile: ScenarioLevelProfile,
-  targetCount: number,
+  targetCount: number
 ): string[] {
   const acts = profile.acts ?? []
   if (acts.length === 0) {
@@ -189,7 +183,11 @@ function pickVocabularyByActs(
 
   // 若按幕抽完仍不足，用全局 topic 补齐
   if (result.length < targetCount) {
-    const remaining = pickVocabularyByGlobalTopics(scenario, targetLevel, targetCount - result.length)
+    const remaining = pickVocabularyByGlobalTopics(
+      scenario,
+      targetLevel,
+      targetCount - result.length
+    )
     for (const word of remaining) {
       if (used.has(word.toLowerCase())) continue
       used.add(word.toLowerCase())
@@ -200,7 +198,7 @@ function pickVocabularyByActs(
 
   // 最后保险：仍不足则直接从本档全部词随机补齐
   if (result.length < targetCount) {
-    const allWords = shuffleArray(getVocabularyByLevel(targetLevel).words.map((w) => w.word))
+    const allWords = shuffleArray(getVocabularyByLevel(targetLevel).words.map(w => w.word))
     for (const word of allWords) {
       if (used.has(word.toLowerCase())) continue
       used.add(word.toLowerCase())
@@ -225,10 +223,10 @@ function pickVocabularyByActs(
 export function pickScenarioVocabulary(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetCount: number = DEFAULT_TARGET_COUNT,
+  targetCount: number = DEFAULT_TARGET_COUNT
 ): string[] {
   const profile = scenario.levelProfiles?.[targetLevel]
-  if (profile?.acts?.some((act) => act.vocabThemes && act.vocabThemes.length > 0)) {
+  if (profile?.acts?.some(act => act.vocabThemes && act.vocabThemes.length > 0)) {
     return pickVocabularyByActs(scenario, targetLevel, profile, targetCount)
   }
 

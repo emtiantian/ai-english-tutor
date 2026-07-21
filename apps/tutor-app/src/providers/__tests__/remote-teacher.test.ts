@@ -12,9 +12,9 @@ describe('RemoteTeacherProvider', () => {
         text: 'Hello student!',
         motionId: 'wave',
         expressionId: 'happy',
-        vocabulary: ['hello', 'student'],
+        vocabulary: ['hello', 'student']
       }),
-      emit: vi.fn(),
+      emit: vi.fn()
     }
 
     provider = new RemoteTeacherProvider(mockClient as TutorClient)
@@ -26,7 +26,7 @@ describe('RemoteTeacherProvider', () => {
     expect(mockClient.sendMessage).toHaveBeenCalledWith({
       type: 'user.speak',
       text: 'Hi',
-      level: 3,
+      level: 3
     })
   })
 
@@ -35,7 +35,7 @@ describe('RemoteTeacherProvider', () => {
 
     expect(mockClient.emit).toHaveBeenCalledWith('message.user', {
       text: 'Hi',
-      isVoice: false,
+      isVoice: false
     })
   })
 
@@ -52,7 +52,7 @@ describe('RemoteTeacherProvider', () => {
       text: 'Hello student!',
       motionId: 'wave',
       expressionId: 'happy',
-      vocabulary: ['hello', 'student'],
+      vocabulary: ['hello', 'student']
     })
   })
 })

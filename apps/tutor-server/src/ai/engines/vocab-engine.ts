@@ -4,7 +4,7 @@ import { lookupWord } from '../../vocab/loader.js'
 import {
   buildVocabExplainMessages,
   parseVocabExplainResponse,
-  type WordExplanation,
+  type WordExplanation
 } from '../prompts/vocab-explain.js'
 
 export class VocabEngine {
@@ -41,7 +41,7 @@ export class VocabEngine {
       return {
         word: staticEntry.data.word,
         level: staticEntry.level,
-        senses: [{ pos: staticEntry.data.pos, meaningZh: staticEntry.data.meaning }],
+        senses: [{ pos: staticEntry.data.pos, meaningZh: staticEntry.data.meaning }]
       }
     }
     return null

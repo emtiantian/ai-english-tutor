@@ -25,7 +25,7 @@
             v-for="l in 5"
             :key="l"
             class="level-btn"
-            :class="{ 'selected': selectedLevel === l }"
+            :class="{ selected: selectedLevel === l }"
             @click="selectedLevel = l"
           >
             {{ levelNames[l] }}
@@ -34,9 +34,7 @@
       </div>
 
       <!-- 确认按钮 -->
-      <button class="confirm-btn animate-fade-3" @click="handleConfirm">
-        开始学习
-      </button>
+      <button class="confirm-btn animate-fade-3" @click="handleConfirm">开始学习</button>
     </div>
   </div>
 </template>
@@ -58,7 +56,7 @@ const levelNames: Record<number, string> = {
   2: 'A2',
   3: 'B1',
   4: 'B2',
-  5: 'C1',
+  5: 'C1'
 }
 
 const levelFullNames: Record<number, string> = {
@@ -66,7 +64,7 @@ const levelFullNames: Record<number, string> = {
   2: 'Elementary',
   3: 'Intermediate',
   4: 'Upper-Intermediate',
-  5: 'Advanced',
+  5: 'Advanced'
 }
 
 const levelDescriptions: Record<number, string> = {
@@ -74,7 +72,7 @@ const levelDescriptions: Record<number, string> = {
   2: '能完成简单的日常任务，描述周围环境',
   3: '能应对大部分旅行场景，表达个人观点',
   4: '能流利地与人交流，讨论较复杂的话题',
-  5: '能灵活运用于社交、学术和职场场景',
+  5: '能灵活运用于社交、学术和职场场景'
 }
 
 const selectedLevel = ref(props.level)

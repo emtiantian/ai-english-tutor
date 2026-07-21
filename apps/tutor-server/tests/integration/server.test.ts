@@ -19,7 +19,7 @@ describe('server CORS', () => {
     const wildcardRes = await server.inject({
       method: 'GET',
       url: '/health',
-      headers: { origin: 'http://evil.example.com' },
+      headers: { origin: 'http://evil.example.com' }
     })
 
     expect(wildcardRes.headers['access-control-allow-origin']).toBeDefined()
@@ -40,7 +40,7 @@ describe('server CORS', () => {
     const allowedRes = await server.inject({
       method: 'GET',
       url: '/health',
-      headers: { origin: 'http://localhost:5173' },
+      headers: { origin: 'http://localhost:5173' }
     })
     expect(allowedRes.headers['access-control-allow-origin']).toBe('http://localhost:5173')
     expect(allowedRes.headers['access-control-allow-credentials']).toBe('true')
@@ -48,7 +48,7 @@ describe('server CORS', () => {
     const blockedRes = await server.inject({
       method: 'GET',
       url: '/health',
-      headers: { origin: 'http://evil.example.com' },
+      headers: { origin: 'http://evil.example.com' }
     })
     expect(blockedRes.headers['access-control-allow-origin']).not.toBe('http://evil.example.com')
 

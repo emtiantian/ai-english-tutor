@@ -17,21 +17,21 @@ function createMockProviders(audioInput = false): {
       outputFormat: 'wav',
       async synthesize(_text: string, _options?: TTSSynthesizeOptions): Promise<Buffer> {
         return Buffer.alloc(12288, 0xab)
-      },
+      }
     },
     asr: {
       name: 'mock-asr',
       async transcribe(_audioBuffer: Buffer, _mimeType?: string): Promise<ASRResult> {
         return { text: 'mock transcription', confidence: 0.9, language: 'en' }
-      },
+      }
     },
     llm: {
       name: 'mock-llm',
       capabilities: { supportsAudioInput: audioInput, supportsStreaming: false },
       async complete(): Promise<LLMResponse> {
         return { content: 'mock response' }
-      },
-    },
+      }
+    }
   }
 }
 
@@ -88,14 +88,17 @@ describe('AudioPipeline', () => {
     const { server, port } = await createSSEServer()
     const sessionId = 'audio-test-session'
 
-    const collector = await collectSSE(`http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`, { minEvents: 1 })
+    const collector = await collectSSE(
+      `http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`,
+      { minEvents: 1 }
+    )
 
     const audioBuffer = Buffer.alloc(12288, 0xcd)
     pipeline.broadcastAudioChunksDirect(audioBuffer, 'mp3', sessionId, 'teacher.audio')
 
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    await new Promise(resolve => setTimeout(resolve, 200))
 
-    const audioEvents = collector.events.filter((e) => e.event === 'teacher.audio')
+    const audioEvents = collector.events.filter(e => e.event === 'teacher.audio')
     expect(audioEvents.length).toBe(2)
 
     const first = audioEvents[0].data as { audioBase64: string; format: string; isEnd: boolean }

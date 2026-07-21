@@ -2,22 +2,24 @@
   <div class="word-modal-overlay" @click.self="$emit('close')">
     <div class="word-modal-card" role="dialog" aria-modal="true">
       <!-- 关闭按钮 -->
-      <button class="word-modal-close" @click="$emit('close')" title="关闭">×</button>
+      <button class="word-modal-close" title="关闭" @click="$emit('close')">×</button>
 
       <!-- 头部 -->
       <div class="word-modal-header">
         <div class="word-modal-title-row">
           <span class="word-modal-word">{{ word }}</span>
-          <button class="word-modal-speak" @click="$emit('speak')" title="朗读单词">
+          <button class="word-modal-speak" title="朗读单词" @click="$emit('speak')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M11 5L6 9H2v6h4l5 4V5z" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
             </svg>
           </button>
           <span v-if="explanation?.level" class="word-modal-level">{{ explanation.level }}</span>
         </div>
-        <div v-if="explanation?.phonetic" class="word-modal-phonetic">/{{ explanation.phonetic }}/</div>
+        <div v-if="explanation?.phonetic" class="word-modal-phonetic">
+          /{{ explanation.phonetic }}/
+        </div>
       </div>
 
       <!-- 加载中 -->
@@ -45,7 +47,9 @@
 
         <div v-if="explanation.synonyms?.length" class="word-synonyms">
           <span class="word-section-label">近义词</span>
-          <span v-for="syn in explanation.synonyms" :key="syn" class="word-synonym-chip">{{ syn }}</span>
+          <span v-for="syn in explanation.synonyms" :key="syn" class="word-synonym-chip">{{
+            syn
+          }}</span>
         </div>
 
         <div v-if="explanation.usageNoteZh" class="word-usage-note">
@@ -55,9 +59,7 @@
       </div>
 
       <!-- 空状态兜底 -->
-      <div v-else class="word-modal-error">
-        暂无该词的详细说明。
-      </div>
+      <div v-else class="word-modal-error">暂无该词的详细说明。</div>
     </div>
   </div>
 </template>
@@ -275,7 +277,12 @@ defineEmits<{
 .word-skeleton {
   height: 16px;
   border-radius: 6px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.06)
+  );
   background-size: 200% 100%;
   animation: word-shimmer 1.4s ease-in-out infinite;
 }
@@ -284,7 +291,11 @@ defineEmits<{
 }
 
 @keyframes word-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

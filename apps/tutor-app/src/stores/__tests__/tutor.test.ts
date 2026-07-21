@@ -4,10 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useTutorStore } from '../tutor'
 import { useScenarioProgressStore } from '../scenario-progress'
-import {
-  scenarioPausedDB,
-  __resetScenarioPausedDBForTest,
-} from '../../lib/scenario-paused-db'
+import { scenarioPausedDB, __resetScenarioPausedDBForTest } from '../../lib/scenario-paused-db'
 
 describe('TutorStore', () => {
   beforeEach(() => {
@@ -57,7 +54,7 @@ describe('TutorStore', () => {
       text: 'Hello!',
       vocabulary: ['hello'],
       vocabularySentences: ['Hello example.'],
-      studentReplyHints: ['Hi back!'],
+      studentReplyHints: ['Hi back!']
     })
 
     expect(store.messages[0].isStreaming).toBe(false)
@@ -121,7 +118,7 @@ describe('TutorStore v2 — scenario redesign', () => {
       level: 'A2' as const,
       turnsCount: 8,
       maxTurns: 20,
-      ...overrides,
+      ...overrides
     }
   }
 
@@ -212,7 +209,7 @@ describe('TutorStore v2 — scenario redesign', () => {
       targetWords: ['want', 'much', 'big', 'small'],
       serverSessionId: 'sess-r',
       savedAt: T0,
-      expiresAt: T0 + 1000,
+      expiresAt: T0 + 1000
     })
     expect(store.phase).toBe('teaching')
     expect(store.currentScenario.id).toBe('shopping')
@@ -293,7 +290,7 @@ describe('TutorStore v2 — scenario redesign', () => {
       turnsCount: 7,
       maxTurns: 20,
       wordsUsed: [],
-      targetWords: [],
+      targetWords: []
     })
     await scenarioPausedDB.savePausedSnapshot({
       scenarioId: 'b',
@@ -301,7 +298,7 @@ describe('TutorStore v2 — scenario redesign', () => {
       turnsCount: 8,
       maxTurns: 20,
       wordsUsed: [],
-      targetWords: [],
+      targetWords: []
     })
 
     const store = useTutorStore()
@@ -322,9 +319,9 @@ describe('TutorStore v2 — scenario redesign', () => {
           highestClearedLevel: 'B1',
           starsByLevel: { A2: 5, B1: 4 },
           attempts: 3,
-          lastPlayedAt: T0,
-        },
-      ]),
+          lastPlayedAt: T0
+        }
+      ])
     )
     const store = useTutorStore()
     const scenarioProgress = useScenarioProgressStore()

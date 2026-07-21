@@ -2,7 +2,7 @@ import type {
   CharacterProvider,
   CharacterState,
   Live2DModelManifest,
-  MotionRegistry,
+  MotionRegistry
 } from '@ai-english-tutor/shared'
 import { HIYORI_MANIFEST } from '@ai-english-tutor/shared'
 
@@ -40,9 +40,14 @@ const EMPTY_EXPRESSION_PRESETS: ExpressionPresetMap = {}
  */
 const EXPRESSION_MULTIPLY_PARAMS = new Set(['ParamEyeLOpen', 'ParamEyeROpen'])
 const EXPRESSION_ADD_PARAMS = new Set([
-  'ParamAngleX', 'ParamAngleY', 'ParamAngleZ',
-  'ParamBodyAngleX', 'ParamBodyAngleY', 'ParamBodyAngleZ',
-  'ParamEyeBallX', 'ParamEyeBallY',
+  'ParamAngleX',
+  'ParamAngleY',
+  'ParamAngleZ',
+  'ParamBodyAngleX',
+  'ParamBodyAngleY',
+  'ParamBodyAngleZ',
+  'ParamEyeBallX',
+  'ParamEyeBallY'
 ])
 
 /** 打哈欠参数预设（不加载新资源） */
@@ -52,7 +57,7 @@ const YAWN_PRESET: Record<string, number> = {
   ParamEyeROpen: 0.3,
   ParamBrowLY: 0.5,
   ParamBrowRY: 0.5,
-  ParamAngleX: 2,
+  ParamAngleX: 2
 }
 
 /** 伸懒腰参数预设 */
@@ -60,7 +65,7 @@ const STRETCH_PRESET: Record<string, number> = {
   ParamAngleX: -5,
   ParamAngleY: 3,
   ParamBodyAngleX: -3,
-  ParamBodyAngleY: 2,
+  ParamBodyAngleY: 2
 }
 
 /**
@@ -73,10 +78,11 @@ const STRETCH_PRESET: Record<string, number> = {
 const DEFAULT_MAX_DPR = 1.5
 const MAX_DPR = Math.min(
   Math.max(
-    Number((import.meta.env.VITE_LIVE2D_MAX_DPR as string | undefined) ?? DEFAULT_MAX_DPR) || DEFAULT_MAX_DPR,
-    1.0,
+    Number((import.meta.env.VITE_LIVE2D_MAX_DPR as string | undefined) ?? DEFAULT_MAX_DPR) ||
+      DEFAULT_MAX_DPR,
+    1.0
   ),
-  2.0,
+  2.0
 )
 
 /**
@@ -87,10 +93,10 @@ function patchCoreForFramework(): void {
   const core = (window as any).Live2DCubismCore
   if (!core) return
   if (!core.Memory) {
-    (core as any).Memory = {}
+    ;(core as any).Memory = {}
   }
   if (typeof (core.Memory as any).initializeAmountOfMemory !== 'function') {
-    (core.Memory as any).initializeAmountOfMemory = (_size?: number) => {
+    ;(core.Memory as any).initializeAmountOfMemory = (_size?: number) => {
       // no-op：CDN 版 core 内部管理内存
     }
   }
@@ -228,7 +234,7 @@ class LAppModel extends CubismUserModel {
     path: string,
     gl: WebGLRenderingContext | WebGL2RenderingContext,
     canvasWidth: number,
-    canvasHeight: number,
+    canvasHeight: number
   ): Promise<void> {
     this._gl = gl
 
@@ -308,7 +314,7 @@ class LAppModel extends CubismUserModel {
               undefined, // 动画开始回调
               this._modelSetting ?? undefined,
               groupName,
-              j,
+              j
             )
             if (motion) {
               // 设置 fade 时间
@@ -339,7 +345,12 @@ class LAppModel extends CubismUserModel {
     if (this._idleMotionKeys.length <= 1) {
       this._idleMotionKeys = Array.from(this._motions.keys())
     }
-    console.log('[Live2D] Motions loaded:', this._motions.size, 'idle:', this._idleMotionKeys.length)
+    console.log(
+      '[Live2D] Motions loaded:',
+      this._motions.size,
+      'idle:',
+      this._idleMotionKeys.length
+    )
 
     // 8. 初始化效果
     if (this._modelSetting.getEyeBlinkParameterCount() > 0) {
@@ -399,7 +410,10 @@ class LAppModel extends CubismUserModel {
    * 计算模型所有 drawable 的实际顶点边界
    */
   private computeModelBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity
     const drawableCount = this._model.getDrawableCount()
 
     for (let i = 0; i < drawableCount; i++) {
@@ -574,7 +588,7 @@ class LAppModel extends CubismUserModel {
     paramId: string,
     from: number,
     to: number,
-    t: number,
+    t: number
   ): void {
     const value = from * (1 - t) + to * t
 
@@ -682,14 +696,24 @@ class LAppModel extends CubismUserModel {
     // 更新眼神覆盖混合系数
     const gazeBlendSpeed = 2.0
     if (this._isListening) {
-      this._gazeOverrideBlend = Math.min(this._gazeOverrideBlend + deltaTimeSeconds * gazeBlendSpeed, 1.0)
+      this._gazeOverrideBlend = Math.min(
+        this._gazeOverrideBlend + deltaTimeSeconds * gazeBlendSpeed,
+        1.0
+      )
     } else {
-      this._gazeOverrideBlend = Math.max(this._gazeOverrideBlend - deltaTimeSeconds * gazeBlendSpeed, 0.0)
+      this._gazeOverrideBlend = Math.max(
+        this._gazeOverrideBlend - deltaTimeSeconds * gazeBlendSpeed,
+        0.0
+      )
     }
 
     // 混合鼠标目标与凝视覆盖目标
-    const targetEyeX = this._targetEyeX * (1 - this._gazeOverrideBlend) + this._gazeOverrideX * this._gazeOverrideBlend
-    const targetEyeY = this._targetEyeY * (1 - this._gazeOverrideBlend) + this._gazeOverrideY * this._gazeOverrideBlend
+    const targetEyeX =
+      this._targetEyeX * (1 - this._gazeOverrideBlend) +
+      this._gazeOverrideX * this._gazeOverrideBlend
+    const targetEyeY =
+      this._targetEyeY * (1 - this._gazeOverrideBlend) +
+      this._gazeOverrideY * this._gazeOverrideBlend
 
     // 平滑插值到目标位置
     this._currentEyeX += (targetEyeX - this._currentEyeX) * this._trackingSmoothing
@@ -714,12 +738,12 @@ class LAppModel extends CubismUserModel {
     const swayOffset = Math.sin(this._swayPhase) * this._swayAmplitude
 
     // 倾听姿态前倾/侧倾
-    let listenLeanX = 0.0
+    const listenLeanX = 0.0
     let listenLeanY = 0.0
     let listenTilt = 0.0
     if (this._gazeOverrideBlend > 0) {
       listenLeanY = -2.0 * this._gazeOverrideBlend // 身体前倾
-      listenTilt = 3.0 * this._gazeOverrideBlend   // 头部侧倾
+      listenTilt = 3.0 * this._gazeOverrideBlend // 头部侧倾
     }
 
     // 错误反应：快速摇头
@@ -732,22 +756,40 @@ class LAppModel extends CubismUserModel {
     // 眼球
     const eyeBallX = this.getParamId('ParamEyeBallX')
     const eyeBallY = this.getParamId('ParamEyeBallY')
-    if (eyeBallX) this._model.setParameterValueById(eyeBallX, this._currentEyeX * this._eyeTrackingFactor)
-    if (eyeBallY) this._model.setParameterValueById(eyeBallY, this._currentEyeY * this._eyeTrackingFactor)
+    if (eyeBallX)
+      this._model.setParameterValueById(eyeBallX, this._currentEyeX * this._eyeTrackingFactor)
+    if (eyeBallY)
+      this._model.setParameterValueById(eyeBallY, this._currentEyeY * this._eyeTrackingFactor)
 
     // 头部角度
     const angleX = this.getParamId('ParamAngleX')
     const angleY = this.getParamId('ParamAngleY')
     const angleZ = this.getParamId('ParamAngleZ')
-    if (angleX) this._model.setParameterValueById(angleX, this._currentHeadX * this._headTrackingFactor * 30 + errorShake)
-    if (angleY) this._model.setParameterValueById(angleY, this._currentHeadY * this._headTrackingFactor * 30 + nodOffset)
+    if (angleX)
+      this._model.setParameterValueById(
+        angleX,
+        this._currentHeadX * this._headTrackingFactor * 30 + errorShake
+      )
+    if (angleY)
+      this._model.setParameterValueById(
+        angleY,
+        this._currentHeadY * this._headTrackingFactor * 30 + nodOffset
+      )
     if (angleZ) this._model.setParameterValueById(angleZ, listenTilt)
 
     // 身体角度
     const bodyAngleX = this.getParamId('ParamBodyAngleX')
     const bodyAngleY = this.getParamId('ParamBodyAngleY')
-    if (bodyAngleX) this._model.setParameterValueById(bodyAngleX, this._currentBodyX * this._bodyTrackingFactor * 10 + swayOffset)
-    if (bodyAngleY) this._model.setParameterValueById(bodyAngleY, this._currentBodyY * this._bodyTrackingFactor * 10 + listenLeanY)
+    if (bodyAngleX)
+      this._model.setParameterValueById(
+        bodyAngleX,
+        this._currentBodyX * this._bodyTrackingFactor * 10 + swayOffset
+      )
+    if (bodyAngleY)
+      this._model.setParameterValueById(
+        bodyAngleY,
+        this._currentBodyY * this._bodyTrackingFactor * 10 + listenLeanY
+      )
   }
 
   /**
@@ -755,7 +797,7 @@ class LAppModel extends CubismUserModel {
    */
   onMouseMove(mouseX: number, mouseY: number, canvasWidth: number, canvasHeight: number): void {
     // 将鼠标坐标归一化为 [-1, 1]（裁剪空间）
-    const nx = (mouseX / canvasWidth) * 2 - 1   // -1(left) ~ 1(right)
+    const nx = (mouseX / canvasWidth) * 2 - 1 // -1(left) ~ 1(right)
     const ny = -((mouseY / canvasHeight) * 2 - 1) // -1(bottom) ~ 1(top), Y翻转
 
     // 直接用归一化光标坐标作为跟随目标(clamp 到 [-1,1]),与模型缩放/位置解耦。
@@ -768,7 +810,12 @@ class LAppModel extends CubismUserModel {
   /**
    * 点击检测：检测坐标是否命中身体 hit area，并返回命中的身体部位
    */
-  hitTest(pointX: number, pointY: number, canvasWidth: number, canvasHeight: number): 'head' | 'body' | 'hand' | null {
+  hitTest(
+    pointX: number,
+    pointY: number,
+    canvasWidth: number,
+    canvasHeight: number
+  ): 'head' | 'body' | 'hand' | null {
     if (!this._modelSetting || !this._model) return null
 
     // 转换为裁剪空间
@@ -786,7 +833,7 @@ class LAppModel extends CubismUserModel {
       if (this.isHit(hitAreaId, nx, ny)) {
         const semanticZone = this.zoneFromHitAreaLabel(
           hitAreaId.getString() ?? '',
-          this._modelSetting.getHitAreaName(i) ?? '',
+          this._modelSetting.getHitAreaName(i) ?? ''
         )
         if (semanticZone) return semanticZone
         return this.getHitZoneForArea(hitAreaId, nx, ny)
@@ -811,7 +858,11 @@ class LAppModel extends CubismUserModel {
   /**
    * 根据命中点在 hit area 内的相对 Y 位置判断身体部位
    */
-  private getHitZoneForArea(hitAreaId: CubismIdHandle, pointX: number, pointY: number): 'head' | 'body' | 'hand' {
+  private getHitZoneForArea(
+    hitAreaId: CubismIdHandle,
+    pointX: number,
+    pointY: number
+  ): 'head' | 'body' | 'hand' {
     const drawIndex = this._model.getDrawableIndex(hitAreaId)
     if (drawIndex < 0) return 'body'
 
@@ -1165,7 +1216,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
-    mouthOpen: 0,
+    mouthOpen: 0
   }
 
   /**
@@ -1204,8 +1255,18 @@ export class Live2DCharacterProvider implements CharacterProvider {
     // powerPreference: 'high-performance' 让浏览器优先使用独显（如果有）
     // antialias: false 避免浏览器对 canvas 做多重采样抗锯齿，Live2D 内部已做边缘处理
     const ctx =
-      canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', antialias: false }) ||
-      canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance', antialias: false })
+      canvas.getContext('webgl2', {
+        alpha: true,
+        premultipliedAlpha: true,
+        powerPreference: 'high-performance',
+        antialias: false
+      }) ||
+      canvas.getContext('webgl', {
+        alpha: true,
+        premultipliedAlpha: true,
+        powerPreference: 'high-performance',
+        antialias: false
+      })
     if (!ctx) throw new Error('WebGL not supported')
     this.gl = ctx
 
@@ -1228,7 +1289,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
     // 加载模型
     this.model = new LAppModel()
     this.model.setMotionRegistry(this._registry)
-    this.model.setExpressionPresets(this._manifest.expressionParamPresets ?? EMPTY_EXPRESSION_PRESETS)
+    this.model.setExpressionPresets(
+      this._manifest.expressionParamPresets ?? EMPTY_EXPRESSION_PRESETS
+    )
     this.model.setViewScale(this._manifest.view.scale)
     this.model.setViewOffset(this._manifest.view.offsetX, this._manifest.view.offsetY)
     await this.model.loadAssets(this._manifest.modelJsonPath, this.gl, canvas.width, canvas.height)
@@ -1271,7 +1334,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
         width: rect.width,
-        height: rect.height,
+        height: rect.height
       }
 
       if (this._mouseRafScheduled) return
@@ -1432,8 +1495,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
       for (let i = 0; i < 16; i++) {
         arr[i] = i % 5 === 0 ? 1.0 : 0.0
       }
-      arr[0] = 1.0 / aspect  // X: 映射 [-aspect, +aspect] → [-1, +1]
-      arr[5] = 1.0            // Y: 映射 [-1, +1] → [-1, +1]
+      arr[0] = 1.0 / aspect // X: 映射 [-aspect, +aspect] → [-1, +1]
+      arr[5] = 1.0 // Y: 映射 [-1, +1] → [-1, +1]
 
       // 更新并绘制模型
       this.model.update(delta)

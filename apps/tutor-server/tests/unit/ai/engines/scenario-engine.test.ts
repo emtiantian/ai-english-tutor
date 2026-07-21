@@ -10,7 +10,7 @@ function makeVocab(words: Array<{ word: string; topic: string }>): VocabLevel {
     levelNum: 1,
     description: '',
     wordCount: words.length,
-    words: words.map((w) => ({ ...w, meaning: '', pos: 'noun' })),
+    words: words.map(w => ({ ...w, meaning: '', pos: 'noun' }))
   }
 }
 
@@ -42,10 +42,10 @@ describe('ScenarioEngine', () => {
           acts: [
             { name: '开场', goal: 'Greet', vocabThemes: ['greeting'] },
             { name: '主线', goal: 'Order', vocabThemes: ['food'] },
-            { name: '收尾', goal: 'Pay', vocabThemes: ['payment'] },
-          ],
-        },
-      },
+            { name: '收尾', goal: 'Pay', vocabThemes: ['payment'] }
+          ]
+        }
+      }
     }
 
     getVocabularyByLevelSpy = vi
@@ -55,31 +55,21 @@ describe('ScenarioEngine', () => {
           return makeVocab(
             Array.from({ length: 50 }, (_, i) => ({
               word: `b1-word-${i + 1}`,
-              topic: i < 20 ? 'greeting' : i < 40 ? 'food' : 'payment',
-            })),
+              topic: i < 20 ? 'greeting' : i < 40 ? 'food' : 'payment'
+            }))
           )
         }
         return makeVocab([])
       })
 
-    const engine = new ScenarioEngine(
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      LUNA_PERSONA,
-    )
+    const engine = new ScenarioEngine({} as any, {} as any, {} as any, {} as any, LUNA_PERSONA)
 
     const state = (engine as any).createScenarioState(scenario, 'B1')
 
     expect(state.maxTurns).toBe(42)
     expect(state.targetWords.length).toBe(12)
     expect(state.levelProfile).toEqual(scenario.levelProfiles!.B1)
-    expect(state.actThemes).toEqual([
-      ['greeting'],
-      ['food'],
-      ['payment'],
-    ])
+    expect(state.actThemes).toEqual([['greeting'], ['food'], ['payment']])
   })
 
   it('createScenarioState 在缺少 levelProfile 时回退到默认值', () => {
@@ -94,7 +84,7 @@ describe('ScenarioEngine', () => {
       targetWords: ['coffee', 'tea'],
       role: { student: 'Customer', teacher: 'Waiter' },
       setting: 'A cafe.',
-      objectives: [],
+      objectives: []
     }
 
     getVocabularyByLevelSpy = vi
@@ -104,20 +94,14 @@ describe('ScenarioEngine', () => {
           return makeVocab(
             Array.from({ length: 40 }, (_, i) => ({
               word: `a1-word-${i + 1}`,
-              topic: 'food',
-            })),
+              topic: 'food'
+            }))
           )
         }
         return makeVocab([])
       })
 
-    const engine = new ScenarioEngine(
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      LUNA_PERSONA,
-    )
+    const engine = new ScenarioEngine({} as any, {} as any, {} as any, {} as any, LUNA_PERSONA)
 
     const state = (engine as any).createScenarioState(scenario, 'A1')
 

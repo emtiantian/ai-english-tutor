@@ -97,7 +97,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
           clearTimeout(timer)
           reject(normalizeLLMError(new Error('AbortError')))
         },
-        { once: true },
+        { once: true }
       )
     }
   })

@@ -29,7 +29,7 @@ export function useVocabSync(client: TutorClient) {
       await vocabDB.saveScenarioProgress(
         store.currentScenario.id,
         // 避免把 Pinia reactive Proxy 传给 IndexedDB
-        Array.from(store.currentScenario.wordsLearned),
+        Array.from(store.currentScenario.wordsLearned)
       )
     }
 
@@ -59,10 +59,10 @@ export function useVocabSync(client: TutorClient) {
     console.log(`[VocabSync] Syncing ${pending.length} pending words to backend`)
 
     // 批量发送到独立词汇同步接口，避免占用聊天通道
-    const words = pending.map((p) => ({
+    const words = pending.map(p => ({
       word: p.word,
       action: p.action,
-      timestamp: p.timestamp,
+      timestamp: p.timestamp
     }))
     const response = await client.syncVocabulary(store.userId, words)
 
@@ -71,9 +71,7 @@ export function useVocabSync(client: TutorClient) {
     }
 
     // 标记已同步
-    const syncedIds = pending
-      .map((p) => p.id)
-      .filter((id): id is number => id !== undefined)
+    const syncedIds = pending.map(p => p.id).filter((id): id is number => id !== undefined)
     await vocabDB.clearSynced(syncedIds)
 
     for (const p of pending) {
@@ -91,10 +89,10 @@ export function useVocabSync(client: TutorClient) {
   }
 
   // 上线时自动同步
-  watch(isOnline, (online) => {
+  watch(isOnline, online => {
     if (online) {
       console.log('[VocabSync] Back online, syncing...')
-      syncToBackend().catch((err) => {
+      syncToBackend().catch(err => {
         console.error('[VocabSync] Auto-sync failed:', err)
       })
     }
@@ -103,6 +101,6 @@ export function useVocabSync(client: TutorClient) {
   return {
     learnWords,
     syncToBackend,
-    restoreScenarioProgress,
+    restoreScenarioProgress
   }
 }

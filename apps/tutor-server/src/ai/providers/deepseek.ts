@@ -3,8 +3,10 @@ import { OpenAIBaseProvider, type OpenAIBaseProviderOptions } from './openai-bas
 /**
  * DeepSeek Provider 构造选项。
  */
-export interface DeepSeekProviderOptions
-  extends Omit<OpenAIBaseProviderOptions, 'name' | 'capabilities'> {}
+export interface DeepSeekProviderOptions extends Omit<
+  OpenAIBaseProviderOptions,
+  'name' | 'capabilities'
+> {}
 
 /**
  * DeepSeek LLM Provider。
@@ -19,8 +21,8 @@ export class DeepSeekProvider extends OpenAIBaseProvider {
       name: 'deepseek',
       capabilities: {
         supportsAudioInput: false,
-        supportsStreaming: true,
-      },
+        supportsStreaming: true
+      }
     })
   }
 }

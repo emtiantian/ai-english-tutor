@@ -28,14 +28,14 @@ import { defineLive2DModelManifest } from '../define-manifest.js'
  * 没有专门的 nod/clap/write 动作,统一兜底到最接近的 motion。
  */
 const SHIZUKU_MOTION_MAP: Record<MotionId, string> = {
-  wave: 'FlickUp_0',     // 向上甩 ≈ 挥手起势
-  nod: 'Idle_0',         // 无专门点头 → idle 兜底
-  think: 'Idle_0',       // idle 兜底
-  gesture: 'Flick3_0',   // 三连甩有手势感
-  clap: 'Tap_0',         // Tap 反应动作 ≈ 鼓掌反应
-  point: 'Flick3_0',     // 三连 ≈ 指向
-  write: 'Idle_0',       // idle 兜底
-  surprised: 'Tap_0',    // Tap 是反应,接近惊讶
+  wave: 'FlickUp_0', // 向上甩 ≈ 挥手起势
+  nod: 'Idle_0', // 无专门点头 → idle 兜底
+  think: 'Idle_0', // idle 兜底
+  gesture: 'Flick3_0', // 三连甩有手势感
+  clap: 'Tap_0', // Tap 反应动作 ≈ 鼓掌反应
+  point: 'Flick3_0', // 三连 ≈ 指向
+  write: 'Idle_0', // idle 兜底
+  surprised: 'Tap_0' // Tap 是反应,接近惊讶
 }
 
 const SHIZUKU_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
@@ -46,7 +46,7 @@ const SHIZUKU_MOTION_DESCRIPTIONS: Record<MotionId, string> = {
   clap: 'Tap - 点击身体反应',
   point: 'Flick3 - 三连甩(指向感)',
   write: 'Idle 兜底(无书写)',
-  surprised: 'Tap - 反应动作(接近惊讶)',
+  surprised: 'Tap - 反应动作(接近惊讶)'
 }
 
 const SHIZUKU_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
@@ -55,7 +55,7 @@ const SHIZUKU_EXPRESSION_DESCRIPTIONS: Record<ExpressionId, string> = {
   curious: '好奇',
   surprised: '惊讶',
   encouraging: '鼓励',
-  thoughtful: '沉思',
+  thoughtful: '沉思'
 }
 
 /**
@@ -74,19 +74,19 @@ const SHIZUKU_MOTION_REGISTRY: MotionRegistry = {
   },
 
   getAvailableMotions(): MotionMapping[] {
-    return AVAILABLE_MOTIONS.map((id) => ({
+    return AVAILABLE_MOTIONS.map(id => ({
       semanticId: id,
       modelMotionKey: SHIZUKU_MOTION_MAP[id],
-      description: SHIZUKU_MOTION_DESCRIPTIONS[id],
+      description: SHIZUKU_MOTION_DESCRIPTIONS[id]
     }))
   },
 
   getAvailableExpressions(): ExpressionMapping[] {
-    return AVAILABLE_EXPRESSIONS.map((id) => ({
+    return AVAILABLE_EXPRESSIONS.map(id => ({
       semanticId: id,
-      description: SHIZUKU_EXPRESSION_DESCRIPTIONS[id],
+      description: SHIZUKU_EXPRESSION_DESCRIPTIONS[id]
     }))
-  },
+  }
 }
 
 /**
@@ -111,8 +111,8 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_BROW_R_Y: -0.3,
     PARAM_MOUTH_FORM: 1.0,
     PARAM_TERE: 0.6,
-    PARAM_EYE_L_OPEN: 0.7,    // 眯起一点 ≈ 笑眼效果
-    PARAM_EYE_R_OPEN: 0.7,
+    PARAM_EYE_L_OPEN: 0.7, // 眯起一点 ≈ 笑眼效果
+    PARAM_EYE_R_OPEN: 0.7
   },
   neutral: {
     PARAM_BROW_L_Y: 0,
@@ -122,14 +122,14 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_MOUTH_FORM: 0,
     PARAM_TERE: 0,
     PARAM_EYE_L_OPEN: 1.0,
-    PARAM_EYE_R_OPEN: 1.0,
+    PARAM_EYE_R_OPEN: 1.0
   },
   curious: {
     PARAM_BROW_L_Y: -0.2,
-    PARAM_BROW_R_Y: -0.5,        // 单边挑眉
+    PARAM_BROW_R_Y: -0.5, // 单边挑眉
     PARAM_BROW_L_FORM: 0.3,
     PARAM_MOUTH_FORM: 0.3,
-    PARAM_ANGLE_Z: -5,           // 头部微倾
+    PARAM_ANGLE_Z: -5 // 头部微倾
   },
   surprised: {
     PARAM_BROW_L_Y: -1.0,
@@ -137,7 +137,7 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_EYE_L_OPEN: 1.4,
     PARAM_EYE_R_OPEN: 1.4,
     PARAM_MOUTH_FORM: 0.5,
-    PARAM_MOUTH_OPEN_Y: 0.8,
+    PARAM_MOUTH_OPEN_Y: 0.8
   },
   encouraging: {
     PARAM_BROW_L_Y: -0.4,
@@ -145,7 +145,7 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_MOUTH_FORM: 1.0,
     PARAM_TERE: 0.5,
     PARAM_EYE_L_OPEN: 0.8,
-    PARAM_EYE_R_OPEN: 0.8,
+    PARAM_EYE_R_OPEN: 0.8
   },
   thoughtful: {
     PARAM_BROW_L_Y: 0.2,
@@ -154,7 +154,7 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_BROW_R_ANGLE: 0.3,
     PARAM_MOUTH_FORM: 0.2,
     PARAM_ANGLE_X: 3,
-    PARAM_ANGLE_Y: -2,
+    PARAM_ANGLE_Y: -2
   },
   sad: {
     PARAM_BROW_L_Y: 0.3,
@@ -163,8 +163,8 @@ const SHIZUKU_EXPRESSION_PRESETS: Record<string, ExpressionParamPreset> = {
     PARAM_BROW_R_ANGLE: -0.3,
     PARAM_MOUTH_FORM: -0.5,
     PARAM_EYE_L_OPEN: 0.7,
-    PARAM_EYE_R_OPEN: 0.7,
-  },
+    PARAM_EYE_R_OPEN: 0.7
+  }
 }
 
 export const SHIZUKU_MANIFEST = defineLive2DModelManifest({
@@ -177,13 +177,13 @@ export const SHIZUKU_MANIFEST = defineLive2DModelManifest({
     // shizuku 画风较大幅,默认稍微缩一点。D 阶段联调时调整。
     scale: 0.85,
     offsetX: 0,
-    offsetY: 0,
+    offsetY: 0
   },
   motionRegistry: SHIZUKU_MOTION_REGISTRY,
   credit: {
     author: 'Live2D Inc.',
     license: 'Live2D Free Material License Agreement',
     licenseUrl: 'https://www.live2d.com/eula/live2d-sample-model-terms_en.html',
-    sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/shizuku',
-  },
+    sourceUrl: 'https://github.com/Open-LLM-VTuber/Open-LLM-VTuber/tree/main/live2d-models/shizuku'
+  }
 })

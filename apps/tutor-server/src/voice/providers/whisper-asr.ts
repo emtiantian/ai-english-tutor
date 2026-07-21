@@ -28,21 +28,14 @@ export class WhisperASRProvider implements ASRProvider {
   }
 
   async transcribe(audioBuffer: Buffer, mimeType?: string): Promise<ASRResult> {
-    logger.debug(
-      { provider: this.name, size: audioBuffer.length, mimeType },
-      'Whisper 转写请求',
-    )
+    logger.debug({ provider: this.name, size: audioBuffer.length, mimeType }, 'Whisper 转写请求')
 
     const ext = this.getExtensionFromMimeType(mimeType)
     const filename = `audio.${ext}`
 
     // 构建 multipart form-data
     const formData = new FormData()
-    formData.append(
-      'file',
-      new Blob([audioBuffer], { type: mimeType ?? 'audio/webm' }),
-      filename,
-    )
+    formData.append('file', new Blob([audioBuffer], { type: mimeType ?? 'audio/webm' }), filename)
 
     const language = config.ASR_LANGUAGE === 'auto' ? undefined : config.ASR_LANGUAGE
     if (language) {
@@ -59,17 +52,23 @@ export class WhisperASRProvider implements ASRProvider {
     try {
       response = await fetch(url, {
         method: 'POST',
-        body: formData,
+        body: formData
       })
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       logger.error({ err: errMsg, url }, '[Whisper ASR] 连接失败 — whisper.cpp 服务是否已启动？')
-      throw new Error(`Whisper ASR 连接失败：${errMsg}。请确认 whisper.cpp 服务是否已在 ${this.baseUrl} 启动`)
+      throw new Error(
+        `Whisper ASR 连接失败：${errMsg}。请确认 whisper.cpp 服务是否已在 ${this.baseUrl} 启动`,
+        { cause: err }
+      )
     }
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      logger.error({ status: response.status, errorText: errorText.slice(0, 200) }, '[Whisper ASR] 服务器返回错误')
+      logger.error(
+        { status: response.status, errorText: errorText.slice(0, 200) },
+        '[Whisper ASR] 服务器返回错误'
+      )
       throw new Error(`Whisper ASR 错误：${response.status} - ${errorText}`)
     }
 
@@ -77,13 +76,18 @@ export class WhisperASRProvider implements ASRProvider {
     const duration = Date.now() - startTime
 
     logger.info(
-      { provider: this.name, duration, text: result.text?.slice(0, 100), textLength: result.text?.length ?? 0 },
-      '[Whisper ASR] 转写完成',
+      {
+        provider: this.name,
+        duration,
+        text: result.text?.slice(0, 100),
+        textLength: result.text?.length ?? 0
+      },
+      '[Whisper ASR] 转写完成'
     )
 
     return {
       text: result.text ?? '',
-      language: result.language ?? language ?? 'en',
+      language: result.language ?? language ?? 'en'
     }
   }
 
@@ -95,7 +99,7 @@ export class WhisperASRProvider implements ASRProvider {
       'audio/wav': 'wav',
       'audio/ogg': 'ogg',
       'audio/flac': 'flac',
-      'audio/x-m4a': 'm4a',
+      'audio/x-m4a': 'm4a'
     }
     return map[mimeType ?? ''] ?? 'webm'
   }

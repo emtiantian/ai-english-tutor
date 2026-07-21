@@ -6,19 +6,8 @@
     "description": "在一家西餐厅，你是顾客，Luna 是服务员。你需要完成点餐的全过程。",
     "icon": "🍽️",
     "level": 1,
-    "topics": [
-      "food",
-      "politeness",
-      "number"
-    ],
-    "targetWords": [
-      "coffee",
-      "tea",
-      "water",
-      "bread",
-      "please",
-      "thank"
-    ],
+    "topics": ["food", "politeness", "number"],
+    "targetWords": ["coffee", "tea", "water", "bread", "please", "thank"],
     "role": {
       "student": "顾客 (Customer)",
       "teacher": "服务员 (Waitress)"
@@ -29,57 +18,25 @@
         "id": "greet",
         "description": "向服务员打招呼",
         "descriptionEn": "Greet the waiter",
-        "keywords": [
-          "hello",
-          "hi",
-          "good evening",
-          "good afternoon"
-        ]
+        "keywords": ["hello", "hi", "good evening", "good afternoon"]
       },
       {
         "id": "order-drink",
         "description": "点一杯饮品",
         "descriptionEn": "Order a drink",
-        "keywords": [
-          "coffee",
-          "tea",
-          "water",
-          "juice",
-          "drink",
-          "like",
-          "want",
-          "have"
-        ]
+        "keywords": ["coffee", "tea", "water", "juice", "drink", "like", "want", "have"]
       },
       {
         "id": "order-food",
         "description": "点一份主食",
         "descriptionEn": "Order food",
-        "keywords": [
-          "bread",
-          "meat",
-          "fruit",
-          "food",
-          "eat",
-          "order",
-          "like",
-          "want",
-          "have"
-        ]
+        "keywords": ["bread", "meat", "fruit", "food", "eat", "order", "like", "want", "have"]
       },
       {
         "id": "pay",
         "description": "结账离开",
         "descriptionEn": "Pay and leave",
-        "keywords": [
-          "pay",
-          "bill",
-          "how much",
-          "money",
-          "goodbye",
-          "bye",
-          "thank"
-        ]
+        "keywords": ["pay", "bill", "how much", "money", "goodbye", "bye", "thank"]
       }
     ],
     "acts": [
@@ -108,27 +65,17 @@
           {
             "name": "开场",
             "goal": "Greet the waiter and ask for a table.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Order a drink and a simple meal.",
-            "vocabThemes": [
-              "food",
-              "number",
-              "preference"
-            ]
+            "vocabThemes": ["food", "number", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Pay and say thank you.",
-            "vocabThemes": [
-              "payment",
-              "politeness"
-            ]
+            "vocabThemes": ["payment", "politeness"]
           }
         ]
       },
@@ -139,30 +86,17 @@
           {
             "name": "开场",
             "goal": "Greet and ask about allergens.",
-            "vocabThemes": [
-              "greeting",
-              "health",
-              "question"
-            ]
+            "vocabThemes": ["greeting", "health", "question"]
           },
           {
             "name": "主线",
             "goal": "Choose a safe meal and explain your preference.",
-            "vocabThemes": [
-              "food",
-              "preference",
-              "health",
-              "decision"
-            ]
+            "vocabThemes": ["food", "preference", "health", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Pay and give brief feedback.",
-            "vocabThemes": [
-              "payment",
-              "evaluation",
-              "politeness"
-            ]
+            "vocabThemes": ["payment", "evaluation", "politeness"]
           }
         ]
       },
@@ -173,30 +107,17 @@
           {
             "name": "开场",
             "goal": "Explain the booking and ask to wait or be seated.",
-            "vocabThemes": [
-              "communication",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["communication", "politeness", "time"]
           },
           {
             "name": "主线",
             "goal": "Discuss menu options while waiting.",
-            "vocabThemes": [
-              "food",
-              "comparison",
-              "suggestion",
-              "preference"
-            ]
+            "vocabThemes": ["food", "comparison", "suggestion", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Settle the bill and apologize for the delay.",
-            "vocabThemes": [
-              "payment",
-              "apology",
-              "politeness"
-            ]
+            "vocabThemes": ["payment", "apology", "politeness"]
           }
         ]
       },
@@ -207,30 +128,17 @@
           {
             "name": "开场",
             "goal": "Describe the issue without being rude.",
-            "vocabThemes": [
-              "complaint",
-              "politeness",
-              "description"
-            ]
+            "vocabThemes": ["complaint", "politeness", "description"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a solution with the manager.",
-            "vocabThemes": [
-              "negotiation",
-              "decision",
-              "evaluation",
-              "persuasion"
-            ]
+            "vocabThemes": ["negotiation", "decision", "evaluation", "persuasion"]
           },
           {
             "name": "收尾",
             "goal": "Reach an agreement and close gracefully.",
-            "vocabThemes": [
-              "agreement",
-              "payment",
-              "gratitude"
-            ]
+            "vocabThemes": ["agreement", "payment", "gratitude"]
           }
         ]
       },
@@ -241,27 +149,17 @@
           {
             "name": "开场",
             "goal": "Greet the waiter and ask for a table.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Order a drink and a simple meal.",
-            "vocabThemes": [
-              "food",
-              "number",
-              "preference"
-            ]
+            "vocabThemes": ["food", "number", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Pay and say thank you.",
-            "vocabThemes": [
-              "payment",
-              "politeness"
-            ]
+            "vocabThemes": ["payment", "politeness"]
           }
         ]
       },
@@ -272,30 +170,17 @@
           {
             "name": "开场",
             "goal": "Describe the issue without being rude.",
-            "vocabThemes": [
-              "complaint",
-              "politeness",
-              "description"
-            ]
+            "vocabThemes": ["complaint", "politeness", "description"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a solution with the manager.",
-            "vocabThemes": [
-              "negotiation",
-              "decision",
-              "evaluation",
-              "persuasion"
-            ]
+            "vocabThemes": ["negotiation", "decision", "evaluation", "persuasion"]
           },
           {
             "name": "收尾",
             "goal": "Reach an agreement and close gracefully.",
-            "vocabThemes": [
-              "agreement",
-              "payment",
-              "gratitude"
-            ]
+            "vocabThemes": ["agreement", "payment", "gratitude"]
           }
         ]
       }
@@ -308,21 +193,8 @@
     "description": "你在一座陌生城市迷路了，Luna 是一位友好的路人。你需要问路找到目的地。",
     "icon": "🗺️",
     "level": 1,
-    "topics": [
-      "place",
-      "question",
-      "basic"
-    ],
-    "targetWords": [
-      "where",
-      "how",
-      "go",
-      "turn",
-      "left",
-      "right",
-      "near",
-      "far"
-    ],
+    "topics": ["place", "question", "basic"],
+    "targetWords": ["where", "how", "go", "turn", "left", "right", "near", "far"],
     "role": {
       "student": "游客 (Tourist)",
       "teacher": "路人 (Local Resident)"
@@ -333,53 +205,25 @@
         "id": "greet-ask",
         "description": "礼貌地打招呼并询问",
         "descriptionEn": "Greet and ask politely",
-        "keywords": [
-          "hello",
-          "excuse me",
-          "hi",
-          "please",
-          "help"
-        ]
+        "keywords": ["hello", "excuse me", "hi", "please", "help"]
       },
       {
         "id": "ask-destination",
         "description": "询问目的地怎么走",
         "descriptionEn": "Ask how to get to the destination",
-        "keywords": [
-          "where",
-          "how",
-          "get to",
-          "find",
-          "station",
-          "school",
-          "hospital"
-        ]
+        "keywords": ["where", "how", "get to", "find", "station", "school", "hospital"]
       },
       {
         "id": "understand-directions",
         "description": "理解并确认方向",
         "descriptionEn": "Understand and confirm directions",
-        "keywords": [
-          "left",
-          "right",
-          "straight",
-          "turn",
-          "go",
-          "thank",
-          "understand"
-        ]
+        "keywords": ["left", "right", "straight", "turn", "go", "thank", "understand"]
       },
       {
         "id": "thank-leave",
         "description": "感谢并告别",
         "descriptionEn": "Thank and say goodbye",
-        "keywords": [
-          "thank",
-          "thanks",
-          "goodbye",
-          "bye",
-          "nice"
-        ]
+        "keywords": ["thank", "thanks", "goodbye", "bye", "nice"]
       }
     ],
     "acts": [
@@ -408,28 +252,17 @@
           {
             "name": "开场",
             "goal": "Greet and ask for help.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "question"
-            ]
+            "vocabThemes": ["greeting", "politeness", "question"]
           },
           {
             "name": "主线",
             "goal": "Ask how to get to the station.",
-            "vocabThemes": [
-              "place",
-              "transport",
-              "question"
-            ]
+            "vocabThemes": ["place", "transport", "question"]
           },
           {
             "name": "收尾",
             "goal": "Thank the person and say goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -440,30 +273,17 @@
           {
             "name": "开场",
             "goal": "Greet and explain where you need to go.",
-            "vocabThemes": [
-              "greeting",
-              "communication",
-              "time"
-            ]
+            "vocabThemes": ["greeting", "communication", "time"]
           },
           {
             "name": "主线",
             "goal": "Ask for an alternative route.",
-            "vocabThemes": [
-              "transport",
-              "decision",
-              "place",
-              "question"
-            ]
+            "vocabThemes": ["transport", "decision", "place", "question"]
           },
           {
             "name": "收尾",
             "goal": "Confirm directions and thank them.",
-            "vocabThemes": [
-              "politeness",
-              "certainty",
-              "gratitude"
-            ]
+            "vocabThemes": ["politeness", "certainty", "gratitude"]
           }
         ]
       },
@@ -474,30 +294,17 @@
           {
             "name": "开场",
             "goal": "Explain the situation to the group.",
-            "vocabThemes": [
-              "communication",
-              "time",
-              "explanation"
-            ]
+            "vocabThemes": ["communication", "time", "explanation"]
           },
           {
             "name": "主线",
             "goal": "Compare walking and waiting options.",
-            "vocabThemes": [
-              "comparison",
-              "decision",
-              "transport",
-              "suggestion"
-            ]
+            "vocabThemes": ["comparison", "decision", "transport", "suggestion"]
           },
           {
             "name": "收尾",
             "goal": "Make a decision and guide the group.",
-            "vocabThemes": [
-              "decision",
-              "politeness",
-              "direction"
-            ]
+            "vocabThemes": ["decision", "politeness", "direction"]
           }
         ]
       },
@@ -508,30 +315,17 @@
           {
             "name": "开场",
             "goal": "Describe the ambiguous address.",
-            "vocabThemes": [
-              "description",
-              "clarity",
-              "communication"
-            ]
+            "vocabThemes": ["description", "clarity", "communication"]
           },
           {
             "name": "主线",
             "goal": "Resolve the conflicting directions.",
-            "vocabThemes": [
-              "comparison",
-              "persuasion",
-              "decision",
-              "clarity"
-            ]
+            "vocabThemes": ["comparison", "persuasion", "decision", "clarity"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the final route and thank them.",
-            "vocabThemes": [
-              "agreement",
-              "certainty",
-              "gratitude"
-            ]
+            "vocabThemes": ["agreement", "certainty", "gratitude"]
           }
         ]
       },
@@ -542,28 +336,17 @@
           {
             "name": "开场",
             "goal": "Greet and ask for help.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "question"
-            ]
+            "vocabThemes": ["greeting", "politeness", "question"]
           },
           {
             "name": "主线",
             "goal": "Ask how to get to the station.",
-            "vocabThemes": [
-              "place",
-              "transport",
-              "question"
-            ]
+            "vocabThemes": ["place", "transport", "question"]
           },
           {
             "name": "收尾",
             "goal": "Thank the person and say goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -574,30 +357,17 @@
           {
             "name": "开场",
             "goal": "Describe the ambiguous address.",
-            "vocabThemes": [
-              "description",
-              "clarity",
-              "communication"
-            ]
+            "vocabThemes": ["description", "clarity", "communication"]
           },
           {
             "name": "主线",
             "goal": "Resolve the conflicting directions.",
-            "vocabThemes": [
-              "comparison",
-              "persuasion",
-              "decision",
-              "clarity"
-            ]
+            "vocabThemes": ["comparison", "persuasion", "decision", "clarity"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the final route and thank them.",
-            "vocabThemes": [
-              "agreement",
-              "certainty",
-              "gratitude"
-            ]
+            "vocabThemes": ["agreement", "certainty", "gratitude"]
           }
         ]
       }
@@ -610,21 +380,8 @@
     "description": "你在一家商店购物，Luna 是店员。你需要询问商品并完成购买。",
     "icon": "🛒",
     "level": 1,
-    "topics": [
-      "object",
-      "number",
-      "description"
-    ],
-    "targetWords": [
-      "how much",
-      "want",
-      "like",
-      "big",
-      "small",
-      "good",
-      "one",
-      "two"
-    ],
+    "topics": ["object", "number", "description"],
+    "targetWords": ["how much", "want", "like", "big", "small", "good", "one", "two"],
     "role": {
       "student": "顾客 (Customer)",
       "teacher": "店员 (Shop Assistant)"
@@ -635,49 +392,25 @@
         "id": "greet",
         "description": "向店员打招呼",
         "descriptionEn": "Greet the shop assistant",
-        "keywords": [
-          "hello",
-          "hi",
-          "good morning",
-          "good afternoon"
-        ]
+        "keywords": ["hello", "hi", "good morning", "good afternoon"]
       },
       {
         "id": "ask-item",
         "description": "询问想要的商品",
         "descriptionEn": "Ask about an item",
-        "keywords": [
-          "want",
-          "like",
-          "look for",
-          "need",
-          "have",
-          "show"
-        ]
+        "keywords": ["want", "like", "look for", "need", "have", "show"]
       },
       {
         "id": "ask-price",
         "description": "询问价格",
         "descriptionEn": "Ask the price",
-        "keywords": [
-          "how much",
-          "price",
-          "cost",
-          "money"
-        ]
+        "keywords": ["how much", "price", "cost", "money"]
       },
       {
         "id": "buy",
         "description": "决定购买并付款",
         "descriptionEn": "Decide to buy and pay",
-        "keywords": [
-          "take",
-          "buy",
-          "want",
-          "please",
-          "thank",
-          "pay"
-        ]
+        "keywords": ["take", "buy", "want", "please", "thank", "pay"]
       }
     ],
     "acts": [
@@ -706,29 +439,17 @@
           {
             "name": "开场",
             "goal": "Greet the shop assistant.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask about an item and its price.",
-            "vocabThemes": [
-              "object",
-              "number",
-              "description",
-              "money"
-            ]
+            "vocabThemes": ["object", "number", "description", "money"]
           },
           {
             "name": "收尾",
             "goal": "Decide to buy and pay.",
-            "vocabThemes": [
-              "payment",
-              "politeness",
-              "decision"
-            ]
+            "vocabThemes": ["payment", "politeness", "decision"]
           }
         ]
       },
@@ -739,30 +460,17 @@
           {
             "name": "开场",
             "goal": "Explain what you are looking for.",
-            "vocabThemes": [
-              "communication",
-              "description",
-              "preference"
-            ]
+            "vocabThemes": ["communication", "description", "preference"]
           },
           {
             "name": "主线",
             "goal": "Compare models and choose an alternative.",
-            "vocabThemes": [
-              "comparison",
-              "decision",
-              "object",
-              "preference"
-            ]
+            "vocabThemes": ["comparison", "decision", "object", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Pay and ask about the return policy.",
-            "vocabThemes": [
-              "payment",
-              "question",
-              "politeness"
-            ]
+            "vocabThemes": ["payment", "question", "politeness"]
           }
         ]
       },
@@ -773,30 +481,17 @@
           {
             "name": "开场",
             "goal": "Explain the problem with the charger.",
-            "vocabThemes": [
-              "communication",
-              "problem",
-              "description"
-            ]
+            "vocabThemes": ["communication", "problem", "description"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a refund or exchange without a receipt.",
-            "vocabThemes": [
-              "negotiation",
-              "decision",
-              "payment",
-              "complaint"
-            ]
+            "vocabThemes": ["negotiation", "decision", "payment", "complaint"]
           },
           {
             "name": "收尾",
             "goal": "Reach a solution and leave.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "payment"
-            ]
+            "vocabThemes": ["agreement", "politeness", "payment"]
           }
         ]
       },
@@ -807,30 +502,17 @@
           {
             "name": "开场",
             "goal": "State your budget and the occasion.",
-            "vocabThemes": [
-              "communication",
-              "money",
-              "social"
-            ]
+            "vocabThemes": ["communication", "money", "social"]
           },
           {
             "name": "主线",
             "goal": "Decline expensive options and negotiate alternatives.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "evaluation"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "evaluation"]
           },
           {
             "name": "收尾",
             "goal": "Make a purchase or leave politely.",
-            "vocabThemes": [
-              "payment",
-              "politeness",
-              "decision"
-            ]
+            "vocabThemes": ["payment", "politeness", "decision"]
           }
         ]
       },
@@ -841,29 +523,17 @@
           {
             "name": "开场",
             "goal": "Greet the shop assistant.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask about an item and its price.",
-            "vocabThemes": [
-              "object",
-              "number",
-              "description",
-              "money"
-            ]
+            "vocabThemes": ["object", "number", "description", "money"]
           },
           {
             "name": "收尾",
             "goal": "Decide to buy and pay.",
-            "vocabThemes": [
-              "payment",
-              "politeness",
-              "decision"
-            ]
+            "vocabThemes": ["payment", "politeness", "decision"]
           }
         ]
       },
@@ -874,30 +544,17 @@
           {
             "name": "开场",
             "goal": "State your budget and the occasion.",
-            "vocabThemes": [
-              "communication",
-              "money",
-              "social"
-            ]
+            "vocabThemes": ["communication", "money", "social"]
           },
           {
             "name": "主线",
             "goal": "Decline expensive options and negotiate alternatives.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "evaluation"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "evaluation"]
           },
           {
             "name": "收尾",
             "goal": "Make a purchase or leave politely.",
-            "vocabThemes": [
-              "payment",
-              "politeness",
-              "decision"
-            ]
+            "vocabThemes": ["payment", "politeness", "decision"]
           }
         ]
       }
@@ -910,20 +567,8 @@
     "description": "你在一次聚会上认识新朋友，Luna 是你的新朋友。你们互相介绍自己。",
     "icon": "👋",
     "level": 1,
-    "topics": [
-      "greeting",
-      "people",
-      "family"
-    ],
-    "targetWords": [
-      "hello",
-      "name",
-      "nice",
-      "meet",
-      "friend",
-      "family",
-      "from"
-    ],
+    "topics": ["greeting", "people", "family"],
+    "targetWords": ["hello", "name", "nice", "meet", "friend", "family", "from"],
     "role": {
       "student": "聚会客人 (Party Guest)",
       "teacher": "新朋友 (New Friend)"
@@ -934,38 +579,19 @@
         "id": "greet",
         "description": "打招呼并自我介绍",
         "descriptionEn": "Greet and introduce yourself",
-        "keywords": [
-          "hello",
-          "hi",
-          "my name",
-          "i am",
-          "nice"
-        ]
+        "keywords": ["hello", "hi", "my name", "i am", "nice"]
       },
       {
         "id": "ask-about",
         "description": "询问对方信息",
         "descriptionEn": "Ask about the other person",
-        "keywords": [
-          "what",
-          "your name",
-          "where",
-          "from",
-          "do"
-        ]
+        "keywords": ["what", "your name", "where", "from", "do"]
       },
       {
         "id": "talk-family",
         "description": "谈论家庭或朋友",
         "descriptionEn": "Talk about family or friends",
-        "keywords": [
-          "family",
-          "mother",
-          "father",
-          "friend",
-          "sister",
-          "brother"
-        ]
+        "keywords": ["family", "mother", "father", "friend", "sister", "brother"]
       }
     ],
     "acts": [
@@ -993,29 +619,17 @@
           {
             "name": "开场",
             "goal": "Greet and introduce yourself.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "people", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask about the other person.",
-            "vocabThemes": [
-              "family",
-              "people",
-              "question"
-            ]
+            "vocabThemes": ["family", "people", "question"]
           },
           {
             "name": "收尾",
             "goal": "Exchange contact details or say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "social"
-            ]
+            "vocabThemes": ["greeting", "politeness", "social"]
           }
         ]
       },
@@ -1026,30 +640,17 @@
           {
             "name": "开场",
             "goal": "Introduce yourself and your learning goals.",
-            "vocabThemes": [
-              "communication",
-              "greeting",
-              "education"
-            ]
+            "vocabThemes": ["communication", "greeting", "education"]
           },
           {
             "name": "主线",
             "goal": "Discuss hobbies and find shared interests.",
-            "vocabThemes": [
-              "social",
-              "preference",
-              "comparison",
-              "decision"
-            ]
+            "vocabThemes": ["social", "preference", "comparison", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Suggest meeting again and exchange contacts.",
-            "vocabThemes": [
-              "suggestion",
-              "social",
-              "politeness"
-            ]
+            "vocabThemes": ["suggestion", "social", "politeness"]
           }
         ]
       },
@@ -1060,30 +661,17 @@
           {
             "name": "开场",
             "goal": "Introduce yourself and your work.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "social"
-            ]
+            "vocabThemes": ["communication", "work", "social"]
           },
           {
             "name": "主线",
             "goal": "Discuss professional interests and handle the forgotten name.",
-            "vocabThemes": [
-              "communication",
-              "memory",
-              "apology",
-              "social"
-            ]
+            "vocabThemes": ["communication", "memory", "apology", "social"]
           },
           {
             "name": "收尾",
             "goal": "Suggest connecting on social media.",
-            "vocabThemes": [
-              "suggestion",
-              "social",
-              "politeness"
-            ]
+            "vocabThemes": ["suggestion", "social", "politeness"]
           }
         ]
       },
@@ -1094,30 +682,17 @@
           {
             "name": "开场",
             "goal": "Make polite small talk.",
-            "vocabThemes": [
-              "politeness",
-              "social",
-              "culture"
-            ]
+            "vocabThemes": ["politeness", "social", "culture"]
           },
           {
             "name": "主线",
             "goal": "Navigate a sensitive topic and change the subject.",
-            "vocabThemes": [
-              "communication",
-              "persuasion",
-              "politeness",
-              "culture"
-            ]
+            "vocabThemes": ["communication", "persuasion", "politeness", "culture"]
           },
           {
             "name": "收尾",
             "goal": "Leave a positive impression and say goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "social",
-              "gratitude"
-            ]
+            "vocabThemes": ["politeness", "social", "gratitude"]
           }
         ]
       },
@@ -1128,29 +703,17 @@
           {
             "name": "开场",
             "goal": "Greet and introduce yourself.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "people", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask about the other person.",
-            "vocabThemes": [
-              "family",
-              "people",
-              "question"
-            ]
+            "vocabThemes": ["family", "people", "question"]
           },
           {
             "name": "收尾",
             "goal": "Exchange contact details or say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "social"
-            ]
+            "vocabThemes": ["greeting", "politeness", "social"]
           }
         ]
       },
@@ -1161,30 +724,17 @@
           {
             "name": "开场",
             "goal": "Make polite small talk.",
-            "vocabThemes": [
-              "politeness",
-              "social",
-              "culture"
-            ]
+            "vocabThemes": ["politeness", "social", "culture"]
           },
           {
             "name": "主线",
             "goal": "Navigate a sensitive topic and change the subject.",
-            "vocabThemes": [
-              "communication",
-              "persuasion",
-              "politeness",
-              "culture"
-            ]
+            "vocabThemes": ["communication", "persuasion", "politeness", "culture"]
           },
           {
             "name": "收尾",
             "goal": "Leave a positive impression and say goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "social",
-              "gratitude"
-            ]
+            "vocabThemes": ["politeness", "social", "gratitude"]
           }
         ]
       }
@@ -1197,20 +747,8 @@
     "description": "你是新同学，Luna 是你的同学。你们讨论学校和学习。",
     "icon": "🏫",
     "level": 1,
-    "topics": [
-      "people",
-      "object",
-      "verb"
-    ],
-    "targetWords": [
-      "teacher",
-      "student",
-      "book",
-      "read",
-      "write",
-      "school",
-      "like"
-    ],
+    "topics": ["people", "object", "verb"],
+    "targetWords": ["teacher", "student", "book", "read", "write", "school", "like"],
     "role": {
       "student": "新同学 (New Student)",
       "teacher": "同学 (Classmate)"
@@ -1221,47 +759,25 @@
         "id": "greet",
         "description": "向同学打招呼",
         "descriptionEn": "Greet your classmate",
-        "keywords": [
-          "hello",
-          "hi",
-          "hey"
-        ]
+        "keywords": ["hello", "hi", "hey"]
       },
       {
         "id": "talk-school",
         "description": "讨论学校生活",
         "descriptionEn": "Talk about school life",
-        "keywords": [
-          "school",
-          "class",
-          "teacher",
-          "student",
-          "like"
-        ]
+        "keywords": ["school", "class", "teacher", "student", "like"]
       },
       {
         "id": "talk-hobbies",
         "description": "谈论兴趣爱好",
         "descriptionEn": "Talk about hobbies",
-        "keywords": [
-          "like",
-          "read",
-          "write",
-          "play",
-          "book",
-          "fun"
-        ]
+        "keywords": ["like", "read", "write", "play", "book", "fun"]
       },
       {
         "id": "say-goodbye",
         "description": "告别同学",
         "descriptionEn": "Say goodbye",
-        "keywords": [
-          "goodbye",
-          "bye",
-          "see you",
-          "nice"
-        ]
+        "keywords": ["goodbye", "bye", "see you", "nice"]
       }
     ],
     "acts": [
@@ -1290,28 +806,17 @@
           {
             "name": "开场",
             "goal": "Greet your classmate.",
-            "vocabThemes": [
-              "greeting",
-              "people"
-            ]
+            "vocabThemes": ["greeting", "people"]
           },
           {
             "name": "主线",
             "goal": "Talk about school and hobbies.",
-            "vocabThemes": [
-              "school",
-              "verb",
-              "object",
-              "like"
-            ]
+            "vocabThemes": ["school", "verb", "object", "like"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -1322,30 +827,17 @@
           {
             "name": "开场",
             "goal": "Greet and discuss the presentation topic.",
-            "vocabThemes": [
-              "communication",
-              "school",
-              "work"
-            ]
+            "vocabThemes": ["communication", "school", "work"]
           },
           {
             "name": "主线",
             "goal": "Divide tasks and agree on a plan.",
-            "vocabThemes": [
-              "decision",
-              "social",
-              "planning",
-              "communication"
-            ]
+            "vocabThemes": ["decision", "social", "planning", "communication"]
           },
           {
             "name": "收尾",
             "goal": "Confirm next steps and encourage each other.",
-            "vocabThemes": [
-              "encouragement",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["encouragement", "politeness", "time"]
           }
         ]
       },
@@ -1356,30 +848,17 @@
           {
             "name": "开场",
             "goal": "Present your idea.",
-            "vocabThemes": [
-              "communication",
-              "education",
-              "suggestion"
-            ]
+            "vocabThemes": ["communication", "education", "suggestion"]
           },
           {
             "name": "主线",
             "goal": "Compare ideas and persuade the group.",
-            "vocabThemes": [
-              "comparison",
-              "persuasion",
-              "decision",
-              "evaluation"
-            ]
+            "vocabThemes": ["comparison", "persuasion", "decision", "evaluation"]
           },
           {
             "name": "收尾",
             "goal": "Agree on the topic and assign tasks.",
-            "vocabThemes": [
-              "agreement",
-              "social",
-              "planning"
-            ]
+            "vocabThemes": ["agreement", "social", "planning"]
           }
         ]
       },
@@ -1390,30 +869,17 @@
           {
             "name": "开场",
             "goal": "Summarize your essay thesis.",
-            "vocabThemes": [
-              "communication",
-              "education",
-              "explanation"
-            ]
+            "vocabThemes": ["communication", "education", "explanation"]
           },
           {
             "name": "主线",
             "goal": "Defend your choices with evidence.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "persuasion",
-              "thinking"
-            ]
+            "vocabThemes": ["argument", "evidence", "persuasion", "thinking"]
           },
           {
             "name": "收尾",
             "goal": "Acknowledge feedback and outline revisions.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "improvement"
-            ]
+            "vocabThemes": ["agreement", "politeness", "improvement"]
           }
         ]
       },
@@ -1424,28 +890,17 @@
           {
             "name": "开场",
             "goal": "Greet your classmate.",
-            "vocabThemes": [
-              "greeting",
-              "people"
-            ]
+            "vocabThemes": ["greeting", "people"]
           },
           {
             "name": "主线",
             "goal": "Talk about school and hobbies.",
-            "vocabThemes": [
-              "school",
-              "verb",
-              "object",
-              "like"
-            ]
+            "vocabThemes": ["school", "verb", "object", "like"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -1456,30 +911,17 @@
           {
             "name": "开场",
             "goal": "Summarize your essay thesis.",
-            "vocabThemes": [
-              "communication",
-              "education",
-              "explanation"
-            ]
+            "vocabThemes": ["communication", "education", "explanation"]
           },
           {
             "name": "主线",
             "goal": "Defend your choices with evidence.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "persuasion",
-              "thinking"
-            ]
+            "vocabThemes": ["argument", "evidence", "persuasion", "thinking"]
           },
           {
             "name": "收尾",
             "goal": "Acknowledge feedback and outline revisions.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "improvement"
-            ]
+            "vocabThemes": ["agreement", "politeness", "improvement"]
           }
         ]
       }
@@ -1492,20 +934,8 @@
     "description": "Luna 是你的室友，你们讨论每天的日常作息。",
     "icon": "⏰",
     "level": 1,
-    "topics": [
-      "time",
-      "verb",
-      "family"
-    ],
-    "targetWords": [
-      "morning",
-      "afternoon",
-      "night",
-      "eat",
-      "sleep",
-      "go",
-      "work"
-    ],
+    "topics": ["time", "verb", "family"],
+    "targetWords": ["morning", "afternoon", "night", "eat", "sleep", "go", "work"],
     "role": {
       "student": "室友 (Roommate)",
       "teacher": "室友 (Roommate)"
@@ -1516,38 +946,19 @@
         "id": "greet-morning",
         "description": "早上打招呼",
         "descriptionEn": "Say good morning",
-        "keywords": [
-          "morning",
-          "good morning",
-          "hello",
-          "hi"
-        ]
+        "keywords": ["morning", "good morning", "hello", "hi"]
       },
       {
         "id": "talk-routine",
         "description": "讨论日常安排",
         "descriptionEn": "Talk about daily schedule",
-        "keywords": [
-          "morning",
-          "afternoon",
-          "night",
-          "eat",
-          "go",
-          "work",
-          "sleep"
-        ]
+        "keywords": ["morning", "afternoon", "night", "eat", "go", "work", "sleep"]
       },
       {
         "id": "say-goodbye",
         "description": "告别出门",
         "descriptionEn": "Say goodbye and leave",
-        "keywords": [
-          "goodbye",
-          "bye",
-          "see you",
-          "go",
-          "work"
-        ]
+        "keywords": ["goodbye", "bye", "see you", "go", "work"]
       }
     ],
     "acts": [
@@ -1575,27 +986,17 @@
           {
             "name": "开场",
             "goal": "Say good morning.",
-            "vocabThemes": [
-              "greeting",
-              "time"
-            ]
+            "vocabThemes": ["greeting", "time"]
           },
           {
             "name": "主线",
             "goal": "Talk about your daily schedule.",
-            "vocabThemes": [
-              "time",
-              "verb",
-              "food"
-            ]
+            "vocabThemes": ["time", "verb", "food"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye and leave.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -1606,30 +1007,17 @@
           {
             "name": "开场",
             "goal": "Greet and share your weekend plans.",
-            "vocabThemes": [
-              "greeting",
-              "time",
-              "social"
-            ]
+            "vocabThemes": ["greeting", "time", "social"]
           },
           {
             "name": "主线",
             "goal": "Compare plans and find a compromise.",
-            "vocabThemes": [
-              "comparison",
-              "decision",
-              "preference",
-              "social"
-            ]
+            "vocabThemes": ["comparison", "decision", "preference", "social"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the plan.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "time", "politeness"]
           }
         ]
       },
@@ -1640,30 +1028,17 @@
           {
             "name": "开场",
             "goal": "Bring up the topic of chores.",
-            "vocabThemes": [
-              "communication",
-              "home",
-              "problem"
-            ]
+            "vocabThemes": ["communication", "home", "problem"]
           },
           {
             "name": "主线",
             "goal": "Discuss responsibilities and agree on a schedule.",
-            "vocabThemes": [
-              "negotiation",
-              "decision",
-              "time",
-              "agreement"
-            ]
+            "vocabThemes": ["negotiation", "decision", "time", "agreement"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the new arrangement.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["agreement", "politeness", "time"]
           }
         ]
       },
@@ -1674,30 +1049,17 @@
           {
             "name": "开场",
             "goal": "Describe the issue without blaming.",
-            "vocabThemes": [
-              "description",
-              "emotion",
-              "communication"
-            ]
+            "vocabThemes": ["description", "emotion", "communication"]
           },
           {
             "name": "主线",
             "goal": "Negotiate boundaries and solutions.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "respect"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "respect"]
           },
           {
             "name": "收尾",
             "goal": "Agree on rules and reassure them.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "emotion"
-            ]
+            "vocabThemes": ["agreement", "politeness", "emotion"]
           }
         ]
       },
@@ -1708,27 +1070,17 @@
           {
             "name": "开场",
             "goal": "Say good morning.",
-            "vocabThemes": [
-              "greeting",
-              "time"
-            ]
+            "vocabThemes": ["greeting", "time"]
           },
           {
             "name": "主线",
             "goal": "Talk about your daily schedule.",
-            "vocabThemes": [
-              "time",
-              "verb",
-              "food"
-            ]
+            "vocabThemes": ["time", "verb", "food"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye and leave.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -1739,30 +1091,17 @@
           {
             "name": "开场",
             "goal": "Describe the issue without blaming.",
-            "vocabThemes": [
-              "description",
-              "emotion",
-              "communication"
-            ]
+            "vocabThemes": ["description", "emotion", "communication"]
           },
           {
             "name": "主线",
             "goal": "Negotiate boundaries and solutions.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "respect"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "respect"]
           },
           {
             "name": "收尾",
             "goal": "Agree on rules and reassure them.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "emotion"
-            ]
+            "vocabThemes": ["agreement", "politeness", "emotion"]
           }
         ]
       }
@@ -1775,20 +1114,8 @@
     "description": "你正在参加一场英语面试，Luna 是面试官。展示你的英语能力。",
     "icon": "💼",
     "level": 3,
-    "topics": [
-      "communication",
-      "evaluation",
-      "success"
-    ],
-    "targetWords": [
-      "experience",
-      "skill",
-      "team",
-      "work",
-      "good",
-      "help",
-      "achieve"
-    ],
+    "topics": ["communication", "evaluation", "success"],
+    "targetWords": ["experience", "skill", "team", "work", "good", "help", "achieve"],
     "role": {
       "student": "求职者 (Job Applicant)",
       "teacher": "面试官 (Interviewer)"
@@ -1799,61 +1126,31 @@
         "id": "introduce",
         "description": "自我介绍",
         "descriptionEn": "Introduce yourself",
-        "keywords": [
-          "name",
-          "experience",
-          "work",
-          "study",
-          "university"
-        ]
+        "keywords": ["name", "experience", "work", "study", "university"]
       },
       {
         "id": "skills",
         "description": "描述你的技能",
         "descriptionEn": "Describe your skills",
-        "keywords": [
-          "skill",
-          "good at",
-          "can",
-          "experience",
-          "team"
-        ]
+        "keywords": ["skill", "good at", "can", "experience", "team"]
       },
       {
         "id": "motivation",
         "description": "说明你的动机",
         "descriptionEn": "Explain your motivation",
-        "keywords": [
-          "want",
-          "like",
-          "because",
-          "help",
-          "achieve",
-          "grow"
-        ]
+        "keywords": ["want", "like", "because", "help", "achieve", "grow"]
       },
       {
         "id": "questions",
         "description": "向面试官提问",
         "descriptionEn": "Ask questions to the interviewer",
-        "keywords": [
-          "question",
-          "what",
-          "how",
-          "team",
-          "work"
-        ]
+        "keywords": ["question", "what", "how", "team", "work"]
       },
       {
         "id": "close",
         "description": "礼貌结束面试",
         "descriptionEn": "Close the interview politely",
-        "keywords": [
-          "thank",
-          "opportunity",
-          "look forward",
-          "goodbye"
-        ]
+        "keywords": ["thank", "opportunity", "look forward", "goodbye"]
       }
     ],
     "acts": [
@@ -1883,29 +1180,17 @@
           {
             "name": "开场",
             "goal": "Greet and introduce yourself.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "people", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about yourself.",
-            "vocabThemes": [
-              "people",
-              "school",
-              "work",
-              "basic"
-            ]
+            "vocabThemes": ["people", "school", "work", "basic"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you and goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -1916,30 +1201,17 @@
           {
             "name": "开场",
             "goal": "Introduce yourself and your background.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "education"
-            ]
+            "vocabThemes": ["communication", "work", "education"]
           },
           {
             "name": "主线",
             "goal": "Explain your skills and address the missing requirement.",
-            "vocabThemes": [
-              "skill",
-              "experience",
-              "communication",
-              "decision"
-            ]
+            "vocabThemes": ["skill", "experience", "communication", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Ask questions and close politely.",
-            "vocabThemes": [
-              "question",
-              "politeness",
-              "work"
-            ]
+            "vocabThemes": ["question", "politeness", "work"]
           }
         ]
       },
@@ -1950,30 +1222,17 @@
           {
             "name": "开场",
             "goal": "Set up the call and introduce yourself.",
-            "vocabThemes": [
-              "communication",
-              "technology",
-              "politeness"
-            ]
+            "vocabThemes": ["communication", "technology", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Answer questions and handle technical issues.",
-            "vocabThemes": [
-              "communication",
-              "problem",
-              "clarity",
-              "experience"
-            ]
+            "vocabThemes": ["communication", "problem", "clarity", "experience"]
           },
           {
             "name": "收尾",
             "goal": "Ask about next steps and thank the interviewer.",
-            "vocabThemes": [
-              "question",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["question", "politeness", "time"]
           }
         ]
       },
@@ -1984,30 +1243,17 @@
           {
             "name": "开场",
             "goal": "Deliver a concise self-introduction.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "work", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Address concerns and defend your experience.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "persuasion",
-              "confidence"
-            ]
+            "vocabThemes": ["argument", "evidence", "persuasion", "confidence"]
           },
           {
             "name": "收尾",
             "goal": "Ask strategic questions and close strongly.",
-            "vocabThemes": [
-              "question",
-              "persuasion",
-              "politeness"
-            ]
+            "vocabThemes": ["question", "persuasion", "politeness"]
           }
         ]
       },
@@ -2018,29 +1264,17 @@
           {
             "name": "开场",
             "goal": "Greet and introduce yourself.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "people", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about yourself.",
-            "vocabThemes": [
-              "people",
-              "school",
-              "work",
-              "basic"
-            ]
+            "vocabThemes": ["people", "school", "work", "basic"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you and goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -2051,30 +1285,17 @@
           {
             "name": "开场",
             "goal": "Deliver a concise self-introduction.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "work", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Address concerns and defend your experience.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "persuasion",
-              "confidence"
-            ]
+            "vocabThemes": ["argument", "evidence", "persuasion", "confidence"]
           },
           {
             "name": "收尾",
             "goal": "Ask strategic questions and close strongly.",
-            "vocabThemes": [
-              "question",
-              "persuasion",
-              "politeness"
-            ]
+            "vocabThemes": ["question", "persuasion", "politeness"]
           }
         ]
       }
@@ -2087,20 +1308,8 @@
     "description": "你在酒店遇到问题，Luna 是前台服务员。你需要礼貌但清楚地表达不满。",
     "icon": "🏨",
     "level": 3,
-    "topics": [
-      "communication",
-      "manners",
-      "emotion"
-    ],
-    "targetWords": [
-      "problem",
-      "room",
-      "help",
-      "please",
-      "sorry",
-      "fix",
-      "better"
-    ],
+    "topics": ["communication", "manners", "emotion"],
+    "targetWords": ["problem", "room", "help", "please", "sorry", "fix", "better"],
     "role": {
       "student": "酒店客人 (Hotel Guest)",
       "teacher": "前台服务员 (Receptionist)"
@@ -2111,50 +1320,25 @@
         "id": "explain-problem",
         "description": "说明遇到的问题",
         "descriptionEn": "Explain the problem",
-        "keywords": [
-          "problem",
-          "room",
-          "water",
-          "air conditioning",
-          "noise",
-          "broken"
-        ]
+        "keywords": ["problem", "room", "water", "air conditioning", "noise", "broken"]
       },
       {
         "id": "request-help",
         "description": "请求帮助",
         "descriptionEn": "Request help",
-        "keywords": [
-          "help",
-          "please",
-          "can you",
-          "fix",
-          "change"
-        ]
+        "keywords": ["help", "please", "can you", "fix", "change"]
       },
       {
         "id": "negotiate",
         "description": "协商解决方案",
         "descriptionEn": "Negotiate a solution",
-        "keywords": [
-          "another",
-          "different",
-          "better",
-          "discount",
-          "refund"
-        ]
+        "keywords": ["another", "different", "better", "discount", "refund"]
       },
       {
         "id": "resolve",
         "description": "确认问题解决",
         "descriptionEn": "Confirm resolution",
-        "keywords": [
-          "thank",
-          "good",
-          "better",
-          "happy",
-          "appreciate"
-        ]
+        "keywords": ["thank", "good", "better", "happy", "appreciate"]
       }
     ],
     "acts": [
@@ -2183,28 +1367,17 @@
           {
             "name": "开场",
             "goal": "Greet and explain the problem.",
-            "vocabThemes": [
-              "greeting",
-              "problem",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "problem", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask for a new key.",
-            "vocabThemes": [
-              "request",
-              "help",
-              "room"
-            ]
+            "vocabThemes": ["request", "help", "room"]
           },
           {
             "name": "收尾",
             "goal": "Thank the receptionist.",
-            "vocabThemes": [
-              "politeness",
-              "gratitude"
-            ]
+            "vocabThemes": ["politeness", "gratitude"]
           }
         ]
       },
@@ -2215,30 +1388,17 @@
           {
             "name": "开场",
             "goal": "Explain the problem.",
-            "vocabThemes": [
-              "problem",
-              "room",
-              "description"
-            ]
+            "vocabThemes": ["problem", "room", "description"]
           },
           {
             "name": "主线",
             "goal": "Request a room change.",
-            "vocabThemes": [
-              "request",
-              "help",
-              "decision",
-              "politeness"
-            ]
+            "vocabThemes": ["request", "help", "decision", "politeness"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the solution and thank them.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "gratitude"
-            ]
+            "vocabThemes": ["agreement", "politeness", "gratitude"]
           }
         ]
       },
@@ -2249,30 +1409,17 @@
           {
             "name": "开场",
             "goal": "Describe the service issue.",
-            "vocabThemes": [
-              "problem",
-              "description",
-              "communication"
-            ]
+            "vocabThemes": ["problem", "description", "communication"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a refund or discount.",
-            "vocabThemes": [
-              "negotiation",
-              "payment",
-              "complaint",
-              "decision"
-            ]
+            "vocabThemes": ["negotiation", "payment", "complaint", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Reach an agreement and confirm details.",
-            "vocabThemes": [
-              "agreement",
-              "payment",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "payment", "politeness"]
           }
         ]
       },
@@ -2283,30 +1430,17 @@
           {
             "name": "开场",
             "goal": "State the problem and your expectations.",
-            "vocabThemes": [
-              "complaint",
-              "expectation",
-              "politeness"
-            ]
+            "vocabThemes": ["complaint", "expectation", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a suitable solution.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "evaluation"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "evaluation"]
           },
           {
             "name": "收尾",
             "goal": "Confirm compensation and close professionally.",
-            "vocabThemes": [
-              "agreement",
-              "payment",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "payment", "politeness"]
           }
         ]
       },
@@ -2317,28 +1451,17 @@
           {
             "name": "开场",
             "goal": "Greet and explain the problem.",
-            "vocabThemes": [
-              "greeting",
-              "problem",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "problem", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask for a new key.",
-            "vocabThemes": [
-              "request",
-              "help",
-              "room"
-            ]
+            "vocabThemes": ["request", "help", "room"]
           },
           {
             "name": "收尾",
             "goal": "Thank the receptionist.",
-            "vocabThemes": [
-              "politeness",
-              "gratitude"
-            ]
+            "vocabThemes": ["politeness", "gratitude"]
           }
         ]
       },
@@ -2349,30 +1472,17 @@
           {
             "name": "开场",
             "goal": "State the problem and your expectations.",
-            "vocabThemes": [
-              "complaint",
-              "expectation",
-              "politeness"
-            ]
+            "vocabThemes": ["complaint", "expectation", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Negotiate a suitable solution.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "evaluation"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "evaluation"]
           },
           {
             "name": "收尾",
             "goal": "Confirm compensation and close professionally.",
-            "vocabThemes": [
-              "agreement",
-              "payment",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "payment", "politeness"]
           }
         ]
       }
@@ -2385,20 +1495,8 @@
     "description": "你和 Luna 在讨论即将到来的旅行计划。",
     "icon": "✈️",
     "level": 3,
-    "topics": [
-      "decision",
-      "social",
-      "knowledge"
-    ],
-    "targetWords": [
-      "visit",
-      "go",
-      "see",
-      "want",
-      "plan",
-      "suggest",
-      "beautiful"
-    ],
+    "topics": ["decision", "social", "knowledge"],
+    "targetWords": ["visit", "go", "see", "want", "plan", "suggest", "beautiful"],
     "role": {
       "student": "旅行者 (Traveler)",
       "teacher": "旅行伙伴 (Travel Buddy)"
@@ -2409,50 +1507,25 @@
         "id": "suggest-destination",
         "description": "建议旅行目的地",
         "descriptionEn": "Suggest a destination",
-        "keywords": [
-          "go to",
-          "visit",
-          "how about",
-          "what about",
-          "want"
-        ]
+        "keywords": ["go to", "visit", "how about", "what about", "want"]
       },
       {
         "id": "discuss-plan",
         "description": "讨论旅行计划",
         "descriptionEn": "Discuss the plan",
-        "keywords": [
-          "plan",
-          "day",
-          "see",
-          "do",
-          "when",
-          "where"
-        ]
+        "keywords": ["plan", "day", "see", "do", "when", "where"]
       },
       {
         "id": "share-opinions",
         "description": "分享意见和建议",
         "descriptionEn": "Share opinions and suggestions",
-        "keywords": [
-          "think",
-          "suggest",
-          "good idea",
-          "beautiful",
-          "interesting"
-        ]
+        "keywords": ["think", "suggest", "good idea", "beautiful", "interesting"]
       },
       {
         "id": "make-decision",
         "description": "做出最终决定",
         "descriptionEn": "Make a final decision",
-        "keywords": [
-          "decide",
-          "let's",
-          "go",
-          "plan",
-          "excited"
-        ]
+        "keywords": ["decide", "let's", "go", "plan", "excited"]
       }
     ],
     "acts": [
@@ -2481,28 +1554,17 @@
           {
             "name": "开场",
             "goal": "Suggest a destination.",
-            "vocabThemes": [
-              "place",
-              "travel",
-              "suggestion"
-            ]
+            "vocabThemes": ["place", "travel", "suggestion"]
           },
           {
             "name": "主线",
             "goal": "Talk about what you want to do.",
-            "vocabThemes": [
-              "travel",
-              "time",
-              "preference"
-            ]
+            "vocabThemes": ["travel", "time", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Agree and say goodbye.",
-            "vocabThemes": [
-              "agreement",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "politeness"]
           }
         ]
       },
@@ -2513,30 +1575,17 @@
           {
             "name": "开场",
             "goal": "Suggest destinations and budgets.",
-            "vocabThemes": [
-              "travel",
-              "money",
-              "suggestion"
-            ]
+            "vocabThemes": ["travel", "money", "suggestion"]
           },
           {
             "name": "主线",
             "goal": "Compare accommodation options.",
-            "vocabThemes": [
-              "comparison",
-              "decision",
-              "money",
-              "preference"
-            ]
+            "vocabThemes": ["comparison", "decision", "money", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Book and confirm the plan.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "payment"
-            ]
+            "vocabThemes": ["agreement", "time", "payment"]
           }
         ]
       },
@@ -2547,30 +1596,17 @@
           {
             "name": "开场",
             "goal": "Review the itinerary.",
-            "vocabThemes": [
-              "travel",
-              "time",
-              "planning"
-            ]
+            "vocabThemes": ["travel", "time", "planning"]
           },
           {
             "name": "主线",
             "goal": "Discuss changing the itinerary.",
-            "vocabThemes": [
-              "negotiation",
-              "decision",
-              "preference",
-              "communication"
-            ]
+            "vocabThemes": ["negotiation", "decision", "preference", "communication"]
           },
           {
             "name": "收尾",
             "goal": "Finalize the route.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "travel"
-            ]
+            "vocabThemes": ["agreement", "time", "travel"]
           }
         ]
       },
@@ -2581,30 +1617,17 @@
           {
             "name": "开场",
             "goal": "Present your priorities.",
-            "vocabThemes": [
-              "communication",
-              "preference",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "preference", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Persuade and negotiate the itinerary.",
-            "vocabThemes": [
-              "persuasion",
-              "negotiation",
-              "decision",
-              "comparison"
-            ]
+            "vocabThemes": ["persuasion", "negotiation", "decision", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Lock in the plan and manage expectations.",
-            "vocabThemes": [
-              "agreement",
-              "planning",
-              "communication"
-            ]
+            "vocabThemes": ["agreement", "planning", "communication"]
           }
         ]
       },
@@ -2615,28 +1638,17 @@
           {
             "name": "开场",
             "goal": "Suggest a destination.",
-            "vocabThemes": [
-              "place",
-              "travel",
-              "suggestion"
-            ]
+            "vocabThemes": ["place", "travel", "suggestion"]
           },
           {
             "name": "主线",
             "goal": "Talk about what you want to do.",
-            "vocabThemes": [
-              "travel",
-              "time",
-              "preference"
-            ]
+            "vocabThemes": ["travel", "time", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Agree and say goodbye.",
-            "vocabThemes": [
-              "agreement",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "politeness"]
           }
         ]
       },
@@ -2647,30 +1659,17 @@
           {
             "name": "开场",
             "goal": "Present your priorities.",
-            "vocabThemes": [
-              "communication",
-              "preference",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "preference", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Persuade and negotiate the itinerary.",
-            "vocabThemes": [
-              "persuasion",
-              "negotiation",
-              "decision",
-              "comparison"
-            ]
+            "vocabThemes": ["persuasion", "negotiation", "decision", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Lock in the plan and manage expectations.",
-            "vocabThemes": [
-              "agreement",
-              "planning",
-              "communication"
-            ]
+            "vocabThemes": ["agreement", "planning", "communication"]
           }
         ]
       }
@@ -2683,20 +1682,8 @@
     "description": "你感觉不舒服去看医生，Luna 是医生。描述你的症状。",
     "icon": "🏥",
     "level": 3,
-    "topics": [
-      "emotion",
-      "state",
-      "description"
-    ],
-    "targetWords": [
-      "feel",
-      "hurt",
-      "head",
-      "stomach",
-      "bad",
-      "better",
-      "medicine"
-    ],
+    "topics": ["emotion", "state", "description"],
+    "targetWords": ["feel", "hurt", "head", "stomach", "bad", "better", "medicine"],
     "role": {
       "student": "病人 (Patient)",
       "teacher": "医生 (Doctor)"
@@ -2707,51 +1694,25 @@
         "id": "describe-symptoms",
         "description": "描述症状",
         "descriptionEn": "Describe your symptoms",
-        "keywords": [
-          "feel",
-          "hurt",
-          "pain",
-          "head",
-          "stomach",
-          "bad",
-          "sick"
-        ]
+        "keywords": ["feel", "hurt", "pain", "head", "stomach", "bad", "sick"]
       },
       {
         "id": "answer-questions",
         "description": "回答医生的问题",
         "descriptionEn": "Answer the doctor's questions",
-        "keywords": [
-          "yes",
-          "no",
-          "when",
-          "how long",
-          "yesterday",
-          "today"
-        ]
+        "keywords": ["yes", "no", "when", "how long", "yesterday", "today"]
       },
       {
         "id": "understand-advice",
         "description": "理解医生的建议",
         "descriptionEn": "Understand the doctor's advice",
-        "keywords": [
-          "medicine",
-          "rest",
-          "water",
-          "better",
-          "understand"
-        ]
+        "keywords": ["medicine", "rest", "water", "better", "understand"]
       },
       {
         "id": "thank-leave",
         "description": "感谢并离开",
         "descriptionEn": "Thank and leave",
-        "keywords": [
-          "thank",
-          "goodbye",
-          "better",
-          "hope"
-        ]
+        "keywords": ["thank", "goodbye", "better", "hope"]
       }
     ],
     "acts": [
@@ -2780,29 +1741,17 @@
           {
             "name": "开场",
             "goal": "Greet the doctor and say you feel bad.",
-            "vocabThemes": [
-              "greeting",
-              "emotion",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "emotion", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Describe simple symptoms.",
-            "vocabThemes": [
-              "body",
-              "feel",
-              "description"
-            ]
+            "vocabThemes": ["body", "feel", "description"]
           },
           {
             "name": "收尾",
             "goal": "Understand advice and thank the doctor.",
-            "vocabThemes": [
-              "politeness",
-              "gratitude",
-              "health"
-            ]
+            "vocabThemes": ["politeness", "gratitude", "health"]
           }
         ]
       },
@@ -2813,30 +1762,17 @@
           {
             "name": "开场",
             "goal": "Describe when the pain started.",
-            "vocabThemes": [
-              "time",
-              "body",
-              "description"
-            ]
+            "vocabThemes": ["time", "body", "description"]
           },
           {
             "name": "主线",
             "goal": "Answer questions about diet and lifestyle.",
-            "vocabThemes": [
-              "food",
-              "habit",
-              "question",
-              "health"
-            ]
+            "vocabThemes": ["food", "habit", "question", "health"]
           },
           {
             "name": "收尾",
             "goal": "Understand treatment advice.",
-            "vocabThemes": [
-              "health",
-              "advice",
-              "politeness"
-            ]
+            "vocabThemes": ["health", "advice", "politeness"]
           }
         ]
       },
@@ -2847,30 +1783,17 @@
           {
             "name": "开场",
             "goal": "Ask about the test results.",
-            "vocabThemes": [
-              "question",
-              "health",
-              "communication"
-            ]
+            "vocabThemes": ["question", "health", "communication"]
           },
           {
             "name": "主线",
             "goal": "Discuss options and risks.",
-            "vocabThemes": [
-              "decision",
-              "risk",
-              "comparison",
-              "health"
-            ]
+            "vocabThemes": ["decision", "risk", "comparison", "health"]
           },
           {
             "name": "收尾",
             "goal": "Agree on the next step.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "health"
-            ]
+            "vocabThemes": ["agreement", "time", "health"]
           }
         ]
       },
@@ -2881,30 +1804,17 @@
           {
             "name": "开场",
             "goal": "Summarize your medical history and previous advice.",
-            "vocabThemes": [
-              "description",
-              "health",
-              "communication"
-            ]
+            "vocabThemes": ["description", "health", "communication"]
           },
           {
             "name": "主线",
             "goal": "Compare opinions and ask detailed questions.",
-            "vocabThemes": [
-              "comparison",
-              "question",
-              "clarity",
-              "decision"
-            ]
+            "vocabThemes": ["comparison", "question", "clarity", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Choose a treatment plan and confirm follow-up.",
-            "vocabThemes": [
-              "decision",
-              "agreement",
-              "time"
-            ]
+            "vocabThemes": ["decision", "agreement", "time"]
           }
         ]
       },
@@ -2915,29 +1825,17 @@
           {
             "name": "开场",
             "goal": "Greet the doctor and say you feel bad.",
-            "vocabThemes": [
-              "greeting",
-              "emotion",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "emotion", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Describe simple symptoms.",
-            "vocabThemes": [
-              "body",
-              "feel",
-              "description"
-            ]
+            "vocabThemes": ["body", "feel", "description"]
           },
           {
             "name": "收尾",
             "goal": "Understand advice and thank the doctor.",
-            "vocabThemes": [
-              "politeness",
-              "gratitude",
-              "health"
-            ]
+            "vocabThemes": ["politeness", "gratitude", "health"]
           }
         ]
       },
@@ -2948,30 +1846,17 @@
           {
             "name": "开场",
             "goal": "Summarize your medical history and previous advice.",
-            "vocabThemes": [
-              "description",
-              "health",
-              "communication"
-            ]
+            "vocabThemes": ["description", "health", "communication"]
           },
           {
             "name": "主线",
             "goal": "Compare opinions and ask detailed questions.",
-            "vocabThemes": [
-              "comparison",
-              "question",
-              "clarity",
-              "decision"
-            ]
+            "vocabThemes": ["comparison", "question", "clarity", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Choose a treatment plan and confirm follow-up.",
-            "vocabThemes": [
-              "decision",
-              "agreement",
-              "time"
-            ]
+            "vocabThemes": ["decision", "agreement", "time"]
           }
         ]
       }
@@ -2984,19 +1869,8 @@
     "description": "你在机场办理值机手续，需要和地勤人员沟通行李、座位和登机口信息。",
     "icon": "✈️",
     "level": 1,
-    "topics": [
-      "travel",
-      "politeness",
-      "number"
-    ],
-    "targetWords": [
-      "ticket",
-      "passport",
-      "luggage",
-      "seat",
-      "window",
-      "aisle"
-    ],
+    "topics": ["travel", "politeness", "number"],
+    "targetWords": ["ticket", "passport", "luggage", "seat", "window", "aisle"],
     "role": {
       "student": "乘客 (Passenger)",
       "teacher": "地勤人员 (Airline Staff)"
@@ -3007,46 +1881,25 @@
         "id": "greet",
         "description": "向地勤人员打招呼",
         "descriptionEn": "Greet the airline staff",
-        "keywords": [
-          "hello",
-          "hi",
-          "good morning",
-          "please"
-        ]
+        "keywords": ["hello", "hi", "good morning", "please"]
       },
       {
         "id": "check-in",
         "description": "办理值机手续",
         "descriptionEn": "Check in for your flight",
-        "keywords": [
-          "ticket",
-          "passport",
-          "check in",
-          "flight"
-        ]
+        "keywords": ["ticket", "passport", "check in", "flight"]
       },
       {
         "id": "luggage-seat",
         "description": "询问行李和座位",
         "descriptionEn": "Ask about luggage and seat",
-        "keywords": [
-          "luggage",
-          "bag",
-          "seat",
-          "window",
-          "aisle"
-        ]
+        "keywords": ["luggage", "bag", "seat", "window", "aisle"]
       },
       {
         "id": "boarding",
         "description": "确认登机口和时间",
         "descriptionEn": "Confirm gate and time",
-        "keywords": [
-          "gate",
-          "time",
-          "boarding",
-          "thank"
-        ]
+        "keywords": ["gate", "time", "boarding", "thank"]
       }
     ],
     "acts": [
@@ -3075,29 +1928,17 @@
           {
             "name": "开场",
             "goal": "Greet and give your ticket.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "travel"
-            ]
+            "vocabThemes": ["greeting", "politeness", "travel"]
           },
           {
             "name": "主线",
             "goal": "Check in and ask for a window seat.",
-            "vocabThemes": [
-              "travel",
-              "number",
-              "preference"
-            ]
+            "vocabThemes": ["travel", "number", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the gate and say thank you.",
-            "vocabThemes": [
-              "time",
-              "place",
-              "politeness"
-            ]
+            "vocabThemes": ["time", "place", "politeness"]
           }
         ]
       },
@@ -3108,30 +1949,17 @@
           {
             "name": "开场",
             "goal": "Greet and hand over passport and ticket.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "travel"
-            ]
+            "vocabThemes": ["greeting", "politeness", "travel"]
           },
           {
             "name": "主线",
             "goal": "Handle the overweight luggage and choose a seat.",
-            "vocabThemes": [
-              "travel",
-              "money",
-              "decision",
-              "problem"
-            ]
+            "vocabThemes": ["travel", "money", "decision", "problem"]
           },
           {
             "name": "收尾",
             "goal": "Confirm boarding pass details and thank them.",
-            "vocabThemes": [
-              "time",
-              "place",
-              "politeness"
-            ]
+            "vocabThemes": ["time", "place", "politeness"]
           }
         ]
       },
@@ -3142,30 +1970,17 @@
           {
             "name": "开场",
             "goal": "Explain your connecting flight issue.",
-            "vocabThemes": [
-              "communication",
-              "travel",
-              "time"
-            ]
+            "vocabThemes": ["communication", "travel", "time"]
           },
           {
             "name": "主线",
             "goal": "Ask for route advice and a suitable seat.",
-            "vocabThemes": [
-              "travel",
-              "transport",
-              "decision",
-              "suggestion"
-            ]
+            "vocabThemes": ["travel", "transport", "decision", "suggestion"]
           },
           {
             "name": "收尾",
             "goal": "Confirm all details and express thanks.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "time", "politeness"]
           }
         ]
       },
@@ -3176,30 +1991,17 @@
           {
             "name": "开场",
             "goal": "State your booking and the downgrade issue.",
-            "vocabThemes": [
-              "complaint",
-              "politeness",
-              "travel"
-            ]
+            "vocabThemes": ["complaint", "politeness", "travel"]
           },
           {
             "name": "主线",
             "goal": "Negotiate compensation or an upgrade.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "payment"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "payment"]
           },
           {
             "name": "收尾",
             "goal": "Reach a resolution and confirm details.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["agreement", "politeness", "time"]
           }
         ]
       },
@@ -3210,29 +2012,17 @@
           {
             "name": "开场",
             "goal": "Greet and give your ticket.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "travel"
-            ]
+            "vocabThemes": ["greeting", "politeness", "travel"]
           },
           {
             "name": "主线",
             "goal": "Check in and ask for a window seat.",
-            "vocabThemes": [
-              "travel",
-              "number",
-              "preference"
-            ]
+            "vocabThemes": ["travel", "number", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the gate and say thank you.",
-            "vocabThemes": [
-              "time",
-              "place",
-              "politeness"
-            ]
+            "vocabThemes": ["time", "place", "politeness"]
           }
         ]
       },
@@ -3243,30 +2033,17 @@
           {
             "name": "开场",
             "goal": "State your booking and the downgrade issue.",
-            "vocabThemes": [
-              "complaint",
-              "politeness",
-              "travel"
-            ]
+            "vocabThemes": ["complaint", "politeness", "travel"]
           },
           {
             "name": "主线",
             "goal": "Negotiate compensation or an upgrade.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "decision",
-              "payment"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "decision", "payment"]
           },
           {
             "name": "收尾",
             "goal": "Reach a resolution and confirm details.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["agreement", "politeness", "time"]
           }
         ]
       }
@@ -3279,19 +2056,8 @@
     "description": "你正在参加一场技术岗位面试，需要解释项目经验、回答技术问题并展示解决问题的能力。",
     "icon": "💻",
     "level": 3,
-    "topics": [
-      "communication",
-      "evaluation",
-      "success"
-    ],
-    "targetWords": [
-      "experience",
-      "skill",
-      "problem",
-      "solution",
-      "team",
-      "achieve"
-    ],
+    "topics": ["communication", "evaluation", "success"],
+    "targetWords": ["experience", "skill", "problem", "solution", "team", "achieve"],
     "role": {
       "student": "求职者 (Candidate)",
       "teacher": "技术面试官 (Tech Lead)"
@@ -3302,34 +2068,19 @@
         "id": "introduce",
         "description": "自我介绍和技术背景",
         "descriptionEn": "Introduce yourself and your background",
-        "keywords": [
-          "name",
-          "experience",
-          "work",
-          "project"
-        ]
+        "keywords": ["name", "experience", "work", "project"]
       },
       {
         "id": "technical",
         "description": "回答技术问题",
         "descriptionEn": "Answer technical questions",
-        "keywords": [
-          "problem",
-          "solution",
-          "code",
-          "design"
-        ]
+        "keywords": ["problem", "solution", "code", "design"]
       },
       {
         "id": "behavioral",
         "description": "描述团队合作经历",
         "descriptionEn": "Describe teamwork experience",
-        "keywords": [
-          "team",
-          "conflict",
-          "cooperation",
-          "result"
-        ]
+        "keywords": ["team", "conflict", "cooperation", "result"]
       }
     ],
     "acts": [
@@ -3358,28 +2109,17 @@
           {
             "name": "开场",
             "goal": "Greet and say your name.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "work"
-            ]
+            "vocabThemes": ["greeting", "people", "work"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about your job.",
-            "vocabThemes": [
-              "work",
-              "basic",
-              "description"
-            ]
+            "vocabThemes": ["work", "basic", "description"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you and goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -3390,30 +2130,17 @@
           {
             "name": "开场",
             "goal": "Introduce yourself and your experience.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "education"
-            ]
+            "vocabThemes": ["communication", "work", "education"]
           },
           {
             "name": "主线",
             "goal": "Explain a project and address the missing skill.",
-            "vocabThemes": [
-              "work",
-              "skill",
-              "problem",
-              "learning"
-            ]
+            "vocabThemes": ["work", "skill", "problem", "learning"]
           },
           {
             "name": "收尾",
             "goal": "Ask about the team and close politely.",
-            "vocabThemes": [
-              "question",
-              "politeness",
-              "work"
-            ]
+            "vocabThemes": ["question", "politeness", "work"]
           }
         ]
       },
@@ -3424,30 +2151,17 @@
           {
             "name": "开场",
             "goal": "Briefly introduce your background.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "technology"
-            ]
+            "vocabThemes": ["communication", "work", "technology"]
           },
           {
             "name": "主线",
             "goal": "Discuss a failure and the lessons learned.",
-            "vocabThemes": [
-              "problem",
-              "experience",
-              "improvement",
-              "communication"
-            ]
+            "vocabThemes": ["problem", "experience", "improvement", "communication"]
           },
           {
             "name": "收尾",
             "goal": "Ask follow-up questions and thank them.",
-            "vocabThemes": [
-              "question",
-              "politeness",
-              "time"
-            ]
+            "vocabThemes": ["question", "politeness", "time"]
           }
         ]
       },
@@ -3458,30 +2172,17 @@
           {
             "name": "开场",
             "goal": "Summarize your senior experience.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "work", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Defend an architecture choice under pressure.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "comparison",
-              "decision"
-            ]
+            "vocabThemes": ["argument", "evidence", "comparison", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Ask strategic questions and close strongly.",
-            "vocabThemes": [
-              "question",
-              "persuasion",
-              "politeness"
-            ]
+            "vocabThemes": ["question", "persuasion", "politeness"]
           }
         ]
       },
@@ -3492,28 +2193,17 @@
           {
             "name": "开场",
             "goal": "Greet and say your name.",
-            "vocabThemes": [
-              "greeting",
-              "people",
-              "work"
-            ]
+            "vocabThemes": ["greeting", "people", "work"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about your job.",
-            "vocabThemes": [
-              "work",
-              "basic",
-              "description"
-            ]
+            "vocabThemes": ["work", "basic", "description"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you and goodbye.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -3524,30 +2214,17 @@
           {
             "name": "开场",
             "goal": "Summarize your senior experience.",
-            "vocabThemes": [
-              "communication",
-              "work",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "work", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Defend an architecture choice under pressure.",
-            "vocabThemes": [
-              "argument",
-              "evidence",
-              "comparison",
-              "decision"
-            ]
+            "vocabThemes": ["argument", "evidence", "comparison", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Ask strategic questions and close strongly.",
-            "vocabThemes": [
-              "question",
-              "persuasion",
-              "politeness"
-            ]
+            "vocabThemes": ["question", "persuasion", "politeness"]
           }
         ]
       }
@@ -3560,19 +2237,8 @@
     "description": "你要租一套公寓，需要和房东或中介讨论租金、设施和合同条款。",
     "icon": "🏠",
     "level": 2,
-    "topics": [
-      "housing",
-      "money",
-      "description"
-    ],
-    "targetWords": [
-      "rent",
-      "room",
-      "kitchen",
-      "bathroom",
-      "price",
-      "month"
-    ],
+    "topics": ["housing", "money", "description"],
+    "targetWords": ["rent", "room", "kitchen", "bathroom", "price", "month"],
     "role": {
       "student": "租客 (Tenant)",
       "teacher": "房东 (Landlord)"
@@ -3583,34 +2249,19 @@
         "id": "greet",
         "description": "打招呼并说明租房需求",
         "descriptionEn": "Greet and state your needs",
-        "keywords": [
-          "hello",
-          "look for",
-          "rent",
-          "apartment"
-        ]
+        "keywords": ["hello", "look for", "rent", "apartment"]
       },
       {
         "id": "inspect",
         "description": "询问设施和房间情况",
         "descriptionEn": "Ask about facilities and rooms",
-        "keywords": [
-          "room",
-          "kitchen",
-          "bathroom",
-          "furniture"
-        ]
+        "keywords": ["room", "kitchen", "bathroom", "furniture"]
       },
       {
         "id": "negotiate",
         "description": "讨论租金和合同",
         "descriptionEn": "Discuss rent and contract",
-        "keywords": [
-          "rent",
-          "price",
-          "month",
-          "contract"
-        ]
+        "keywords": ["rent", "price", "month", "contract"]
       }
     ],
     "acts": [
@@ -3639,28 +2290,17 @@
           {
             "name": "开场",
             "goal": "Greet and say you want to rent.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "housing"
-            ]
+            "vocabThemes": ["greeting", "politeness", "housing"]
           },
           {
             "name": "主线",
             "goal": "Ask about rooms and price.",
-            "vocabThemes": [
-              "housing",
-              "number",
-              "money"
-            ]
+            "vocabThemes": ["housing", "number", "money"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -3671,30 +2311,17 @@
           {
             "name": "开场",
             "goal": "Greet and explain your needs.",
-            "vocabThemes": [
-              "greeting",
-              "housing",
-              "work"
-            ]
+            "vocabThemes": ["greeting", "housing", "work"]
           },
           {
             "name": "主线",
             "goal": "Ask about noise, furniture, and price.",
-            "vocabThemes": [
-              "housing",
-              "description",
-              "money",
-              "preference"
-            ]
+            "vocabThemes": ["housing", "description", "money", "preference"]
           },
           {
             "name": "收尾",
             "goal": "Decide and discuss the contract.",
-            "vocabThemes": [
-              "decision",
-              "time",
-              "politeness"
-            ]
+            "vocabThemes": ["decision", "time", "politeness"]
           }
         ]
       },
@@ -3705,30 +2332,17 @@
           {
             "name": "开场",
             "goal": "Introduce yourself and ask about the shared areas.",
-            "vocabThemes": [
-              "communication",
-              "housing",
-              "social"
-            ]
+            "vocabThemes": ["communication", "housing", "social"]
           },
           {
             "name": "主线",
             "goal": "Discuss the pet issue and house rules.",
-            "vocabThemes": [
-              "housing",
-              "problem",
-              "health",
-              "negotiation"
-            ]
+            "vocabThemes": ["housing", "problem", "health", "negotiation"]
           },
           {
             "name": "收尾",
             "goal": "Negotiate rent or decide to look elsewhere.",
-            "vocabThemes": [
-              "decision",
-              "money",
-              "politeness"
-            ]
+            "vocabThemes": ["decision", "money", "politeness"]
           }
         ]
       },
@@ -3739,30 +2353,17 @@
           {
             "name": "开场",
             "goal": "Express interest but mention concerns.",
-            "vocabThemes": [
-              "communication",
-              "housing",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "housing", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Negotiate repairs and rent adjustments.",
-            "vocabThemes": [
-              "negotiation",
-              "problem",
-              "money",
-              "persuasion"
-            ]
+            "vocabThemes": ["negotiation", "problem", "money", "persuasion"]
           },
           {
             "name": "收尾",
             "goal": "Reach an agreement or walk away politely.",
-            "vocabThemes": [
-              "agreement",
-              "decision",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "decision", "politeness"]
           }
         ]
       },
@@ -3773,28 +2374,17 @@
           {
             "name": "开场",
             "goal": "Greet and say you want to rent.",
-            "vocabThemes": [
-              "greeting",
-              "politeness",
-              "housing"
-            ]
+            "vocabThemes": ["greeting", "politeness", "housing"]
           },
           {
             "name": "主线",
             "goal": "Ask about rooms and price.",
-            "vocabThemes": [
-              "housing",
-              "number",
-              "money"
-            ]
+            "vocabThemes": ["housing", "number", "money"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -3805,30 +2395,17 @@
           {
             "name": "开场",
             "goal": "Express interest but mention concerns.",
-            "vocabThemes": [
-              "communication",
-              "housing",
-              "evaluation"
-            ]
+            "vocabThemes": ["communication", "housing", "evaluation"]
           },
           {
             "name": "主线",
             "goal": "Negotiate repairs and rent adjustments.",
-            "vocabThemes": [
-              "negotiation",
-              "problem",
-              "money",
-              "persuasion"
-            ]
+            "vocabThemes": ["negotiation", "problem", "money", "persuasion"]
           },
           {
             "name": "收尾",
             "goal": "Reach an agreement or walk away politely.",
-            "vocabThemes": [
-              "agreement",
-              "decision",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "decision", "politeness"]
           }
         ]
       }
@@ -3841,19 +2418,8 @@
     "description": "你用天气话题开启一段自然闲聊，适合练习寒暄和表达观点。",
     "icon": "🌤️",
     "level": 1,
-    "topics": [
-      "weather",
-      "social",
-      "opinion"
-    ],
-    "targetWords": [
-      "weather",
-      "sunny",
-      "rain",
-      "cold",
-      "hot",
-      "like"
-    ],
+    "topics": ["weather", "social", "opinion"],
+    "targetWords": ["weather", "sunny", "rain", "cold", "hot", "like"],
     "role": {
       "student": "同事 (Colleague)",
       "teacher": "同事 (Colleague)"
@@ -3864,33 +2430,19 @@
         "id": "greet",
         "description": "用天气话题打招呼",
         "descriptionEn": "Greet using weather",
-        "keywords": [
-          "hello",
-          "morning",
-          "weather",
-          "nice"
-        ]
+        "keywords": ["hello", "morning", "weather", "nice"]
       },
       {
         "id": "chat",
         "description": "闲聊天气和计划",
         "descriptionEn": "Chat about weather and plans",
-        "keywords": [
-          "weekend",
-          "plan",
-          "rain",
-          "sunny"
-        ]
+        "keywords": ["weekend", "plan", "rain", "sunny"]
       },
       {
         "id": "close",
         "description": "自然结束对话",
         "descriptionEn": "Close naturally",
-        "keywords": [
-          "see you",
-          "have a good day",
-          "bye"
-        ]
+        "keywords": ["see you", "have a good day", "bye"]
       }
     ],
     "acts": [
@@ -3919,28 +2471,17 @@
           {
             "name": "开场",
             "goal": "Say hello and comment on the weather.",
-            "vocabThemes": [
-              "greeting",
-              "weather",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "weather", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask a simple question about plans.",
-            "vocabThemes": [
-              "weather",
-              "time",
-              "social"
-            ]
+            "vocabThemes": ["weather", "time", "social"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -3951,29 +2492,17 @@
           {
             "name": "开场",
             "goal": "Comment on the weather to break the ice.",
-            "vocabThemes": [
-              "weather",
-              "greeting",
-              "social"
-            ]
+            "vocabThemes": ["weather", "greeting", "social"]
           },
           {
             "name": "主线",
             "goal": "Talk about weekend plans related to the weather.",
-            "vocabThemes": [
-              "social",
-              "time",
-              "preference",
-              "weather"
-            ]
+            "vocabThemes": ["social", "time", "preference", "weather"]
           },
           {
             "name": "收尾",
             "goal": "End the chat before the elevator arrives.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -3984,30 +2513,17 @@
           {
             "name": "开场",
             "goal": "Use weather as a polite opener.",
-            "vocabThemes": [
-              "weather",
-              "politeness",
-              "culture"
-            ]
+            "vocabThemes": ["weather", "politeness", "culture"]
           },
           {
             "name": "主线",
             "goal": "Navigate the cultural difference gracefully.",
-            "vocabThemes": [
-              "culture",
-              "communication",
-              "social",
-              "comparison"
-            ]
+            "vocabThemes": ["culture", "communication", "social", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Transition smoothly to business.",
-            "vocabThemes": [
-              "communication",
-              "politeness",
-              "work"
-            ]
+            "vocabThemes": ["communication", "politeness", "work"]
           }
         ]
       },
@@ -4018,30 +2534,17 @@
           {
             "name": "开场",
             "goal": "Open with an observation, not just the weather.",
-            "vocabThemes": [
-              "social",
-              "observation",
-              "politeness"
-            ]
+            "vocabThemes": ["social", "observation", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Connect weather to travel, hobbies, or work.",
-            "vocabThemes": [
-              "persuasion",
-              "social",
-              "comparison",
-              "culture"
-            ]
+            "vocabThemes": ["persuasion", "social", "comparison", "culture"]
           },
           {
             "name": "收尾",
             "goal": "Leave a positive impression and exchange contacts.",
-            "vocabThemes": [
-              "social",
-              "politeness",
-              "suggestion"
-            ]
+            "vocabThemes": ["social", "politeness", "suggestion"]
           }
         ]
       },
@@ -4052,28 +2555,17 @@
           {
             "name": "开场",
             "goal": "Say hello and comment on the weather.",
-            "vocabThemes": [
-              "greeting",
-              "weather",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "weather", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Ask a simple question about plans.",
-            "vocabThemes": [
-              "weather",
-              "time",
-              "social"
-            ]
+            "vocabThemes": ["weather", "time", "social"]
           },
           {
             "name": "收尾",
             "goal": "Say goodbye.",
-            "vocabThemes": [
-              "greeting",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "politeness"]
           }
         ]
       },
@@ -4084,30 +2576,17 @@
           {
             "name": "开场",
             "goal": "Open with an observation, not just the weather.",
-            "vocabThemes": [
-              "social",
-              "observation",
-              "politeness"
-            ]
+            "vocabThemes": ["social", "observation", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Connect weather to travel, hobbies, or work.",
-            "vocabThemes": [
-              "persuasion",
-              "social",
-              "comparison",
-              "culture"
-            ]
+            "vocabThemes": ["persuasion", "social", "comparison", "culture"]
           },
           {
             "name": "收尾",
             "goal": "Leave a positive impression and exchange contacts.",
-            "vocabThemes": [
-              "social",
-              "politeness",
-              "suggestion"
-            ]
+            "vocabThemes": ["social", "politeness", "suggestion"]
           }
         ]
       }
@@ -4120,19 +2599,8 @@
     "description": "你收到的网购商品有问题，需要和客服沟通退货或换货。",
     "icon": "📦",
     "level": 2,
-    "topics": [
-      "shopping",
-      "complaint",
-      "money"
-    ],
-    "targetWords": [
-      "order",
-      "return",
-      "exchange",
-      "refund",
-      "broken",
-      "wrong"
-    ],
+    "topics": ["shopping", "complaint", "money"],
+    "targetWords": ["order", "return", "exchange", "refund", "broken", "wrong"],
     "role": {
       "student": "顾客 (Customer)",
       "teacher": "客服 (Customer Service)"
@@ -4143,34 +2611,19 @@
         "id": "greet",
         "description": "说明订单和商品问题",
         "descriptionEn": "State order and product issue",
-        "keywords": [
-          "order",
-          "problem",
-          "broken",
-          "wrong"
-        ]
+        "keywords": ["order", "problem", "broken", "wrong"]
       },
       {
         "id": "request",
         "description": "请求退货或换货",
         "descriptionEn": "Request return or exchange",
-        "keywords": [
-          "return",
-          "exchange",
-          "refund",
-          "please"
-        ]
+        "keywords": ["return", "exchange", "refund", "please"]
       },
       {
         "id": "confirm",
         "description": "确认退货流程",
         "descriptionEn": "Confirm return process",
-        "keywords": [
-          "address",
-          "shipping",
-          "money",
-          "time"
-        ]
+        "keywords": ["address", "shipping", "money", "time"]
       }
     ],
     "acts": [
@@ -4199,28 +2652,17 @@
           {
             "name": "开场",
             "goal": "Say hello and show the order.",
-            "vocabThemes": [
-              "greeting",
-              "shopping",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "shopping", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Say the item is wrong and ask for exchange.",
-            "vocabThemes": [
-              "shopping",
-              "problem",
-              "request"
-            ]
+            "vocabThemes": ["shopping", "problem", "request"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the exchange.",
-            "vocabThemes": [
-              "agreement",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "politeness"]
           }
         ]
       },
@@ -4231,30 +2673,17 @@
           {
             "name": "开场",
             "goal": "Explain the broken item and provide order details.",
-            "vocabThemes": [
-              "shopping",
-              "problem",
-              "description"
-            ]
+            "vocabThemes": ["shopping", "problem", "description"]
           },
           {
             "name": "主线",
             "goal": "Ask for a refund and clarify the photo requirement.",
-            "vocabThemes": [
-              "shopping",
-              "money",
-              "question",
-              "problem"
-            ]
+            "vocabThemes": ["shopping", "money", "question", "problem"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the refund process.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "time", "politeness"]
           }
         ]
       },
@@ -4265,30 +2694,17 @@
           {
             "name": "开场",
             "goal": "State the defect and the return policy issue.",
-            "vocabThemes": [
-              "shopping",
-              "problem",
-              "communication"
-            ]
+            "vocabThemes": ["shopping", "problem", "communication"]
           },
           {
             "name": "主线",
             "goal": "Persuade the agent to make an exception.",
-            "vocabThemes": [
-              "persuasion",
-              "negotiation",
-              "problem",
-              "decision"
-            ]
+            "vocabThemes": ["persuasion", "negotiation", "problem", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Reach a solution or escalate politely.",
-            "vocabThemes": [
-              "agreement",
-              "politeness",
-              "communication"
-            ]
+            "vocabThemes": ["agreement", "politeness", "communication"]
           }
         ]
       },
@@ -4299,30 +2715,17 @@
           {
             "name": "开场",
             "goal": "Explain the situation without a receipt.",
-            "vocabThemes": [
-              "communication",
-              "shopping",
-              "problem"
-            ]
+            "vocabThemes": ["communication", "shopping", "problem"]
           },
           {
             "name": "主线",
             "goal": "Negotiate store credit or an exchange.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "money",
-              "decision"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "money", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the resolution and leave feedback.",
-            "vocabThemes": [
-              "agreement",
-              "evaluation",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "evaluation", "politeness"]
           }
         ]
       },
@@ -4333,28 +2736,17 @@
           {
             "name": "开场",
             "goal": "Say hello and show the order.",
-            "vocabThemes": [
-              "greeting",
-              "shopping",
-              "politeness"
-            ]
+            "vocabThemes": ["greeting", "shopping", "politeness"]
           },
           {
             "name": "主线",
             "goal": "Say the item is wrong and ask for exchange.",
-            "vocabThemes": [
-              "shopping",
-              "problem",
-              "request"
-            ]
+            "vocabThemes": ["shopping", "problem", "request"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the exchange.",
-            "vocabThemes": [
-              "agreement",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "politeness"]
           }
         ]
       },
@@ -4365,30 +2757,17 @@
           {
             "name": "开场",
             "goal": "Explain the situation without a receipt.",
-            "vocabThemes": [
-              "communication",
-              "shopping",
-              "problem"
-            ]
+            "vocabThemes": ["communication", "shopping", "problem"]
           },
           {
             "name": "主线",
             "goal": "Negotiate store credit or an exchange.",
-            "vocabThemes": [
-              "negotiation",
-              "persuasion",
-              "money",
-              "decision"
-            ]
+            "vocabThemes": ["negotiation", "persuasion", "money", "decision"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the resolution and leave feedback.",
-            "vocabThemes": [
-              "agreement",
-              "evaluation",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "evaluation", "politeness"]
           }
         ]
       }
@@ -4401,19 +2780,8 @@
     "description": "你复诊时需要向医生反馈恢复情况，讨论是否需要调整治疗方案。",
     "icon": "🏥",
     "level": 3,
-    "topics": [
-      "health",
-      "description",
-      "advice"
-    ],
-    "targetWords": [
-      "feel",
-      "better",
-      "pain",
-      "medicine",
-      "side effect",
-      "appointment"
-    ],
+    "topics": ["health", "description", "advice"],
+    "targetWords": ["feel", "better", "pain", "medicine", "side effect", "appointment"],
     "role": {
       "student": "病人 (Patient)",
       "teacher": "医生 (Doctor)"
@@ -4424,34 +2792,19 @@
         "id": "greet",
         "description": "说明复诊原因",
         "descriptionEn": "State reason for follow-up",
-        "keywords": [
-          "appointment",
-          "feel",
-          "better",
-          "worse"
-        ]
+        "keywords": ["appointment", "feel", "better", "worse"]
       },
       {
         "id": "feedback",
         "description": "反馈用药效果和副作用",
         "descriptionEn": "Report medication effects",
-        "keywords": [
-          "medicine",
-          "side effect",
-          "pain",
-          "sleep"
-        ]
+        "keywords": ["medicine", "side effect", "pain", "sleep"]
       },
       {
         "id": "plan",
         "description": "确认下一步治疗计划",
         "descriptionEn": "Confirm next treatment plan",
-        "keywords": [
-          "continue",
-          "change",
-          "dose",
-          "next"
-        ]
+        "keywords": ["continue", "change", "dose", "next"]
       }
     ],
     "acts": [
@@ -4480,28 +2833,17 @@
           {
             "name": "开场",
             "goal": "Greet and say you feel better.",
-            "vocabThemes": [
-              "greeting",
-              "health",
-              "emotion"
-            ]
+            "vocabThemes": ["greeting", "health", "emotion"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about medicine.",
-            "vocabThemes": [
-              "health",
-              "medicine",
-              "basic"
-            ]
+            "vocabThemes": ["health", "medicine", "basic"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -4512,30 +2854,17 @@
           {
             "name": "开场",
             "goal": "Describe your recovery so far.",
-            "vocabThemes": [
-              "health",
-              "description",
-              "time"
-            ]
+            "vocabThemes": ["health", "description", "time"]
           },
           {
             "name": "主线",
             "goal": "Explain side effects and ask for advice.",
-            "vocabThemes": [
-              "health",
-              "medicine",
-              "problem",
-              "question"
-            ]
+            "vocabThemes": ["health", "medicine", "problem", "question"]
           },
           {
             "name": "收尾",
             "goal": "Confirm the new dosage.",
-            "vocabThemes": [
-              "agreement",
-              "health",
-              "politeness"
-            ]
+            "vocabThemes": ["agreement", "health", "politeness"]
           }
         ]
       },
@@ -4546,30 +2875,17 @@
           {
             "name": "开场",
             "goal": "Summarize your recovery concerns.",
-            "vocabThemes": [
-              "health",
-              "emotion",
-              "communication"
-            ]
+            "vocabThemes": ["health", "emotion", "communication"]
           },
           {
             "name": "主线",
             "goal": "Discuss whether more tests are needed.",
-            "vocabThemes": [
-              "health",
-              "decision",
-              "risk",
-              "comparison"
-            ]
+            "vocabThemes": ["health", "decision", "risk", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Agree on a monitoring plan.",
-            "vocabThemes": [
-              "agreement",
-              "time",
-              "health"
-            ]
+            "vocabThemes": ["agreement", "time", "health"]
           }
         ]
       },
@@ -4580,30 +2896,17 @@
           {
             "name": "开场",
             "goal": "Present your symptoms and test history clearly.",
-            "vocabThemes": [
-              "health",
-              "description",
-              "communication"
-            ]
+            "vocabThemes": ["health", "description", "communication"]
           },
           {
             "name": "主线",
             "goal": "Question the treatment options and risks.",
-            "vocabThemes": [
-              "question",
-              "risk",
-              "decision",
-              "comparison"
-            ]
+            "vocabThemes": ["question", "risk", "decision", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Choose a course of action and schedule the next visit.",
-            "vocabThemes": [
-              "decision",
-              "agreement",
-              "time"
-            ]
+            "vocabThemes": ["decision", "agreement", "time"]
           }
         ]
       },
@@ -4614,28 +2917,17 @@
           {
             "name": "开场",
             "goal": "Greet and say you feel better.",
-            "vocabThemes": [
-              "greeting",
-              "health",
-              "emotion"
-            ]
+            "vocabThemes": ["greeting", "health", "emotion"]
           },
           {
             "name": "主线",
             "goal": "Answer simple questions about medicine.",
-            "vocabThemes": [
-              "health",
-              "medicine",
-              "basic"
-            ]
+            "vocabThemes": ["health", "medicine", "basic"]
           },
           {
             "name": "收尾",
             "goal": "Say thank you.",
-            "vocabThemes": [
-              "politeness",
-              "greeting"
-            ]
+            "vocabThemes": ["politeness", "greeting"]
           }
         ]
       },
@@ -4646,30 +2938,17 @@
           {
             "name": "开场",
             "goal": "Present your symptoms and test history clearly.",
-            "vocabThemes": [
-              "health",
-              "description",
-              "communication"
-            ]
+            "vocabThemes": ["health", "description", "communication"]
           },
           {
             "name": "主线",
             "goal": "Question the treatment options and risks.",
-            "vocabThemes": [
-              "question",
-              "risk",
-              "decision",
-              "comparison"
-            ]
+            "vocabThemes": ["question", "risk", "decision", "comparison"]
           },
           {
             "name": "收尾",
             "goal": "Choose a course of action and schedule the next visit.",
-            "vocabThemes": [
-              "decision",
-              "agreement",
-              "time"
-            ]
+            "vocabThemes": ["decision", "agreement", "time"]
           }
         ]
       }

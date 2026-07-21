@@ -40,7 +40,7 @@ const ESCAPE_MAP: Record<string, string> = {
   f: '\f',
   '"': '"',
   '\\': '\\',
-  '/': '/',
+  '/': '/'
 }
 
 function isWs(ch: string): boolean {

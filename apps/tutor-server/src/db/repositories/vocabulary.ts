@@ -46,16 +46,18 @@ export const vocabRepo = {
     const now = Math.floor(Date.now() / 1000)
     const nextReview = now + 600 // 新单词延迟 10 分钟
 
-    const existing = db.prepare(
-      `SELECT ${C.id.name} FROM ${UserVocabularyTable.name}
-       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
-    ).get(userId, word.toLowerCase()) as { id: number } | undefined
+    const existing = db
+      .prepare(
+        `SELECT ${C.id.name} FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`
+      )
+      .get(userId, word.toLowerCase()) as { id: number } | undefined
 
     if (existing) {
       db.prepare(
         `UPDATE ${UserVocabularyTable.name}
          SET ${C.status.name} = ?, ${C.level.name} = ?, ${C.updated_at.name} = ?
-         WHERE ${C.id.name} = ?`,
+         WHERE ${C.id.name} = ?`
       ).run(status, level, now, existing.id)
     } else {
       db.prepare(
@@ -64,7 +66,7 @@ export const vocabRepo = {
           ${C.review_count.name}, ${C.correct_count.name}, ${C.incorrect_count.name},
           ${C.consecutive_incorrect.name}, ${C.context_count.name}, ${C.contexts.name},
           ${C.last_review_at.name}, ${C.next_review_at.name}, ${C.created_at.name})
-         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, '[]', NULL, ?, ?)`,
+         VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, '[]', NULL, ?, ?)`
       ).run(userId, word.toLowerCase(), level, status, nextReview, now)
     }
   },
@@ -88,12 +90,14 @@ export const vocabRepo = {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
 
-    const row = db.prepare(
-      `SELECT ${C.correct_count.name}, ${C.incorrect_count.name},
+    const row = db
+      .prepare(
+        `SELECT ${C.correct_count.name}, ${C.incorrect_count.name},
               ${C.consecutive_incorrect.name}, ${C.context_count.name}
        FROM ${UserVocabularyTable.name}
-       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
-    ).get(userId, word.toLowerCase()) as Record<string, number> | undefined
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`
+      )
+      .get(userId, word.toLowerCase()) as Record<string, number> | undefined
 
     if (!row) return
 
@@ -121,8 +125,17 @@ export const vocabRepo = {
            ${C.status.name} = ?,
            ${C.last_review_at.name} = ?,
            ${C.next_review_at.name} = ?
-       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
-    ).run(newCorrectCount, newIncorrectCount, newConsecutiveIncorrect, status, now, nextReview, userId, word.toLowerCase())
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`
+    ).run(
+      newCorrectCount,
+      newIncorrectCount,
+      newConsecutiveIncorrect,
+      status,
+      now,
+      nextReview,
+      userId,
+      word.toLowerCase()
+    )
   },
 
   /**
@@ -131,24 +144,26 @@ export const vocabRepo = {
    */
   getDueForReview(
     userId: string,
-    limit: number = 10,
+    limit: number = 10
   ): Array<{ word: string; level: string; status: WordStatus; contextCount: number }> {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
-    const rows = db.prepare(
-      `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}
+    const rows = db
+      .prepare(
+        `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}
        FROM ${UserVocabularyTable.name}
        WHERE ${C.user_id.name} = ? AND ${C.status.name} != 'mastered'
          AND (${C.next_review_at.name} IS NULL OR ${C.next_review_at.name} <= ?)
        ORDER BY ${C.next_review_at.name} ASC
-       LIMIT ?`,
-    ).all(userId, now, limit) as Record<string, unknown>[]
+       LIMIT ?`
+      )
+      .all(userId, now, limit) as Record<string, unknown>[]
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       word: String(r.word),
       level: String(r.level),
       status: String(r.status) as WordStatus,
-      contextCount: Number(r.context_count),
+      contextCount: Number(r.context_count)
     }))
   },
 
@@ -160,17 +175,19 @@ export const vocabRepo = {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
 
-    const row = db.prepare(
-      `SELECT ${C.contexts.name} FROM ${UserVocabularyTable.name}
-       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
-    ).get(userId, word.toLowerCase()) as { contexts: string } | undefined
+    const row = db
+      .prepare(
+        `SELECT ${C.contexts.name} FROM ${UserVocabularyTable.name}
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`
+      )
+      .get(userId, word.toLowerCase()) as { contexts: string } | undefined
 
     if (!row) return false
 
     const contexts: string[] = parseJsonColumn(row.contexts) ?? []
 
     const normalizedDesc = contextDesc.toLowerCase().trim()
-    if (contexts.some((c) => c.toLowerCase().trim() === normalizedDesc)) {
+    if (contexts.some(c => c.toLowerCase().trim() === normalizedDesc)) {
       return false
     }
 
@@ -178,7 +195,7 @@ export const vocabRepo = {
     db.prepare(
       `UPDATE ${UserVocabularyTable.name}
        SET ${C.context_count.name} = ?, ${C.contexts.name} = ?, ${C.updated_at.name} = ?
-       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`,
+       WHERE ${C.user_id.name} = ? AND ${C.word.name} = ?`
     ).run(contexts.length, stringifyJsonColumn(contexts), now, userId, word.toLowerCase())
 
     return true
@@ -191,15 +208,17 @@ export const vocabRepo = {
     const db = getDb()
     const now = Math.floor(Date.now() / 1000)
 
-    const result = db.prepare(
-      `SELECT
+    const result = db
+      .prepare(
+        `SELECT
         COUNT(*) as total,
         SUM(CASE WHEN ${C.status.name} = 'mastered' THEN 1 ELSE 0 END) as mastered,
         SUM(CASE WHEN ${C.status.name} = 'learning' THEN 1 ELSE 0 END) as learning,
         SUM(CASE WHEN ${C.status.name} = 'forgotten' THEN 1 ELSE 0 END) as forgotten,
         SUM(CASE WHEN ${C.status.name} != 'mastered' AND (${C.next_review_at.name} IS NULL OR ${C.next_review_at.name} <= ?) THEN 1 ELSE 0 END) as due_for_review
-       FROM ${UserVocabularyTable.name} WHERE ${C.user_id.name} = ?`,
-    ).get(now, userId) as Record<string, number | null>
+       FROM ${UserVocabularyTable.name} WHERE ${C.user_id.name} = ?`
+      )
+      .get(now, userId) as Record<string, number | null>
 
     const total = Number(result.total) || 0
     const mastered = Number(result.mastered) || 0
@@ -210,29 +229,37 @@ export const vocabRepo = {
       learning: Number(result.learning) || 0,
       forgotten: Number(result.forgotten) || 0,
       dueForReview: Number(result.due_for_review) || 0,
-      masteryRate: total > 0 ? Math.round((mastered / total) * 100) : 0,
+      masteryRate: total > 0 ? Math.round((mastered / total) * 100) : 0
     }
   },
 
   /**
    * 获取用户的所有单词。
    */
-  getAllWords(userId: string): Array<{ word: string; level: string; status: WordStatus; contextCount: number; contexts: string[] }> {
+  getAllWords(userId: string): Array<{
+    word: string
+    level: string
+    status: WordStatus
+    contextCount: number
+    contexts: string[]
+  }> {
     const db = getDb()
-    const rows = db.prepare(
-      `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}, ${C.contexts.name}
+    const rows = db
+      .prepare(
+        `SELECT ${C.word.name}, ${C.level.name}, ${C.status.name}, ${C.context_count.name}, ${C.contexts.name}
        FROM ${UserVocabularyTable.name}
-       WHERE ${C.user_id.name} = ?`,
-    ).all(userId) as Record<string, unknown>[]
+       WHERE ${C.user_id.name} = ?`
+      )
+      .all(userId) as Record<string, unknown>[]
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       word: String(r.word),
       level: String(r.level),
       status: String(r.status) as WordStatus,
       contextCount: Number(r.context_count),
-      contexts: parseJsonColumn<string[]>(String(r.contexts)) ?? [],
+      contexts: parseJsonColumn<string[]>(String(r.contexts)) ?? []
     }))
-  },
+  }
 }
 
 /**

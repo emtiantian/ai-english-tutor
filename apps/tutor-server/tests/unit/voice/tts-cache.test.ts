@@ -71,7 +71,7 @@ describe('tts-cache buildCacheKey', () => {
       format: 'wav',
       speed: 0.9,
       voiceDesign: '成熟御姐',
-      mode: 'preset',
+      mode: 'preset'
     }
     const key1 = buildCacheKey('Hello, how are you today?', fullOpts)
     const key2 = buildCacheKey('Hello, how are you today?', { ...fullOpts })
@@ -85,7 +85,7 @@ describe('tts-cache buildCacheKey', () => {
       format: 'wav',
       speed: 0.9,
       voiceDesign: '成熟御姐',
-      mode: 'preset',
+      mode: 'preset'
     }
     const key1 = buildCacheKey('Hello, how are you today?', fullOpts)
     const keyTextB = buildCacheKey('Good morning!', fullOpts)

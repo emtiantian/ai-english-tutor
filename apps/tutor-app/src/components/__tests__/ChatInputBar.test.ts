@@ -7,7 +7,7 @@ describe('ChatInputBar', () => {
   const DEFAULT_PROPS = {
     isRecording: false,
     isEncoding: false,
-    recordingDuration: 0,
+    recordingDuration: 0
   }
 
   const mountComponent = (props?: Record<string, unknown>) =>
@@ -15,8 +15,8 @@ describe('ChatInputBar', () => {
       attachTo: document.body,
       props: {
         ...DEFAULT_PROPS,
-        ...props,
-      },
+        ...props
+      }
     })
 
   beforeEach(() => {
@@ -221,13 +221,13 @@ describe('ChatInputBar', () => {
       icon: '🍽️',
       targetWords: ['coffee', 'tea', 'please'],
       targetWordsTotal: 3,
-      wordsLearned: [],
+      wordsLearned: []
     }
 
     it('显示传入的 suggestedPhrase', () => {
       const wrapper = mountComponent({
         scenario: SCENARIO,
-        suggestedPhrase: 'Hi, could I have a coffee please?',
+        suggestedPhrase: 'Hi, could I have a coffee please?'
       })
 
       const hint = wrapper.find('.suggested-phrase')
@@ -253,8 +253,8 @@ describe('ChatInputBar', () => {
         level: 'A2',
         turnsCount: 8,
         maxTurns: 20,
-        coverageRate: 0.2,
-      },
+        coverageRate: 0.2
+      }
     })
 
     expect(wrapper.findComponent({ name: 'ScenarioStatusStrip' }).exists()).toBe(true)
@@ -272,8 +272,8 @@ describe('ChatInputBar', () => {
         level: 'A2',
         turnsCount: 8,
         maxTurns: 20,
-        coverageRate: 0.2,
-      },
+        coverageRate: 0.2
+      }
     })
 
     const strip = wrapper.findComponent({ name: 'ScenarioStatusStrip' })
@@ -295,8 +295,8 @@ describe('ChatInputBar', () => {
         level: 'A2',
         turnsCount: 8,
         maxTurns: 20,
-        coverageRate: 0.2,
-      },
+        coverageRate: 0.2
+      }
     })
 
     const strip = wrapper.findComponent({ name: 'ScenarioStatusStrip' })

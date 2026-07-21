@@ -1,12 +1,9 @@
 <template>
-  <div
-    ref="containerEl"
-    class="chat-messages-container"
-  >
+  <div ref="containerEl" class="chat-messages-container">
     <div
       v-for="msg in messages"
-      :key="msg.id"
       v-show="msg.visible !== false"
+      :key="msg.id"
       class="bubble-base animate-message-in"
       :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'"
     >
@@ -26,21 +23,27 @@
           class="replay-btn"
           :class="{ 'replay-btn--playing': isPlaying }"
           :disabled="isPlaying"
-          @click="$emit('replay', msg.id)"
           title="重听英文"
+          @click="$emit('replay', msg.id)"
         >
-          <svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          <svg
+            class="replay-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M11 5L6 9H2v6h4l5 4V5z" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
           </svg>
         </button>
         <button
           v-if="msg.textZh"
           class="replay-btn replay-btn--zh"
           :class="{ 'replay-btn--zh-active': expandedZh.has(msg.id) }"
-          @click="toggleZh(msg.id)"
           :title="expandedZh.has(msg.id) ? '隐藏中文' : '显示中文翻译'"
+          @click="toggleZh(msg.id)"
         >
           <span class="zh-text">中</span>
         </button>
@@ -48,34 +51,40 @@
       <!-- 生词标签 -->
       <div v-if="msg.vocabulary?.length" class="vocab-tags">
         <span class="vocab-label">
-          <svg class="vocab-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
+          <svg
+            class="vocab-label-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
           </svg>
           生词
         </span>
-        <span
-          v-for="(word, idx) in msg.vocabulary"
-          :key="word"
-          class="vocab-item"
-        >
-          <button
-            class="vocab-tag"
-            @click="$emit('speak-word', word)"
-            title="点击朗读"
-          >
-            <svg class="vocab-speak-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <span v-for="(word, idx) in msg.vocabulary" :key="word" class="vocab-item">
+          <button class="vocab-tag" title="点击朗读" @click="$emit('speak-word', word)">
+            <svg
+              class="vocab-speak-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M11 5L6 9H2v6h4l5 4V5z" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
             </svg>
             {{ word }}
           </button>
           <button
             class="vocab-detail-btn"
-            @click="$emit('word-detail', { word, sentence: msg.vocabularySentences?.[idx] })"
             title="查看详细说明"
-          >详细</button>
+            @click="$emit('word-detail', { word, sentence: msg.vocabularySentences?.[idx] })"
+          >
+            详细
+          </button>
         </span>
       </div>
     </div>
@@ -119,7 +128,7 @@ watch(
     if (containerEl.value) {
       containerEl.value.scrollTop = containerEl.value.scrollHeight
     }
-  },
+  }
 )
 </script>
 
@@ -146,7 +155,9 @@ watch(
   padding-bottom: 240px;
   box-sizing: border-box;
 }
-.chat-messages-container::-webkit-scrollbar { display: none; }
+.chat-messages-container::-webkit-scrollbar {
+  display: none;
+}
 
 /* 气泡基础样式 */
 .bubble-base {
@@ -269,7 +280,6 @@ watch(
   line-height: 1;
 }
 
-
 .replay-icon {
   width: 16px;
   height: 16px;
@@ -352,5 +362,4 @@ watch(
   background: rgba(255, 255, 255, 0.18);
   color: white;
 }
-
 </style>

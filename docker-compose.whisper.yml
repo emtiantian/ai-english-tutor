@@ -15,16 +15,16 @@ services:
     image: ghcr.io/ggerganov/whisper.cpp:main
     # 镜像默认 entrypoint 是 `bash -c`，必须显式指定二进制绝对路径，否则
     # 启动会变成 `bash -c "-m /models/..."`，shell 会把 -m 当成命令参数解析失败。
-    entrypoint: ["/app/build/bin/whisper-server"]
+    entrypoint: ['/app/build/bin/whisper-server']
     volumes:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/whisper-models:/models
     command:
-      - "-m"
-      - "/models/${WHISPER_MODEL:-ggml-base.en.bin}"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
+      - '-m'
+      - '/models/${WHISPER_MODEL:-ggml-base.en.bin}'
+      - '--host'
+      - '0.0.0.0'
+      - '--port'
+      - '8080'
     networks:
       - tutor-net
     restart: unless-stopped

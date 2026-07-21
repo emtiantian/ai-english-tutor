@@ -6,12 +6,10 @@ import type { ColumnDef, IndexDef, TableSchema } from './types.js'
 
 export function buildCreateTableSql(table: TableSchema): string {
   const columnDefs = Object.entries(table.columns).map(([name, column]) =>
-    buildColumnDefSql(name, column),
+    buildColumnDefSql(name, column)
   )
 
-  const uniqueDefs = (table.uniques ?? []).map(
-    (columns) => `UNIQUE(${columns.join(', ')})`,
-  )
+  const uniqueDefs = (table.uniques ?? []).map(columns => `UNIQUE(${columns.join(', ')})`)
 
   const body = [...columnDefs, ...uniqueDefs].join(',\n  ')
 
@@ -57,7 +55,7 @@ export function toCamelCase(snake: string): string {
 }
 
 export function toSnakeCase(camel: string): string {
-  return camel.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  return camel.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
 }
 
 /**
@@ -97,9 +95,9 @@ export function unixepochToDate(ts: number | null | undefined): Date | null {
 
 export function findTableByName(
   tables: readonly TableSchema[],
-  name: string,
+  name: string
 ): TableSchema | undefined {
-  return tables.find((t) => t.name === name)
+  return tables.find(t => t.name === name)
 }
 
 /**
@@ -107,5 +105,5 @@ export function findTableByName(
  */
 
 export function buildTableIndexSql(table: TableSchema): string[] {
-  return (table.indexes ?? []).map((idx) => buildCreateIndexSql(table.name, idx))
+  return (table.indexes ?? []).map(idx => buildCreateIndexSql(table.name, idx))
 }

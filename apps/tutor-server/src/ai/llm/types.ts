@@ -66,5 +66,8 @@ export interface LLMProvider {
   complete(messages: LLMMessage[], signal?: AbortSignal): Promise<LLMResponse>
 
   /** 流式补全（仅文本） */
-  stream?(messages: LLMMessage[], options?: { signal?: AbortSignal }): AsyncGenerator<LLMStreamChunk>
+  stream?(
+    messages: LLMMessage[],
+    options?: { signal?: AbortSignal }
+  ): AsyncGenerator<LLMStreamChunk>
 }

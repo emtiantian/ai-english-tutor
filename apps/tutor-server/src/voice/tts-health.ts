@@ -52,7 +52,7 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Pr
 export async function checkCosyVoiceHealth(
   baseUrl: string,
   spkId: string,
-  timeoutMs: number = DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
+  timeoutMs: number = DEFAULT_HEALTH_CHECK_TIMEOUT_MS
 ): Promise<CosyVoiceHealthResult> {
   const url = `${baseUrl.replace(/\/$/, '')}/inference_sft`
 
@@ -67,9 +67,9 @@ export async function checkCosyVoiceHealth(
       url,
       {
         method: 'POST',
-        body: form,
+        body: form
       },
-      timeoutMs,
+      timeoutMs
     )
     return { ok: true, status: response.status }
   } catch (err) {

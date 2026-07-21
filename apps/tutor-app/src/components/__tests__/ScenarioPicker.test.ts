@@ -9,7 +9,7 @@ import type { CEFRLevel } from '@ai-english-tutor/shared'
 describe('ScenarioPicker', () => {
   const scenarios = [
     { id: 'restaurant-ordering', name: '餐厅点餐', nameEn: 'Restaurant Ordering', icon: '🍽️' },
-    { id: 'shopping', name: '购物对话', nameEn: 'Shopping', icon: '🛒' },
+    { id: 'shopping', name: '购物对话', nameEn: 'Shopping', icon: '🛒' }
   ]
 
   function mountComponent(props?: Record<string, unknown>) {
@@ -19,8 +19,8 @@ describe('ScenarioPicker', () => {
         userLevel: 'A1' as CEFRLevel,
         pausedSnapshots: new Map<string, ScenarioPausedSnapshot>(),
         userScenarioProgress: new Map<string, UserScenarioProgress>(),
-        ...props,
-      },
+        ...props
+      }
     })
   }
 
@@ -41,7 +41,7 @@ describe('ScenarioPicker', () => {
     const firstCard = wrapper.findAll('.scenario-card')[0]
     const dots = firstCard.findAll('.level-dot-wrapper')
     expect(dots).toHaveLength(6)
-    const labels = dots.map((d) => d.find('.level-label').text())
+    const labels = dots.map(d => d.find('.level-label').text())
     expect(labels).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'])
   })
 
@@ -58,7 +58,7 @@ describe('ScenarioPicker', () => {
       highestClearedLevel: 'A1',
       starsByLevel: { A1: 3 },
       attempts: 1,
-      lastPlayedAt: Date.now(),
+      lastPlayedAt: Date.now()
     })
     const wrapper = mountComponent({ userScenarioProgress: progress })
     const card = wrapper.findAll('.scenario-card')[0]
@@ -72,7 +72,7 @@ describe('ScenarioPicker', () => {
       highestClearedLevel: 'C2',
       starsByLevel: { A1: 3, A2: 4, B1: 3, B2: 4, C1: 5, C2: 5 },
       attempts: 12,
-      lastPlayedAt: Date.now(),
+      lastPlayedAt: Date.now()
     })
     const wrapper = mountComponent({ userScenarioProgress: progress })
     const card = wrapper.findAll('.scenario-card')[0]
@@ -90,7 +90,7 @@ describe('ScenarioPicker', () => {
       targetWords: ['coffee', 'tea', 'water', 'bread'],
       serverSessionId: 'sess-123',
       savedAt: Date.now(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000
     })
     const wrapper = mountComponent({ pausedSnapshots: snapshots })
     const card = wrapper.findAll('.scenario-card')[0]
@@ -106,7 +106,7 @@ describe('ScenarioPicker', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
     expect(wrapper.emitted('select')![0]).toEqual([
       'restaurant-ordering',
-      { styleName: 'lazy-mature', level: 'A1' },
+      { styleName: 'lazy-mature', level: 'A1' }
     ])
   })
 
@@ -121,7 +121,7 @@ describe('ScenarioPicker', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
     expect(wrapper.emitted('select')![0]).toEqual([
       'restaurant-ordering',
-      { styleName: 'lazy-mature', level: 'A2' },
+      { styleName: 'lazy-mature', level: 'A2' }
     ])
   })
 
@@ -136,7 +136,7 @@ describe('ScenarioPicker', () => {
       targetWords: ['coffee', 'tea'],
       serverSessionId: 'sess-456',
       savedAt: Date.now(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000
     })
     const wrapper = mountComponent({ pausedSnapshots: snapshots })
     const card = wrapper.findAll('.scenario-card')[0]
@@ -158,7 +158,7 @@ describe('ScenarioPicker', () => {
       targetWords: ['coffee', 'tea'],
       serverSessionId: 'sess-789',
       savedAt: Date.now(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000
     }
     const snapshots = new Map<string, ScenarioPausedSnapshot>()
     snapshots.set('restaurant-ordering', snapshot)
@@ -184,7 +184,7 @@ describe('ScenarioPicker', () => {
       targetWords: ['coffee', 'tea'],
       serverSessionId: 'sess-abc',
       savedAt: Date.now(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000
     }
     const snapshots = new Map<string, ScenarioPausedSnapshot>()
     snapshots.set('restaurant-ordering', snapshot)
@@ -199,7 +199,7 @@ describe('ScenarioPicker', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
     expect(wrapper.emitted('select')![0]).toEqual([
       'restaurant-ordering',
-      { styleName: 'lazy-mature', level: 'A2' },
+      { styleName: 'lazy-mature', level: 'A2' }
     ])
   })
 
@@ -210,7 +210,7 @@ describe('ScenarioPicker', () => {
       highestClearedLevel: 'A1',
       starsByLevel: { A1: 5 },
       attempts: 1,
-      lastPlayedAt: Date.now(),
+      lastPlayedAt: Date.now()
     })
     const wrapper = mountComponent({ userScenarioProgress: progress })
     const card = wrapper.findAll('.scenario-card')[0]

@@ -17,7 +17,7 @@ describe('AudioPlayer', () => {
       const mockUtterance = {
         onstart: null as any,
         onend: null as any,
-        onerror: null as any,
+        onerror: null as any
       }
 
       global.speechSynthesis = {
@@ -27,10 +27,12 @@ describe('AudioPlayer', () => {
           setTimeout(() => u.onend?.(), 10)
         }),
         getVoices: vi.fn().mockReturnValue([]),
-        addEventListener: vi.fn(),
+        addEventListener: vi.fn()
       } as any
 
-      global.SpeechSynthesisUtterance = vi.fn(function () { return mockUtterance }) as any
+      global.SpeechSynthesisUtterance = vi.fn(function () {
+        return mockUtterance
+      }) as any
       player = new AudioPlayer('local')
     })
 
@@ -41,7 +43,7 @@ describe('AudioPlayer', () => {
       player.onEnd = onEnd
 
       player.speak('Hello world')
-      await new Promise((r) => setTimeout(r, 50))
+      await new Promise(r => setTimeout(r, 50))
 
       expect(global.speechSynthesis!.speak).toHaveBeenCalled()
       expect(onStart).toHaveBeenCalled()
@@ -59,14 +61,14 @@ describe('AudioPlayer', () => {
       const mockBufferSource = {
         connect: vi.fn(),
         start: vi.fn(),
-        onended: null as any,
+        onended: null as any
       }
 
       global.AudioContext = vi.fn().mockImplementation(() => ({
         decodeAudioData: vi.fn().mockResolvedValue({ duration: 1 }),
         createBufferSource: vi.fn().mockReturnValue(mockBufferSource),
         destination: {},
-        close: vi.fn(),
+        close: vi.fn()
       })) as any
 
       global.atob = vi.fn().mockReturnValue('decoded') as any
@@ -84,7 +86,7 @@ describe('AudioPlayer', () => {
       expect(player.isPlaying).toBe(false)
 
       player.feedAudioChunk({ audioBase64: 'chunk2', format: 'mp3', isEnd: true })
-      await new Promise((r) => setTimeout(r, 10))
+      await new Promise(r => setTimeout(r, 10))
 
       expect(onStart).toHaveBeenCalled()
     })
@@ -102,7 +104,7 @@ describe('AudioPlayer', () => {
 
       player.setTTSSource('remote')
       player.feedAudioChunk({ audioBase64: 'chunk', format: 'mp3', isEnd: true })
-      await new Promise((r) => setTimeout(r, 10))
+      await new Promise(r => setTimeout(r, 10))
 
       expect(onStart).toHaveBeenCalled()
     })

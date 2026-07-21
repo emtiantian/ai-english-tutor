@@ -4,7 +4,7 @@ import { buildScenarioStartMessages } from '@/ai/prompts/scenario/scenario-start
 import { buildScenarioTeachingMessages } from '@/ai/prompts/scenario/scenario-turn.js'
 import { buildScenarioContext } from '@/ai/prompts/scenario/context-builder.js'
 
-const restaurant = scenarios.find((s) => s.id === 'restaurant-ordering')!
+const restaurant = scenarios.find(s => s.id === 'restaurant-ordering')!
 const runtimeWords = Array.from({ length: 30 }, (_, i) => `word${i + 1}`)
 
 describe('scenario teaching prompts', () => {
@@ -16,7 +16,7 @@ describe('scenario teaching prompts', () => {
       undefined,
       LUNA_PERSONA,
       undefined,
-      runtimeWords,
+      runtimeWords
     )
     const startSystem = String(startMessages[0].content)
 
@@ -41,7 +41,7 @@ describe('scenario teaching prompts', () => {
       undefined,
       undefined,
       runtimeWords,
-      { currentActIndex: 0, wordsUsed: usedWords },
+      { currentActIndex: 0, wordsUsed: usedWords }
     )
     const teachingSystem = String(teachingMessages[0].content)
 
@@ -52,7 +52,7 @@ describe('scenario teaching prompts', () => {
 
     const bucketSize = Math.ceil(runtimeWords.length / 3)
     const firstBucket = runtimeWords.slice(0, bucketSize)
-    const firstBucketUnused = firstBucket.filter((w) => !usedWords.includes(w))
+    const firstBucketUnused = firstBucket.filter(w => !usedWords.includes(w))
     for (const w of firstBucketUnused.slice(0, 5)) {
       expect(teachingSystem).toContain(`- ${w}`)
     }
@@ -65,10 +65,18 @@ describe('scenario teaching prompts', () => {
       setting: 'A busy burger joint at lunchtime.',
       twist: 'You need to ask whether a dish contains nuts or dairy.',
       acts: [
-        { name: '开场', goal: 'Greet and ask about allergens.', vocabThemes: ['greeting', 'health'] },
+        {
+          name: '开场',
+          goal: 'Greet and ask about allergens.',
+          vocabThemes: ['greeting', 'health']
+        },
         { name: '主线', goal: 'Choose a safe meal.', vocabThemes: ['food', 'preference'] },
-        { name: '收尾', goal: 'Pay and give brief feedback.', vocabThemes: ['payment', 'evaluation'] },
-      ],
+        {
+          name: '收尾',
+          goal: 'Pay and give brief feedback.',
+          vocabThemes: ['payment', 'evaluation']
+        }
+      ]
     }
 
     const ctx = buildScenarioContext(
@@ -76,10 +84,12 @@ describe('scenario teaching prompts', () => {
       'B1',
       runtimeWords,
       { currentActIndex: 1 },
-      levelProfile,
+      levelProfile
     )
 
-    expect(ctx).toContain('Natural complication for this level: You need to ask whether a dish contains nuts or dairy.')
+    expect(ctx).toContain(
+      'Natural complication for this level: You need to ask whether a dish contains nuts or dairy.'
+    )
     expect(ctx).toContain('Current act theme: food, preference')
     expect(ctx).toContain('A busy burger joint at lunchtime.')
   })

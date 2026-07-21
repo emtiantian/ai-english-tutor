@@ -8,10 +8,17 @@ import { computeCoverageRate } from '../lib/scenario-utils.js'
 import {
   useScenarioProgressStore,
   MIN_TURNS_FOR_PAUSE,
-  DEFAULT_MAX_TURNS,
+  DEFAULT_MAX_TURNS
 } from './scenario-progress.js'
 
-export type AppPhase = 'loading' | 'ready' | 'assessing' | 'assess-result' | 'scenario-select' | 'teaching' | 'scenario-complete'
+export type AppPhase =
+  | 'loading'
+  | 'ready'
+  | 'assessing'
+  | 'assess-result'
+  | 'scenario-select'
+  | 'teaching'
+  | 'scenario-complete'
 
 export interface ChatMessage {
   id: string
@@ -107,7 +114,7 @@ export const useTutorStore = defineStore('tutor', () => {
       role: 'user',
       text,
       timestamp: Date.now(),
-      scenario: currentScenario.value ? { ...currentScenario.value } : undefined,
+      scenario: currentScenario.value ? { ...currentScenario.value } : undefined
     })
   }
 
@@ -117,7 +124,7 @@ export const useTutorStore = defineStore('tutor', () => {
       role: 'assistant',
       text: '',
       isStreaming: true,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     }
     messages.value.push(msg)
     isThinking.value = false
@@ -131,7 +138,15 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
-  function finalizeStream(response: { text: string; textZh?: string; motionId?: string; expressionId?: string; vocabulary?: string[]; vocabularySentences?: string[]; studentReplyHints?: string[] }) {
+  function finalizeStream(response: {
+    text: string
+    textZh?: string
+    motionId?: string
+    expressionId?: string
+    vocabulary?: string[]
+    vocabularySentences?: string[]
+    studentReplyHints?: string[]
+  }) {
     const scenarioSnapshot = currentScenario.value ? { ...currentScenario.value } : undefined
     const lastMsg = messages.value[messages.value.length - 1]
     if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isStreaming) {
@@ -157,7 +172,7 @@ export const useTutorStore = defineStore('tutor', () => {
         vocabularySentences: response.vocabularySentences,
         studentReplyHints: response.studentReplyHints,
         scenario: scenarioSnapshot,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       })
     }
   }
@@ -217,7 +232,7 @@ export const useTutorStore = defineStore('tutor', () => {
       maxTurns: sc.maxTurns ?? DEFAULT_MAX_TURNS,
       wordsUsed: [...sc.wordsLearned],
       targetWords: [...sc.targetWords],
-      serverSessionId,
+      serverSessionId
     })
     return true
   }
@@ -241,7 +256,7 @@ export const useTutorStore = defineStore('tutor', () => {
       coverageRate:
         snapshot.targetWords.length === 0
           ? 0
-          : snapshot.wordsUsed.length / snapshot.targetWords.length,
+          : snapshot.wordsUsed.length / snapshot.targetWords.length
     }
     phase.value = 'teaching'
   }
@@ -325,6 +340,6 @@ export const useTutorStore = defineStore('tutor', () => {
     confirmLevel,
     // v2 场景编排动作（持久化委托 useScenarioProgressStore）
     switchScenario,
-    challengeNextLevel,
+    challengeNextLevel
   }
 })

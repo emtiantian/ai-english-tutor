@@ -1,13 +1,13 @@
 /** AI 老师可用的 Live2D / Spine 动作 */
 export const AVAILABLE_MOTIONS = [
-  'wave',        // 挥手打招呼
-  'nod',         // 点头
-  'think',       // 思考
-  'gesture',     // 手势解释
-  'clap',        // 鼓掌
-  'point',       // 指向
-  'write',       // 书写动作
-  'surprised',   // 惊讶
+  'wave', // 挥手打招呼
+  'nod', // 点头
+  'think', // 思考
+  'gesture', // 手势解释
+  'clap', // 鼓掌
+  'point', // 指向
+  'write', // 书写动作
+  'surprised' // 惊讶
 ] as const
 
 export type MotionId = (typeof AVAILABLE_MOTIONS)[number]
@@ -19,7 +19,7 @@ export const AVAILABLE_EXPRESSIONS = [
   'curious',
   'surprised',
   'encouraging',
-  'thoughtful',
+  'thoughtful'
 ] as const
 
 export type ExpressionId = (typeof AVAILABLE_EXPRESSIONS)[number]
@@ -43,7 +43,10 @@ export function normalizeMotionId(id: unknown, fallback: MotionId = 'nod'): Moti
 }
 
 /** 将任意值限制为有效的 {@link ExpressionId}（回退 `neutral`）。 */
-export function normalizeExpressionId(id: unknown, fallback: ExpressionId = 'neutral'): ExpressionId {
+export function normalizeExpressionId(
+  id: unknown,
+  fallback: ExpressionId = 'neutral'
+): ExpressionId {
   return isExpressionId(id) ? id : fallback
 }
 

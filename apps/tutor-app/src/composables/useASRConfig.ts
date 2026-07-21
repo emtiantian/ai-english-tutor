@@ -50,6 +50,6 @@ export function useASRConfig() {
     ttsProvider,
     voiceStyleSelectable,
     loaded,
-    loadConfig,
+    loadConfig
   }
 }

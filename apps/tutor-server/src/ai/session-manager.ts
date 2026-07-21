@@ -5,7 +5,7 @@ import type { OpeningStyle } from './prompts/teaching.js'
 import {
   saveSession,
   getSession as getSessionFromDb,
-  saveScenarioState as saveScenarioStateToDb,
+  saveScenarioState as saveScenarioStateToDb
 } from '../db/repositories/session.js'
 import { getSessionMessages, saveMessage } from '../db/repositories/message.js'
 
@@ -63,7 +63,7 @@ function parseScenarioState(json: string): ScenarioState | undefined {
       turnsCount: typeof parsed.turnsCount === 'number' ? parsed.turnsCount : 0,
       wordsUsed: new Set(Array.isArray(parsed.wordsUsed) ? parsed.wordsUsed : []),
       levelProfile: parsed.levelProfile,
-      actThemes: Array.isArray(parsed.actThemes) ? parsed.actThemes : undefined,
+      actThemes: Array.isArray(parsed.actThemes) ? parsed.actThemes : undefined
     }
   } catch (err) {
     logger.error({ err, jsonPreview: json.slice(0, 200) }, '解析 scenario_state 失败')
@@ -79,7 +79,7 @@ function parseScenarioState(json: string): ScenarioState | undefined {
 export class SessionManager {
   private sessions = new LRUCache<string, SessionData>({
     max: 1000,
-    ttl: 1000 * 60 * 60, // 1 小时
+    ttl: 1000 * 60 * 60 // 1 小时
   })
 
   /**
@@ -97,10 +97,10 @@ export class SessionManager {
       const dbMessages = getSessionMessages(sessionId)
       const session: SessionData = {
         level: dbSession.level,
-        history: dbMessages.map((m) => ({ role: m.role, content: m.content })),
+        history: dbMessages.map(m => ({ role: m.role, content: m.content })),
         vocabulary: new Set(),
         voiceDesign: dbSession.voiceDesign,
-        scenario: dbSession.scenarioState ? parseScenarioState(dbSession.scenarioState) : undefined,
+        scenario: dbSession.scenarioState ? parseScenarioState(dbSession.scenarioState) : undefined
       }
       this.sessions.set(sessionId, session)
       return session
@@ -110,7 +110,7 @@ export class SessionManager {
     const session: SessionData = {
       level,
       history: [],
-      vocabulary: new Set(),
+      vocabulary: new Set()
     }
     this.sessions.set(sessionId, session)
     return session
@@ -132,7 +132,7 @@ export class SessionManager {
       level,
       styleName,
       voiceDesign,
-      createdAt: Math.floor(Date.now() / 1000),
+      createdAt: Math.floor(Date.now() / 1000)
     })
   }
 
@@ -142,7 +142,7 @@ export class SessionManager {
   saveScenarioState(sessionId: string, scenario: ScenarioState): void {
     const serialized: Omit<ScenarioState, 'wordsUsed'> & { wordsUsed: string[] } = {
       ...scenario,
-      wordsUsed: Array.from(scenario.wordsUsed),
+      wordsUsed: Array.from(scenario.wordsUsed)
     }
     saveScenarioStateToDb(sessionId, JSON.stringify(serialized))
   }
@@ -155,7 +155,12 @@ export class SessionManager {
     session: SessionData,
     role: 'user' | 'assistant',
     content: string,
-    metadata?: { motionId?: string; expressionId?: string; vocabulary?: string[]; vocabularySentences?: string[] },
+    metadata?: {
+      motionId?: string
+      expressionId?: string
+      vocabulary?: string[]
+      vocabularySentences?: string[]
+    }
   ): void {
     session.history.push({ role, content })
 
@@ -174,7 +179,7 @@ export class SessionManager {
       motionId: metadata?.motionId,
       expressionId: metadata?.expressionId,
       vocabulary: metadata?.vocabulary,
-      vocabularySentences: metadata?.vocabularySentences,
+      vocabularySentences: metadata?.vocabularySentences
     })
   }
 
@@ -189,13 +194,15 @@ export class SessionManager {
    * 获取供 API 响应的会话信息。
    * 优先尝试缓存，否则回退数据库。
    */
-  getSessionInfo(sessionId: string): { level: number; historyCount: number; vocabularyCount: number } | undefined {
+  getSessionInfo(
+    sessionId: string
+  ): { level: number; historyCount: number; vocabularyCount: number } | undefined {
     const session = this.sessions.get(sessionId)
     if (session) {
       return {
         level: session.level,
         historyCount: session.history.length,
-        vocabularyCount: session.vocabulary.size,
+        vocabularyCount: session.vocabulary.size
       }
     }
 
@@ -206,7 +213,7 @@ export class SessionManager {
     return {
       level: dbSession.level,
       historyCount: dbMessages.length,
-      vocabularyCount: 0,
+      vocabularyCount: 0
     }
   }
 }

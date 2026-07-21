@@ -1,9 +1,6 @@
 <template>
   <!-- DEV-only 动作/表情调试面板;放在角色下拉框左侧 -->
-  <div
-    class="absolute top-10px right-220px z-25"
-    :class="{ 'top-50px': showAtLowerPosition }"
-  >
+  <div class="absolute top-10px right-220px z-25" :class="{ 'top-50px': showAtLowerPosition }">
     <button
       ref="triggerRef"
       type="button"
@@ -28,7 +25,9 @@
             type="button"
             class="text-white/50 text-11px bg-transparent border-none cursor-pointer hover:text-white/80"
             @click="refresh"
-          >↻ 刷新</button>
+          >
+            ↻ 刷新
+          </button>
         </div>
 
         <!-- 原始动画 -->
@@ -39,11 +38,15 @@
             :key="key"
             type="button"
             class="px-6px py-8px rounded-8px text-12px border cursor-pointer transition-all-150 truncate"
-            :class="lastMotion === key
-              ? 'bg-primary-80/40 border-primary-80 text-white'
-              : 'bg-white/8 border-white/10 text-white/85 hover:(bg-white/16)'"
+            :class="
+              lastMotion === key
+                ? 'bg-primary-80/40 border-primary-80 text-white'
+                : 'bg-white/8 border-white/10 text-white/85 hover:(bg-white/16)'
+            "
             @click="playRaw(key)"
-          >{{ key }}</button>
+          >
+            {{ key }}
+          </button>
         </div>
 
         <!-- 语义动作 -->
@@ -55,7 +58,9 @@
             type="button"
             class="px-6px py-8px rounded-8px text-12px border cursor-pointer transition-all-150 truncate bg-white/8 border-white/10 text-white/85 hover:(bg-white/16)"
             @click="playSemantic(m)"
-          >{{ m }}</button>
+          >
+            {{ m }}
+          </button>
         </div>
 
         <!-- 表情 -->
@@ -66,16 +71,27 @@
             :key="e"
             type="button"
             class="px-6px py-8px rounded-8px text-12px border cursor-pointer transition-all-150 truncate"
-            :class="lastExpression === e
-              ? 'bg-primary-80/40 border-primary-80 text-white'
-              : 'bg-white/8 border-white/10 text-white/85 hover:(bg-white/16)'"
+            :class="
+              lastExpression === e
+                ? 'bg-primary-80/40 border-primary-80 text-white'
+                : 'bg-white/8 border-white/10 text-white/85 hover:(bg-white/16)'
+            "
             @click="setExpr(e)"
-          >{{ e }}</button>
+          >
+            {{ e }}
+          </button>
         </div>
 
-        <div v-if="lastMotion || lastExpression" class="text-white/55 text-10px mt-8px pt-6px border-t border-white/10">
-          <span v-if="lastMotion">动作: <b class="text-white/80">{{ lastMotion }}</b></span>
-          <span v-if="lastExpression" class="ml-8px">表情: <b class="text-white/80">{{ lastExpression }}</b></span>
+        <div
+          v-if="lastMotion || lastExpression"
+          class="text-white/55 text-10px mt-8px pt-6px border-t border-white/10"
+        >
+          <span v-if="lastMotion"
+            >动作: <b class="text-white/80">{{ lastMotion }}</b></span
+          >
+          <span v-if="lastExpression" class="ml-8px"
+            >表情: <b class="text-white/80">{{ lastExpression }}</b></span
+          >
         </div>
       </div>
     </Transition>
@@ -153,7 +169,9 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick, tru
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 .fade-enter-from,
 .fade-leave-to {

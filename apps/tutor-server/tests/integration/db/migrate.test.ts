@@ -28,7 +28,10 @@ describe('database migrations', () => {
     expect(tables).toContain('user_vocabulary')
     expect(tables).toContain('conversation_history')
 
-    const migrations = db.prepare('SELECT version FROM __migrations ORDER BY version').pluck().all() as number[]
+    const migrations = db
+      .prepare('SELECT version FROM __migrations ORDER BY version')
+      .pluck()
+      .all() as number[]
     expect(migrations).toEqual([1, 2])
   })
 })

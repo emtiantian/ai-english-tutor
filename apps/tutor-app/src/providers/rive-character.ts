@@ -5,7 +5,7 @@ import {
   Fit,
   Alignment,
   StateMachineInputType,
-  type StateMachineInput,
+  type StateMachineInput
 } from '@rive-app/canvas'
 
 /**
@@ -42,7 +42,7 @@ const EMOTION_INDEX: Record<string, number> = {
   surprised: 3,
   encouraging: 4,
   thoughtful: 5,
-  sad: 6,
+  sad: 6
 }
 
 /** 输入名约定（集中定义，便于和 .riv 对齐） */
@@ -53,7 +53,7 @@ const INPUT = {
   thinking: 'thinking',
   emotion: 'emotion',
   /** playMotion 找不到同名 trigger 时，写入这个 Number 输入 */
-  motionFallback: 'motion',
+  motionFallback: 'motion'
 } as const
 
 const DEFAULT_SRC = '/models/rive/tutor.riv'
@@ -77,14 +77,11 @@ export class RiveCharacterProvider implements CharacterProvider {
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
-    mouthOpen: 0,
+    mouthOpen: 0
   }
 
   constructor(opts?: { src?: string; stateMachine?: string }) {
-    this.src =
-      opts?.src ??
-      (import.meta.env.VITE_RIVE_SRC as string | undefined) ??
-      DEFAULT_SRC
+    this.src = opts?.src ?? (import.meta.env.VITE_RIVE_SRC as string | undefined) ?? DEFAULT_SRC
     this.stateMachine =
       opts?.stateMachine ??
       (import.meta.env.VITE_RIVE_STATE_MACHINE as string | undefined) ??
@@ -111,7 +108,7 @@ export class RiveCharacterProvider implements CharacterProvider {
         },
         onLoadError: (err: unknown) => {
           reject(new Error(`[Rive] Failed to load ${this.src}: ${String(err)}`))
-        },
+        }
       })
     })
 
@@ -169,7 +166,13 @@ export class RiveCharacterProvider implements CharacterProvider {
     const fallback = this.inputs.get(INPUT.motionFallback)
     if (fallback && fallback.type === StateMachineInputType.Number) {
       // 无显式编号时，至少触发一次状态变化（保持现值 + 0 无效，故仅在未命中时告警）
-      console.warn('[Rive] No trigger for motion:', motionId, '→', key, '— wire a Trigger input named it in the .riv')
+      console.warn(
+        '[Rive] No trigger for motion:',
+        motionId,
+        '→',
+        key,
+        '— wire a Trigger input named it in the .riv'
+      )
     } else {
       console.warn('[Rive] Motion input not found:', motionId, '→', key)
     }

@@ -5,7 +5,7 @@ import {
   type CEFRLevel,
   type OpeningStyle,
   type Scenario,
-  type ScenarioLevelProfile,
+  type ScenarioLevelProfile
 } from '@ai-english-tutor/shared'
 import type { ReviewWord } from '../../vocab-tracker.js'
 import { stripBaseOutputFormat, buildLineReuseBlock } from './line-reuse.js'
@@ -31,7 +31,7 @@ export function buildScenarioTeachingMessages(
     currentActIndex?: number
     wordsUsed?: string[]
   },
-  levelProfile?: ScenarioLevelProfile,
+  levelProfile?: ScenarioLevelProfile
 ): LLMMessage[] {
   const personality = style?.persona
   // 剥离基础 OUTPUT FORMAT —— 场景上下文会提供自己的格式
@@ -44,7 +44,7 @@ export function buildScenarioTeachingMessages(
   systemPrompt += buildLineReuseBlock(reusableLines)
 
   if (reviewWords && reviewWords.length > 0) {
-    const wordList = reviewWords.map((w) => `"${w.word}"`).join(', ')
+    const wordList = reviewWords.map(w => `"${w.word}"`).join(', ')
     // 提示词：场景复习指令标题 —— 告诉模型如果复习词适合当前场景，也自然融入，不要生硬插入
     const reviewHeader = `
 
@@ -60,9 +60,7 @@ Include any used words in the "vocabulary" field, and provide one example senten
     systemPrompt += reviewBlock
   }
 
-  const messages: LLMMessage[] = [
-    { role: 'system', content: systemPrompt },
-  ]
+  const messages: LLMMessage[] = [{ role: 'system', content: systemPrompt }]
 
   // 添加对话历史（最近 10 条）
   for (const h of history.slice(-10)) {

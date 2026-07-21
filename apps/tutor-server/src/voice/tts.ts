@@ -64,8 +64,10 @@ export function createTTSProvider(): TTSProvider {
         name: 'browser',
         outputFormat: 'wav',
         async synthesize(): Promise<Buffer> {
-          throw new Error('TTS_PROVIDER=browser 时，语音合成应由前端 Web Speech API 完成，服务端不支持直接合成')
-        },
+          throw new Error(
+            'TTS_PROVIDER=browser 时，语音合成应由前端 Web Speech API 完成，服务端不支持直接合成'
+          )
+        }
       }
     default:
       throw new Error(`不支持的 TTS 提供商: ${provider}。请在 .env 中设置正确的 TTS_PROVIDER。`)

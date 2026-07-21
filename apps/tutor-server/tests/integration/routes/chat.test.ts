@@ -25,8 +25,8 @@ describe('chat routes stream mode', () => {
         stream: true,
         sessionId: 'stream-test-session',
         level: 2,
-        userId: 'stream-test-user',
-      },
+        userId: 'stream-test-user'
+      }
     })
 
     expect(response.statusCode).toBe(202)

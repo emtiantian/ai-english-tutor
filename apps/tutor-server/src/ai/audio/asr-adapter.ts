@@ -8,7 +8,7 @@ import type { LLMProvider } from '../llm.js'
 export class AsrAdapter {
   constructor(
     private asr: ASRProvider,
-    private llm: LLMProvider,
+    private llm: LLMProvider
   ) {}
 
   /**
@@ -18,7 +18,7 @@ export class AsrAdapter {
   async transcribeAudio(
     text: string,
     audioBase64: string | undefined,
-    audioFormat: string,
+    audioFormat: string
   ): Promise<string> {
     if (!audioBase64) {
       logger.info({ text: text.slice(0, 50) }, '[ASR] 未提供音频，直接使用文本')
@@ -29,21 +29,33 @@ export class AsrAdapter {
     if (this.llm.capabilities.supportsAudioInput) {
       logger.info(
         { llm: this.llm.name, asrProviderConfigured: this.asr.name },
-        '[ASR] LLM 支持语音输入，音频直接发送给 LLM，不调用独立 ASR 提供商',
+        '[ASR] LLM 支持语音输入，音频直接发送给 LLM，不调用独立 ASR 提供商'
       )
       return text
     }
 
     // 使用 ASR 进行转写
     if (this.asr.name === 'browser') {
-      throw new Error('ASR_PROVIDER=browser 时，音频转写应由前端 Web Speech API 完成，服务端不支持直接转写')
+      throw new Error(
+        'ASR_PROVIDER=browser 时，音频转写应由前端 Web Speech API 完成，服务端不支持直接转写'
+      )
     }
 
     try {
       const audioBuffer = Buffer.from(audioBase64, 'base64')
-      logger.info({ provider: this.asr.name, audioSize: audioBuffer.length, format: audioFormat }, '[ASR] 开始转写...')
+      logger.info(
+        { provider: this.asr.name, audioSize: audioBuffer.length, format: audioFormat },
+        '[ASR] 开始转写...'
+      )
       const asrResult = await this.asr.transcribe(audioBuffer, `audio/${audioFormat}`)
-      logger.info({ provider: this.asr.name, transcribed: asrResult.text.slice(0, 100), fullLength: asrResult.text.length }, '[ASR] 转写完成')
+      logger.info(
+        {
+          provider: this.asr.name,
+          transcribed: asrResult.text.slice(0, 100),
+          fullLength: asrResult.text.length
+        },
+        '[ASR] 转写完成'
+      )
       return asrResult.text
     } catch (err) {
       // ASR 失败时保留 return text 以维持调用方签名不变，但用 warn 明确标注失败

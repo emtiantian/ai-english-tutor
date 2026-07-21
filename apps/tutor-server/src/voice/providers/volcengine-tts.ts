@@ -11,7 +11,11 @@ const FETCH_TIMEOUT_MS = 30_000
  * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
  * 超时覆盖从发起到收到响应头的时间；响应体读取不受限。
  */
-function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
@@ -62,9 +66,9 @@ export class VolcengineTTSProvider implements TTSProvider {
         resourceId: this.resourceId,
         speaker: this.speaker,
         format: this.format,
-        sampleRate: this.sampleRate,
+        sampleRate: this.sampleRate
       },
-      '火山方舟 TTS 提供商初始化完成',
+      '火山方舟 TTS 提供商初始化完成'
     )
   }
 
@@ -85,9 +89,9 @@ export class VolcengineTTSProvider implements TTSProvider {
             sampleRate: this.sampleRate,
             speed,
             textLength: text.length,
-            textPreview: text.slice(0, 60),
+            textPreview: text.slice(0, 60)
           },
-          '[火山 TTS] 合成请求',
+          '[火山 TTS] 合成请求'
         )
 
         const body = {
@@ -98,22 +102,22 @@ export class VolcengineTTSProvider implements TTSProvider {
               format: this.format,
               sample_rate: this.sampleRate,
               // 通过 speed 控制语速（若接口支持；否则仅作日志）
-              ...(speed !== 1 ? { speed } : {}),
-            },
-          },
+              ...(speed !== 1 ? { speed } : {})
+            }
+          }
         }
 
         const response = await fetchWithTimeout(this.baseUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Connection': 'keep-alive',
+            Connection: 'keep-alive',
             'X-Api-Key': this.apiKey,
             'X-Api-Resource-Id': this.resourceId,
             'X-Api-Connect-Id': randomUUID(),
-            'X-Control-Require-Usage-Tokens-Return': '*',
+            'X-Control-Require-Usage-Tokens-Return': '*'
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify(body)
         })
 
         if (!response.ok) {
@@ -160,7 +164,7 @@ export class VolcengineTTSProvider implements TTSProvider {
 
               if (chunk.code !== 0) {
                 throw new Error(
-                  `火山 TTS 失败：code=${chunk.code} message=${chunk.message ?? '无消息'}`,
+                  `火山 TTS 失败：code=${chunk.code} message=${chunk.message ?? '无消息'}`
                 )
               }
 
@@ -184,11 +188,11 @@ export class VolcengineTTSProvider implements TTSProvider {
 
         logger.info(
           { provider: this.name, duration, size: result.length, chunks: audioChunks.length },
-          '[火山 TTS] 合成完成',
+          '[火山 TTS] 合成完成'
         )
 
         return result
-      },
+      }
     )
   }
 }

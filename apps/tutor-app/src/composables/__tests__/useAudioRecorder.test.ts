@@ -7,11 +7,11 @@ import { useTutorStore } from '../../stores/tutor'
 vi.mock('../useAudioEncoder', () => ({
   useAudioEncoder: () => ({
     isEncoding: { value: false },
-    encode: vi.fn(async (samples) => {
+    encode: vi.fn(async samples => {
       return new Blob([samples.buffer], { type: 'audio/mp3' })
     }),
-    terminate: vi.fn(),
-  }),
+    terminate: vi.fn()
+  })
 }))
 
 const mockSendToBackend = vi.fn()
@@ -31,16 +31,16 @@ describe('useAudioRecorder', () => {
       state: 'inactive',
       mimeType: 'audio/webm',
       ondataavailable: null as any,
-      onstop: null as any,
+      onstop: null as any
     }
 
     mockStream = {
-      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }]),
+      getTracks: vi.fn().mockReturnValue([{ stop: vi.fn() }])
     }
 
     Object.defineProperty(global.navigator, 'mediaDevices', {
       value: { getUserMedia: vi.fn().mockResolvedValue(mockStream) },
-      writable: true,
+      writable: true
     })
 
     global.MediaRecorder = vi.fn(function () {
@@ -51,7 +51,7 @@ describe('useAudioRecorder', () => {
 
     decodedBuffer = {
       sampleRate: 48000,
-      getChannelData: vi.fn().mockReturnValue(new Float32Array([0.1, -0.1, 0.2])),
+      getChannelData: vi.fn().mockReturnValue(new Float32Array([0.1, -0.1, 0.2]))
     } as unknown as AudioBuffer
 
     const mockAudioContext: any = {}
@@ -59,15 +59,17 @@ describe('useAudioRecorder', () => {
     mockAudioContext.close = vi.fn().mockResolvedValue(undefined)
     mockAudioContext.createMediaStreamSource = vi.fn().mockReturnValue({
       connect: vi.fn(),
-      context: mockAudioContext,
+      context: mockAudioContext
     })
     mockAudioContext.createAnalyser = vi.fn().mockReturnValue({
       fftSize: 256,
       frequencyBinCount: 128,
-      getByteFrequencyData: vi.fn(),
+      getByteFrequencyData: vi.fn()
     })
 
-    global.AudioContext = vi.fn(function () { return mockAudioContext }) as any
+    global.AudioContext = vi.fn(function () {
+      return mockAudioContext
+    }) as any
     global.OfflineAudioContext = vi.fn() as any
   })
 

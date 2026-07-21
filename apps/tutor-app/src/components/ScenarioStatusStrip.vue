@@ -1,9 +1,13 @@
 <template>
   <div class="scenario-status-strip">
     <div class="progress-segments">
-      <span class="segment level-badge" :title="`当前难度：${level ?? 'A1'}`">{{ level ?? 'A1' }}</span>
+      <span class="segment level-badge" :title="`当前难度：${level ?? 'A1'}`">{{
+        level ?? 'A1'
+      }}</span>
       <span class="segment-divider">·</span>
-      <span class="segment" :title="`已进行 ${turnsCount} / ${maxTurns} 轮`">{{ turnsCount }} / {{ maxTurns }} 轮</span>
+      <span class="segment" :title="`已进行 ${turnsCount} / ${maxTurns} 轮`"
+        >{{ turnsCount }} / {{ maxTurns }} 轮</span
+      >
       <span class="segment-divider">·</span>
       <span class="segment" :title="`目标词覆盖 ${coveragePercent}%`">
         {{ coveragePercent }}% · {{ wordsLearned.length }} / {{ targetWordsTotal }} 词
@@ -11,18 +15,10 @@
     </div>
 
     <div class="status-actions">
-      <button
-        class="status-btn"
-        title="查看目标词"
-        @click="$emit('show-target-words')"
-      >
+      <button class="status-btn" title="查看目标词" @click="$emit('show-target-words')">
         📝 目标词
       </button>
-      <button
-        class="status-btn danger"
-        title="切换场景"
-        @click="$emit('switch-scenario')"
-      >
+      <button class="status-btn danger" title="切换场景" @click="$emit('switch-scenario')">
         ↺ 换场景
       </button>
     </div>

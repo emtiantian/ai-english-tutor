@@ -12,14 +12,14 @@ import {
   scenarioPausedDB,
   __resetScenarioPausedDBForTest,
   SCENARIO_PAUSED_TTL_MS,
-  type ScenarioPausedSnapshot,
+  type ScenarioPausedSnapshot
 } from '../scenario-paused-db'
 
 const T0 = 1_700_000_000_000 // 任意固定时间戳
 
 const baseSnap = (
   scenarioId: string,
-  overrides: Partial<ScenarioPausedSnapshot> = {},
+  overrides: Partial<ScenarioPausedSnapshot> = {}
 ): Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'> => ({
   scenarioId,
   level: 'A2',
@@ -28,7 +28,7 @@ const baseSnap = (
   wordsUsed: ['hello', 'coffee'],
   targetWords: ['hello', 'coffee', 'thank', 'please'],
   serverSessionId: `sess-${scenarioId}`,
-  ...overrides,
+  ...overrides
 })
 
 let nowSpy: ReturnType<typeof vi.spyOn>
@@ -101,9 +101,7 @@ describe('scenarioPausedDB', () => {
   })
 
   it('delete 不存在的 scenarioId 不抛错（幂等）', async () => {
-    await expect(
-      scenarioPausedDB.deletePausedSnapshot('does-not-exist'),
-    ).resolves.toBeUndefined()
+    await expect(scenarioPausedDB.deletePausedSnapshot('does-not-exist')).resolves.toBeUndefined()
   })
 
   it('listAllPaused 仅返回未过期，过期的顺手清理', async () => {
@@ -117,7 +115,7 @@ describe('scenarioPausedDB', () => {
     setNow(T0 + SCENARIO_PAUSED_TTL_MS + 1)
 
     const alive = await scenarioPausedDB.listAllPaused()
-    expect(alive.map((r) => r.scenarioId).sort()).toEqual(['c'])
+    expect(alive.map(r => r.scenarioId).sort()).toEqual(['c'])
 
     // 直接 get 已过期的 a/b 也都该被清掉
     expect(await scenarioPausedDB.getPausedSnapshot('a')).toBeNull()

@@ -32,7 +32,7 @@ describe('checkCosyVoiceHealth', () => {
   it('treats 422 as service alive (ok=true)', async () => {
     // 模拟 fastapi 对缺失 tts_text 字段的 422 响应
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, { status: 422, statusText: 'Unprocessable Entity' }),
+      new Response(null, { status: 422, statusText: 'Unprocessable Entity' })
     )
     const { checkCosyVoiceHealth } = await import('@/voice/tts-health.js')
     const result = await checkCosyVoiceHealth('http://localhost:50000', '英文女')
@@ -43,7 +43,7 @@ describe('checkCosyVoiceHealth', () => {
 
   it('treats 200 as service alive (ok=true)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, { status: 200, statusText: 'OK' }),
+      new Response(null, { status: 200, statusText: 'OK' })
     )
     const { checkCosyVoiceHealth } = await import('@/voice/tts-health.js')
     const result = await checkCosyVoiceHealth('http://localhost:50000', '英文女')
@@ -54,9 +54,7 @@ describe('checkCosyVoiceHealth', () => {
 
   it('returns ok=false with error on connection failure', async () => {
     // 模拟连接拒绝（Node fetch 在网络层失败时抛 TypeError('fetch failed')）
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(
-      new TypeError('fetch failed'),
-    )
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'))
     const { checkCosyVoiceHealth } = await import('@/voice/tts-health.js')
     const result = await checkCosyVoiceHealth('http://localhost:50000', '英文女')
     expect(result.ok).toBe(false)

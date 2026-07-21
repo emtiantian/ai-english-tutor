@@ -12,8 +12,8 @@ describe('SwitchScenarioConfirm', () => {
       props: {
         turnsCount: 8,
         minTurnsForPause: 6,
-        ...props,
-      },
+        ...props
+      }
     })
   }
 

@@ -80,7 +80,7 @@ describe('VocabTracker', () => {
     const { VocabTracker } = await import('@/ai/vocab-tracker.js')
     const tracker = new VocabTracker()
     const prompt = tracker.buildReviewPrompt([
-      { word: 'study', level: 'A1', status: 'learning', contextCount: 0 },
+      { word: 'study', level: 'A1', status: 'learning', contextCount: 0 }
     ])
     expect(prompt).toContain('study')
     expect(prompt).toContain('词汇复习')

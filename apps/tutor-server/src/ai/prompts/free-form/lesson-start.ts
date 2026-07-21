@@ -8,7 +8,7 @@ import { pickOpeningStyle } from '../shared/persona.js'
 export function buildLessonStartMessages(
   level: number,
   style?: OpeningStyle,
-  persona: CharacterPersona = LUNA_PERSONA,
+  persona: CharacterPersona = LUNA_PERSONA
 ): { messages: LLMMessage[]; style: OpeningStyle } {
   const chosen = style ?? pickOpeningStyle(persona)
 
@@ -30,9 +30,9 @@ export function buildLessonStartMessages(
   const messages: LLMMessage[] = [
     {
       role: 'system',
-      content: persona.buildSystemPrompt(level, chosen.persona, motionBlock, expressionBlock),
+      content: persona.buildSystemPrompt(level, chosen.persona, motionBlock, expressionBlock)
     },
-    { role: 'user', content: openingUserPrompt },
+    { role: 'user', content: openingUserPrompt }
   ]
 
   return { messages, style: chosen }

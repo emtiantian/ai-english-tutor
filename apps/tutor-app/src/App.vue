@@ -90,7 +90,9 @@
     />
 
     <!-- 思考指示器（仅在教学阶段显示，评估时不显示） -->
-    <div v-if="store.isThinking && store.phase === 'teaching'" class="absolute left-1/2 -translate-x-1/2 z-15 glass-sm px-16px py-8px text-white/80 text-13px flex items-center gap-6px"
+    <div
+      v-if="store.isThinking && store.phase === 'teaching'"
+      class="absolute left-1/2 -translate-x-1/2 z-15 glass-sm px-16px py-8px text-white/80 text-13px flex items-center gap-6px"
       :style="{ bottom: '100px' }"
     >
       <span class="dot-blink"></span>
@@ -100,7 +102,10 @@
     </div>
 
     <!-- 连接状态 -->
-    <div v-if="!store.isConnected && store.phase === 'teaching'" class="absolute top-10px right-10px z-20 px-12px py-6px rounded-12px text-12px font-500 bg-danger-80 text-white">
+    <div
+      v-if="!store.isConnected && store.phase === 'teaching'"
+      class="absolute top-10px right-10px z-20 px-12px py-6px rounded-12px text-12px font-500 bg-danger-80 text-white"
+    >
       连接断开
     </div>
 
@@ -159,19 +164,31 @@ const characterCanvas = ref<HTMLCanvasElement | null>(null)
 const { suggestedPhrase } = useCurrentHint({
   messages: computed(() => store.messages),
   targetWords: computed(() => store.currentScenario?.targetWords),
-  wordsLearned: computed(() => store.currentScenario?.wordsLearned),
+  wordsLearned: computed(() => store.currentScenario?.wordsLearned)
 })
 
 // 场景状态
-const availableScenarios = ref<Array<{ id: string; name: string; nameEn: string; icon: string }>>([])
+const availableScenarios = ref<Array<{ id: string; name: string; nameEn: string; icon: string }>>(
+  []
+)
 const currentScenarioId = ref<string | null>(null)
 
 // v2: CEFR 与数字等级映射
 const LEVEL_TO_CEFR: Record<number, CEFRLevel> = {
-  1: 'A1', 2: 'A2', 3: 'B1', 4: 'B2', 5: 'C1', 6: 'C2',
+  1: 'A1',
+  2: 'A2',
+  3: 'B1',
+  4: 'B2',
+  5: 'C1',
+  6: 'C2'
 }
 const CEFR_TO_LEVEL: Record<CEFRLevel, number> = {
-  A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6,
+  A1: 1,
+  A2: 2,
+  B1: 3,
+  B2: 4,
+  C1: 5,
+  C2: 6
 }
 
 /** v2: 把用户当前 numeric level 映射为 CEFR，未设置时默认 A1 */
@@ -182,7 +199,9 @@ const userCEFRLevel = computed<CEFRLevel>(() => {
 /** v2: 当前场景是否已通关 C2（封顶） */
 const isScenarioCapped = computed(() => {
   if (!store.currentScenario) return false
-  return scenarioProgress.getNextChallengeLevel(store.currentScenario.id, userCEFRLevel.value) === null
+  return (
+    scenarioProgress.getNextChallengeLevel(store.currentScenario.id, userCEFRLevel.value) === null
+  )
 })
 
 // 待生效选项（评估前设置，等级确认后使用）
@@ -201,7 +220,9 @@ const characterProvider = shallowRef<CharacterProvider | null>(null)
 
 const { client } = useTutorClient({
   characterProvider,
-  onLearnWords: (words) => { _learnWords?.(words) },
+  onLearnWords: words => {
+    _learnWords?.(words)
+  }
 })
 
 // 可组合模块 — 各自管理自身生命周期
@@ -211,24 +232,35 @@ _learnWords = learnWords
 const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client, characterProvider)
 // 从 /api/config 加载 ASR/TTS 运行时配置。
 const { asrProvider, voiceStyleSelectable } = useASRConfig()
-const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } = useAudioRecorder(client, sendToBackend, () => asrProvider.value, characterProvider)
-const { init: initCharacter, switchLive2DModel, currentLive2DModelId, isSwitching: isSwitchingModel } = useCharacterProvider(characterCanvas, client, characterProvider)
+const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } =
+  useAudioRecorder(client, sendToBackend, () => asrProvider.value, characterProvider)
+const {
+  init: initCharacter,
+  switchLive2DModel,
+  currentLive2DModelId,
+  isSwitching: isSwitchingModel
+} = useCharacterProvider(characterCanvas, client, characterProvider)
 
 // 向深层组件提供 character provider（避免通过 Pinia store 传递实例）
 provide('characterProvider', characterProvider)
 
 // --- 辅助函数 ---
-async function sendToBackend(payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }) {
+async function sendToBackend(
+  payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }
+) {
   // 语音请求需要更多时间：ASR + LLM + TTS 可能需要 30-60 秒
   const timeoutMs = payload.audioBase64 ? 120000 : undefined
-  return client.sendMessage({
-    level: store.currentLevel ?? 1,
-    // 始终使用 connectionId 作为 sessionId — 这是 SSE 作用域键。
-    // 后端使用同一个 ID 进行会话查找和 SSE 广播定向。
-    sessionId: store.connectionId,
-    userId: store.userId,
-    ...payload,
-  }, timeoutMs)
+  return client.sendMessage(
+    {
+      level: store.currentLevel ?? 1,
+      // 始终使用 connectionId 作为 sessionId — 这是 SSE 作用域键。
+      // 后端使用同一个 ID 进行会话查找和 SSE 广播定向。
+      sessionId: store.connectionId,
+      userId: store.userId,
+      ...payload
+    },
+    timeoutMs
+  )
 }
 
 onMounted(async () => {
@@ -270,7 +302,7 @@ async function fetchScenarios() {
 // --- 场景已选择 → 按所选 CEFR 等级开始教学 ---
 async function handleScenarioSelect(
   scenarioId: string,
-  options: { styleName?: string; level: CEFRLevel },
+  options: { styleName?: string; level: CEFRLevel }
 ) {
   pendingScenarioId.value = scenarioId
   pendingStyleName.value = options.styleName
@@ -336,7 +368,7 @@ async function startTeaching(resumeFrom?: string) {
       ...(pendingScenarioId.value ? { scenarioId: pendingScenarioId.value } : {}),
       ...(pendingStyleName.value ? { styleName: pendingStyleName.value } : {}),
       ...(pendingTargetLevel.value ? { targetLevel: pendingTargetLevel.value } : {}),
-      ...(resumeFrom ? { resumeFrom } : {}),
+      ...(resumeFrom ? { resumeFrom } : {})
     })
 
     if (response.sessionId) {
@@ -455,10 +487,9 @@ async function sendText(text: string) {
       id: createMessageId(),
       role: 'assistant',
       text: err instanceof Error ? err.message : '发送失败，请重试',
-      timestamp: Date.now(),
+      timestamp: Date.now()
     })
   }
-
 }
 </script>
 
@@ -478,10 +509,12 @@ async function sendText(text: string) {
 }
 
 /* Vue 过渡动画（无法用工具类表达） */
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.5s ease;
 }
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>

@@ -35,13 +35,13 @@ function getDB(): Promise<IDBPDatabase> {
         if (!db.objectStoreNames.contains('pending-sync')) {
           db.createObjectStore('pending-sync', {
             keyPath: 'id',
-            autoIncrement: true,
+            autoIncrement: true
           })
         }
         if (!db.objectStoreNames.contains('scenario-progress')) {
           db.createObjectStore('scenario-progress', { keyPath: 'scenarioId' })
         }
-      },
+      }
     })
   }
   return dbPromise
@@ -62,7 +62,7 @@ export const vocabDB = {
         learnedAt: Date.now(),
         reviewCount: 1,
         lastReviewAt: Date.now(),
-        synced: false,
+        synced: false
       } as VocabRecord)
     }
   },
@@ -77,7 +77,7 @@ export const vocabDB = {
   async getLearnedWords(): Promise<string[]> {
     const db = await getDB()
     const records = await db.getAll('words')
-    return records.map((r) => r.word)
+    return records.map(r => r.word)
   },
 
   /** 标记单词已同步到后端 */
@@ -96,7 +96,7 @@ export const vocabDB = {
     await db.add('pending-sync', {
       word,
       action,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     } as PendingSyncRecord)
   },
 
@@ -124,7 +124,7 @@ export const vocabDB = {
     await db.put('scenario-progress', {
       scenarioId,
       wordsLearned: Array.from(wordsLearned),
-      savedAt: Date.now(),
+      savedAt: Date.now()
     })
   },
 
@@ -139,5 +139,5 @@ export const vocabDB = {
   async clearScenarioProgress(scenarioId: string): Promise<void> {
     const db = await getDB()
     await db.delete('scenario-progress', scenarioId)
-  },
+  }
 }

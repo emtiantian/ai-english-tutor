@@ -16,8 +16,8 @@ describe('ScenarioStatusStrip', () => {
         wordsLearned: ['coffee', 'tea'],
         targetWordsTotal: 30,
         coverageRate: 0.18,
-        ...props,
-      },
+        ...props
+      }
     })
   }
 
@@ -31,7 +31,11 @@ describe('ScenarioStatusStrip', () => {
   })
 
   it('无 coverageRate 时根据 wordsLearned / targetWordsTotal 计算', () => {
-    const wrapper = mountComponent({ coverageRate: undefined, wordsLearned: ['a', 'b', 'c'], targetWordsTotal: 10 })
+    const wrapper = mountComponent({
+      coverageRate: undefined,
+      wordsLearned: ['a', 'b', 'c'],
+      targetWordsTotal: 10
+    })
     expect(wrapper.text()).toContain('30%')
   })
 

@@ -15,16 +15,16 @@
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | Vue 3 + Pinia + UnoCSS + Vite |
-| 角色渲染 | Live2D Cubism SDK / Spine WebGL |
-| 后端 | Fastify + TypeScript |
-| 数据库 | SQLite (better-sqlite3) |
-| LLM | DeepSeek / OpenAI / 小米 MiLM |
-| TTS | 小米 MiMo voicedesign / CosyVoice / OpenAI / 浏览器 SpeechSynthesis |
-| ASR | Whisper.cpp / 小米 ASR / OpenAI Whisper |
-| 部署 | Docker Compose (Nginx 网关 + 前后端分离) |
+| 层级     | 技术                                                                |
+| -------- | ------------------------------------------------------------------- |
+| 前端     | Vue 3 + Pinia + UnoCSS + Vite                                       |
+| 角色渲染 | Live2D Cubism SDK / Spine WebGL                                     |
+| 后端     | Fastify + TypeScript                                                |
+| 数据库   | SQLite (better-sqlite3)                                             |
+| LLM      | DeepSeek / OpenAI / 小米 MiLM                                       |
+| TTS      | 小米 MiMo voicedesign / CosyVoice / OpenAI / 浏览器 SpeechSynthesis |
+| ASR      | Whisper.cpp / 小米 ASR / OpenAI Whisper                             |
+| 部署     | Docker Compose (Nginx 网关 + 前后端分离)                            |
 
 ## 项目结构
 
@@ -107,31 +107,31 @@ pnpm build
 
 ### LLM 提供商
 
-| 提供商 | `LLM_PROVIDER` | Key | 模型 |
-|--------|----------------|-----|------|
-| DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat`，或火山方舟接入点 ID |
-| 小米 MiLM（已停用） | `xiaomi` | `XIAOMI_API_KEY` | `milm-pro` |
-| Mock（开发用） | `mock` | 无 | — |
+| 提供商              | `LLM_PROVIDER` | Key                | 模型                                 |
+| ------------------- | -------------- | ------------------ | ------------------------------------ |
+| DeepSeek            | `deepseek`     | `DEEPSEEK_API_KEY` | `deepseek-chat`，或火山方舟接入点 ID |
+| 小米 MiLM（已停用） | `xiaomi`       | `XIAOMI_API_KEY`   | `milm-pro`                           |
+| Mock（开发用）      | `mock`         | 无                 | —                                    |
 
 ### TTS 语音合成
 
-| 引擎 | `TTS_PROVIDER` | 说明 |
-|------|----------------|------|
-| 浏览器 | `browser` | 无需后端，使用系统语音（默认） |
-| 火山方舟 | `volcengine` | 云 API，需 `VOLCENGINE_TTS_API_KEY` |
-| CosyVoice | `cosyvoice` | 需要 Docker 启动 CosyVoice 服务 |
-| 小米 MiMo（已停用） | `xiaomi` | voicedesign 模式，通过 `voiceDesign` 描述角色音色 |
+| 引擎                | `TTS_PROVIDER` | 说明                                              |
+| ------------------- | -------------- | ------------------------------------------------- |
+| 浏览器              | `browser`      | 无需后端，使用系统语音（默认）                    |
+| 火山方舟            | `volcengine`   | 云 API，需 `VOLCENGINE_TTS_API_KEY`               |
+| CosyVoice           | `cosyvoice`    | 需要 Docker 启动 CosyVoice 服务                   |
+| 小米 MiMo（已停用） | `xiaomi`       | voicedesign 模式，通过 `voiceDesign` 描述角色音色 |
 
 **角色音色系统**：每种风格的 `voiceDesign` 采用结构化格式（【角色】【场景】【指导】），包含语速、气息、音色、情绪四维描述，作为 prompt 发送给小米 TTS voicedesign 模型。默认风格为「慵懒御姐」。
 
 ### ASR 语音识别
 
-| 引擎 | `ASR_PROVIDER` | 说明 |
-|------|----------------|------|
-| 浏览器 | `browser` | 前端浏览器识别，无需后端（默认） |
-| 火山方舟 | `volcengine` | 云 API，需 `VOLCENGINE_ASR_API_KEY` |
-| Whisper.cpp | `whisper` | 需要 Docker 启动 Whisper 服务 |
-| 小米 ASR（已停用） | `xiaomi` | 需要 `XIAOMI_API_KEY`，支持 mp3/wav |
+| 引擎               | `ASR_PROVIDER` | 说明                                |
+| ------------------ | -------------- | ----------------------------------- |
+| 浏览器             | `browser`      | 前端浏览器识别，无需后端（默认）    |
+| 火山方舟           | `volcengine`   | 云 API，需 `VOLCENGINE_ASR_API_KEY` |
+| Whisper.cpp        | `whisper`      | 需要 Docker 启动 Whisper 服务       |
+| 小米 ASR（已停用） | `xiaomi`       | 需要 `XIAOMI_API_KEY`，支持 mp3/wav |
 
 > 录音自动转 MP3 (16kHz mono 64kbps) 后上传，兼容所有 ASR 提供商。
 
@@ -139,11 +139,11 @@ pnpm build
 
 通过 `VITE_CHARACTER_PROVIDER` 切换：
 
-| 类型 | 说明 |
-|------|------|
+| 类型     | 说明                       |
+| -------- | -------------------------- |
 | `live2d` | Live2D Cubism 模型（默认） |
-| `spine` | Spine 骨骼动画 |
-| `svg` | SVG 占位符（无 3D 渲染） |
+| `spine`  | Spine 骨骼动画             |
+| `svg`    | SVG 占位符（无 3D 渲染）   |
 
 ## Docker 部署
 
@@ -334,24 +334,24 @@ export NO_PROXY="localhost,127.0.0.1,::1,*.local,100.100.132.72"
 
 ## 端口一览
 
-| 端口 | 服务 | 说明 |
-|------|------|------|
-| 80 | Gateway | Docker 生产环境 |
-| 3000 | Backend | Fastify API 服务 |
-| 6173 | Frontend | Vite 开发服务器 |
-| 4173 | Frontend | Vite 预览服务器 |
-| 50000 | CosyVoice | 可选 TTS 服务 |
-| 8080 | Whisper | 可选 ASR 服务 |
+| 端口  | 服务      | 说明             |
+| ----- | --------- | ---------------- |
+| 80    | Gateway   | Docker 生产环境  |
+| 3000  | Backend   | Fastify API 服务 |
+| 6173  | Frontend  | Vite 开发服务器  |
+| 4173  | Frontend  | Vite 预览服务器  |
+| 50000 | CosyVoice | 可选 TTS 服务    |
+| 8080  | Whisper   | 可选 ASR 服务    |
 
 ## 第三方 Live2D 素材声明
 
 本仓库内置 3 个 Live2D Inc. 官方 sample 模型,均遵循 **Live2D Free Material License Agreement**(全文见 [`LICENSE-Live2D.md`](./LICENSE-Live2D.md)):
 
-| 模型 | 路径 | 出处 | 备注 |
-|---|---|---|---|
-| Hiyori Momose | `apps/tutor-app/public/models/hiyori/` | Live2D Cubism SDK Sample | 默认角色,**不得对角色设计作任何改动** |
-| Shizuku | `apps/tutor-app/public/models/shizuku/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/shizuku/` | **保持角色名与设定不变** |
-| Mao Pro | `apps/tutor-app/public/models/mao_pro/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/mao_pro/` | Mao Niziiro,无附加条款 |
+| 模型          | 路径                                    | 出处                                                                                           | 备注                                  |
+| ------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Hiyori Momose | `apps/tutor-app/public/models/hiyori/`  | Live2D Cubism SDK Sample                                                                       | 默认角色,**不得对角色设计作任何改动** |
+| Shizuku       | `apps/tutor-app/public/models/shizuku/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/shizuku/` | **保持角色名与设定不变**              |
+| Mao Pro       | `apps/tutor-app/public/models/mao_pro/` | [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) `live2d-models/mao_pro/` | Mao Niziiro,无附加条款                |
 
 各模型目录下保留了原始 `ReadMe.txt`(协议要求) + `LICENSE-Live2D.md` 副本。**本项目目前为个人学习用途;商业化(订阅/卖软件/企业版)前必须向 Live2D Inc. 取得商业 license。**
 

@@ -43,6 +43,8 @@ describe('asr provider factory', () => {
   it('throws when browser provider receives audio', async () => {
     config.ASR_PROVIDER = 'browser'
     const browserProvider = createASRProvider()
-    await expect(browserProvider.transcribe(Buffer.alloc(1024), 'audio/webm')).rejects.toThrow(/ASR_PROVIDER=browser/)
+    await expect(browserProvider.transcribe(Buffer.alloc(1024), 'audio/webm')).rejects.toThrow(
+      /ASR_PROVIDER=browser/
+    )
   })
 })

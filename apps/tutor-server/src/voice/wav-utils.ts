@@ -21,7 +21,7 @@ export function pcmToWav(
   pcm: Buffer,
   sampleRate: number,
   channels = 1,
-  bitsPerSample = 16,
+  bitsPerSample = 16
 ): Buffer {
   const byteRate = (sampleRate * channels * bitsPerSample) / 8
   const blockAlign = (channels * bitsPerSample) / 8
@@ -29,20 +29,32 @@ export function pcmToWav(
   const header = Buffer.alloc(44)
   let offset = 0
 
-  header.write('RIFF', offset); offset += 4
-  header.writeUInt32LE(36 + dataSize, offset); offset += 4
-  header.write('WAVE', offset); offset += 4
+  header.write('RIFF', offset)
+  offset += 4
+  header.writeUInt32LE(36 + dataSize, offset)
+  offset += 4
+  header.write('WAVE', offset)
+  offset += 4
 
-  header.write('fmt ', offset); offset += 4
-  header.writeUInt32LE(16, offset); offset += 4 // PCM fmt chunk 大小
-  header.writeUInt16LE(1, offset); offset += 2 // 音频格式 = PCM
-  header.writeUInt16LE(channels, offset); offset += 2
-  header.writeUInt32LE(sampleRate, offset); offset += 4
-  header.writeUInt32LE(byteRate, offset); offset += 4
-  header.writeUInt16LE(blockAlign, offset); offset += 2
-  header.writeUInt16LE(bitsPerSample, offset); offset += 2
+  header.write('fmt ', offset)
+  offset += 4
+  header.writeUInt32LE(16, offset)
+  offset += 4 // PCM fmt chunk 大小
+  header.writeUInt16LE(1, offset)
+  offset += 2 // 音频格式 = PCM
+  header.writeUInt16LE(channels, offset)
+  offset += 2
+  header.writeUInt32LE(sampleRate, offset)
+  offset += 4
+  header.writeUInt32LE(byteRate, offset)
+  offset += 4
+  header.writeUInt16LE(blockAlign, offset)
+  offset += 2
+  header.writeUInt16LE(bitsPerSample, offset)
+  offset += 2
 
-  header.write('data', offset); offset += 4
+  header.write('data', offset)
+  offset += 4
   header.writeUInt32LE(dataSize, offset)
 
   return Buffer.concat([header, pcm])

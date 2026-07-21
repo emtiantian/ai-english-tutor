@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { CEFRLevel } from '@ai-english-tutor/shared'
 import type { UserScenarioProgress } from '../client/types'
-import {
-  scenarioPausedDB,
-  type ScenarioPausedSnapshot,
-} from '../lib/scenario-paused-db'
+import { scenarioPausedDB, type ScenarioPausedSnapshot } from '../lib/scenario-paused-db'
 
 /** v2: 暂停快照需要的最小轮次门槛（< 6 轮直接放弃） */
 export const MIN_TURNS_FOR_PAUSE = 6
@@ -31,16 +28,14 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
   const pausedSnapshots = ref<Map<string, ScenarioPausedSnapshot>>(new Map())
 
   /** 用户每个场景的累积进度（最高通关档 + 各档星数）。持久化到 localStorage */
-  const userScenarioProgress = ref<Map<string, UserScenarioProgress>>(
-    loadUserScenarioProgress(),
-  )
+  const userScenarioProgress = ref<Map<string, UserScenarioProgress>>(loadUserScenarioProgress())
 
   function loadUserScenarioProgress(): Map<string, UserScenarioProgress> {
     try {
       const raw = localStorage.getItem(USER_SCENARIO_PROGRESS_KEY)
       if (!raw) return new Map()
       const arr = JSON.parse(raw) as UserScenarioProgress[]
-      return new Map(arr.map((p) => [p.scenarioId, p]))
+      return new Map(arr.map(p => [p.scenarioId, p]))
     } catch {
       return new Map()
     }
@@ -76,7 +71,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
    * 写 IndexedDB + 同步更新 store map（不重新 list，避免 race）。
    */
   async function savePausedSnapshot(
-    snapshot: Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'>,
+    snapshot: Omit<ScenarioPausedSnapshot, 'savedAt' | 'expiresAt'>
   ): Promise<void> {
     try {
       await scenarioPausedDB.savePausedSnapshot(snapshot)
@@ -84,7 +79,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
       pausedSnapshots.value = new Map(pausedSnapshots.value).set(snapshot.scenarioId, {
         ...snapshot,
         savedAt: now,
-        expiresAt: now + 24 * 60 * 60 * 1000,
+        expiresAt: now + 24 * 60 * 60 * 1000
       })
     } catch {
       // 忽略
@@ -115,7 +110,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
   async function recordScenarioCompletion(
     scenarioId: string,
     level: CEFRLevel,
-    stars: 0 | 3 | 4 | 5,
+    stars: 0 | 3 | 4 | 5
   ): Promise<void> {
     const existing = userScenarioProgress.value.get(scenarioId)
     const next: UserScenarioProgress = existing
@@ -125,7 +120,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
           highestClearedLevel: null,
           starsByLevel: {},
           attempts: 0,
-          lastPlayedAt: 0,
+          lastPlayedAt: 0
         }
     next.attempts += 1
     next.lastPlayedAt = Date.now()
@@ -139,9 +134,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
         next.starsByLevel[level] = passingStars
       }
       // 升级 highestClearedLevel：取较高 CEFR
-      const prevIdx = next.highestClearedLevel
-        ? CEFR_ORDER.indexOf(next.highestClearedLevel)
-        : -1
+      const prevIdx = next.highestClearedLevel ? CEFR_ORDER.indexOf(next.highestClearedLevel) : -1
       const curIdx = CEFR_ORDER.indexOf(level)
       if (curIdx > prevIdx) {
         next.highestClearedLevel = level
@@ -161,10 +154,7 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
    * - 已通关过 -> 返回 highestClearedLevel + 1
    * - 已通关 C2 -> 返回 null（已封顶）
    */
-  function getNextChallengeLevel(
-    scenarioId: string,
-    fallbackLevel: CEFRLevel,
-  ): CEFRLevel | null {
+  function getNextChallengeLevel(scenarioId: string, fallbackLevel: CEFRLevel): CEFRLevel | null {
     const progress = userScenarioProgress.value.get(scenarioId)
     if (!progress || !progress.highestClearedLevel) return fallbackLevel
     const idx = CEFR_ORDER.indexOf(progress.highestClearedLevel)
@@ -179,6 +169,6 @@ export const useScenarioProgressStore = defineStore('scenarioProgress', () => {
     savePausedSnapshot,
     discardPausedSnapshot,
     recordScenarioCompletion,
-    getNextChallengeLevel,
+    getNextChallengeLevel
   }
 })

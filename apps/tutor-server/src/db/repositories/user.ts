@@ -31,7 +31,7 @@ export const userRepo = {
 
     db.prepare(
       `INSERT INTO users (id, name, level, total_study_time, total_words_learned, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(id, input.name ?? null, input.level ?? 1, 0, 0, now, now)
 
     return this.findById(id)!
@@ -40,8 +40,7 @@ export const userRepo = {
   findById(id: string): User | undefined {
     const db = getDb()
     const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as
-      | Record<string, unknown>
-      | undefined
+      Record<string, unknown> | undefined
     return row ? mapRow(row) : undefined
   },
 
@@ -81,9 +80,9 @@ export const userRepo = {
   incrementStudyTime(id: string, minutes: number): void {
     const db = getDb()
     db.prepare(
-      'UPDATE users SET total_study_time = total_study_time + ?, updated_at = unixepoch() WHERE id = ?',
+      'UPDATE users SET total_study_time = total_study_time + ?, updated_at = unixepoch() WHERE id = ?'
     ).run(minutes, id)
-  },
+  }
 }
 
 function mapRow(row: Record<string, unknown>): User {
@@ -94,6 +93,6 @@ function mapRow(row: Record<string, unknown>): User {
     totalStudyTime: Number(row.total_study_time),
     totalWordsLearned: Number(row.total_words_learned),
     createdAt: new Date(Number(row.created_at) * 1000),
-    updatedAt: new Date(Number(row.updated_at) * 1000),
+    updatedAt: new Date(Number(row.updated_at) * 1000)
   }
 }

@@ -10,7 +10,11 @@ const FETCH_TIMEOUT_MS = 30_000
 /**
  * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
  */
-function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
@@ -21,7 +25,7 @@ export const COSYVOICE_VOICES = [
   '英文女', // 英文女声（教学默认）
   '英文男', // 英文男声
   '中文女', // 中文女声
-  '中文男', // 中文男声
+  '中文男' // 中文男声
 ] as const
 
 export type CosyVoiceId = (typeof COSYVOICE_VOICES)[number]
@@ -80,7 +84,7 @@ export class CosyVoiceProvider implements TTSProvider {
       async () => {
         logger.debug(
           { provider: this.name, voice, speed, textLength: text.length },
-          'CosyVoice 合成请求',
+          'CosyVoice 合成请求'
         )
 
         const startTime = Date.now()
@@ -92,7 +96,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
         const response = await fetchWithTimeout(`${this.baseUrl}/inference_sft`, {
           method: 'POST',
-          body: form,
+          body: form
         })
 
         if (!response.ok) {
@@ -104,20 +108,14 @@ export class CosyVoiceProvider implements TTSProvider {
         const buffer = pcmToWav(Buffer.from(arrayBuffer), config.COSYVOICE_SAMPLE_RATE)
         const duration = Date.now() - startTime
 
-        logger.info(
-          { provider: this.name, duration, size: buffer.length },
-          'CosyVoice 合成完成',
-        )
+        logger.info({ provider: this.name, duration, size: buffer.length }, 'CosyVoice 合成完成')
 
         return buffer
-      },
+      }
     )
   }
 
-  async *synthesizeStream(
-    text: string,
-    options?: TTSSynthesizeOptions,
-  ): AsyncGenerator<Buffer> {
+  async *synthesizeStream(text: string, options?: TTSSynthesizeOptions): AsyncGenerator<Buffer> {
     // 服务端流式输出无头 PCM；单个分块无法独立解码，
     // 因此我们将整个响应缓存后，一次性加上 WAV 头，
     // 再产出一段可播放的 buffer。
@@ -136,14 +134,14 @@ export class CosyVoiceProvider implements TTSProvider {
   async synthesizeWithEmotion(
     text: string,
     instruct: string,
-    options?: TTSSynthesizeOptions,
+    options?: TTSSynthesizeOptions
   ): Promise<Buffer> {
     const voice = options?.voice ?? config.COSYVOICE_SPK_ID
     const speed = options?.speed ?? config.COSYVOICE_SPEED
 
     logger.debug(
       { provider: this.name, voice, speed, instruct, textLength: text.length },
-      'CosyVoice 情感合成',
+      'CosyVoice 情感合成'
     )
 
     const startTime = Date.now()
@@ -156,7 +154,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
     const response = await fetchWithTimeout(`${this.baseUrl}/inference_instruct`, {
       method: 'POST',
-      body: form,
+      body: form
     })
 
     if (!response.ok) {
@@ -170,7 +168,7 @@ export class CosyVoiceProvider implements TTSProvider {
 
     logger.info(
       { provider: this.name, duration, size: buffer.length, instruct },
-      'CosyVoice 指令合成完成',
+      'CosyVoice 指令合成完成'
     )
 
     return buffer

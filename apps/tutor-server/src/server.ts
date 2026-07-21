@@ -14,10 +14,10 @@ import { loadAllVocabulary, loadAllScenarios } from './vocab/loader.js'
 export async function createServer(): Promise<ReturnType<typeof Fastify>> {
   const server = Fastify({
     logger: {
-      level: config.LOG_LEVEL,
+      level: config.LOG_LEVEL
     },
     // ASR 返回的 WAV 音频可能很大（未压缩），将 body 限制提高到 25MB
-    bodyLimit: 25 * 1024 * 1024,
+    bodyLimit: 25 * 1024 * 1024
   })
 
   // 注册 CORS
@@ -25,7 +25,7 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
   if (isWildcardCors) {
     logger.warn(
       { corsOrigin: config.CORS_ORIGIN },
-      'CORS_ORIGIN 为通配符 (*)；凭据模式已禁用。生产环境请使用明确的白名单。',
+      'CORS_ORIGIN 为通配符 (*)；凭据模式已禁用。生产环境请使用明确的白名单。'
     )
   }
   await server.register(cors, {
@@ -40,14 +40,14 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
       }
       cb(new Error('CORS 不允许该来源'), false)
     },
-    credentials: !isWildcardCors,
+    credentials: !isWildcardCors
   })
 
   // 注册 multipart，用于文件上传（ASR 音频）
   await server.register(multipart, {
     limits: {
-      fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024,
-    },
+      fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024
+    }
   })
 
   // 初始化数据库、词汇表和场景
@@ -66,7 +66,7 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
     logger.error({ err: error }, '未处理的错误')
     reply.status(500).send({
       error: error.message ?? '内部服务器错误',
-      code: 'INTERNAL_ERROR',
+      code: 'INTERNAL_ERROR'
     })
   })
 
@@ -74,7 +74,7 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
   server.setNotFoundHandler((_request, reply) => {
     reply.status(404).send({
       error: '未找到',
-      code: 'NOT_FOUND',
+      code: 'NOT_FOUND'
     })
   })
 

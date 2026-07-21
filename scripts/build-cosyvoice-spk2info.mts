@@ -84,7 +84,7 @@ function parseArgs(argv: string[]): CliArgs {
     audio: '',
     modelDir: 'iic/CosyVoice2-0.5B',
     output: '',
-    help: false,
+    help: false
   }
 
   for (let i = 0; i < argv.length; i++) {
@@ -122,7 +122,8 @@ function parseArgs(argv: string[]): CliArgs {
 
 function printHelp(): void {
   const dataRoot = resolveDataRoot()
-  console.log(`
+  console.log(
+    `
 用法:
   pnpm build:cosyvoice-spk2info [-- <选项>]
   npx tsx scripts/build-cosyvoice-spk2info.mts [-- <选项>]
@@ -148,7 +149,8 @@ function printHelp(): void {
 约束:
   - 参考音频与输出文件必须在同一目录（即 cosyvoice-spk2info 目录），该目录会被读写挂载到容器
   - 首次在 GPU 机器运行需人工验证 CosyVoice2 API 是否与 cosyvoice:local 镜像版本匹配
-`.trim())
+`.trim()
+  )
 }
 
 // ── 前置检查 ──
@@ -183,7 +185,7 @@ function preflightChecks(args: CliArgs): {
     fail(
       '未检测到 docker 命令。请先安装 Docker 并确保 docker 在 PATH 中。\n' +
         '  macOS: https://docs.docker.com/desktop/install/mac-install/\n' +
-        '  Linux: https://docs.docker.com/engine/install/',
+        '  Linux: https://docs.docker.com/engine/install/'
     )
   }
 
@@ -191,7 +193,7 @@ function preflightChecks(args: CliArgs): {
   if (!imageExists(IMAGE)) {
     fail(
       `镜像 ${IMAGE} 不存在。请先在具备 GPU 的机器上构建该镜像（参考 CosyVoice 官方仓库的 Dockerfile），\n` +
-        '  或在远程服务器上确认镜像已就绪后再运行本脚本。',
+        '  或在远程服务器上确认镜像已就绪后再运行本脚本。'
     )
   }
 
@@ -200,7 +202,7 @@ function preflightChecks(args: CliArgs): {
     fail(
       `参考音频不存在: ${args.audio}\n` +
         `  请将参考音频放到 <data-root>/cosyvoice-spk2info/<spk-id>.wav，\n` +
-        '  或通过 --audio 参数指定其他路径。',
+        '  或通过 --audio 参数指定其他路径。'
     )
   }
 
@@ -218,7 +220,7 @@ function preflightChecks(args: CliArgs): {
       `参考音频目录与输出目录不一致:\n` +
         `  参考音频目录: ${audioDir}\n` +
         `  输出目录:     ${outputDir}\n` +
-        '  本脚本只挂载一个 spk2info 目录到容器，两者必须位于同一目录。',
+        '  本脚本只挂载一个 spk2info 目录到容器，两者必须位于同一目录。'
     )
   }
 
@@ -241,21 +243,15 @@ function preflightChecks(args: CliArgs): {
   }
 
   // 容器内路径（basename 保持与宿主机一致）
-  const containerAudioPath = path.posix.join(
-    CONTAINER_SPK_DIR,
-    path.basename(args.audio),
-  )
-  const containerOutputPath = path.posix.join(
-    CONTAINER_SPK_DIR,
-    path.basename(args.output),
-  )
+  const containerAudioPath = path.posix.join(CONTAINER_SPK_DIR, path.basename(args.audio))
+  const containerOutputPath = path.posix.join(CONTAINER_SPK_DIR, path.basename(args.output))
 
   return {
     hostSpkDir,
     hostModelscopeCache,
     hostPretrainedModels,
     containerAudioPath,
-    containerOutputPath,
+    containerOutputPath
   }
 }
 
@@ -345,11 +341,10 @@ function buildDockerCommand(
     hostPretrainedModels: string
     containerAudioPath: string
     containerOutputPath: string
-  },
+  }
 ): string[] {
   // heredoc 通过 bash -c 传入, 'PY' 加引号禁止变量展开
-  const innerCmd =
-    `python - <<'PY'\n${PYTHON_SCRIPT}\nPY`
+  const innerCmd = `python - <<'PY'\n${PYTHON_SCRIPT}\nPY`
 
   return [
     'run',
@@ -378,7 +373,7 @@ function buildDockerCommand(
     IMAGE,
     'bash',
     '-c',
-    innerCmd,
+    innerCmd
   ]
 }
 
@@ -391,29 +386,33 @@ function runDocker(dockerArgs: string[]): void {
 
   const child = spawn('docker', dockerArgs, { stdio: 'inherit' })
 
-  child.on('error', (err) => {
+  child.on('error', err => {
     console.error(`启动 docker 失败: ${err.message}`)
     process.exit(1)
   })
 
-  child.on('close', (code) => {
+  child.on('close', code => {
     if (code === 0) return
     console.error('')
     console.error(`docker 进程退出码: ${code}`)
     if (code === 125) {
       console.error(
         '  可能原因: --gpus all 不被支持（未安装 nvidia-container-toolkit），\n' +
-          '  或 GPU 设备不可用。请确认机器具备 NVIDIA GPU 且已安装 nvidia-container-toolkit。',
+          '  或 GPU 设备不可用。请确认机器具备 NVIDIA GPU 且已安装 nvidia-container-toolkit。'
       )
     } else if (code === 126 || code === 127) {
       console.error(
         '  可能原因: 容器内 python 或 bash 命令找不到。\n' +
-          `  请检查 ${IMAGE} 镜像是否完好（进入容器跑 \`which python\` 确认）。`,
+          `  请检查 ${IMAGE} 镜像是否完好（进入容器跑 \`which python\` 确认）。`
       )
     } else if (code === 137) {
-      console.error('  可能原因: 容器被 OOM Killed。GTX 970 4GB 显存可能不足，请关闭其他 GPU 进程后重试。')
+      console.error(
+        '  可能原因: 容器被 OOM Killed。GTX 970 4GB 显存可能不足，请关闭其他 GPU 进程后重试。'
+      )
     } else {
-      console.error('  详见上方 Python traceback。若为 API 不匹配，请核对 cosyvoice:local 镜像内的 CosyVoice 代码版本。')
+      console.error(
+        '  详见上方 Python traceback。若为 API 不匹配，请核对 cosyvoice:local 镜像内的 CosyVoice 代码版本。'
+      )
     }
     process.exit(code ?? 1)
   })

@@ -14,11 +14,8 @@ function load(version: number, name: string): Migration {
   return {
     version,
     name,
-    sql: readFileSync(join(__dirname, `${String(version).padStart(4, '0')}_${name}.sql`), 'utf-8'),
+    sql: readFileSync(join(__dirname, `${String(version).padStart(4, '0')}_${name}.sql`), 'utf-8')
   }
 }
 
-export const allMigrations: Migration[] = [
-  load(1, 'init'),
-  load(2, 'add_missing_columns'),
-]
+export const allMigrations: Migration[] = [load(1, 'init'), load(2, 'add_missing_columns')]

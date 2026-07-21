@@ -45,6 +45,6 @@ export function createTestEnv(prefix: string): TestEnv {
     },
     cleanup: () => {
       rmSync(root, { recursive: true, force: true })
-    },
+    }
   }
 }

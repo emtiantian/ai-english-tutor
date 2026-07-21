@@ -20,7 +20,7 @@ export class AudioPipeline {
   constructor(
     private tts: TTSProvider,
     private asr: ASRProvider,
-    private llm: LLMProvider,
+    private llm: LLMProvider
   ) {
     this.asrAdapter = new AsrAdapter(asr, llm)
     this.ttsOutput = new TtsOutput(tts)
@@ -34,7 +34,7 @@ export class AudioPipeline {
   async transcribeAudio(
     text: string,
     audioBase64: string | undefined,
-    audioFormat: string,
+    audioFormat: string
   ): Promise<string> {
     return this.asrAdapter.transcribeAudio(text, audioBase64, audioFormat)
   }
@@ -46,11 +46,15 @@ export class AudioPipeline {
   async handleOutput(
     text: string,
     voiceDesign?: string,
-    sessionId?: string,
+    sessionId?: string
   ): Promise<{ audioBase64?: string }> {
     const result = await this.ttsOutput.handleOutput(text, voiceDesign)
     if (result.audioBase64) {
-      this.audioBroadcaster.broadcastAudioChunks(result.audioBase64, this.tts.outputFormat, sessionId)
+      this.audioBroadcaster.broadcastAudioChunks(
+        result.audioBase64,
+        this.tts.outputFormat,
+        sessionId
+      )
       logger.info({ size: Buffer.byteLength(result.audioBase64, 'base64') }, 'TTS 音频广播完成')
     }
     return result
@@ -73,7 +77,7 @@ export class AudioPipeline {
     audioBuffer: Buffer,
     format: string,
     sessionId: string | undefined,
-    eventName: string,
+    eventName: string
   ): void {
     this.audioBroadcaster.broadcastAudioChunksDirect(audioBuffer, format, sessionId, eventName)
   }

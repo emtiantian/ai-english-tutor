@@ -14,7 +14,7 @@ const baseScenario: Scenario = {
   targetWords: ['coffee', 'tea', 'please'],
   role: { student: '顾客', teacher: '服务员' },
   setting: 'A test cafe.',
-  objectives: [],
+  objectives: []
 }
 
 function makeVocab(words: Array<{ word: string; topic: string }>): VocabLevel {
@@ -23,7 +23,7 @@ function makeVocab(words: Array<{ word: string; topic: string }>): VocabLevel {
     levelNum: 1,
     description: '',
     wordCount: words.length,
-    words: words.map((w) => ({ ...w, meaning: '', pos: 'noun' })),
+    words: words.map(w => ({ ...w, meaning: '', pos: 'noun' }))
   }
 }
 
@@ -43,7 +43,7 @@ describe('pickScenarioVocabulary', () => {
   it('returns unique words', () => {
     const scenario = vocabLoader.getScenarioById('restaurant-ordering')!
     const wordsA1 = pickScenarioVocabulary(scenario, 'A1')
-    const unique = new Set(wordsA1.map((w) => w.toLowerCase()))
+    const unique = new Set(wordsA1.map(w => w.toLowerCase()))
     expect(unique.size).toBe(wordsA1.length)
   })
 
@@ -70,7 +70,7 @@ describe('pickScenarioVocabulary', () => {
       { word: 'drink', topic: 'food' },
       { word: 'apple', topic: 'food' },
       { word: 'one', topic: 'number' },
-      { word: 'two', topic: 'number' },
+      { word: 'two', topic: 'number' }
     ]
 
     getVocabularyByLevelSpy = vi
@@ -88,10 +88,10 @@ describe('pickScenarioVocabulary', () => {
           acts: [
             { name: '开场', goal: 'Greet', vocabThemes: ['greeting', 'politeness'] },
             { name: '主线', goal: 'Order', vocabThemes: ['food'] },
-            { name: '收尾', goal: 'Pay', vocabThemes: ['number'] },
-          ],
-        },
-      },
+            { name: '收尾', goal: 'Pay', vocabThemes: ['number'] }
+          ]
+        }
+      }
     }
 
     const words = pickScenarioVocabulary(scenario, 'A1', 6)
@@ -101,7 +101,7 @@ describe('pickScenarioVocabulary', () => {
     for (const w of a1Words) wordTopics.set(w.word, w.topic)
 
     // 每幕分到 2 个词；结果里应至少出现每个幕主题下的词
-    const themes = new Set(scenario.levelProfiles!.A1!.acts!.flatMap((a) => a.vocabThemes ?? []))
+    const themes = new Set(scenario.levelProfiles!.A1!.acts!.flatMap(a => a.vocabThemes ?? []))
     const coveredThemes = new Set<string>()
     for (const w of words) {
       const topic = wordTopics.get(w)
@@ -113,7 +113,7 @@ describe('pickScenarioVocabulary', () => {
   it('levelProfiles 存在时优先使用 profile 的 acts 与 vocabThemes', () => {
     const a1Words = [
       { word: 'hello', topic: 'greeting' },
-      { word: 'please', topic: 'politeness' },
+      { word: 'please', topic: 'politeness' }
     ]
 
     getVocabularyByLevelSpy = vi
@@ -128,11 +128,9 @@ describe('pickScenarioVocabulary', () => {
       topics: ['food'],
       levelProfiles: {
         A1: {
-          acts: [
-            { name: '开场', goal: 'Greet', vocabThemes: ['greeting', 'politeness'] },
-          ],
-        },
-      },
+          acts: [{ name: '开场', goal: 'Greet', vocabThemes: ['greeting', 'politeness'] }]
+        }
+      }
     }
 
     const words = pickScenarioVocabulary(scenario, 'A1', 2)
@@ -149,7 +147,7 @@ describe('pickScenarioVocabulary', () => {
       { word: 'eat', topic: 'food' },
       { word: 'drink', topic: 'food' },
       { word: 'one', topic: 'number' },
-      { word: 'two', topic: 'number' },
+      { word: 'two', topic: 'number' }
     ]
 
     getVocabularyByLevelSpy = vi
@@ -166,10 +164,10 @@ describe('pickScenarioVocabulary', () => {
           acts: [
             { name: '开场', goal: 'Greet', vocabThemes: ['greeting', 'politeness'] },
             { name: '主线', goal: 'Order', vocabThemes: ['food'] },
-            { name: '收尾', goal: 'Pay', vocabThemes: ['number'] },
-          ],
-        },
-      },
+            { name: '收尾', goal: 'Pay', vocabThemes: ['number'] }
+          ]
+        }
+      }
     }
 
     // 固定随机种子，让幕内顺序可预测

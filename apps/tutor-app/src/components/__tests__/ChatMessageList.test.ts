@@ -8,8 +8,8 @@ describe('ChatMessageList', () => {
     mount(ChatMessageList, {
       props: {
         messages: props.messages,
-        isPlaying: props.isPlaying ?? false,
-      },
+        isPlaying: props.isPlaying ?? false
+      }
     })
 
   it('shows only the english replay button when assistant message has no Chinese translation', () => {
@@ -20,9 +20,9 @@ describe('ChatMessageList', () => {
           role: 'assistant',
           text: 'Hello!',
           isStreaming: false,
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     const buttons = wrapper.findAll('.replay-btn')
@@ -39,9 +39,9 @@ describe('ChatMessageList', () => {
           text: 'Hello!',
           textZh: '你好！',
           isStreaming: false,
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     const buttons = wrapper.findAll('.replay-btn')
@@ -58,9 +58,9 @@ describe('ChatMessageList', () => {
           role: 'assistant',
           text: 'Hello',
           isStreaming: true,
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     expect(wrapper.find('.replay-group').exists()).toBe(false)
@@ -73,9 +73,9 @@ describe('ChatMessageList', () => {
           id: 'msg-1',
           role: 'user',
           text: 'Hi',
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     expect(wrapper.find('.replay-group').exists()).toBe(false)
@@ -89,9 +89,9 @@ describe('ChatMessageList', () => {
           role: 'assistant',
           text: 'Hello!',
           isStreaming: false,
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     await wrapper.find('.replay-btn[title="重听英文"]').trigger('click')
@@ -108,9 +108,9 @@ describe('ChatMessageList', () => {
           text: 'Hello!',
           textZh: '你好！',
           isStreaming: false,
-          timestamp: Date.now(),
-        },
-      ],
+          timestamp: Date.now()
+        }
+      ]
     })
 
     // 初始隐藏
@@ -138,10 +138,10 @@ describe('ChatMessageList', () => {
           text: 'Hello!',
           textZh: '你好！',
           isStreaming: false,
-          timestamp: Date.now(),
-        },
+          timestamp: Date.now()
+        }
       ],
-      isPlaying: true,
+      isPlaying: true
     })
 
     // 播放期间英文重听按钮被禁用……
@@ -160,9 +160,9 @@ describe('ChatMessageList', () => {
           isStreaming: false,
           timestamp: Date.now(),
           vocabulary: ['practice', 'abandon'],
-          vocabularySentences: ['Let us practice.', 'Do not abandon it.'],
-        },
-      ],
+          vocabularySentences: ['Let us practice.', 'Do not abandon it.']
+        }
+      ]
     })
 
     const tags = wrapper.findAll('.vocab-tag')
@@ -182,9 +182,9 @@ describe('ChatMessageList', () => {
           isStreaming: false,
           timestamp: Date.now(),
           vocabulary: ['practice', 'abandon'],
-          vocabularySentences: ['Let us practice.', 'Do not abandon it.'],
-        },
-      ],
+          vocabularySentences: ['Let us practice.', 'Do not abandon it.']
+        }
+      ]
     })
 
     const detailButtons = wrapper.findAll('.vocab-detail-btn')
@@ -192,7 +192,7 @@ describe('ChatMessageList', () => {
     await detailButtons[1].trigger('click')
     expect(wrapper.emitted('word-detail')).toHaveLength(1)
     expect(wrapper.emitted('word-detail')![0]).toEqual([
-      { word: 'abandon', sentence: 'Do not abandon it.' },
+      { word: 'abandon', sentence: 'Do not abandon it.' }
     ])
   })
 })

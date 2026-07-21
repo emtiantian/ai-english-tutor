@@ -3,8 +3,10 @@ import { OpenAIBaseProvider, type OpenAIBaseProviderOptions } from './openai-bas
 /**
  * OpenAI Provider 构造选项。
  */
-export interface OpenAIProviderOptions
-  extends Omit<OpenAIBaseProviderOptions, 'name' | 'capabilities'> {}
+export interface OpenAIProviderOptions extends Omit<
+  OpenAIBaseProviderOptions,
+  'name' | 'capabilities'
+> {}
 
 /**
  * OpenAI 官方 LLM Provider。
@@ -19,8 +21,8 @@ export class OpenAIProvider extends OpenAIBaseProvider {
       name: 'openai',
       capabilities: {
         supportsAudioInput: false,
-        supportsStreaming: true,
-      },
+        supportsStreaming: true
+      }
     })
   }
 }

@@ -145,6 +145,60 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
 }
 
 /**
+ * 构建场景开场时的精简上下文块。
+ *
+ * 开场时 wordsUsed 为空、currentActIndex 固定为 0，无需注入完整三幕结构、
+ * 焦点词分桶、已用词/下一批词、twist 等中途轮次才需要的细节，从而缩短 prompt。
+ */
+export function buildScenarioOpeningContext(
+  scenario: Scenario,
+  targetLevel: CEFRLevel,
+  targetWords: string[],
+  levelProfile?: ScenarioLevelProfile
+): string {
+  const activeSetting = levelProfile?.setting ?? scenario.setting
+  const activeRole = levelProfile?.role ?? scenario.role
+
+  const scenarioHeader = `
+
+SCENARIO CONTEXT — You are currently inside a role-play scenario.
+
+Setting: ${activeSetting}
+Your role: ${activeRole.teacher}
+Student's role: ${activeRole.student}
+Target CEFR level: ${targetLevel}`
+
+  const vocabularyPool = `
+
+Target vocabulary pool (${targetWords.length} words; weave them naturally throughout the whole scenario):
+${targetWords.join(', ')}`
+
+  const scenarioRules = `
+
+Scenario rules:
+- Stay in character as ${activeRole.teacher} at all times.
+- Begin the scene naturally and introduce the setting and your role.
+- Use target words naturally when they fit; if a word does not fit right now, model it in your own line instead of forcing the student.
+- Keep replies concise (1-3 sentences).
+- studentReplyHints must be 1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Provide at least one hint.`
+
+  const outputFormat = `
+
+OUTPUT FORMAT — You MUST respond with valid JSON:
+{
+  "text": "Your in-character reply in English",
+  "textZh": "A short Chinese translation to help the student understand",
+  "motionId": "Choose the motion that best fits the text from wave|nod|think|gesture|clap|point|write|surprised",
+  "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
+  "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
+  "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; empty array if vocabulary is empty."],
+  "studentReplyHints": ["1-3 short replies the student could naturally say next, written in the student's own voice. Provide at least one hint."]
+}`
+
+  return scenarioHeader + vocabularyPool + scenarioRules + outputFormat
+}
+
+/**
  * 将目标词汇按幕分桶。
  *
  * 如果 acts 中每幕都定义了 vocabThemes，则优先按 pickScenarioVocabulary 返回的词序

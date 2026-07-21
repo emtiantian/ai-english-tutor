@@ -362,18 +362,18 @@ async function startTeaching(resumeFrom?: string) {
   store.isThinking = true
 
   try {
-    const response = await sendToBackend({
+    // 流式响应不再返回 sessionId；SSE 作用域键即 connectionId。
+    store.sessionId = store.connectionId
+
+    await sendToBackend({
       type: 'lesson.start',
+      stream: true,
       level: store.currentLevel ?? 1,
       ...(pendingScenarioId.value ? { scenarioId: pendingScenarioId.value } : {}),
       ...(pendingStyleName.value ? { styleName: pendingStyleName.value } : {}),
       ...(pendingTargetLevel.value ? { targetLevel: pendingTargetLevel.value } : {}),
       ...(resumeFrom ? { resumeFrom } : {})
     })
-
-    if (response.sessionId) {
-      store.sessionId = response.sessionId
-    }
 
     // 开场白、场景更新和思考状态重置
     // 由 useTutorClient 中的 SSE teacher.response 事件处理。

@@ -136,19 +136,60 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
               .status(400)
               .send({ error: 'sessionId is required for lesson.start', code: 'MISSING_SESSION_ID' })
           }
-          const result = await tutorEngine.startLesson(
+
+          const controller = new AbortController()
+          const onClose = () => controller.abort()
+          let unsubscribeSSE: (() => void) | undefined
+          if (stream && sessionId) {
+            unsubscribeSSE = onSessionDisconnect(sessionId, onClose)
+          } else {
+            request.raw.on('close', onClose)
+          }
+
+          const enginePromise = tutorEngine.startLesson(
             level ?? 1,
             sessionId,
             userId,
             scenarioId,
             styleName,
             targetLevel as CEFRLevel | undefined,
-            resumeFrom
+            resumeFrom,
+            stream ?? false,
+            controller.signal
           )
 
-          const response: TeacherResponseEvent = {
-            event: 'teacher.response',
-            data: {
+          // 流式模式：数据通过 SSE 推送；HTTP 仅确认接收。
+          if (stream) {
+            enginePromise
+              .catch(err => {
+                logger.error({ err, sessionId }, 'Streaming lesson.start failed')
+              })
+              .finally(() => {
+                unsubscribeSSE?.()
+              })
+            return reply.status(202).send({ accepted: true })
+          }
+
+          // 非流式模式：等待完整响应并返回。
+          try {
+            const result = await enginePromise
+
+            const response: TeacherResponseEvent = {
+              event: 'teacher.response',
+              data: {
+                text: result.text,
+                textZh: result.textZh,
+                motionId: result.motionId,
+                expressionId: result.expressionId,
+                vocabulary: result.vocabulary,
+                vocabularySentences: result.vocabularySentences,
+                studentReplyHints: result.studentReplyHints,
+                scenario: result.scenario
+              }
+            }
+
+            broadcastToSession(sessionId, response)
+            return reply.send({
               text: result.text,
               textZh: result.textZh,
               motionId: result.motionId,
@@ -156,23 +197,14 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
               vocabulary: result.vocabulary,
               vocabularySentences: result.vocabularySentences,
               studentReplyHints: result.studentReplyHints,
+              audioBase64: result.audioBase64,
+              sessionId,
               scenario: result.scenario
-            }
+            })
+          } finally {
+            request.raw.off('close', onClose)
+            unsubscribeSSE?.()
           }
-
-          broadcastToSession(sessionId, response)
-          return reply.send({
-            text: result.text,
-            textZh: result.textZh,
-            motionId: result.motionId,
-            expressionId: result.expressionId,
-            vocabulary: result.vocabulary,
-            vocabularySentences: result.vocabularySentences,
-            studentReplyHints: result.studentReplyHints,
-            audioBase64: result.audioBase64,
-            sessionId,
-            scenario: result.scenario
-          })
         }
 
         default:

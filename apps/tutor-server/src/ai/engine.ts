@@ -55,7 +55,9 @@ export class TutorEngine {
     scenarioId?: string,
     styleName?: string,
     targetLevel?: CEFRLevel,
-    resumeFrom?: string
+    resumeFrom?: string,
+    stream?: boolean,
+    signal?: AbortSignal
   ): Promise<{
     text: string
     textZh?: string
@@ -99,12 +101,14 @@ export class TutorEngine {
         userId,
         requestedStyle,
         targetLevel,
-        resumeFrom
+        resumeFrom,
+        stream,
+        signal
       )
     }
 
     // 否则开始自由对话课程
-    return this.freeForm.startFreeFormLesson(level, sid, userId, requestedStyle)
+    return this.freeForm.startFreeFormLesson(level, sid, userId, requestedStyle, stream, signal)
   }
 
   /**

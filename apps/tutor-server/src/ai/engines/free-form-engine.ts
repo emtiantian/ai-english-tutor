@@ -8,7 +8,12 @@ import type { AudioPipeline } from '../audio-pipeline.js'
 import { SessionManager, type SessionData } from '../session-manager.js'
 import { buildLessonStartMessages } from '../prompts/teaching.js'
 import { parseTeachingResponse } from '../response-parser.js'
-import { warnIfMissingVocabSentences } from '../response/response-orchestrator.js'
+import {
+  warnIfMissingVocabSentences,
+  streamTeachingResponse
+} from '../response/response-orchestrator.js'
+import { broadcastToSession } from '../../sse/handler.js'
+import type { TeacherResponseEvent } from '../../sse/types.js'
 
 export class FreeFormEngine {
   constructor(
@@ -22,7 +27,9 @@ export class FreeFormEngine {
     level: number,
     sessionId: string,
     userId?: string,
-    style?: OpeningStyle
+    style?: OpeningStyle,
+    stream?: boolean,
+    signal?: AbortSignal
   ) {
     const { messages, style: chosenStyle } = buildLessonStartMessages(level, style, this.persona)
 
@@ -40,8 +47,10 @@ export class FreeFormEngine {
 
     this.sessions.saveSessionToDb(sessionId, level, chosenStyle.name, chosenStyle.voiceDesign)
 
-    const response = await this.llm.complete(messages)
-    const parsed = parseTeachingResponse(response.content)
+    const rawContent = stream
+      ? await streamTeachingResponse(this.llm, messages, sessionId, signal)
+      : (await this.llm.complete(messages, signal)).content
+    const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(parsed, sessionId, 'startFreeFormLesson')
 
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
@@ -52,6 +61,14 @@ export class FreeFormEngine {
     })
 
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
+
+    if (stream) {
+      const responseEvent: TeacherResponseEvent = {
+        event: 'teacher.response',
+        data: { ...parsed }
+      }
+      broadcastToSession(sessionId, responseEvent)
+    }
 
     return { ...parsed, audioBase64: audioResult.audioBase64 }
   }

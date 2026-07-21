@@ -24,8 +24,13 @@ describe('scenario teaching prompts', () => {
     for (const w of runtimeWords) {
       expect(startSystem).toContain(w)
     }
-    expect(startSystem).toContain('Current act: 1 / 3')
-    expect(startSystem).toContain('Focus words for this turn')
+    expect(startSystem).toContain('Setting:')
+    expect(startSystem).toContain('Your role:')
+    expect(startSystem).toContain('Target CEFR level: A1')
+    expect(startSystem).toContain('OUTPUT FORMAT')
+    expect(startSystem).not.toContain('Current act:')
+    expect(startSystem).not.toContain('Focus words for this turn')
+    expect(startSystem).not.toContain('Three-act structure')
   })
 
   it('teaching messages focus on unused words in current act', () => {

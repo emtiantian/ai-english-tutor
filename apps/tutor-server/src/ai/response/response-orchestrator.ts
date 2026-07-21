@@ -49,6 +49,73 @@ function generateSessionId(): string {
   return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+/**
+ * 公共流式教学响应辅助函数。
+ *
+ * 遍历 LLM 流式输出，通过 JsonTextStreamExtractor 实时提取 `text` 字段并通过 SSE
+ * 广播 `teacher.chunk`。返回完整原始 content 字符串，供调用方解析为 TeachingResponse。
+ */
+export async function streamTeachingResponse(
+  llm: LLMProvider,
+  messages: LLMMessage[],
+  sessionId: string,
+  signal?: AbortSignal
+): Promise<string> {
+  const chunks: string[] = []
+  const extractor = new JsonTextStreamExtractor()
+  let rawBytes = 0
+  let visibleBytes = 0
+
+  if (!llm.stream) {
+    // 降级方案：provider 不支持流式。发送结束标记让前端流式状态 UI 清空，
+    // 然后返回完整响应由调用方解析并广播 teacher.response。
+    const response = await llm.complete(messages, signal)
+    broadcastToSession(sessionId, {
+      event: 'teacher.chunk',
+      data: { chunk: '', isEnd: true }
+    } satisfies TeacherChunkEvent)
+    return response.content
+  }
+
+  for await (const chunk of llm.stream(messages, { signal })) {
+    if (chunk.content) {
+      chunks.push(chunk.content)
+      rawBytes += chunk.content.length
+      const visible = extractor.push(chunk.content)
+      if (visible) {
+        visibleBytes += visible.length
+        const event: TeacherChunkEvent = {
+          event: 'teacher.chunk',
+          data: { chunk: visible, isEnd: false }
+        }
+        broadcastToSession(sessionId, event)
+      }
+    }
+    if (chunk.isEnd) {
+      const tail = extractor.flush()
+      if (tail) {
+        visibleBytes += tail.length
+        broadcastToSession(sessionId, {
+          event: 'teacher.chunk',
+          data: { chunk: tail, isEnd: false }
+        } satisfies TeacherChunkEvent)
+      }
+      broadcastToSession(sessionId, {
+        event: 'teacher.chunk',
+        data: { chunk: '', isEnd: true }
+      } satisfies TeacherChunkEvent)
+      break
+    }
+  }
+
+  logger.debug(
+    { sessionId, rawBytes, visibleBytes, droppedBytes: rawBytes - visibleBytes },
+    '流式过滤：在 SSE 前丢弃推理/JSON 语法字节'
+  )
+
+  return chunks.join('')
+}
+
 export class ResponseOrchestrator {
   constructor(
     private llm: LLMProvider,
@@ -250,76 +317,12 @@ export class ResponseOrchestrator {
     isAudioInput?: boolean,
     signal?: AbortSignal
   ) {
-    const chunks: string[] = []
-    const extractor = new JsonTextStreamExtractor()
-    let rawBytes = 0
-    let visibleBytes = 0
-
-    if (!this.llm.stream) {
-      // 降级方案：provider 不支持流式。完全跳过 teacher.chunk — finalizeResponse 会广播
-      // teacher.response 并附带解析后的干净文本。若在此把原始 response.content 当作 chunk
-      // 发送，会把 JSON 前的推理文本泄漏到聊天气泡中。
-      const response = await this.llm.complete(messages, signal)
-      // 仍发送结束标记，让前端的流式状态 UI 清空。
-      broadcastToSession(sessionId, {
-        event: 'teacher.chunk',
-        data: { chunk: '', isEnd: true }
-      } satisfies TeacherChunkEvent)
-      return this.finalizeResponse(
-        sessionId,
-        session,
-        userText,
-        response.content,
-        userId,
-        reviewWords,
-        levelStr,
-        isAudioInput
-      )
-    }
-
-    for await (const chunk of this.llm.stream(messages, { signal })) {
-      if (chunk.content) {
-        chunks.push(chunk.content)
-        rawBytes += chunk.content.length
-        // 通过 JSON `text` 字段提取器过滤原始流，使气泡只展示解码后的 `text` 内容 —
-        // 绝不包含模型 JSON 前的推理文本、JSON 语法或其他字段（如 textZh / vocabulary）。
-        const visible = extractor.push(chunk.content)
-        if (visible) {
-          visibleBytes += visible.length
-          const event: TeacherChunkEvent = {
-            event: 'teacher.chunk',
-            data: { chunk: visible, isEnd: false }
-          }
-          broadcastToSession(sessionId, event)
-        }
-      }
-      if (chunk.isEnd) {
-        const tail = extractor.flush()
-        if (tail) {
-          visibleBytes += tail.length
-          broadcastToSession(sessionId, {
-            event: 'teacher.chunk',
-            data: { chunk: tail, isEnd: false }
-          } satisfies TeacherChunkEvent)
-        }
-        broadcastToSession(sessionId, {
-          event: 'teacher.chunk',
-          data: { chunk: '', isEnd: true }
-        } satisfies TeacherChunkEvent)
-        break
-      }
-    }
-
-    logger.debug(
-      { sessionId, rawBytes, visibleBytes, droppedBytes: rawBytes - visibleBytes },
-      '流式过滤：在 SSE 前丢弃推理/JSON 语法字节'
-    )
-
+    const rawContent = await streamTeachingResponse(this.llm, messages, sessionId, signal)
     return this.finalizeResponse(
       sessionId,
       session,
       userText,
-      chunks.join(''),
+      rawContent,
       userId,
       reviewWords,
       levelStr,

@@ -9,7 +9,7 @@ import {
 } from '@ai-english-tutor/shared'
 import { pickOpeningStyle } from '../shared/persona.js'
 import { stripBaseOutputFormat } from './line-reuse.js'
-import { buildScenarioContext } from './context-builder.js'
+import { buildScenarioOpeningContext } from './context-builder.js'
 import { buildLineReuseBlock } from './line-reuse.js'
 
 /**
@@ -33,14 +33,8 @@ export function buildScenarioStartMessages(
 
   // v2：优先使用运行时目标词；没有则回退到静态 scenario.targetWords
   const words = targetWords && targetWords.length > 0 ? targetWords : scenario.targetWords
-  // 注入场景上下文（包含它自己的 OUTPUT FORMAT）
-  systemPrompt += buildScenarioContext(
-    scenario,
-    targetLevel,
-    words,
-    { currentActIndex: 0 },
-    levelProfile
-  )
+  // 注入精简场景上下文（开场不需要完整三幕结构与焦点词分桶）
+  systemPrompt += buildScenarioOpeningContext(scenario, targetLevel, words, levelProfile)
   systemPrompt += buildLineReuseBlock(reusableLines)
 
   // 提示词：场景开场触发 —— 告诉模型学生正在开始一个角色扮演场景，要求以角色身份自然开启场景、介绍背景和角色，不要解释学习目标

@@ -11,7 +11,12 @@ import { VocabTracker } from '../vocab-tracker.js'
 import { getScenarioById, type Scenario } from '../../vocab/loader.js'
 import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teaching.js'
 import { parseTeachingResponse } from '../response-parser.js'
-import { warnIfMissingVocabSentences } from '../response/response-orchestrator.js'
+import {
+  warnIfMissingVocabSentences,
+  streamTeachingResponse
+} from '../response/response-orchestrator.js'
+import { broadcastToSession } from '../../sse/handler.js'
+import type { TeacherResponseEvent } from '../../sse/types.js'
 import { pickScenarioVocabulary, DEFAULT_TARGET_COUNT } from '../scenario-vocab-picker.js'
 import { lineGroupKey, getReusableLines, recordTeacherLine } from '../line-pool.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
@@ -33,7 +38,9 @@ export class ScenarioEngine {
     userId?: string,
     style?: OpeningStyle,
     targetLevel?: CEFRLevel,
-    resumeFrom?: string
+    resumeFrom?: string,
+    stream?: boolean,
+    signal?: AbortSignal
   ) {
     const scenario = getScenarioById(scenarioId)
     if (!scenario) {
@@ -109,8 +116,10 @@ export class ScenarioEngine {
       { role: 'user' as const, content: userPrompt }
     ]
 
-    const response = await this.llm.complete(messages)
-    const parsed = parseTeachingResponse(response.content)
+    const rawContent = stream
+      ? await streamTeachingResponse(this.llm, messages, sessionId, signal)
+      : (await this.llm.complete(messages, signal)).content
+    const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(
       parsed,
       sessionId,
@@ -135,10 +144,19 @@ export class ScenarioEngine {
 
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
+    const scenarioResponse = this.buildScenarioResponse(scenarioState)
+    if (stream) {
+      const responseEvent: TeacherResponseEvent = {
+        event: 'teacher.response',
+        data: { ...parsed, scenario: scenarioResponse }
+      }
+      broadcastToSession(sessionId, responseEvent)
+    }
+
     return {
       ...parsed,
       audioBase64: audioResult.audioBase64,
-      scenario: this.buildScenarioResponse(scenarioState)
+      scenario: scenarioResponse
     }
   }
 

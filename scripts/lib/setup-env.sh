@@ -6,16 +6,24 @@
 #   - .env.example 是唯一 canonical 模板。
 #   - 本库只负责“收集用户输入/环境变量”并渲染到模板，不再硬编码 env 正文。
 #   - 渲染后的 .env 与模板结构一致，未激活 provider 的变量保持注释。
+#   - 所有默认值优先从 .env.example 解析，避免脚本与模板双维护。
 
 # ── 加载模板渲染库 ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/render-env.sh"
 
-# ── 颜色输出 ──
-RED=$'\033[0;31m'
-GREEN=$'\033[0;32m'
-YELLOW=$'\033[1;33m'
-NC=$'\033[0m'
+# ── 颜色输出（自动检测 TTY，非交互环境不输出颜色转义）──
+if [ -t 2 ]; then
+  RED=$'\033[0;31m'
+  GREEN=$'\033[0;32m'
+  YELLOW=$'\033[1;33m'
+  NC=$'\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  NC=''
+fi
 
 log_info()  { echo "${GREEN}[INFO]${NC} $*"; }
 log_warn()  { echo "${YELLOW}[WARN]${NC} $*"; }
@@ -68,7 +76,25 @@ env_get() {
   echo "${raw}" | sed -E 's/[[:space:]]+#.*$//'
 }
 
-# 安全地获取一个值：先看环境变量，再看现有文件，最后使用默认值
+# 从 .env.example 模板解析 key 的默认值（包括被注释掉的行）
+# 行为：匹配 ^KEY= 或 ^# KEY= 或 ^#KEY= 的最后一行，返回等号后的值（去除行内注释）
+env_example_default() {
+  local template_file="$1"
+  local key="$2"
+  if [ ! -f "${template_file}" ]; then
+    return 0
+  fi
+  local raw
+  raw=$(grep -E "^(#[[:space:]]*)?${key}=" "${template_file}" 2>/dev/null | tail -1)
+  # 去掉前导注释标记和空格
+  raw=$(echo "${raw}" | sed -E "s/^[[:space:]]*#[[:space:]]*//")
+  # 去掉 key=（只去掉一次）
+  raw="${raw#${key}=}"
+  # 去掉行内注释
+  echo "${raw}" | sed -E 's/[[:space:]]+#.*$//'
+}
+
+# 安全地获取一个值：先看环境变量，再看现有文件，最后使用 .env.example 默认值
 # 注意：env_name 为硬编码字符串，eval 安全。
 resolve_value() {
   local env_name="$1"
@@ -97,6 +123,15 @@ resolve_value() {
   echo "${default_value}"
 }
 
+# 便捷封装：使用 .env.example 作为默认值来源
+resolve_example() {
+  local env_name="$1"
+  local existing_file="$2"
+  local key="$3"
+  local template_file="${4:-${TEMPLATE_FILE:-}}"
+  resolve_value "${env_name}" "${existing_file}" "${key}" "$(env_example_default "${template_file}" "${key}")"
+}
+
 # ── 核心：交互式/非交互式生成 .env ──
 # 用法：generate_env <output_file> [existing_file] [noninteractive]
 #   output_file:    要写入的 .env 路径
@@ -121,6 +156,7 @@ generate_env() {
     project_root="$(cd "${SCRIPT_DIR}/../.." && pwd)"
   fi
   local template_file="${project_root}/.env.example"
+  TEMPLATE_FILE="${template_file}"
   if [ ! -f "${template_file}" ]; then
     log_error "找不到模板文件: ${template_file}"
     return 1
@@ -134,9 +170,9 @@ generate_env() {
 
   # ── Provider 选择 ──
   local llm_provider tts_provider asr_provider
-  llm_provider=$(resolve_value "LLM_PROVIDER" "${existing_file}" "LLM_PROVIDER" "mock")
-  tts_provider=$(resolve_value "TTS_PROVIDER" "${existing_file}" "TTS_PROVIDER" "browser")
-  asr_provider=$(resolve_value "ASR_PROVIDER" "${existing_file}" "ASR_PROVIDER" "browser")
+  llm_provider=$(resolve_example "LLM_PROVIDER" "${existing_file}" "LLM_PROVIDER")
+  tts_provider=$(resolve_example "TTS_PROVIDER" "${existing_file}" "TTS_PROVIDER")
+  asr_provider=$(resolve_example "ASR_PROVIDER" "${existing_file}" "ASR_PROVIDER")
 
   if ! $noninteractive; then
     llm_provider=$(prompt "LLM 厂商 (volcengine/deepseek/xiaomi/openai/mock)" "${llm_provider}")
@@ -150,12 +186,12 @@ generate_env() {
 
   # ── 服务器设置 ──
   local port node_env log_level cors_origin heartbeat server_name
-  port=$(resolve_value "PORT" "${existing_file}" "PORT" "3000")
-  node_env=$(resolve_value "NODE_ENV" "${existing_file}" "NODE_ENV" "production")
-  log_level=$(resolve_value "LOG_LEVEL" "${existing_file}" "LOG_LEVEL" "info")
-  cors_origin=$(resolve_value "CORS_ORIGIN" "${existing_file}" "CORS_ORIGIN" "*")
-  heartbeat=$(resolve_value "SSE_HEARTBEAT_INTERVAL" "${existing_file}" "SSE_HEARTBEAT_INTERVAL" "30000")
-  server_name=$(resolve_value "SERVER_NAME" "${existing_file}" "SERVER_NAME" "")
+  port=$(resolve_example "PORT" "${existing_file}" "PORT")
+  node_env=$(resolve_example "NODE_ENV" "${existing_file}" "NODE_ENV")
+  log_level=$(resolve_example "LOG_LEVEL" "${existing_file}" "LOG_LEVEL")
+  cors_origin=$(resolve_example "CORS_ORIGIN" "${existing_file}" "CORS_ORIGIN")
+  heartbeat=$(resolve_example "SSE_HEARTBEAT_INTERVAL" "${existing_file}" "SSE_HEARTBEAT_INTERVAL")
+  server_name=$(resolve_example "SERVER_NAME" "${existing_file}" "SERVER_NAME")
 
   if ! $noninteractive; then
     port=$(prompt "HTTP 端口" "${port}")
@@ -175,13 +211,14 @@ generate_env() {
 
   # ── 前端 Vite 设置 ──
   local vite_backend_url vite_character_provider vite_live2d_model_id
-  local vite_live2d_max_dpr vite_rive_src vite_rive_state_machine
-  vite_backend_url=$(resolve_value "VITE_BACKEND_URL" "${existing_file}" "VITE_BACKEND_URL" "")
-  vite_character_provider=$(resolve_value "VITE_CHARACTER_PROVIDER" "${existing_file}" "VITE_CHARACTER_PROVIDER" "live2d")
-  vite_live2d_model_id=$(resolve_value "VITE_LIVE2D_MODEL_ID" "${existing_file}" "VITE_LIVE2D_MODEL_ID" "")
-  vite_live2d_max_dpr=$(resolve_value "VITE_LIVE2D_MAX_DPR" "${existing_file}" "VITE_LIVE2D_MAX_DPR" "1.5")
-  vite_rive_src=$(resolve_value "VITE_RIVE_SRC" "${existing_file}" "VITE_RIVE_SRC" "")
-  vite_rive_state_machine=$(resolve_value "VITE_RIVE_STATE_MACHINE" "${existing_file}" "VITE_RIVE_STATE_MACHINE" "")
+  local vite_live2d_max_dpr vite_live2d_target_fps vite_rive_src vite_rive_state_machine
+  vite_backend_url=$(resolve_example "VITE_BACKEND_URL" "${existing_file}" "VITE_BACKEND_URL")
+  vite_character_provider=$(resolve_example "VITE_CHARACTER_PROVIDER" "${existing_file}" "VITE_CHARACTER_PROVIDER")
+  vite_live2d_model_id=$(resolve_example "VITE_LIVE2D_MODEL_ID" "${existing_file}" "VITE_LIVE2D_MODEL_ID")
+  vite_live2d_max_dpr=$(resolve_example "VITE_LIVE2D_MAX_DPR" "${existing_file}" "VITE_LIVE2D_MAX_DPR")
+  vite_live2d_target_fps=$(resolve_example "VITE_LIVE2D_TARGET_FPS" "${existing_file}" "VITE_LIVE2D_TARGET_FPS")
+  vite_rive_src=$(resolve_example "VITE_RIVE_SRC" "${existing_file}" "VITE_RIVE_SRC")
+  vite_rive_state_machine=$(resolve_example "VITE_RIVE_STATE_MACHINE" "${existing_file}" "VITE_RIVE_STATE_MACHINE")
 
   if ! $noninteractive; then
     vite_character_provider=$(prompt "角色渲染 (live2d/rive)" "${vite_character_provider}")
@@ -189,6 +226,7 @@ generate_env() {
     if [ "${vite_character_provider}" = "live2d" ]; then
       vite_live2d_model_id=$(prompt "VITE_LIVE2D_MODEL_ID（留空使用默认）" "${vite_live2d_model_id}")
       vite_live2d_max_dpr=$(prompt "VITE_LIVE2D_MAX_DPR" "${vite_live2d_max_dpr}")
+      vite_live2d_target_fps=$(prompt "VITE_LIVE2D_TARGET_FPS" "${vite_live2d_target_fps}")
     else
       vite_rive_src=$(prompt "VITE_RIVE_SRC" "${vite_rive_src}")
       vite_rive_state_machine=$(prompt "VITE_RIVE_STATE_MACHINE" "${vite_rive_state_machine}")
@@ -199,6 +237,7 @@ generate_env() {
   append_override "${overrides_file}" "VITE_CHARACTER_PROVIDER" "${vite_character_provider}"
   append_override "${overrides_file}" "VITE_LIVE2D_MODEL_ID" "${vite_live2d_model_id}"
   append_override "${overrides_file}" "VITE_LIVE2D_MAX_DPR" "${vite_live2d_max_dpr}"
+  append_override "${overrides_file}" "VITE_LIVE2D_TARGET_FPS" "${vite_live2d_target_fps}"
   append_override "${overrides_file}" "VITE_RIVE_SRC" "${vite_rive_src}"
   append_override "${overrides_file}" "VITE_RIVE_STATE_MACHINE" "${vite_rive_state_machine}"
 
@@ -208,21 +247,21 @@ generate_env() {
   local xiaomi_api_key xiaomi_base_url xiaomi_model
   local volcengine_llm_api_key volcengine_llm_base_url volcengine_llm_model
 
-  deepseek_api_key=$(resolve_value "DEEPSEEK_API_KEY" "${existing_file}" "DEEPSEEK_API_KEY" "")
-  deepseek_base_url=$(resolve_value "DEEPSEEK_BASE_URL" "${existing_file}" "DEEPSEEK_BASE_URL" "https://api.deepseek.com")
-  deepseek_model=$(resolve_value "DEEPSEEK_MODEL" "${existing_file}" "DEEPSEEK_MODEL" "deepseek-chat")
+  deepseek_api_key=$(resolve_example "DEEPSEEK_API_KEY" "${existing_file}" "DEEPSEEK_API_KEY")
+  deepseek_base_url=$(resolve_example "DEEPSEEK_BASE_URL" "${existing_file}" "DEEPSEEK_BASE_URL")
+  deepseek_model=$(resolve_example "DEEPSEEK_MODEL" "${existing_file}" "DEEPSEEK_MODEL")
 
-  openai_api_key=$(resolve_value "OPENAI_API_KEY" "${existing_file}" "OPENAI_API_KEY" "")
-  openai_base_url=$(resolve_value "OPENAI_BASE_URL" "${existing_file}" "OPENAI_BASE_URL" "https://api.openai.com/v1")
-  openai_model=$(resolve_value "OPENAI_MODEL" "${existing_file}" "OPENAI_MODEL" "gpt-4o-mini")
+  openai_api_key=$(resolve_example "OPENAI_API_KEY" "${existing_file}" "OPENAI_API_KEY")
+  openai_base_url=$(resolve_example "OPENAI_BASE_URL" "${existing_file}" "OPENAI_BASE_URL")
+  openai_model=$(resolve_example "OPENAI_MODEL" "${existing_file}" "OPENAI_MODEL")
 
-  xiaomi_api_key=$(resolve_value "XIAOMI_API_KEY" "${existing_file}" "XIAOMI_API_KEY" "")
-  xiaomi_base_url=$(resolve_value "XIAOMI_BASE_URL" "${existing_file}" "XIAOMI_BASE_URL" "https://api.xiaomi.com/v1")
-  xiaomi_model=$(resolve_value "XIAOMI_MODEL" "${existing_file}" "XIAOMI_MODEL" "milm-pro")
+  xiaomi_api_key=$(resolve_example "XIAOMI_API_KEY" "${existing_file}" "XIAOMI_API_KEY")
+  xiaomi_base_url=$(resolve_example "XIAOMI_BASE_URL" "${existing_file}" "XIAOMI_BASE_URL")
+  xiaomi_model=$(resolve_example "XIAOMI_MODEL" "${existing_file}" "XIAOMI_MODEL")
 
-  volcengine_llm_api_key=$(resolve_value "VOLCENGINE_LLM_API_KEY" "${existing_file}" "VOLCENGINE_LLM_API_KEY" "")
-  volcengine_llm_base_url=$(resolve_value "VOLCENGINE_LLM_BASE_URL" "${existing_file}" "VOLCENGINE_LLM_BASE_URL" "https://ark.cn-beijing.volces.com/api/v3")
-  volcengine_llm_model=$(resolve_value "VOLCENGINE_LLM_MODEL" "${existing_file}" "VOLCENGINE_LLM_MODEL" "")
+  volcengine_llm_api_key=$(resolve_example "VOLCENGINE_LLM_API_KEY" "${existing_file}" "VOLCENGINE_LLM_API_KEY")
+  volcengine_llm_base_url=$(resolve_example "VOLCENGINE_LLM_BASE_URL" "${existing_file}" "VOLCENGINE_LLM_BASE_URL")
+  volcengine_llm_model=$(resolve_example "VOLCENGINE_LLM_MODEL" "${existing_file}" "VOLCENGINE_LLM_MODEL")
 
   case "${llm_provider}" in
     deepseek)
@@ -289,26 +328,26 @@ generate_env() {
   local cosyvoice_base_url cosyvoice_spk_id cosyvoice_speed cosyvoice_sample_rate
   local cosyvoice_health_check
 
-  volcengine_tts_api_key=$(resolve_value "VOLCENGINE_TTS_API_KEY" "${existing_file}" "VOLCENGINE_TTS_API_KEY" "")
-  volcengine_tts_resource_id=$(resolve_value "VOLCENGINE_TTS_RESOURCE_ID" "${existing_file}" "VOLCENGINE_TTS_RESOURCE_ID" "seed-tts-2.0")
-  volcengine_tts_base_url=$(resolve_value "VOLCENGINE_TTS_BASE_URL" "${existing_file}" "VOLCENGINE_TTS_BASE_URL" "https://openspeech.bytedance.com/api/v3/plan/tts/unidirectional")
-  volcengine_tts_speaker=$(resolve_value "VOLCENGINE_TTS_SPEAKER" "${existing_file}" "VOLCENGINE_TTS_SPEAKER" "zh_female_gaolengyujie_uranus_bigtts")
-  volcengine_tts_format=$(resolve_value "VOLCENGINE_TTS_FORMAT" "${existing_file}" "VOLCENGINE_TTS_FORMAT" "mp3")
-  volcengine_tts_sample_rate=$(resolve_value "VOLCENGINE_TTS_SAMPLE_RATE" "${existing_file}" "VOLCENGINE_TTS_SAMPLE_RATE" "24000")
+  volcengine_tts_api_key=$(resolve_example "VOLCENGINE_TTS_API_KEY" "${existing_file}" "VOLCENGINE_TTS_API_KEY")
+  volcengine_tts_resource_id=$(resolve_example "VOLCENGINE_TTS_RESOURCE_ID" "${existing_file}" "VOLCENGINE_TTS_RESOURCE_ID")
+  volcengine_tts_base_url=$(resolve_example "VOLCENGINE_TTS_BASE_URL" "${existing_file}" "VOLCENGINE_TTS_BASE_URL")
+  volcengine_tts_speaker=$(resolve_example "VOLCENGINE_TTS_SPEAKER" "${existing_file}" "VOLCENGINE_TTS_SPEAKER")
+  volcengine_tts_format=$(resolve_example "VOLCENGINE_TTS_FORMAT" "${existing_file}" "VOLCENGINE_TTS_FORMAT")
+  volcengine_tts_sample_rate=$(resolve_example "VOLCENGINE_TTS_SAMPLE_RATE" "${existing_file}" "VOLCENGINE_TTS_SAMPLE_RATE")
 
-  xiaomi_tts_api_key=$(resolve_value "XIAOMI_TTS_API_KEY" "${existing_file}" "XIAOMI_TTS_API_KEY" "")
-  xiaomi_tts_base_url=$(resolve_value "XIAOMI_TTS_BASE_URL" "${existing_file}" "XIAOMI_TTS_BASE_URL" "https://token-plan-cn.xiaomimimo.com/v1")
-  xiaomi_tts_mode=$(resolve_value "XIAOMI_TTS_MODE" "${existing_file}" "XIAOMI_TTS_MODE" "preset")
-  xiaomi_tts_voice=$(resolve_value "XIAOMI_TTS_VOICE" "${existing_file}" "XIAOMI_TTS_VOICE" "Chloe")
-  xiaomi_tts_voice_clone=$(resolve_value "XIAOMI_TTS_VOICE_CLONE" "${existing_file}" "XIAOMI_TTS_VOICE_CLONE" "")
-  xiaomi_tts_voice_design=$(resolve_value "XIAOMI_TTS_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_VOICE_DESIGN" "成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声")
-  xiaomi_tts_zh_voice_design=$(resolve_value "XIAOMI_TTS_ZH_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_ZH_VOICE_DESIGN" "")
+  xiaomi_tts_api_key=$(resolve_example "XIAOMI_TTS_API_KEY" "${existing_file}" "XIAOMI_TTS_API_KEY")
+  xiaomi_tts_base_url=$(resolve_example "XIAOMI_TTS_BASE_URL" "${existing_file}" "XIAOMI_TTS_BASE_URL")
+  xiaomi_tts_mode=$(resolve_example "XIAOMI_TTS_MODE" "${existing_file}" "XIAOMI_TTS_MODE")
+  xiaomi_tts_voice=$(resolve_example "XIAOMI_TTS_VOICE" "${existing_file}" "XIAOMI_TTS_VOICE")
+  xiaomi_tts_voice_clone=$(resolve_example "XIAOMI_TTS_VOICE_CLONE" "${existing_file}" "XIAOMI_TTS_VOICE_CLONE")
+  xiaomi_tts_voice_design=$(resolve_example "XIAOMI_TTS_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_VOICE_DESIGN")
+  xiaomi_tts_zh_voice_design=$(resolve_example "XIAOMI_TTS_ZH_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_ZH_VOICE_DESIGN")
 
-  cosyvoice_base_url=$(resolve_value "COSYVOICE_BASE_URL" "${existing_file}" "COSYVOICE_BASE_URL" "http://cosyvoice:50000")
-  cosyvoice_spk_id=$(resolve_value "COSYVOICE_SPK_ID" "${existing_file}" "COSYVOICE_SPK_ID" "EnglishTutor")
-  cosyvoice_speed=$(resolve_value "COSYVOICE_SPEED" "${existing_file}" "COSYVOICE_SPEED" "0.9")
-  cosyvoice_sample_rate=$(resolve_value "COSYVOICE_SAMPLE_RATE" "${existing_file}" "COSYVOICE_SAMPLE_RATE" "24000")
-  cosyvoice_health_check=$(resolve_value "COSYVOICE_HEALTH_CHECK" "${existing_file}" "COSYVOICE_HEALTH_CHECK" "true")
+  cosyvoice_base_url=$(resolve_example "COSYVOICE_BASE_URL" "${existing_file}" "COSYVOICE_BASE_URL")
+  cosyvoice_spk_id=$(resolve_example "COSYVOICE_SPK_ID" "${existing_file}" "COSYVOICE_SPK_ID")
+  cosyvoice_speed=$(resolve_example "COSYVOICE_SPEED" "${existing_file}" "COSYVOICE_SPEED")
+  cosyvoice_sample_rate=$(resolve_example "COSYVOICE_SAMPLE_RATE" "${existing_file}" "COSYVOICE_SAMPLE_RATE")
+  cosyvoice_health_check=$(resolve_example "COSYVOICE_HEALTH_CHECK" "${existing_file}" "COSYVOICE_HEALTH_CHECK")
 
   case "${tts_provider}" in
     browser)
@@ -379,17 +418,17 @@ generate_env() {
   local volcengine_asr_segment_ms xiaomi_asr_api_key xiaomi_asr_base_url
   local xiaomi_asr_model whisper_base_url whisper_model
 
-  volcengine_asr_api_key=$(resolve_value "VOLCENGINE_ASR_API_KEY" "${existing_file}" "VOLCENGINE_ASR_API_KEY" "")
-  volcengine_asr_resource_id=$(resolve_value "VOLCENGINE_ASR_RESOURCE_ID" "${existing_file}" "VOLCENGINE_ASR_RESOURCE_ID" "volc.seedasr.sauc.duration")
-  volcengine_asr_base_url=$(resolve_value "VOLCENGINE_ASR_BASE_URL" "${existing_file}" "VOLCENGINE_ASR_BASE_URL" "wss://openspeech.bytedance.com/api/v3/plan/sauc/bigmodel_nostream")
-  volcengine_asr_segment_ms=$(resolve_value "VOLCENGINE_ASR_SEGMENT_MS" "${existing_file}" "VOLCENGINE_ASR_SEGMENT_MS" "200")
+  volcengine_asr_api_key=$(resolve_example "VOLCENGINE_ASR_API_KEY" "${existing_file}" "VOLCENGINE_ASR_API_KEY")
+  volcengine_asr_resource_id=$(resolve_example "VOLCENGINE_ASR_RESOURCE_ID" "${existing_file}" "VOLCENGINE_ASR_RESOURCE_ID")
+  volcengine_asr_base_url=$(resolve_example "VOLCENGINE_ASR_BASE_URL" "${existing_file}" "VOLCENGINE_ASR_BASE_URL")
+  volcengine_asr_segment_ms=$(resolve_example "VOLCENGINE_ASR_SEGMENT_MS" "${existing_file}" "VOLCENGINE_ASR_SEGMENT_MS")
 
-  xiaomi_asr_api_key=$(resolve_value "XIAOMI_ASR_API_KEY" "${existing_file}" "XIAOMI_ASR_API_KEY" "")
-  xiaomi_asr_base_url=$(resolve_value "XIAOMI_ASR_BASE_URL" "${existing_file}" "XIAOMI_ASR_BASE_URL" "https://api.xiaomimimo.com/v1")
-  xiaomi_asr_model=$(resolve_value "XIAOMI_ASR_MODEL" "${existing_file}" "XIAOMI_ASR_MODEL" "mimo-v2.5-asr")
+  xiaomi_asr_api_key=$(resolve_example "XIAOMI_ASR_API_KEY" "${existing_file}" "XIAOMI_ASR_API_KEY")
+  xiaomi_asr_base_url=$(resolve_example "XIAOMI_ASR_BASE_URL" "${existing_file}" "XIAOMI_ASR_BASE_URL")
+  xiaomi_asr_model=$(resolve_example "XIAOMI_ASR_MODEL" "${existing_file}" "XIAOMI_ASR_MODEL")
 
-  whisper_base_url=$(resolve_value "WHISPER_BASE_URL" "${existing_file}" "WHISPER_BASE_URL" "http://whisper:8080")
-  whisper_model=$(resolve_value "WHISPER_MODEL" "${existing_file}" "WHISPER_MODEL" "ggml-base.en.bin")
+  whisper_base_url=$(resolve_example "WHISPER_BASE_URL" "${existing_file}" "WHISPER_BASE_URL")
+  whisper_model=$(resolve_example "WHISPER_MODEL" "${existing_file}" "WHISPER_MODEL")
 
   case "${asr_provider}" in
     browser)
@@ -431,10 +470,10 @@ generate_env() {
 
   # ── 通用语音参数 ──
   local tts_format tts_speed asr_language max_audio_size_mb
-  tts_format=$(resolve_value "TTS_FORMAT" "${existing_file}" "TTS_FORMAT" "mp3")
-  tts_speed=$(resolve_value "TTS_SPEED" "${existing_file}" "TTS_SPEED" "1.0")
-  asr_language=$(resolve_value "ASR_LANGUAGE" "${existing_file}" "ASR_LANGUAGE" "auto")
-  max_audio_size_mb=$(resolve_value "MAX_AUDIO_SIZE_MB" "${existing_file}" "MAX_AUDIO_SIZE_MB" "10")
+  tts_format=$(resolve_example "TTS_FORMAT" "${existing_file}" "TTS_FORMAT")
+  tts_speed=$(resolve_example "TTS_SPEED" "${existing_file}" "TTS_SPEED")
+  asr_language=$(resolve_example "ASR_LANGUAGE" "${existing_file}" "ASR_LANGUAGE")
+  max_audio_size_mb=$(resolve_example "MAX_AUDIO_SIZE_MB" "${existing_file}" "MAX_AUDIO_SIZE_MB")
 
   append_override "${overrides_file}" "TTS_FORMAT" "${tts_format}"
   append_override "${overrides_file}" "TTS_SPEED" "${tts_speed}"
@@ -452,18 +491,18 @@ generate_env() {
   esac
 
   if ${is_deploy_env}; then
-    data_dir=$(resolve_value "DATA_DIR" "${existing_file}" "DATA_DIR" "/app/data")
-    db_path=$(resolve_value "DB_PATH" "${existing_file}" "DB_PATH" "/app/data/tutor.db")
-    config_dir=$(resolve_value "CONFIG_DIR" "${existing_file}" "CONFIG_DIR" "/app/data")
-    tts_cache_dir=$(resolve_value "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR" "/app/data/tts-cache")
+    data_dir=$(resolve_example "DATA_DIR" "${existing_file}" "DATA_DIR")
+    db_path=$(resolve_example "DB_PATH" "${existing_file}" "DB_PATH")
+    config_dir=$(resolve_example "CONFIG_DIR" "${existing_file}" "CONFIG_DIR")
+    tts_cache_dir=$(resolve_example "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR")
   else
-    data_dir=$(resolve_value "DATA_DIR" "${existing_file}" "DATA_DIR" "")
-    db_path=$(resolve_value "DB_PATH" "${existing_file}" "DB_PATH" "")
-    config_dir=$(resolve_value "CONFIG_DIR" "${existing_file}" "CONFIG_DIR" "")
-    tts_cache_dir=$(resolve_value "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR" "")
+    data_dir=""
+    db_path=""
+    config_dir=""
+    tts_cache_dir=""
   fi
-  tts_cache_max_mb=$(resolve_value "TTS_CACHE_MAX_MB" "${existing_file}" "TTS_CACHE_MAX_MB" "1024")
-  tts_cache_max_files=$(resolve_value "TTS_CACHE_MAX_FILES" "${existing_file}" "TTS_CACHE_MAX_FILES" "5000")
+  tts_cache_max_mb=$(resolve_example "TTS_CACHE_MAX_MB" "${existing_file}" "TTS_CACHE_MAX_MB")
+  tts_cache_max_files=$(resolve_example "TTS_CACHE_MAX_FILES" "${existing_file}" "TTS_CACHE_MAX_FILES")
 
   [ -n "${data_dir}" ] && append_override "${overrides_file}" "DATA_DIR" "${data_dir}"
   [ -n "${db_path}" ] && append_override "${overrides_file}" "DB_PATH" "${db_path}"
@@ -475,12 +514,12 @@ generate_env() {
   # ── 句型池 ──
   local line_pool_dir line_pool_max_lines line_pool_inject_limit
   if ${is_deploy_env}; then
-    line_pool_dir=$(resolve_value "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR" "/app/data/line-pool")
+    line_pool_dir=$(resolve_example "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR")
   else
-    line_pool_dir=$(resolve_value "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR" "")
+    line_pool_dir=""
   fi
-  line_pool_max_lines=$(resolve_value "LINE_POOL_MAX_LINES" "${existing_file}" "LINE_POOL_MAX_LINES" "200")
-  line_pool_inject_limit=$(resolve_value "LINE_POOL_INJECT_LIMIT" "${existing_file}" "LINE_POOL_INJECT_LIMIT" "30")
+  line_pool_max_lines=$(resolve_example "LINE_POOL_MAX_LINES" "${existing_file}" "LINE_POOL_MAX_LINES")
+  line_pool_inject_limit=$(resolve_example "LINE_POOL_INJECT_LIMIT" "${existing_file}" "LINE_POOL_INJECT_LIMIT")
 
   [ -n "${line_pool_dir}" ] && append_override "${overrides_file}" "LINE_POOL_DIR" "${line_pool_dir}"
   append_override "${overrides_file}" "LINE_POOL_MAX_LINES" "${line_pool_max_lines}"

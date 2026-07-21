@@ -21,11 +21,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-RED=$'\033[0;31m'
-YELLOW=$'\033[1;33m'
-GREEN=$'\033[0;32m'
-BLUE=$'\033[0;34m'
-NC=$'\033[0m'
+if [ -t 2 ]; then
+  RED=$'\033[0;31m'
+  YELLOW=$'\033[1;33m'
+  GREEN=$'\033[0;32m'
+  BLUE=$'\033[0;34m'
+  NC=$'\033[0m'
+else
+  RED=''
+  YELLOW=''
+  GREEN=''
+  BLUE=''
+  NC=''
+fi
+
 
 # 已知变量白名单（不在 .env.example 中但代码会读取）
 EXTRA_KNOWN_VARS=(

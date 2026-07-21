@@ -5,7 +5,7 @@
 #   REMOTE_HOST, REMOTE_USER, REMOTE_DIR
 #   REMOTE_APP_DIR, REMOTE_DATA_DIR, REMOTE_BACKUP_DIR, REMOTE_ENV_FILE
 #   LOCAL_PROJECT_ROOT, LOCAL_ENV_TEMP
-#   USE_LOCAL_ENV, SKIP_TESTS
+#   USE_LOCAL_ENV, SKIP_TESTS, DRY_RUN
 
 # 加载配置生成库
 source "${LOCAL_PROJECT_ROOT}/scripts/lib/setup-env.sh"
@@ -50,23 +50,79 @@ NONINTERACTIVE_ENV="${NONINTERACTIVE_ENV:-false}"
 
 EXISTING_ENV_FILE=""
 
+# 检测到新 migration 文件时设为 true，rollback 默认恢复 data 备份
+DB_SCHEMA_WILL_CHANGE=false
+
+# dry-run 模式下远端写操作只打印不执行
+DRY_RUN=${DRY_RUN:-false}
+
+# ── 颜色输出（自动检测 TTY）──
+if [ -t 2 ]; then
+  RED=$'\033[0;31m'
+  GREEN=$'\033[0;32m'
+  YELLOW=$'\033[1;33m'
+  BLUE=$'\033[0;34m'
+  NC=$'\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
+fi
+
+log_info()  { echo "${GREEN}[INFO]${NC} $*"; }
+log_warn()  { echo "${YELLOW}[WARN]${NC} $*"; }
+log_error() { echo "${RED}[ERROR]${NC} $*" >&2; }
+log_dry()   { echo "${BLUE}[DRY-RUN]${NC} $*"; }
+
 # ── 工具函数 ──
 remote_exec() {
+  if $DRY_RUN; then
+    log_dry "ssh ${REMOTE_USER}@${REMOTE_HOST} $*"
+    return 0
+  fi
   ssh "${REMOTE_USER}@${REMOTE_HOST}" "$*"
 }
 
 remote_exec_tty() {
+  if $DRY_RUN; then
+    log_dry "ssh -t ${REMOTE_USER}@${REMOTE_HOST} $*"
+    return 0
+  fi
   ssh -t "${REMOTE_USER}@${REMOTE_HOST}" "$*"
+}
+
+# 在 dry-run 模式下仍真实执行（用于只读探测）
+remote_exec_real() {
+  ssh "${REMOTE_USER}@${REMOTE_HOST}" "$*"
+}
+
+# 统一的远端 docker compose 调用
+dc() {
+  remote_exec "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
+}
+
+dc_tty() {
+  remote_exec_tty "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
 }
 
 # ── 前置检查 ──
 check_git_clean() {
   log_info "检查 git 工作区..."
   if ! git -C "${LOCAL_PROJECT_ROOT}" diff --quiet; then
+    if $DRY_RUN; then
+      log_warn "dry-run：git 工作区存在未提交修改"
+      return 0
+    fi
     log_error "存在未提交的修改，请先提交或清理"
     exit 1
   fi
   if [ -n "$(git -C "${LOCAL_PROJECT_ROOT}" status --porcelain)" ]; then
+    if $DRY_RUN; then
+      log_warn "dry-run：git 工作区存在未跟踪文件"
+      return 0
+    fi
     log_error "存在未跟踪的文件，请先处理"
     exit 1
   fi
@@ -75,7 +131,7 @@ check_git_clean() {
 
 check_ssh() {
   log_info "检查 SSH 连接 ${REMOTE_USER}@${REMOTE_HOST}..."
-  if ! remote_exec "echo ok" >/dev/null 2>&1; then
+  if ! remote_exec_real "echo ok" >/dev/null 2>&1; then
     log_error "无法通过 SSH 连接到服务器（请确认密钥/网络）"
     exit 1
   fi
@@ -89,6 +145,12 @@ ensure_remote_dirs() {
 
 # ── 本地测试 ──
 run_local_tests() {
+  if $DRY_RUN; then
+    log_dry "跳过本地测试（dry-run 模式）"
+    TEST_DURATION=0
+    return 0
+  fi
+
   log_info "运行本地测试..."
   local start_time end_time
   start_time=$(date +%s)
@@ -119,11 +181,34 @@ configure_remote_env() {
       exit 1
     fi
     log_info "使用本地 .env: ${local_env}"
+
+    if $DRY_RUN; then
+      log_dry "将 scp ${local_env} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      # dry-run 也做占位符检查，避免部署半成品
+      if ! validate_env --strict "${local_env}"; then
+        log_error "本地 .env 校验失败，请补全配置"
+        exit 1
+      fi
+      if check_env_has_placeholder "${local_env}"; then
+        log_error "本地 .env 存在占位符或空 API Key，请补全后再部署"
+        exit 1
+      fi
+      return 0
+    fi
+
+    if ! validate_env --strict "${local_env}"; then
+      log_error "本地 .env 校验失败，请补全配置"
+      exit 1
+    fi
+    if check_env_has_placeholder "${local_env}"; then
+      log_error "本地 .env 存在占位符或空 API Key，请补全后再部署"
+      exit 1
+    fi
     scp "${local_env}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
     return 0
   fi
 
-  if remote_exec "[ -f ${REMOTE_ENV_FILE} ]"; then
+  if remote_exec_real "[ -f ${REMOTE_ENV_FILE} ]"; then
     log_info "服务器已存在 ${REMOTE_ENV_FILE}"
     EXISTING_ENV_FILE="${LOCAL_PROJECT_ROOT}/.env.deploy.existing"
     if ! scp "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}" "${EXISTING_ENV_FILE}" >/dev/null 2>&1; then
@@ -133,15 +218,25 @@ configure_remote_env() {
     if $NONINTERACTIVE_ENV; then
       log_info "非交互模式：基于远端现有 .env 重新生成为新格式（保留生产值，补齐新字段）"
       generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" true
-      validate_env "${LOCAL_ENV_TEMP}" || true
-      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      if ! validate_env --strict "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 校验失败，请检查远端配置或改用交互模式"
+        exit 1
+      fi
+      if check_env_has_placeholder "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 存在占位符或空 API Key，请改用交互模式补全"
+        exit 1
+      fi
+      if $DRY_RUN; then
+        log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      else
+        scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      fi
       [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
       EXISTING_ENV_FILE=""
-      rm -f "${LOCAL_ENV_TEMP}"
       return 0
     fi
     local reconfigure=false
-    if remote_exec "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_API_KEY=$' ${REMOTE_ENV_FILE}"; then
+    if remote_exec_real "grep -qE 'your-.*-api-key|^XIAOMI_API_KEY=$|^XIAOMI_TTS_API_KEY=$|^VOLCENGINE_TTS_API_KEY=$' ${REMOTE_ENV_FILE}"; then
       log_warn "检测到 .env 中存在占位符或空 API Key"
       if prompt_yes_no "是否重新交互式配置（默认值=现有配置，API Key 回车保留）"; then
         reconfigure=true
@@ -154,36 +249,90 @@ configure_remote_env() {
     if $reconfigure; then
       generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" false
       validate_env "${LOCAL_ENV_TEMP}" || true
-      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      if $DRY_RUN; then
+        log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      else
+        scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      fi
     fi
     [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
     EXISTING_ENV_FILE=""
   else
     log_warn "服务器不存在 ${REMOTE_ENV_FILE}"
-    if $NONINTERACTIVE_ENV; then
-      log_info "非交互模式：从模板生成默认 .env（占位符需后续手动编辑 API Key）"
+    if $DRY_RUN; then
+      log_info "dry-run：从模板生成 .env 预览"
       generate_env "${LOCAL_ENV_TEMP}" "" true
-      validate_env "${LOCAL_ENV_TEMP}" || true
-      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
-      rm -f "${LOCAL_ENV_TEMP}"
+      return 0
+    fi
+    if $NONINTERACTIVE_ENV; then
+      log_info "非交互模式：从模板生成默认 .env"
+      generate_env "${LOCAL_ENV_TEMP}" "" true
+      if ! validate_env --strict "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 校验失败，请检查模板或改用交互模式"
+        exit 1
+      fi
+      if check_env_has_placeholder "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 存在占位符或空 API Key，请改用交互模式补全"
+        exit 1
+      fi
+      if $DRY_RUN; then
+        log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      else
+        scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      fi
       return 0
     fi
     if prompt_yes_no "是否交互式创建 .env"; then
       generate_env "${LOCAL_ENV_TEMP}" "" false
       validate_env "${LOCAL_ENV_TEMP}" || true
-      scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      if $DRY_RUN; then
+        log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      else
+        scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
+      fi
     else
       log_warn "跳过 .env 配置，将由 init-host-dir.sh 从模板复制（含占位符，需手动编辑）"
     fi
   fi
-  rm -f "${LOCAL_ENV_TEMP}"
+  # LOCAL_ENV_TEMP 在 dry-run 模式下保留，供后续 overlay 探测使用；
+  # 非 dry-run 模式下由 deploy_main 末尾统一清理。
+}
+
+# 检查 .env 中是否存在明显占位符或空 API Key
+# 返回 0 表示存在占位符（即有问题）
+check_env_has_placeholder() {
+  local env_file="$1"
+  if [ ! -f "${env_file}" ]; then
+    return 1
+  fi
+  # 匹配 your-xxx-api-key、空 API key 行、或全为空白的值
+  local patterns=(
+    'your-.*-api-key'
+    '^DEEPSEEK_API_KEY=$'
+    '^OPENAI_API_KEY=$'
+    '^XIAOMI_API_KEY=$'
+    '^XIAOMI_TTS_API_KEY=$'
+    '^XIAOMI_ASR_API_KEY=$'
+    '^VOLCENGINE_LLM_API_KEY=$'
+    '^VOLCENGINE_TTS_API_KEY=$'
+    '^VOLCENGINE_ASR_API_KEY=$'
+    '^VOLCENGINE_LLM_MODEL=$'
+  )
+  local pattern
+  for pattern in "${patterns[@]}"; do
+    if grep -qE "${pattern}" "${env_file}"; then
+      log_warn "检测到占位符或空值: ${pattern}"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # ── 备份 / 同步 / 初始化 ──
 backup_remote() {
   log_info "备份服务器数据..."
   remote_exec "mkdir -p ${BACKUP_DATA_DIR} ${BACKUP_APP_DIR}"
-  remote_exec "if [ -d ${REMOTE_DATA_DIR} ]; then find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models -exec cp -a {} ${BACKUP_DATA_DIR}/ \; 2>/dev/null || true; fi"
+  remote_exec "if [ -d ${REMOTE_DATA_DIR} ]; then find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models -exec cp -a {} ${BACKUP_DATA_DIR}/ \\; 2>/dev/null || true; fi"
   remote_exec "if [ -d ${REMOTE_APP_DIR} ]; then cp -a ${REMOTE_APP_DIR}/. ${BACKUP_APP_DIR}/ 2>/dev/null || true; fi"
   log_info "数据备份: ${BACKUP_DATA_DIR}"
   log_info "代码备份: ${BACKUP_APP_DIR}"
@@ -198,7 +347,10 @@ sync_code() {
 
   local rsync_log
   rsync_log=$(mktemp)
-  rsync -avz --delete --itemize-changes \
+  local dry_run_flag=""
+  $DRY_RUN && dry_run_flag="--dry-run"
+
+  rsync -avz --delete --itemize-changes ${dry_run_flag} \
     ${exclude_args[@]+"${exclude_args[@]}"} \
     "${LOCAL_PROJECT_ROOT}/" \
     "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_APP_DIR}/" | tee "${rsync_log}"
@@ -206,7 +358,11 @@ sync_code() {
   SYNC_COUNT=$(grep -cE '^[<>][fcdLDS]' "${rsync_log}" 2>/dev/null || true)
   SYNC_COUNT=${SYNC_COUNT:-0}
   rm -f "${rsync_log}"
-  log_info "rsync 完成，共变更 ${SYNC_COUNT} 个文件/目录"
+  if $DRY_RUN; then
+    log_dry "预计 rsync 变更文件/目录数: ${SYNC_COUNT}"
+  else
+    log_info "rsync 完成，共变更 ${SYNC_COUNT} 个文件/目录"
+  fi
 }
 
 init_remote_data_dir() {
@@ -224,19 +380,39 @@ sync_certs() {
   fi
   log_info "上传 mkcert 证书到 ${REMOTE_DATA_DIR}/certs/ ..."
   remote_exec "mkdir -p ${REMOTE_DATA_DIR}/certs"
-  scp "$local_cert" "$local_key" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DATA_DIR}/certs/"
+  if $DRY_RUN; then
+    log_dry "将 scp ${local_cert} ${local_key} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DATA_DIR}/certs/"
+  else
+    scp "$local_cert" "$local_key" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DATA_DIR}/certs/"
+  fi
   log_info "证书已上传，gateway 将自动启用 HTTPS (443)"
 }
 
 # ── Compose 叠加文件探测 ──
 detect_compose_overlays() {
-  if ! remote_exec "[ -f ${REMOTE_ENV_FILE} ]"; then
-    log_warn "远端无 .env，按仅主 compose 部署"
-    return 0
-  fi
   local asr tts
-  asr=$(remote_exec "grep -E '^ASR_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
-  tts=$(remote_exec "grep -E '^TTS_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
+
+  if $DRY_RUN; then
+    # dry-run 时优先读取远端现有 .env（新配置尚未 scp）
+    if remote_exec_real "[ -f ${REMOTE_ENV_FILE} ]" >/dev/null 2>&1; then
+      asr=$(remote_exec_real "grep -E '^ASR_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
+      tts=$(remote_exec_real "grep -E '^TTS_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
+    elif [ -f "${LOCAL_ENV_TEMP}" ]; then
+      asr=$(grep -E '^ASR_PROVIDER=' "${LOCAL_ENV_TEMP}" | tail -1 | cut -d= -f2 | tr -d '[:space:]' || true)
+      tts=$(grep -E '^TTS_PROVIDER=' "${LOCAL_ENV_TEMP}" | tail -1 | cut -d= -f2 | tr -d '[:space:]' || true)
+    else
+      log_warn "dry-run：无 .env 预览，按仅主 compose 部署"
+      return 0
+    fi
+  else
+    if ! remote_exec_real "[ -f ${REMOTE_ENV_FILE} ]" >/dev/null 2>&1; then
+      log_warn "远端无 .env，按仅主 compose 部署"
+      return 0
+    fi
+    asr=$(remote_exec_real "grep -E '^ASR_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
+    tts=$(remote_exec_real "grep -E '^TTS_PROVIDER=' ${REMOTE_ENV_FILE} | tail -1 | cut -d= -f2 | tr -d '[:space:]'" || true)
+  fi
+
   [ "${asr}" = "whisper" ] && ENABLE_WHISPER=true
   [ "${tts}" = "cosyvoice" ] && ENABLE_COSYVOICE=true
   log_info "compose 叠加：ASR=${asr:-?}(whisper=${ENABLE_WHISPER}) / TTS=${tts:-?}(cosyvoice=${ENABLE_COSYVOICE})"
@@ -249,13 +425,22 @@ compose_files() {
   echo "${files}"
 }
 
-# 统一的远端 docker compose 调用
-dc() {
-  remote_exec "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
-}
-
-dc_tty() {
-  remote_exec_tty "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
+# ── build 代理测试 ──
+test_build_proxy() {
+  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
+  local test_url="https://registry.npmmirror.com"
+  if [ "${BUILD_PROXY:-}" = "none" ]; then
+    log_info "BUILD_PROXY=none，跳过代理测试"
+    return 0
+  fi
+  log_info "测试 build 代理 ${proxy} ..."
+  if remote_exec_real "curl -fsS -o /dev/null --max-time 5 --proxy ${proxy} ${test_url}" >/dev/null 2>&1; then
+    log_info "代理可用"
+    return 0
+  fi
+  log_error "代理测试失败：无法通过 ${proxy} 访问 ${test_url}"
+  log_error "请确认宿主机代理已运行，或通过 BUILD_PROXY 指定可用代理"
+  exit 1
 }
 
 # ── Whisper 模型引导 ──
@@ -268,8 +453,12 @@ ensure_whisper_model() {
   local model_path="${model_dir}/${WHISPER_MODEL_FILE}"
   log_info "检查 whisper 模型 (${model_path})..."
   remote_exec "mkdir -p ${model_dir}"
-  if remote_exec "[ -f ${model_path} ]" >/dev/null 2>&1; then
+  if remote_exec_real "[ -f ${model_path} ]" >/dev/null 2>&1; then
     log_info "whisper 模型已存在，跳过下载"
+    return 0
+  fi
+  if $DRY_RUN; then
+    log_dry "whisper 模型缺失，将下载 ${WHISPER_MODEL_URL} 到 ${model_path}"
     return 0
   fi
   log_warn "whisper 模型缺失，开始下载（~150MB，首次较慢）..."
@@ -282,15 +471,15 @@ ${YELLOW}[手动重试]${NC} 国内访问 HuggingFace 可能不稳定。可选�
   ${GREEN}# 方案 1：直接重试 HuggingFace（多用 --retry，可能需要科学上网）${NC}
   ssh ${REMOTE_USER}@${REMOTE_HOST} \
     "docker run --rm -v ${model_dir}:/models alpine sh -c \
-      'apk add --no-cache curl >/dev/null && \
-       curl -fL --retry 5 -o /models/${WHISPER_MODEL_FILE} \
+      'apk add --no-cache curl >/dev/null && \\
+       curl -fL --retry 5 -o /models/${WHISPER_MODEL_FILE} \\
          ${WHISPER_MODEL_URL}'"
 
   ${GREEN}# 方案 2：换 hf-mirror.com（国内镜像，无需科学上网）${NC}
   ssh ${REMOTE_USER}@${REMOTE_HOST} \
     "docker run --rm -v ${model_dir}:/models alpine sh -c \
-      'apk add --no-cache curl >/dev/null && \
-       curl -fL --retry 5 -o /models/${WHISPER_MODEL_FILE} \
+      'apk add --no-cache curl >/dev/null && \\
+       curl -fL --retry 5 -o /models/${WHISPER_MODEL_FILE} \\
          https://hf-mirror.com/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_FILE}'"
 
   ${GREEN}# 方案 3：本地下载后 scp 上传（最可靠）${NC}
@@ -304,10 +493,59 @@ HINT
   log_info "whisper 模型下载完成"
 }
 
+# ── CosyVoice 镜像引导 ──
+ensure_cosyvoice_image() {
+  if ! $ENABLE_COSYVOICE; then
+    log_info "TTS 非 cosyvoice，跳过 CosyVoice 镜像检查"
+    return 0
+  fi
+  log_info "检查 cosyvoice:local 镜像..."
+  if remote_exec_real "docker inspect --type=image cosyvoice:local >/dev/null 2>&1"; then
+    log_info "cosyvoice:local 已存在"
+    return 0
+  fi
+  if $DRY_RUN; then
+    log_dry "cosyvoice:local 缺失，将执行 bash ${REMOTE_APP_DIR}/scripts/build-cosyvoice-image.sh 构建"
+    return 0
+  fi
+  log_warn "cosyvoice:local 不存在，开始自动构建..."
+  remote_exec "cd ${REMOTE_APP_DIR} && bash scripts/build-cosyvoice-image.sh" || {
+    log_error "CosyVoice 镜像构建失败"
+    exit 1
+  }
+}
+
+# ── schema 变更探测 ──
+detect_schema_change() {
+  local old_dir="${BACKUP_APP_DIR}/apps/tutor-server/src/db/migrations"
+  local new_dir="${REMOTE_APP_DIR}/apps/tutor-server/src/db/migrations"
+  local old_count new_count
+  old_count=$(remote_exec_real "find '${old_dir}' -maxdepth 1 -name '*.sql' 2>/dev/null | wc -l" || echo 0)
+  new_count=$(remote_exec_real "find '${new_dir}' -maxdepth 1 -name '*.sql' 2>/dev/null | wc -l" || echo 0)
+  old_count=${old_count:-0}
+  new_count=${new_count:-0}
+  if [ "${new_count}" -gt "${old_count}" ]; then
+    DB_SCHEMA_WILL_CHANGE=true
+    log_warn "检测到新的数据库迁移文件（${old_count} -> ${new_count}），rollback 时将恢复 data 备份"
+  else
+    DB_SCHEMA_WILL_CHANGE=false
+  fi
+}
+
 # ── Docker 启动 / 健康检查 / 回滚 ──
 deploy_services() {
   log_info "在服务器上构建并启动服务..."
   log_info "compose 文件: $(compose_files)"
+
+  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
+
+  if $DRY_RUN; then
+    log_dry "将执行: docker compose down"
+    log_dry "将执行: docker compose build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy}"
+    log_dry "将执行: docker compose up -d"
+    return 0
+  fi
+
   dc down
   # build 期走宿主机 mihomo 代理拉取海外源（Alpine/pypi 等）。
   # 通过 --build-arg 注入 HTTP_PROXY/HTTPS_PROXY：docker 会自动将其作为环境变量传入每个 RUN，
@@ -316,7 +554,6 @@ deploy_services() {
   # 也避免 Node.js 应用被 127.0.0.1:7890（bridge 容器内不可达）污染。
   # 注意：不能用 ~/.docker/config.json 的 proxies，它会被注入到运行时容器。
   # 代理地址可通过 BUILD_PROXY 环境变量覆盖。
-  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
   if ! dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy}"; then
     log_error "docker compose build 失败"
     return 1
@@ -332,8 +569,13 @@ check_health() {
   local attempt=1
   local healthy_count
   while [ ${attempt} -le ${HEALTH_CHECK_RETRIES} ]; do
-    log_info "健康检查 ${attempt}/${HEALTH_CHECK_RETRIES}..."
-    healthy_count=$(dc "ps --format json backend gateway 2>/dev/null | grep -c '\"Health\":\"healthy\"' || true")
+    log_info "容器健康检查 ${attempt}/${HEALTH_CHECK_RETRIES}..."
+    if $DRY_RUN; then
+      log_dry "将执行: docker compose ps --format json backend gateway"
+      healthy_count=2
+    else
+      healthy_count=$(dc "ps --format json backend gateway 2>/dev/null | grep -c '\"Health\":\"healthy\"' || true")
+    fi
     healthy_count=${healthy_count:-0}
     if [ "${healthy_count}" -ge 2 ]; then
       log_info "backend 和 gateway 均健康"
@@ -346,6 +588,76 @@ check_health() {
     attempt=$((attempt + 1))
   done
   return 1
+}
+
+end_to_end_health_check() {
+  log_info "执行端到端健康检查..."
+
+  if $DRY_RUN; then
+    log_dry "将执行: curl -fsS http://localhost:80/"
+    log_dry "将执行: curl -fsS http://localhost:80/api/health"
+    log_dry "将执行: curl -fsS http://localhost:80/api/config"
+    if $ENABLE_COSYVOICE; then
+      log_dry "将执行: curl -fsS -X POST http://localhost:50000/inference_sft -F spk_id=EnglishTutor"
+    fi
+    return 0
+  fi
+
+  # 1. gateway 首页
+  if ! remote_exec_real "curl -fsS -o /dev/null http://localhost:80/"; then
+    log_error "端到端检查失败：gateway 首页不可达"
+    return 1
+  fi
+  log_info "gateway 首页可达"
+
+  # 2. /api/health 结构化检查
+  local health_response
+  health_response=$(remote_exec_real "curl -fsS http://localhost:80/api/health" || true)
+  if [ -z "${health_response}" ]; then
+    log_error "端到端检查失败：/api/health 无响应"
+    return 1
+  fi
+
+  # 检查每个 checks.*.ok 是否为 true
+  local failed_checks
+  failed_checks=$(echo "${health_response}" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    failed = [k for k, v in data.get('checks', {}).items() if not v.get('ok')]
+    print(' '.join(failed))
+except Exception as e:
+    print('PARSE_ERROR')
+" 2>/dev/null || true)
+
+  if [ "${failed_checks}" = "PARSE_ERROR" ]; then
+    log_warn "/api/health 返回非 JSON，跳过结构化检查"
+  elif [ -n "${failed_checks}" ]; then
+    log_error "端到端检查失败：/api/health 中以下检查未通过: ${failed_checks}"
+    return 1
+  else
+    log_info "/api/health 所有检查通过"
+  fi
+
+  # 3. /api/config
+  if ! remote_exec_real "curl -fsS -o /dev/null http://localhost:80/api/config"; then
+    log_error "端到端检查失败：/api/config 不可达"
+    return 1
+  fi
+  log_info "/api/config 可达"
+
+  # 4. CosyVoice 可选探测（仅提示，不阻塞）
+  if $ENABLE_COSYVOICE; then
+    local cv_status
+    cv_status=$(remote_exec_real "curl -s -o /dev/null -w '%{http_code}' -X POST -F 'spk_id=EnglishTutor' http://localhost:50000/inference_sft" || true)
+    if [ "${cv_status}" = "422" ] || [ "${cv_status}" = "200" ]; then
+      log_info "CosyVoice 端到端探测通过 (HTTP ${cv_status})"
+    else
+      log_warn "CosyVoice 端到端探测未通过 (HTTP ${cv_status})，不阻塞部署"
+    fi
+  fi
+
+  return 0
 }
 
 wait_cosyvoice_healthy() {
@@ -366,7 +678,7 @@ wait_cosyvoice_healthy() {
   local elapsed=0
   local status=""
   while [ ${elapsed} -lt ${timeout} ]; do
-    status=$(remote_exec "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
+    status=$(remote_exec_real "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
     case "${status}" in
       ""|"<no value>") status="unknown" ;;
     esac
@@ -394,7 +706,7 @@ get_cosyvoice_health() {
     echo "未找到容器"
     return 0
   fi
-  status=$(remote_exec "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
+  status=$(remote_exec_real "docker inspect --format '{{.State.Health.Status}}' ${cv_container} 2>/dev/null" || true)
   case "${status}" in
     ""|"<no value>") echo "unknown" ;;
     *) echo "${status}" ;;
@@ -409,12 +721,23 @@ cleanup_old_backups() {
 }
 
 rollback() {
-  log_error "健康检查连续 ${HEALTH_CHECK_RETRIES} 次失败，开始回滚到 ${BACKUP_APP_DIR}..."
+  log_error "部署失败，开始回滚到 ${BACKUP_APP_DIR}..."
+
+  if $DRY_RUN; then
+    log_dry "将执行: docker compose down"
+    log_dry "将执行: 恢复 ${BACKUP_APP_DIR} -> ${REMOTE_APP_DIR}"
+    if $DB_SCHEMA_WILL_CHANGE; then
+      log_dry "将执行: 恢复 ${BACKUP_DATA_DIR} -> ${REMOTE_DATA_DIR}（检测到 schema 变更）"
+    fi
+    log_dry "将执行: docker compose up -d"
+    return 0
+  fi
+
   dc down
   remote_exec "find ${REMOTE_APP_DIR} -mindepth 1 -delete && cp -a ${BACKUP_APP_DIR}/. ${REMOTE_APP_DIR}/"
 
-  if [ "${RESTORE_DATA_ON_ROLLBACK:-false}" = "true" ]; then
-    log_warn "RESTORE_DATA_ON_ROLLBACK=true，恢复部署前数据备份 ${BACKUP_DATA_DIR}..."
+  if [ "${RESTORE_DATA_ON_ROLLBACK:-false}" = "true" ] || $DB_SCHEMA_WILL_CHANGE; then
+    log_warn "恢复部署前数据备份 ${BACKUP_DATA_DIR}..."
     remote_exec "rm -rf ${REMOTE_DATA_DIR} && cp -a ${BACKUP_DATA_DIR} ${REMOTE_DATA_DIR}"
   else
     log_warn "未恢复 data/（避免丢失新数据）；如需恢复，数据备份在 ${BACKUP_DATA_DIR}"
@@ -438,16 +761,22 @@ print_report() {
   local deploy_duration="$4"
 
   echo ""
-  echo "================ 部署报告 ================"
+  if $DRY_RUN; then
+    echo "================ 预计部署报告 ================"
+  else
+    echo "================ 部署报告 ================"
+  fi
   echo "本地测试：          通过 (${test_duration}s)"
   echo "服务器：            ${REMOTE_USER}@${REMOTE_HOST}"
   echo "数据备份：          ${BACKUP_DATA_DIR}"
   echo "代码备份：          ${BACKUP_APP_DIR}"
   echo "代码变更文件数：    ${sync_count}"
   echo "部署耗时：          ${deploy_duration}s"
-  echo "容器状态："
-  dc "ps --format 'table {{.Name}}\t{{.Status}}'" || true
-  echo "CosyVoice：         $(get_cosyvoice_health)"
+  if ! $DRY_RUN; then
+    echo "容器状态："
+    dc "ps --format 'table {{.Name}}\t{{.Status}}'" || true
+    echo "CosyVoice：         $(get_cosyvoice_health)"
+  fi
   echo "结果：              ${status}"
   echo "=========================================="
 }
@@ -455,6 +784,9 @@ print_report() {
 # 主流程
 deploy_main() {
   local start_time deploy_duration
+
+  # 确保无论成功/失败都清理本地临时 .env 文件
+  trap 'rm -f "${LOCAL_ENV_TEMP}"' EXIT
 
   check_git_clean
   check_ssh
@@ -467,15 +799,19 @@ deploy_main() {
     run_local_tests
   fi
 
-  configure_remote_env
+  # 先备份，再改 .env，确保旧 .env 也进入备份
   backup_remote
+  configure_remote_env
 
   start_time=$(date +%s)
   sync_code
+  detect_schema_change
   init_remote_data_dir
   sync_certs
   detect_compose_overlays
   ensure_whisper_model
+  ensure_cosyvoice_image
+  test_build_proxy
 
   if ! deploy_services; then
     rollback
@@ -485,11 +821,18 @@ deploy_main() {
   fi
 
   if check_health; then
-    wait_cosyvoice_healthy
-    cleanup_old_backups
-    deploy_duration=$(($(date +%s) - start_time))
-    print_report "成功" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
-    exit 0
+    if end_to_end_health_check; then
+      wait_cosyvoice_healthy
+      cleanup_old_backups
+      deploy_duration=$(($(date +%s) - start_time))
+      print_report "成功" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
+      exit 0
+    else
+      rollback
+      deploy_duration=$(($(date +%s) - start_time))
+      print_report "失败并已回滚" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
+      exit 1
+    fi
   else
     rollback
     deploy_duration=$(($(date +%s) - start_time))

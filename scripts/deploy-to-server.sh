@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # AI English Tutor — 一键部署到服务器（个人使用，硬编码目标）
-# 用法: ./scripts/deploy-to-server.sh [--use-local-env] [--skip-tests] [--non-interactive-env]
+# 用法: ./scripts/deploy-to-server.sh [--use-local-env] [--skip-tests] [--non-interactive-env] [--dry-run]
 #
-# 流程: git clean → ssh 检查 → 交互式 .env → rsync → docker compose up → 健康检查 → 报告
+# 流程: git clean → ssh 检查 → 交互式 .env → 备份 → rsync → docker compose up → 健康检查 → 报告
 # 默认最小栈: 浏览器 ASR/TTS + mock LLM；需要时自动叠加 whisper / cosyvoice compose。
 
 set -euo pipefail
@@ -10,6 +10,7 @@ set -euo pipefail
 USE_LOCAL_ENV=false
 SKIP_TESTS=false
 NONINTERACTIVE_ENV=false
+DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -17,6 +18,7 @@ while [[ $# -gt 0 ]]; do
     --use-local-env)       USE_LOCAL_ENV=true ;;
     --skip-tests)          SKIP_TESTS=true ;;
     --non-interactive-env) NONINTERACTIVE_ENV=true ;;
+    --dry-run)             DRY_RUN=true ;;
     --) ;;  # 忽略 pnpm 透传的 -- 分隔符（由外层 shift 跳过），支持 `pnpm push:server -- --use-local-env`
     *)         echo "未知参数: $1" >&2; sed -n '2,5p' "$0"; exit 1 ;;
   esac

@@ -19,6 +19,8 @@ services:
     volumes:
       # TLS certs；缺失时 entrypoint 静默禁用 443，可安全挂载
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/certs:/etc/nginx/certs:ro
+      # nginx 访问/错误日志持久化到宿主机，便于排查与轮转
+      - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/logs/gateway:/var/log/nginx
     depends_on:
       backend:
         condition: service_healthy
@@ -27,6 +29,11 @@ services:
     networks:
       - tutor-net
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: '5'
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:80/']
       interval: 10s
@@ -52,6 +59,11 @@ services:
     networks:
       - tutor-net
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: '5'
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/']
       interval: 10s
@@ -74,6 +86,11 @@ services:
     networks:
       - tutor-net
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: '5'
     healthcheck:
       test:
         ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/api/health']

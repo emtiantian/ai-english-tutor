@@ -37,6 +37,8 @@ echo "   （所有运行时配置统一收敛到 data/ 子目录）"
 mkdir -p "$DATA_DIR/vocab"
 mkdir -p "$DATA_DIR/tts-cache"
 mkdir -p "$DATA_DIR/certs"
+mkdir -p "$DATA_DIR/logs/backend"
+mkdir -p "$DATA_DIR/logs/gateway"
 # 本地 ASR/TTS 模型目录（whisper / cosyvoice 的 bind mount 落点；
 # 预先按当前用户创建，避免 docker 首次挂载时以 root 自动创建导致写权限问题）
 mkdir -p "$DATA_DIR/whisper-models"
@@ -222,6 +224,9 @@ echo "       ├── persona.json      ← 角色配置（人设、提示词�
 echo "       ├── scenarios.json    ← 场景配置（可新增自定义场景）"
 echo "       ├── vocab/            ← 词汇表（可自定义）"
 echo "       ├── tts-cache/        ← TTS 缓存（自动生成）"
+echo "       ├── logs/             ← 持久化日志目录"
+echo "       │   ├── backend/      ←   后端 JSON 日志（pino）"
+echo "       │   └── gateway/      ←   nginx access/error 日志"
 echo "       ├── whisper-models/   ← 本地 Whisper ASR 模型（ASR=whisper 时下载到此）"
 echo "       ├── cosyvoice-models/ ← CosyVoice 预置模型目录（pretrained_models）"
 echo "       ├── modelscope-cache/ ← CosyVoice 的 modelscope 下载缓存（命中即免重下 ~11G）"
@@ -239,3 +244,33 @@ echo "   3. （可选）编辑 data/scenarios.json 添加自定义场景"
 echo "   4. 运行 docker compose up --build"
 echo ""
 echo "注意：persona.json / scenarios.json 修改后需 docker compose restart backend 才能生效。"
+echo ""
+
+# ── 日志轮转配置示例 ──
+# 由于各 Linux 发行版 logrotate 路径不同，这里只生成一个示例文件，
+# 需要 root 权限的用户可把它复制到 /etc/logrotate.d/ai-english-tutor
+LOGROTATE_EXAMPLE="$DATA_DIR/logs/logrotate.conf.example"
+cat > "$LOGROTATE_EXAMPLE" <<'EOF'
+$HOME/.ai-english-tutor/data/logs/backend/app.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 $(id -un) $(id -gn)
+}
+
+$HOME/.ai-english-tutor/data/logs/gateway/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0644 $(id -un) $(id -gn)
+}
+EOF
+echo "💡 日志轮转示例已写入 $LOGROTATE_EXAMPLE"
+echo "   需要时以 root 复制到 /etc/logrotate.d/ai-english-tutor 并调整路径/用户"
+

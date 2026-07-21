@@ -18,6 +18,9 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/tutor-server/package.json apps/tutor-server/
 
+# 国内网络下官方 registry 经常超时，将 lock 中的 tarball URL 替换为 npmmirror
+RUN sed -i 's|https://registry.npmjs.org|https://registry.npmmirror.com|g' pnpm-lock.yaml
+
 # Install dependencies (native addons built via onlyBuiltDependencies in pnpm-workspace.yaml)
 RUN pnpm install --frozen-lockfile --registry https://registry.npmmirror.com
 

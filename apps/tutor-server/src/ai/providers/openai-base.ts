@@ -65,6 +65,9 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     if (!options.apiKey) {
       throw new Error(`未配置 ${options.name} API Key`)
     }
+    if (!options.model) {
+      throw new Error(`未配置 ${options.name} 模型（${options.name === 'volcengine' ? 'VOLCENGINE_LLM_MODEL' : 'MODEL'}）`)
+    }
 
     this.name = options.name
     this.capabilities = options.capabilities

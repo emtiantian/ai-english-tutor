@@ -7,6 +7,26 @@ import { pcmToWav } from '../wav-utils.js'
 /** fetch 超时时间（毫秒） */
 const FETCH_TIMEOUT_MS = 30_000
 
+/** CosyVoice 请求失败后的最大重试次数（不含首次） */
+const MAX_RETRIES = 2
+
+/** 可重试的错误类型：远端关闭连接 / 超时 / 5xx */
+function isRetryableError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase()
+    return (
+      msg.includes('other side closed') ||
+      msg.includes('terminated') ||
+      msg.includes('timeout') ||
+      msg.includes('econnreset') ||
+      msg.includes('socket') ||
+      msg.includes('abort') ||
+      msg.includes('fetch failed')
+    )
+  }
+  return false
+}
+
 /**
  * 给 fetch 加超时：超过 timeoutMs 后中止请求并抛错。
  */
@@ -80,36 +100,27 @@ export class CosyVoiceProvider implements TTSProvider {
     const speed = options?.speed ?? config.COSYVOICE_SPEED
     return getOrSynthesizeCachedAudio(
       text,
-      { voice, format: 'wav', speed, voiceDesign: options?.voiceDesign },
+      // CosyVoice SFT 接口只使用 tts_text / spk_id / speed，voiceDesign 不影响输出，
+      // 因此不加入缓存键，避免同文本不同 voiceDesign 产生无意义缓存副本。
+      { voice, format: 'wav', speed },
       async () => {
         logger.debug(
           { provider: this.name, voice, speed, textLength: text.length },
           'CosyVoice 合成请求'
         )
 
-        const startTime = Date.now()
-
         const form = new FormData()
         form.append('tts_text', text)
         form.append('spk_id', voice)
         form.append('speed', String(speed))
 
-        const response = await fetchWithTimeout(`${this.baseUrl}/inference_sft`, {
-          method: 'POST',
-          body: form
+        const buffer = await this.inferenceWithRetry('/inference_sft', form, {
+          voice,
+          speed,
+          textLength: text.length
         })
 
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'unknown error')
-          throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
-        }
-
-        const arrayBuffer = await response.arrayBuffer()
-        const buffer = pcmToWav(Buffer.from(arrayBuffer), config.COSYVOICE_SAMPLE_RATE)
-        const duration = Date.now() - startTime
-
-        logger.info({ provider: this.name, duration, size: buffer.length }, 'CosyVoice 合成完成')
-
+        logger.info({ provider: this.name, size: buffer.length }, 'CosyVoice 合成完成')
         return buffer
       }
     )
@@ -144,33 +155,82 @@ export class CosyVoiceProvider implements TTSProvider {
       'CosyVoice 情感合成'
     )
 
-    const startTime = Date.now()
-
     const form = new FormData()
     form.append('tts_text', text)
     form.append('spk_id', voice)
     form.append('instruct_text', instruct)
     form.append('speed', String(speed))
 
-    const response = await fetchWithTimeout(`${this.baseUrl}/inference_instruct`, {
+    const buffer = await this.inferenceWithRetry('/inference_instruct', form, {
+      voice,
+      speed,
+      textLength: text.length,
+      instruct
+    })
+
+    logger.info({ provider: this.name, size: buffer.length, instruct }, 'CosyVoice 指令合成完成')
+
+    return buffer
+  }
+
+  /**
+   * 带重试的 CosyVoice 推理调用。
+   * 对远端关闭连接、超时等瞬态网络错误自动重试，并记录每次失败的详情。
+   */
+  private async inferenceWithRetry(
+    endpoint: string,
+    form: FormData,
+    meta: { voice: string; speed: number; textLength: number; instruct?: string }
+  ): Promise<Buffer> {
+    let lastErr: unknown
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await this.doInference(endpoint, form)
+      } catch (err) {
+        lastErr = err
+        const retryable = isRetryableError(err)
+        logger.warn(
+          {
+            provider: this.name,
+            endpoint,
+            attempt: attempt + 1,
+            maxAttempts: MAX_RETRIES + 1,
+            retryable,
+            err,
+            ...meta
+          },
+          'CosyVoice 推理失败'
+        )
+        if (!retryable || attempt === MAX_RETRIES) {
+          break
+        }
+        // 指数退避：首次失败后等待 500ms，第二次 1000ms
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
+      }
+    }
+    throw lastErr
+  }
+
+  private async doInference(endpoint: string, form: FormData): Promise<Buffer> {
+    const startTime = Date.now()
+    const response = await fetchWithTimeout(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       body: form
     })
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      throw new Error(`CosyVoice 指令合成错误：${response.status} - ${errorText}`)
+      throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
     }
 
     const arrayBuffer = await response.arrayBuffer()
     const buffer = pcmToWav(Buffer.from(arrayBuffer), config.COSYVOICE_SAMPLE_RATE)
     const duration = Date.now() - startTime
 
-    logger.info(
-      { provider: this.name, duration, size: buffer.length, instruct },
-      'CosyVoice 指令合成完成'
+    logger.debug(
+      { provider: this.name, endpoint, duration, size: buffer.length },
+      'CosyVoice 推理成功'
     )
-
     return buffer
   }
 }

@@ -41,6 +41,17 @@ describe('parseTeachingResponse', () => {
     expect(empty.intent).toBe('empty')
   })
 
+  it('uses empty text field instead of falling back to raw JSON', () => {
+    const result = parseTeachingResponse('{"text":"","textZh":"你好"}')
+    expect(result.text).toBe('')
+    expect(result.textZh).toBe('你好')
+  })
+
+  it('falls back to raw content when JSON has no text field', () => {
+    const result = parseTeachingResponse('{"textZh":"你好"}')
+    expect(result.text).toBe('{"textZh":"你好"}')
+  })
+
   it('filters non-string and empty vocabulary sentences', () => {
     const mixed = parseTeachingResponse(
       '{"text":"Ok","vocabulary":["a","b"],"vocabularySentences":["Good sentence", 123, "", "Another"]}'

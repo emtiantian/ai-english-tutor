@@ -40,7 +40,7 @@ export function parseTeachingResponse(content: string): ParsedResponse {
     const jsonText = extractFirstJson(content)
     if (jsonText) {
       const parsed = JSON.parse(jsonText)
-      text = parsed.text || content
+      text = typeof parsed.text === 'string' ? parsed.text : content
       textZh = typeof parsed.textZh === 'string' ? parsed.textZh : undefined
       vocabulary = Array.isArray(parsed.vocabulary) ? parsed.vocabulary : undefined
       vocabularySentences = Array.isArray(parsed.vocabularySentences)
@@ -56,6 +56,17 @@ export function parseTeachingResponse(content: string): ParsedResponse {
         { hasText: !!parsed.text, hasTextZh: !!parsed.textZh, textZhPreview: textZh?.slice(0, 30) },
         'Parsed LLM response'
       )
+
+      // 防御性处理：LLM 有时会把完整 JSON 嵌套在 text 字段里（字符串化），
+      // TTS 会收到 JSON 而非纯英文。此时尝试 unwrap 出真正的 text。
+      const unwrapped = unwrapTextIfNestedJson(text)
+      if (unwrapped !== text) {
+        logger.warn(
+          { originalPreview: text.slice(0, 80), unwrappedPreview: unwrapped.slice(0, 80) },
+          'LLM 将 JSON 嵌套在 text 字段，已解包'
+        )
+        text = unwrapped
+      }
     }
   } catch (err) {
     logger.warn({ content: content.slice(0, 100), err }, 'Failed to parse LLM response as JSON')
@@ -148,4 +159,30 @@ function extractLiteralFields(text: string): {
   }
 
   return { stripped, vocabulary, vocabularySentences, studentReplyHints }
+}
+
+/**
+ * 若 text 本身是字符串化的 JSON 对象，则递归提取其中的 `text` 字段。
+ *
+ * 某些模型会把完整输出再包装一层 JSON，例如：
+ *   {"text": "{\\"text\\": \\"Hello!...\\", ...}"}
+ * 这会导致 TTS 收到 JSON 字符串而非纯英文。此函数用于将这种嵌套结构
+ * 还原为可朗读的文本。
+ */
+function unwrapTextIfNestedJson(text: string): string {
+  let current = text.trim()
+  let guard = 0
+  while (guard++ < 3 && current.startsWith('{') && current.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(current)
+      if (parsed && typeof parsed.text === 'string' && parsed.text.length > 0) {
+        current = parsed.text.trim()
+      } else {
+        break
+      }
+    } catch {
+      break
+    }
+  }
+  return current
 }

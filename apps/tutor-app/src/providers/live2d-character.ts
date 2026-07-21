@@ -13,10 +13,8 @@ import { CubismUserModel } from '@/lib/cubism-framework/model/cubismusermodel'
 import { CubismEyeBlink } from '@/lib/cubism-framework/effect/cubismeyeblink'
 import { CubismBreath } from '@/lib/cubism-framework/effect/cubismbreath'
 import { CubismMatrix44 } from '@/lib/cubism-framework/math/cubismmatrix44'
-import { CubismModelMatrix } from '@/lib/cubism-framework/math/cubismmodelmatrix'
 import { CubismIdHandle } from '@/lib/cubism-framework/id/cubismid'
 import { ACubismMotion } from '@/lib/cubism-framework/motion/acubismmotion'
-import { CubismMotion } from '@/lib/cubism-framework/motion/cubismmotion'
 
 /**
  * 模型路径与表情参数预设由调用方通过 `Live2DModelManifest` 注入,
@@ -64,13 +62,27 @@ const STRETCH_PRESET: Record<string, number> = {
 }
 
 /**
+ * 根据设备性能动态选择默认 DPR。
+ * 低内存（<=4GB）或低核心数（<=4）的设备默认降到 1.0，避免 GPU 过载导致整机卡顿。
+ * 环境变量 VITE_LIVE2D_MAX_DPR 仍优先于自动判断。
+ */
+function getDefaultMaxDpr(): number {
+  const deviceMemory = (navigator as any).deviceMemory
+  const hardwareConcurrency = navigator.hardwareConcurrency || 8
+  if ((deviceMemory != null && deviceMemory <= 4) || hardwareConcurrency <= 4) {
+    return 1.0
+  }
+  return 1.5
+}
+
+/**
  * Canvas 渲染缩放上限。
  *
  * 直接用 window.devicePixelRatio 在 Retina 屏(2x)上会让 WebGL 画布变成 4 倍像素，
  * Live2D 每帧都要填充/采样这些像素，是 CPU/GPU 占用的主要来源。限制到 1.5 可以在
  * 清晰度和性能之间取得平衡；若仍觉卡顿可在 .env 设置 VITE_LIVE2D_MAX_DPR=1.0。
  */
-const DEFAULT_MAX_DPR = 1.5
+const DEFAULT_MAX_DPR = getDefaultMaxDpr()
 const MAX_DPR = Math.min(
   Math.max(
     Number((import.meta.env.VITE_LIVE2D_MAX_DPR as string | undefined) ?? DEFAULT_MAX_DPR) || DEFAULT_MAX_DPR,
@@ -78,6 +90,21 @@ const MAX_DPR = Math.min(
   ),
   2.0,
 )
+
+/**
+ * Live2D 渲染目标帧率上限。
+ * 默认 60fps；低性能设备可在 .env 设置 VITE_LIVE2D_TARGET_FPS=30 降低 CPU/GPU 占用。
+ */
+const DEFAULT_TARGET_FPS = 60
+const TARGET_FPS = Math.min(
+  Math.max(
+    Number((import.meta.env.VITE_LIVE2D_TARGET_FPS as string | undefined) ?? DEFAULT_TARGET_FPS) ||
+      DEFAULT_TARGET_FPS,
+    15,
+  ),
+  120,
+)
+const MIN_FRAME_INTERVAL_MS = 1000 / TARGET_FPS
 
 /**
  * Patch: CDN 上的 live2dcubismcore@1.0.2 没有 Memory.initializeAmountOfMemory，
@@ -216,6 +243,10 @@ class LAppModel extends CubismUserModel {
 
   // === 错误反应 ===
   private _errorShakeTimer = 0.0
+
+  // === 物理/呼吸模拟降频（固定 30fps，不必每帧 evaluate） ===
+  private _physicsAccumulator = 0.0
+  private readonly _physicsStepSeconds = 1.0 / 30.0
 
   // === 时间判断 ===
   private _localHour = new Date().getHours()
@@ -461,14 +492,17 @@ class LAppModel extends CubismUserModel {
     // 4. 自动眨眼（支持可变频率）
     this.applyEyeBlink(deltaTimeSeconds)
 
-    // 5. 呼吸
-    if (this._breath) {
-      this._breath.updateParameters(this._model, deltaTimeSeconds)
-    }
-
-    // 6. 物理（头发飘动，基于当前参数值计算）
-    if (this._physics) {
-      this._physics.evaluate(this._model, deltaTimeSeconds)
+    // 5. 呼吸 与 6. 物理（头发飘动）降频到 30fps。
+    // 物理内部基于当前参数值计算，不需要每帧都跑；降低频率可显著减少 CPU 占用。
+    this._physicsAccumulator += deltaTimeSeconds
+    if (this._physicsAccumulator >= this._physicsStepSeconds) {
+      if (this._breath) {
+        this._breath.updateParameters(this._model, this._physicsStepSeconds)
+      }
+      if (this._physics) {
+        this._physics.evaluate(this._model, this._physicsStepSeconds)
+      }
+      this._physicsAccumulator -= this._physicsStepSeconds
     }
 
     // 7. 姿势
@@ -596,7 +630,7 @@ class LAppModel extends CubismUserModel {
     if (!this._microActionPreset || !this._microActionType) return
 
     this._microActionTimer += deltaTimeSeconds
-    let weight = 0.0
+    let weight: number
 
     const fadeIn = 0.4
     const fadeOut = 0.4
@@ -714,7 +748,6 @@ class LAppModel extends CubismUserModel {
     const swayOffset = Math.sin(this._swayPhase) * this._swayAmplitude
 
     // 倾听姿态前倾/侧倾
-    let listenLeanX = 0.0
     let listenLeanY = 0.0
     let listenTilt = 0.0
     if (this._gazeOverrideBlend > 0) {
@@ -1162,6 +1195,11 @@ export class Live2DCharacterProvider implements CharacterProvider {
   /** 复用的投影矩阵，避免每帧 new CubismMatrix44 */
   private _projectionMatrix: CubismMatrix44 | null = null
 
+  /** 渲染目标帧率上限对应的帧间隔 */
+  private readonly _minFrameIntervalMs = MIN_FRAME_INTERVAL_MS
+  /** 渲染循环上一帧时间（用于 FPS 限制） */
+  private _renderLastFrameTime = 0
+
   private state: CharacterState = {
     currentMotion: null,
     currentExpression: null,
@@ -1262,8 +1300,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
 
   /** 绑定鼠标移动和点击事件 */
   private bindMouseEvents(canvas: HTMLCanvasElement): void {
-    // 鼠标移动：眼睛跟随。绑定到 window 而不是 canvas，这样即使聊天消息等
-    // UI 元素覆盖在 canvas 上方，人物眼睛仍然能跟随鼠标。
+    // 鼠标移动：眼睛跟随。绑定到 canvas 而非 window，避免页面任意位置移动都触发事件。
     // 用 requestAnimationFrame 节流到每帧一次，避免高频 mousemove 浪费 CPU。
     this._canvasMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
@@ -1284,7 +1321,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
         this.model.onMouseMove(x, y, width, height)
       })
     }
-    window.addEventListener('mousemove', this._canvasMouseMove)
+    canvas.addEventListener('mousemove', this._canvasMouseMove)
 
     // 鼠标点击：身体互动（仍绑定在 canvas 上，避免点击 UI 时误触发）
     this._canvasClick = (e: MouseEvent) => {
@@ -1399,16 +1436,34 @@ export class Live2DCharacterProvider implements CharacterProvider {
 
   /** 渲染循环 */
   private startRenderLoop(): void {
+    if (!this.gl || !this.model || !this.canvas) {
+      return
+    }
+
     const loop = (time: number) => {
-      if (!this.gl || !this.model || !this.canvas) {
-        this.animFrameId = requestAnimationFrame(loop)
-        return
-      }
+      this.animFrameId = requestAnimationFrame(loop)
 
       // 页面在后台时跳过渲染，降低 CPU/GPU 占用
       if (!this._isVisible) {
         this.lastFrameTime = time
-        this.animFrameId = requestAnimationFrame(loop)
+        this._renderLastFrameTime = time
+        return
+      }
+
+      // FPS 上限：若距上一帧不足目标帧间隔则跳过本次渲染
+      if (
+        this._renderLastFrameTime > 0 &&
+        time - this._renderLastFrameTime < this._minFrameIntervalMs
+      ) {
+        return
+      }
+      this._renderLastFrameTime = time
+
+      // 用局部常量固定当前帧的 gl/canvas/model，避免 TypeScript 在闭包中报 null 警告
+      const gl = this.gl
+      const canvas = this.canvas
+      const model = this.model
+      if (!gl || !canvas || !model) {
         return
       }
 
@@ -1416,18 +1471,18 @@ export class Live2DCharacterProvider implements CharacterProvider {
       this.lastFrameTime = time
 
       // WebGL 全局状态
-      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
-      this.gl.clearColor(0.0, 0.0, 0.0, 0.0)
-      this.gl.enable(this.gl.BLEND)
-      this.gl.blendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA)
-      this.gl.disable(this.gl.CULL_FACE)
-      this.gl.clear(this.gl.COLOR_BUFFER_BIT)
+      gl.viewport(0, 0, canvas.width, canvas.height)
+      gl.clearColor(0.0, 0.0, 0.0, 0.0)
+      gl.enable(gl.BLEND)
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+      gl.disable(gl.CULL_FACE)
+      gl.clear(gl.COLOR_BUFFER_BIT)
 
       // 投影矩阵 — 使用正交投影补偿 canvas 宽高比，防止竖屏手机人物被拉伸变形
       // 复用 _projectionMatrix，避免每帧 new CubismMatrix44；每帧先重置为单位矩阵，
       // 因为 draw() 内部会把它乘以 modelMatrix。
       const projection = this._projectionMatrix ?? new CubismMatrix44()
-      const aspect = this.canvas.width / this.canvas.height
+      const aspect = canvas.width / canvas.height
       const arr = projection.getArray()
       for (let i = 0; i < 16; i++) {
         arr[i] = i % 5 === 0 ? 1.0 : 0.0
@@ -1436,10 +1491,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
       arr[5] = 1.0            // Y: 映射 [-1, +1] → [-1, +1]
 
       // 更新并绘制模型
-      this.model.update(delta)
-      this.model.draw(projection)
-
-      this.animFrameId = requestAnimationFrame(loop)
+      model.update(delta)
+      model.draw(projection)
     }
 
     this.animFrameId = requestAnimationFrame(loop)
@@ -1496,7 +1549,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
       document.removeEventListener('visibilitychange', this._visibilityHandler)
     }
     if (this.canvas) {
-      if (this._canvasMouseMove) window.removeEventListener('mousemove', this._canvasMouseMove)
+      if (this._canvasMouseMove) this.canvas.removeEventListener('mousemove', this._canvasMouseMove)
       if (this._canvasClick) this.canvas.removeEventListener('click', this._canvasClick)
     }
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId)

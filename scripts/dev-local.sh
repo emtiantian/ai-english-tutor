@@ -40,7 +40,7 @@ check_port() {
     local port=$1
     local service_name=$2
     local pid
-    pid=$(lsof -ti :$port -sTCP:LISTEN 2>/dev/null | head -1)
+    pid=$(lsof -ti :$port -sTCP:LISTEN 2>/dev/null | head -1) || true
     if [ -n "$pid" ]; then
         local process_info
         process_info=$(ps -p $pid -o comm= 2>/dev/null || echo "unknown")

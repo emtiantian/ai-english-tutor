@@ -107,6 +107,8 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
                 motionId: result.motionId,
                 expressionId: result.expressionId,
                 vocabulary: result.vocabulary,
+                vocabularySentences: result.vocabularySentences,
+                studentReplyHints: result.studentReplyHints,
                 audioBase64: result.audioBase64,
                 scenario: result.scenario,
               })

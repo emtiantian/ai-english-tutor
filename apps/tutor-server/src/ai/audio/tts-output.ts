@@ -27,7 +27,7 @@ export class TtsOutput {
     }
 
     try {
-      logger.debug({ textLength: text.length }, '生成 TTS 音频')
+      logger.debug({ textLength: text.length, hasVoiceDesign: !!voiceDesign }, '生成 TTS 音频')
       const audioBuffer = await this.tts.synthesize(text, { voiceDesign })
       const audioBase64 = audioBuffer.toString('base64')
 
@@ -35,7 +35,7 @@ export class TtsOutput {
 
       return { audioBase64 }
     } catch (err) {
-      logger.error({ err }, 'TTS 音频生成失败')
+      logger.error({ err, textLength: text.length, hasVoiceDesign: !!voiceDesign, textPreview: text.slice(0, 100) }, 'TTS 音频生成失败')
       return {}
     }
   }

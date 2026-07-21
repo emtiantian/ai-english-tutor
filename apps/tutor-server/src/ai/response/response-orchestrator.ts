@@ -29,7 +29,13 @@ export function warnIfMissingVocabSentences(
   sessionId: string,
   origin: string,
 ): void {
-  if (!parsed.vocabularySentences || parsed.vocabularySentences.length === 0) {
+  // 按 prompt 约定：vocabulary 为空时允许省略 vocabularySentences，
+  // 只在有词汇却缺少例句时报警，避免正常空回复也刷 WARN。
+  if (
+    parsed.vocabulary &&
+    parsed.vocabulary.length > 0 &&
+    (!parsed.vocabularySentences || parsed.vocabularySentences.length === 0)
+  ) {
     logger.warn(
       { sessionId, origin, vocabulary: parsed.vocabulary },
       'LLM 响应缺少 vocabularySentences',
@@ -75,6 +81,8 @@ export class ResponseOrchestrator {
     motionId?: string
     expressionId?: string
     vocabulary?: string[]
+    vocabularySentences?: string[]
+    studentReplyHints?: string[]
     audioBase64?: string
     scenario?: {
       id: string
@@ -329,6 +337,7 @@ export class ResponseOrchestrator {
       motionId: parsed.motionId,
       expressionId: parsed.expressionId,
       vocabulary: parsed.vocabulary,
+      vocabularySentences: parsed.vocabularySentences,
     })
 
     // 记住这句台词以复用（仅在场景中生效，台词池按场景/等级/音色分组，并在 prompt 中回传）。
@@ -365,6 +374,10 @@ export class ResponseOrchestrator {
     broadcastToSession(sessionId, completeEvent)
 
     // 生成英文 TTS
+    logger.debug(
+      { sessionId, textLength: parsed.text.length, hasVoiceDesign: !!session.voiceDesign },
+      '准备生成 TTS',
+    )
     const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
 
     return {

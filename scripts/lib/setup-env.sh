@@ -436,29 +436,47 @@ generate_env() {
   append_override "${overrides_file}" "MAX_AUDIO_SIZE_MB" "${max_audio_size_mb}"
 
   # ── 数据目录与缓存 ──
+  # 仅当生成生产部署配置（路径为 .../data/.env）时，显式写入 /app/data。
+  # 本地 dev 配置（如仓库根 .env）留空，让 config.ts 使用 <repo>/.dev-data。
   local data_dir db_path config_dir tts_cache_dir
   local tts_cache_max_mb tts_cache_max_files
-  data_dir=$(resolve_value "DATA_DIR" "${existing_file}" "DATA_DIR" "/app/data")
-  db_path=$(resolve_value "DB_PATH" "${existing_file}" "DB_PATH" "/app/data/tutor.db")
-  config_dir=$(resolve_value "CONFIG_DIR" "${existing_file}" "CONFIG_DIR" "/app/data")
-  tts_cache_dir=$(resolve_value "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR" "/app/data/tts-cache")
+  local is_deploy_env=false
+  case "${output_file}" in
+    */data/.env) is_deploy_env=true ;;
+  esac
+
+  if ${is_deploy_env}; then
+    data_dir=$(resolve_value "DATA_DIR" "${existing_file}" "DATA_DIR" "/app/data")
+    db_path=$(resolve_value "DB_PATH" "${existing_file}" "DB_PATH" "/app/data/tutor.db")
+    config_dir=$(resolve_value "CONFIG_DIR" "${existing_file}" "CONFIG_DIR" "/app/data")
+    tts_cache_dir=$(resolve_value "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR" "/app/data/tts-cache")
+  else
+    data_dir=$(resolve_value "DATA_DIR" "${existing_file}" "DATA_DIR" "")
+    db_path=$(resolve_value "DB_PATH" "${existing_file}" "DB_PATH" "")
+    config_dir=$(resolve_value "CONFIG_DIR" "${existing_file}" "CONFIG_DIR" "")
+    tts_cache_dir=$(resolve_value "TTS_CACHE_DIR" "${existing_file}" "TTS_CACHE_DIR" "")
+  fi
   tts_cache_max_mb=$(resolve_value "TTS_CACHE_MAX_MB" "${existing_file}" "TTS_CACHE_MAX_MB" "1024")
   tts_cache_max_files=$(resolve_value "TTS_CACHE_MAX_FILES" "${existing_file}" "TTS_CACHE_MAX_FILES" "5000")
 
-  append_override "${overrides_file}" "DATA_DIR" "${data_dir}"
-  append_override "${overrides_file}" "DB_PATH" "${db_path}"
-  append_override "${overrides_file}" "CONFIG_DIR" "${config_dir}"
-  append_override "${overrides_file}" "TTS_CACHE_DIR" "${tts_cache_dir}"
+  [ -n "${data_dir}" ] && append_override "${overrides_file}" "DATA_DIR" "${data_dir}"
+  [ -n "${db_path}" ] && append_override "${overrides_file}" "DB_PATH" "${db_path}"
+  [ -n "${config_dir}" ] && append_override "${overrides_file}" "CONFIG_DIR" "${config_dir}"
+  [ -n "${tts_cache_dir}" ] && append_override "${overrides_file}" "TTS_CACHE_DIR" "${tts_cache_dir}"
   append_override "${overrides_file}" "TTS_CACHE_MAX_MB" "${tts_cache_max_mb}"
   append_override "${overrides_file}" "TTS_CACHE_MAX_FILES" "${tts_cache_max_files}"
 
   # ── 句型池 ──
   local line_pool_dir line_pool_max_lines line_pool_inject_limit
-  line_pool_dir=$(resolve_value "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR" "/app/data/line-pool")
+  if ${is_deploy_env}; then
+    line_pool_dir=$(resolve_value "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR" "/app/data/line-pool")
+  else
+    line_pool_dir=$(resolve_value "LINE_POOL_DIR" "${existing_file}" "LINE_POOL_DIR" "")
+  fi
   line_pool_max_lines=$(resolve_value "LINE_POOL_MAX_LINES" "${existing_file}" "LINE_POOL_MAX_LINES" "200")
   line_pool_inject_limit=$(resolve_value "LINE_POOL_INJECT_LIMIT" "${existing_file}" "LINE_POOL_INJECT_LIMIT" "30")
 
-  append_override "${overrides_file}" "LINE_POOL_DIR" "${line_pool_dir}"
+  [ -n "${line_pool_dir}" ] && append_override "${overrides_file}" "LINE_POOL_DIR" "${line_pool_dir}"
   append_override "${overrides_file}" "LINE_POOL_MAX_LINES" "${line_pool_max_lines}"
   append_override "${overrides_file}" "LINE_POOL_INJECT_LIMIT" "${line_pool_inject_limit}"
 

@@ -98,7 +98,7 @@ export interface VolumeMeterOptions {
   fftSize?: number
   /** 音量放大倍数，默认 1.8 */
   multiplier?: number
-  /** 采样间隔 ms，默认 50 */
+  /** 采样间隔 ms，默认 100（人对口型延迟不敏感，降低频率可减少 CPU 占用） */
   intervalMs?: number
 }
 
@@ -119,7 +119,7 @@ export function createVolumeMeter(
 
   const dataArray = new Uint8Array(analyser.frequencyBinCount)
   const multiplier = options.multiplier ?? 1.8
-  const intervalMs = options.intervalMs ?? 50
+  const intervalMs = options.intervalMs ?? 100
 
   const interval = setInterval(() => {
     analyser.getByteFrequencyData(dataArray)

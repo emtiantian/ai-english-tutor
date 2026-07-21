@@ -5,21 +5,6 @@
 
 ---
 
-### 11. 后端核心模块测试覆盖不足
-
-- **状态**：已解决
-- **生成时间**：2026-06-15
-- **解决时间**：2026-06-16
-- **范围**：`apps/tutor-server/src/ai/`、`apps/tutor-server/src/routes/`
-- **问题**：虽然新增了部分测试文件，但 `TutorEngine`、`AudioPipeline`、`VocabTracker` 等核心业务逻辑仍缺乏单元测试，重构风险高。
-- **修复建议**：为以下模块补齐测试：
-  - `src/ai/vocab-tracker.ts` — 精确、词干、模糊匹配
-  - `src/ai/response-parser.ts` — JSON 提取、回退逻辑
-  - `src/ai/audio-pipeline.ts` — 音频切片广播流程
-  - `src/ai/engine.ts` — 会话流转、流式/非流式响应
-
----
-
 ### 13. 无身份验证，用户 ID 由客户端自生成
 
 - **状态**：按产品设计暂不修复

@@ -19,7 +19,7 @@ COPY packages/shared/package.json packages/shared/
 COPY apps/tutor-server/package.json apps/tutor-server/
 
 # Install dependencies (native addons built via onlyBuiltDependencies in pnpm-workspace.yaml)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --registry https://registry.npmmirror.com
 
 # Ensure better-sqlite3 native bindings are built for this container
 RUN pnpm rebuild better-sqlite3

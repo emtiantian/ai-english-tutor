@@ -14,7 +14,7 @@ COPY packages/shared/package.json packages/shared/
 COPY apps/tutor-app/package.json apps/tutor-app/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --registry https://registry.npmmirror.com
 
 # Copy source code
 COPY packages/shared/ packages/shared/

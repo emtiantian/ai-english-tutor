@@ -35,6 +35,6 @@ RUN git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
 RUN pip3 install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir
 RUN pip3 install "setuptools<70" wheel -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir
 RUN cd CosyVoice && grep -v '^openai-whisper' requirements.txt > /tmp/requirements_no_whisper.txt && \
-    pip3 install -r /tmp/requirements_no_whisper.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir && \
-    pip3 install --no-build-isolation "openai-whisper==20231117" -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir
+    pip3 install -r /tmp/requirements_no_whisper.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120 && \
+    pip3 install --no-build-isolation "openai-whisper==20231117" -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120
 RUN cd CosyVoice/runtime/python/grpc && python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. cosyvoice.proto

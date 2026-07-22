@@ -38,7 +38,23 @@ RUN pip3 install "setuptools<70" wheel -i https://mirrors.aliyun.com/pypi/simple
 # 基础镜像只有 CUDA runtime 没有 toolkit，设置 DS_BUILD_OPS=0 让其以纯 Python 安装，
 # 避免运行时 "CUDA_HOME does not exist" 错误。
 ENV DS_BUILD_OPS=0
-RUN cd CosyVoice && grep -v '^openai-whisper' requirements.txt > /tmp/requirements_no_whisper.txt && \
-    pip3 install -r /tmp/requirements_no_whisper.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120 && \
-    pip3 install --no-build-isolation "openai-whisper==20231117" -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120
+# 使用 BuildKit cache mount 持久化 pip 缓存，已下载的 wheel 不会重复下载；
+# 外层循环处理镜像/网络偶发断开，避免一次断连就退出整个构建。
+RUN --mount=type=cache,target=/root/.cache/pip \
+    cd CosyVoice && \
+    grep -v '^openai-whisper' requirements.txt > /tmp/requirements_no_whisper.txt && \
+    for i in 1 2 3; do \
+      echo "[pip] 第 $i 次尝试安装 requirements_no_whisper..." && \
+      pip3 install -r /tmp/requirements_no_whisper.txt \
+        -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com \
+        --retries 10 --timeout 300 && break; \
+      echo "[pip] 第 $i 次失败，10s 后重试..."; sleep 10; \
+    done && \
+    for i in 1 2 3; do \
+      echo "[pip] 第 $i 次尝试安装 openai-whisper..." && \
+      pip3 install --no-build-isolation "openai-whisper==20231117" \
+        -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com \
+        --retries 10 --timeout 300 && break; \
+      echo "[pip] 第 $i 次失败，10s 后重试..."; sleep 10; \
+    done
 RUN cd CosyVoice/runtime/python/grpc && python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. cosyvoice.proto

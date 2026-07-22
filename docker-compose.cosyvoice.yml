@@ -1,11 +1,15 @@
 # ── CosyVoice TTS 可选叠加部署 ──
 #
-# 用法（需要本机已构建好 cosyvoice:local 镜像，并具备 NVIDIA GPU）：
+# 用法（需 NVIDIA GPU；首次 up 自动构建 cosyvoice:local 镜像，约 5-10 分钟）：
 #   docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml up -d
 #
 # 说明：
 # - 主 docker-compose.yml 只包含 gateway / frontend / backend / whisper 核心服务
 # - CosyVoice 强依赖 GPU，作为可选 TTS Provider 拆到此 override 文件
+# - 镜像自动构建：cosyvoice:local 由本文件 build 块从 scripts/cosyvoice/Dockerfile
+#   构建（官方未发布镜像，Dockerfile 内部 git clone 源码）。首次 `up` 镜像不存在时
+#   自动触发，之后命中缓存跳过；构建需代理 BUILD_PROXY（默认 http://127.0.0.1:7890），
+#   build.network: host 让容器内代理直达宿主机。部署脚本同样走此 build 块。
 # - 首次启动时会从 modelscope 拉取 iic/CosyVoice2-0.5B 模型到 modelscope 缓存
 # - 模型挂载随 AI_TUTOR_HOME（部署根）走，便于跨机/跨目录迁移并命中缓存：
 #     <root>/data/modelscope-cache -> /root/.cache/modelscope（modelscope 下载缓存，
@@ -24,6 +28,15 @@
 services:
   cosyvoice:
     image: cosyvoice:local
+    # 首次 up 镜像不存在时自动从 scripts/cosyvoice/Dockerfile 构建；
+    # 代理随主 compose 一致走 build.network: host + build.args（手动 up）/ --build-arg（部署脚本）
+    build:
+      context: ./scripts/cosyvoice
+      dockerfile: Dockerfile
+      network: host
+      args:
+        HTTP_PROXY: ${BUILD_PROXY:-http://127.0.0.1:7890}
+        HTTPS_PROXY: ${BUILD_PROXY:-http://127.0.0.1:7890}
     ports:
       - '50000:50000'
     volumes:
@@ -36,7 +49,7 @@ services:
     command:
       - bash
       - -c
-      - 'cd /workspace/CosyVoice && python /opt/cosyvoice-scripts/server-wrapper.py --port 50000 --model_dir iic/CosyVoice2-0.5B'
+      - 'cd /opt/CosyVoice/CosyVoice && python /opt/cosyvoice-scripts/server-wrapper.py --port 50000 --model_dir iic/CosyVoice2-0.5B'
     deploy:
       resources:
         reservations:

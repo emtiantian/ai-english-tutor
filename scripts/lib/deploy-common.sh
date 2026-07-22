@@ -436,11 +436,24 @@ test_build_proxy() {
   log_info "测试 build 代理 ${proxy} ..."
   if remote_exec_real "curl -fsS -o /dev/null --max-time 5 --proxy ${proxy} ${test_url}" >/dev/null 2>&1; then
     log_info "代理可用"
-    return 0
+  else
+    log_error "代理测试失败：无法通过 ${proxy} 访问 ${test_url}"
+    log_error "请确认宿主机代理已运行，或通过 BUILD_PROXY 指定可用代理"
+    exit 1
   fi
-  log_error "代理测试失败：无法通过 ${proxy} 访问 ${test_url}"
-  log_error "请确认宿主机代理已运行，或通过 BUILD_PROXY 指定可用代理"
-  exit 1
+  # CosyVoice 构建需 git clone GitHub，额外探测 github 可达性，避免构建中途失败
+  if $ENABLE_COSYVOICE; then
+    local gh_url="https://github.com"
+    log_info "CosyVoice 启用：额外测试代理可达 ${gh_url} ..."
+    if remote_exec_real "curl -fsS -o /dev/null --max-time 10 --proxy ${proxy} ${gh_url}" >/dev/null 2>&1; then
+      log_info "GitHub 可达，CosyVoice 构建前置条件满足"
+    else
+      log_error "代理无法访问 ${gh_url}：CosyVoice Dockerfile 内部 git clone GitHub 将失败"
+      log_error "请确认代理可访问 GitHub，或改用非 cosyvoice 的 TTS_PROVIDER"
+      exit 1
+    fi
+  fi
+  return 0
 }
 
 # ── Whisper 模型引导 ──
@@ -501,18 +514,42 @@ ensure_cosyvoice_image() {
   fi
   log_info "检查 cosyvoice:local 镜像..."
   if remote_exec_real "docker inspect --type=image cosyvoice:local >/dev/null 2>&1"; then
-    log_info "cosyvoice:local 已存在"
+    log_info "cosyvoice:local 已存在，跳过构建"
     return 0
   fi
+  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
   if $DRY_RUN; then
-    log_dry "cosyvoice:local 缺失，将执行 bash ${REMOTE_APP_DIR}/scripts/build-cosyvoice-image.sh 构建"
+    log_dry "cosyvoice:local 缺失，将执行 docker compose build cosyvoice（首次约 5-10 分钟，代理 ${proxy}）"
     return 0
   fi
-  log_warn "cosyvoice:local 不存在，开始自动构建..."
-  remote_exec "cd ${REMOTE_APP_DIR} && bash scripts/build-cosyvoice-image.sh" || {
+  log_warn "cosyvoice:local 不存在，开始自动构建（首次约 5-10 分钟，需代理 ${proxy}）..."
+  # 走 compose build 块（scripts/cosyvoice/Dockerfile + build.args），与手动 up 同一入口
+  if ! dc_tty "build cosyvoice"; then
     log_error "CosyVoice 镜像构建失败"
+    cat >&2 <<HINT
+
+${YELLOW}[手动排查]${NC} CosyVoice 镜像构建依赖代理拉取 GitHub 源码与 pytorch 基础镜像：
+
+  ${GREEN}# 1. 确认远端代理可达 GitHub（Dockerfile 内部 git clone GitHub）${NC}
+  ssh ${REMOTE_USER}@${REMOTE_HOST} \
+    "curl -fsS -o /dev/null --max-time 10 --proxy ${proxy} https://github.com"
+
+  ${GREEN}# 2. 单独重试构建（输出详细日志）${NC}
+  ssh ${REMOTE_USER}@${REMOTE_HOST} \
+    "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} \
+       -f docker-compose.yml -f docker-compose.cosyvoice.yml build cosyvoice"
+
+  ${GREEN}# 3. 或用独立脚本构建（等价，便于切代理）${NC}
+  ssh ${REMOTE_USER}@${REMOTE_HOST} \
+    "cd ${REMOTE_APP_DIR} && BUILD_PROXY=${proxy} bash scripts/build-cosyvoice-image.sh"
+
+  ${GREEN}# 4. 基础镜像 pytorch:2.0.1-cuda11.7 拉取慢/失败时，为 docker daemon 配镜像加速${NC}
+  ssh ${REMOTE_USER}@${REMOTE_HOST} "cat /etc/docker/daemon.json"
+
+镜像就绪后重新运行部署脚本即可（已构建则自动跳过）。
+HINT
     exit 1
-  }
+  fi
 }
 
 # ── schema 变更探测 ──
@@ -809,9 +846,9 @@ deploy_main() {
   init_remote_data_dir
   sync_certs
   detect_compose_overlays
+  test_build_proxy
   ensure_whisper_model
   ensure_cosyvoice_image
-  test_build_proxy
 
   if ! deploy_services; then
     rollback

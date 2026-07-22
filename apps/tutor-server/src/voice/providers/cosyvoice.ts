@@ -80,7 +80,7 @@ export function selectTeachingVoice(level?: number): CosyVoiceId {
  * Docker 部署（SFT 模型）：
  *   docker run -d --name cosyvoice --gpus all -p 50000:50000 \
  *     -v ~/.cache/modelscope:/root/.cache/modelscope \
- *     -w /workspace/CosyVoice/runtime/python/fastapi \
+ *     -w /opt/CosyVoice/CosyVoice/runtime/python/fastapi \
  *     --entrypoint /opt/conda/envs/cosyvoice/bin/python \
  *     cosyvoice:local server.py --port 50000 --model_dir iic/CosyVoice-300M-SFT
  */

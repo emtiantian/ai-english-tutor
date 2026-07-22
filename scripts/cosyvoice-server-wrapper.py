@@ -25,13 +25,13 @@ import runpy
 import sys
 
 # 容器内 CosyVoice 代码根（与 docker-compose.cosyvoice.yml 的 working dir 对齐）
-COSYVOICE_ROOT = '/workspace/CosyVoice'
+COSYVOICE_ROOT = '/opt/CosyVoice/CosyVoice'
 # 自定义音色挂载目录（compose 只读挂载源 = <data>/cosyvoice-spk2info）
 SPK2INFO_DIR = os.environ.get('COSYVOICE_SPK2INFO_DIR', '/opt/CosyVoice/spk2info')
 # 官方 server.py 路径
-SERVER_PY = '/workspace/CosyVoice/runtime/python/fastapi/server.py'
+SERVER_PY = '/opt/CosyVoice/CosyVoice/runtime/python/fastapi/server.py'
 
-# server.py 自身靠 ROOT_DIR/../../.. 把 /workspace/CosyVoice 加入 sys.path，
+# server.py 自身靠 ROOT_DIR/../../.. 把 /opt/CosyVoice/CosyVoice 加入 sys.path，
 # 但本包装器在 runpy 之前就要 import cosyvoice，必须自备 sys.path
 sys.path.insert(0, COSYVOICE_ROOT)
 sys.path.insert(0, os.path.join(COSYVOICE_ROOT, 'third_party/Matcha-TTS'))

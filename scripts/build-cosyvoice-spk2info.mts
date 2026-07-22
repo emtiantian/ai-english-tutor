@@ -8,6 +8,8 @@
 // 用法（从仓库根运行）：
 //   pnpm build:cosyvoice-spk2info                                 # 用默认 EnglishTutor 音色
 //   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.wav
+//   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.mp3  # 自动转 WAV
+//   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.mp3 --rm-wav
 //   npx tsx scripts/build-cosyvoice-spk2info.mts -- --help
 //
 // 默认路径：
@@ -34,10 +36,10 @@
 //   - cosyvoice:local 镜像里的 CosyVoice 代码版本是否仍提供 CosyVoice2 类与 add_zero_shot_spk 方法
 //     （官方 main 分支提供；若镜像基于旧 tag，API 可能略有差异）
 //   - 镜像内 python 默认指向 conda envs/cosyvoice（compose 的 command 直接用 python，已验证）
-//   - /workspace/CosyVoice 是代码根目录，`-w` 设为它后 `import cosyvoice` 才能命中
+//   - /opt/CosyVoice/CosyVoice 是代码根目录，`-w` 设为它后 `import cosyvoice` 才能命中
 
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -55,7 +57,7 @@ const CONTAINER_MODELSCOPE_CACHE = '/root/.cache/modelscope'
 /** 容器内预置模型目录挂载点 */
 const CONTAINER_PRETRAINED_MODELS = '/opt/CosyVoice/CosyVoice/pretrained_models'
 /** 容器内 CosyVoice 代码根目录（工作目录） */
-const CONTAINER_WORKDIR = '/workspace/CosyVoice'
+const CONTAINER_WORKDIR = '/opt/CosyVoice/CosyVoice'
 
 // ── CLI 参数解析 ──
 
@@ -64,6 +66,7 @@ interface CliArgs {
   audio: string
   modelDir: string
   output: string
+  rmWav: boolean
   help: boolean
 }
 
@@ -84,6 +87,7 @@ function parseArgs(argv: string[]): CliArgs {
     audio: '',
     modelDir: 'iic/CosyVoice2-0.5B',
     output: '',
+    rmWav: false,
     help: false
   }
 
@@ -105,6 +109,9 @@ function parseArgs(argv: string[]): CliArgs {
         break
       case '--output':
         args.output = argv[++i] ?? ''
+        break
+      case '--rm-wav':
+        args.rmWav = true
         break
       default:
         console.error(`未知参数: ${arg}`)
@@ -133,10 +140,13 @@ function printHelp(): void {
 
 选项:
   --spk-id <id>       音色 ID（默认: EnglishTutor）
-  --audio <path>      参考音频路径（默认: <data-root>/cosyvoice-spk2info/<spk-id>.wav）
+  --audio <path>      参考音频路径，支持 .wav 或 .mp3 等 ffmpeg 可识别格式
+                      .mp3 会自动转码为 16kHz 单声道 WAV
+                      （默认: <data-root>/cosyvoice-spk2info/<spk-id>.wav）
   --model-dir <dir>   CosyVoice2 模型目录，本地路径或 modelscope repo id
                       （默认: iic/CosyVoice2-0.5B）
   --output <path>     输出 spk2info.pt 路径（默认: <data-root>/cosyvoice-spk2info/<spk-id>.pt）
+  --rm-wav            若本次由 .mp3 转换出 .wav，Docker 成功后删除该临时 .wav
   -h, --help          显示本帮助
 
 环境变量:
@@ -253,6 +263,85 @@ function preflightChecks(args: CliArgs): {
     containerAudioPath,
     containerOutputPath
   }
+}
+
+// ── 音频格式预处理 ──
+
+/** 判断文件扩展名是否为 WAV（不检查内容） */
+function isWavFile(filePath: string): boolean {
+  return path.extname(filePath).toLowerCase() === '.wav'
+}
+
+/** 把任意音频路径映射为同目录同名 .wav 路径 */
+function deriveWavPath(inputPath: string): string {
+  const parsed = path.parse(inputPath)
+  return path.format({ ...parsed, base: undefined, ext: '.wav' })
+}
+
+/** 异步检查命令是否可用 */
+function commandAvailableAsync(cmd: string): Promise<boolean> {
+  return new Promise(resolve => {
+    const child = spawn(cmd, ['--version'], { stdio: 'ignore' })
+    child.on('error', () => resolve(false))
+    child.on('close', code => resolve(code === 0))
+  })
+}
+
+/**
+ * 确保参考音频是 CosyVoice 可读取的 16kHz 单声道 WAV。
+ * 若输入已是 .wav，直接返回；否则调用 ffmpeg 转码为同目录同名 .wav。
+ */
+async function ensureWav16kMono(audioPath: string): Promise<string> {
+  if (isWavFile(audioPath)) return audioPath
+
+  if (!(await commandAvailableAsync('ffmpeg'))) {
+    fail(
+      '参考音频不是 .wav 格式，且未检测到 ffmpeg 命令。\n' +
+        '  请先安装 ffmpeg（macOS: brew install ffmpeg；Ubuntu: apt install ffmpeg），\n' +
+        '  或预先将参考音频转换为 16kHz 单声道 WAV 后再运行。'
+    )
+  }
+
+  const outputPath = deriveWavPath(audioPath)
+  console.log(`检测到非 WAV 参考音频，转换为 16kHz 单声道 WAV: ${outputPath}`)
+
+  return new Promise((resolve, reject) => {
+    const ffmpeg = spawn('ffmpeg', [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-i',
+      audioPath,
+      '-acodec',
+      'pcm_s16le',
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      outputPath
+    ])
+
+    const errChunks: Buffer[] = []
+    ffmpeg.stderr.on('data', (chunk: Buffer) => errChunks.push(chunk))
+
+    ffmpeg.on('error', err => {
+      reject(new Error(`启动 ffmpeg 失败: ${err.message}`))
+    })
+
+    ffmpeg.on('close', code => {
+      if (code !== 0) {
+        const err = Buffer.concat(errChunks).toString('utf-8')
+        reject(new Error(`ffmpeg 转换失败（code=${code}）：${err || '未知错误'}`))
+        return
+      }
+      if (!existsSync(outputPath)) {
+        reject(new Error(`ffmpeg 声称成功，但输出文件不存在: ${outputPath}`))
+        return
+      }
+      resolve(outputPath)
+    })
+  })
 }
 
 // ── 内嵌 Python 脚本 ──
@@ -377,48 +466,55 @@ function buildDockerCommand(
   ]
 }
 
-function runDocker(dockerArgs: string[]): void {
+function runDocker(dockerArgs: string[], cleanup?: () => void): Promise<void> {
   // 日志只展示命令骨架，内嵌 Python 脚本（最后一个参数）用省略号代替
   const displayArgs = dockerArgs.slice(0, -1).join(' ')
   console.log('执行 docker 命令:')
   console.log(`  docker ${displayArgs} "python - <<'PY' ..."`)
   console.log('')
 
-  const child = spawn('docker', dockerArgs, { stdio: 'inherit' })
+  return new Promise((resolve, reject) => {
+    const child = spawn('docker', dockerArgs, { stdio: 'inherit' })
 
-  child.on('error', err => {
-    console.error(`启动 docker 失败: ${err.message}`)
-    process.exit(1)
-  })
+    child.on('error', err => {
+      reject(new Error(`启动 docker 失败: ${err.message}`))
+    })
 
-  child.on('close', code => {
-    if (code === 0) return
-    console.error('')
-    console.error(`docker 进程退出码: ${code}`)
-    if (code === 125) {
-      console.error(
-        '  可能原因: --gpus all 不被支持（未安装 nvidia-container-toolkit），\n' +
-          '  或 GPU 设备不可用。请确认机器具备 NVIDIA GPU 且已安装 nvidia-container-toolkit。'
-      )
-    } else if (code === 126 || code === 127) {
-      console.error(
-        '  可能原因: 容器内 python 或 bash 命令找不到。\n' +
-          `  请检查 ${IMAGE} 镜像是否完好（进入容器跑 \`which python\` 确认）。`
-      )
-    } else if (code === 137) {
-      console.error(
-        '  可能原因: 容器被 OOM Killed。GTX 970 4GB 显存可能不足，请关闭其他 GPU 进程后重试。'
-      )
-    } else {
-      console.error(
-        '  详见上方 Python traceback。若为 API 不匹配，请核对 cosyvoice:local 镜像内的 CosyVoice 代码版本。'
-      )
-    }
-    process.exit(code ?? 1)
+    child.on('close', code => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      console.error('')
+      console.error(`docker 进程退出码: ${code}`)
+      if (code === 125) {
+        console.error(
+          '  可能原因: --gpus all 不被支持（未安装 nvidia-container-toolkit），\n' +
+            '  或 GPU 设备不可用。请确认机器具备 NVIDIA GPU 且已安装 nvidia-container-toolkit。'
+        )
+      } else if (code === 126 || code === 127) {
+        console.error(
+          '  可能原因: 容器内 python 或 bash 命令找不到。\n' +
+            `  请检查 ${IMAGE} 镜像是否完好（进入容器跑 \`which python\` 确认）。`
+        )
+      } else if (code === 137) {
+        console.error(
+          '  可能原因: 容器被 OOM Killed。GTX 970 4GB 显存可能不足，请关闭其他 GPU 进程后重试。'
+        )
+      } else {
+        console.error(
+          '  详见上方 Python traceback。若为 API 不匹配，请核对 cosyvoice:local 镜像内的 CosyVoice 代码版本。'
+        )
+      }
+      reject(new Error(`docker 进程退出码: ${code}`))
+    })
+  }).finally(() => {
+    if (cleanup) cleanup()
   })
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
 
   if (args.help) {
@@ -434,6 +530,14 @@ function main(): void {
   console.log('  镜像:       ', IMAGE)
   console.log('')
 
+  const originalAudio = args.audio
+  args.audio = await ensureWav16kMono(args.audio)
+  const convertedWav = args.audio !== originalAudio ? args.audio : null
+  if (convertedWav) {
+    console.log('  转换后音频: ', args.audio)
+    console.log('')
+  }
+
   const paths = preflightChecks(args)
 
   console.log('挂载映射:')
@@ -443,7 +547,21 @@ function main(): void {
   console.log('')
 
   const dockerArgs = buildDockerCommand(args, paths)
-  runDocker(dockerArgs)
+
+  try {
+    await runDocker(dockerArgs, () => {
+      if (convertedWav && args.rmWav && existsSync(convertedWav)) {
+        console.log(`清理临时 WAV: ${convertedWav}`)
+        rmSync(convertedWav)
+      }
+    })
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err))
+    process.exit(1)
+  }
 }
 
-main()
+main().catch(err => {
+  console.error(err instanceof Error ? err.message : String(err))
+  process.exit(1)
+})

@@ -821,8 +821,8 @@ deploy_main() {
   fi
 
   if check_health; then
+    wait_cosyvoice_healthy
     if end_to_end_health_check; then
-      wait_cosyvoice_healthy
       cleanup_old_backups
       deploy_duration=$(($(date +%s) - start_time))
       print_report "成功" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"

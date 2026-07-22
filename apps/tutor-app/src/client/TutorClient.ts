@@ -2,7 +2,6 @@ import mitt from 'mitt'
 import { fetchWithTimeout } from '@ai-english-tutor/shared'
 import type {
   TutorEventMap,
-  TeachingResponse,
   ChatRequestBody,
   ChatResponse,
   VocabProgress,
@@ -141,7 +140,55 @@ export class TutorClient {
     })
   }
 
+  /**
+   * 调用后端 /api/tts 将文本合成为音频。
+   *
+   * @param text 待合成文本
+   * @param options 音色、格式、语速与超时
+   * @returns 音频 ArrayBuffer 与后端实际返回格式
+   */
+  async synthesizeSpeech(
+    text: string,
+    options: { voice?: string; format?: string; speed?: number; timeoutMs?: number } = {}
+  ): Promise<{ arrayBuffer: ArrayBuffer; format: string }> {
+    const { voice, format, speed, timeoutMs } = options
+    const res = await fetchWithTimeout(`${this.options.baseUrl}/api/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice, format, speed }),
+      timeout: timeoutMs ?? this.options.requestTimeoutMs ?? 30000
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.error || `HTTP ${res.status}`)
+    }
+
+    const contentType = res.headers.get('content-type') ?? 'audio/mpeg'
+    const inferredFormat = this.inferFormatFromContentType(contentType)
+    const arrayBuffer = await res.arrayBuffer()
+
+    return {
+      arrayBuffer,
+      format: format ?? inferredFormat ?? 'mp3'
+    }
+  }
+
   // --- 内部方法 ---
+  private inferFormatFromContentType(contentType: string): string | undefined {
+    const map: Record<string, string> = {
+      'audio/mpeg': 'mp3',
+      'audio/opus': 'opus',
+      'audio/aac': 'aac',
+      'audio/flac': 'flac',
+      'audio/wav': 'wav',
+      'audio/pcm': 'pcm',
+      'audio/webm': 'webm'
+    }
+    const normalized = contentType.split(';')[0].trim().toLowerCase()
+    return map[normalized]
+  }
+
   private async fetchJson<T>(
     path: string,
     init: RequestInit & { timeout?: number } = {}

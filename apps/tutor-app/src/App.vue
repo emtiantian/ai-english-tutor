@@ -150,6 +150,7 @@ import type { CEFRLevel, CharacterProvider } from '@ai-english-tutor/shared'
 import type { ScenarioPausedSnapshot } from './lib/scenario-paused-db'
 import { createMessageId } from './lib/message-utils.js'
 import { useCurrentHint } from './composables/useCurrentHint'
+import { blobToBase64 } from './audio/utils.js'
 
 const store = useTutorStore()
 const scenarioProgress = useScenarioProgressStore()
@@ -444,8 +445,20 @@ const wordExplanation = ref<WordExplanation | null>(null)
 const wordLoading = ref(false)
 const wordError = ref<string | null>(null)
 
-function handleSpeakWord(word: string) {
+async function handleSpeakWord(word: string) {
   if (!word) return
+
+  if (store.ttsSource === 'remote') {
+    try {
+      const { arrayBuffer, format } = await client.synthesizeSpeech(word)
+      const audioBase64 = await blobToBase64(new Blob([arrayBuffer]))
+      await replayAudio(audioBase64, format)
+      return
+    } catch (err) {
+      console.error('[App] 远程 TTS 单词发音失败，回退到本地:', err)
+    }
+  }
+
   audioPlayer.speak(word, { lang: 'en-US' })
 }
 

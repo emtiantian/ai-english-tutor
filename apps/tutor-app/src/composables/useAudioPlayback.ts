@@ -129,8 +129,8 @@ export function useAudioPlayback(
     await audioPlayer.unlockAudio()
   }
 
-  function replayAudio(audioBase64: string) {
-    audioPlayer.replayAudio(audioBase64)
+  async function replayAudio(audioBase64: string, format?: string) {
+    await audioPlayer.replayAudio(audioBase64, format)
   }
 
   // 页面卸载/刷新时停止音频，防止刷新后继续播放

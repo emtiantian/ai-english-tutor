@@ -34,6 +34,10 @@ RUN git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
 # 再对 openai-whisper 单独使用 --no-build-isolation。
 RUN pip3 install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir
 RUN pip3 install "setuptools<70" wheel -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir
+# deepspeed 在 import 时会尝试检测 CUDA_HOME 并编译 CUDA op；
+# 基础镜像只有 CUDA runtime 没有 toolkit，设置 DS_BUILD_OPS=0 让其以纯 Python 安装，
+# 避免运行时 "CUDA_HOME does not exist" 错误。
+ENV DS_BUILD_OPS=0
 RUN cd CosyVoice && grep -v '^openai-whisper' requirements.txt > /tmp/requirements_no_whisper.txt && \
     pip3 install -r /tmp/requirements_no_whisper.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120 && \
     pip3 install --no-build-isolation "openai-whisper==20231117" -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com --no-cache-dir --retries 10 --timeout 120

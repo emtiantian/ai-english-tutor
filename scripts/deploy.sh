@@ -2,7 +2,7 @@
 # AI English Tutor — 通用部署脚本（他人使用，从环境变量读取目标）
 # 用法:
 #   REMOTE_HOST=your-host REMOTE_USER=your-user REMOTE_DIR=/opt/ai-english-tutor \
-#     ./scripts/deploy.sh [--use-local-env] [--skip-tests] [--dry-run]
+#     ./scripts/deploy.sh [--use-local-env] [--skip-tests] [--non-interactive-env] [--dry-run]
 #
 # 流程与 deploy-to-server.sh 相同，但不硬编码任何服务器地址。
 
@@ -10,6 +10,7 @@ set -euo pipefail
 
 USE_LOCAL_ENV=false
 SKIP_TESTS=false
+NONINTERACTIVE_ENV=false
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
@@ -18,9 +19,10 @@ while [[ $# -gt 0 ]]; do
       sed -n '2,8p' "$0"
       exit 0
       ;;
-    --use-local-env) USE_LOCAL_ENV=true ;;
-    --skip-tests)    SKIP_TESTS=true ;;
-    --dry-run)       DRY_RUN=true ;;
+    --use-local-env)       USE_LOCAL_ENV=true ;;
+    --skip-tests)          SKIP_TESTS=true ;;
+    --non-interactive-env) NONINTERACTIVE_ENV=true ;;
+    --dry-run)             DRY_RUN=true ;;
     *)         echo "未知参数: $1" >&2; sed -n '2,8p' "$0"; exit 1 ;;
   esac
   shift

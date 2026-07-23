@@ -36,6 +36,28 @@ SERVER_PY = '/opt/CosyVoice/CosyVoice/runtime/python/fastapi/server.py'
 sys.path.insert(0, COSYVOICE_ROOT)
 sys.path.insert(0, os.path.join(COSYVOICE_ROOT, 'third_party/Matcha-TTS'))
 
+# patch deepspeed：基础镜像（pytorch runtime）无 nvcc/CUDA_HOME，GPU 模式下 deepspeed
+# import 时 installed_cuda_version() 会调 nvcc -V，FileNotFoundError 致容器崩溃循环。
+# DS_BUILD_OPS=0 不编译 op，故绕过版本探测：让 installed_cuda_version 直接返回 torch 的
+# CUDA 版本，is_compatible 通过、import 不崩；运行时不编译 op，不影响 cosyvoice 推理。
+import torch as _torch  # noqa: E402
+_ds_builder_py = '/opt/conda/lib/python3.10/site-packages/deepspeed/ops/op_builder/builder.py'
+try:
+    with open(_ds_builder_py, 'r') as _f:
+        _src = _f.read()
+    if 'raise MissingCUDAException("CUDA_HOME does not exist' in _src:
+        _cv_ver = _torch.version.cuda or '12.1'
+        _maj, _min = _cv_ver.split('.')[:2]
+        _src = _src.replace(
+            'raise MissingCUDAException("CUDA_HOME does not exist, unable to compile CUDA op(s)")',
+            f'return (int({_maj}), int({_min}))  # patched by server-wrapper: 无 nvcc，DS_BUILD_OPS=0 绕过'
+        )
+        with open(_ds_builder_py, 'w') as _f:
+            _f.write(_src)
+        print(f'[wrapper] patched deepspeed installed_cuda_version -> ({_maj}, {_min})', flush=True)
+except Exception as _e:  # patch 失败不阻塞，原 import 会暴露真实错误
+    print(f'[wrapper] patch deepspeed 失败（忽略，原错误将暴露）: {_e}', flush=True)
+
 import cosyvoice.cli.cosyvoice as _cv  # noqa: E402
 
 _orig_AutoModel = _cv.AutoModel

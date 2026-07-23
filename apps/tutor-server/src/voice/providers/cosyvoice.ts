@@ -10,8 +10,25 @@ const FETCH_TIMEOUT_MS = 30_000
 /** CosyVoice 请求失败后的最大重试次数（不含首次） */
 const MAX_RETRIES = 2
 
+/**
+ * CosyVoice HTTP 错误：携带响应状态码，便于按状态码区分重试策略。
+ * 5xx 视为远端临时故障可重试；4xx 为客户端错误（参数/鉴权）不重试。
+ */
+class CosyVoiceHttpError extends Error {
+  readonly status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'CosyVoiceHttpError'
+    this.status = status
+  }
+}
+
 /** 可重试的错误类型：远端关闭连接 / 超时 / 5xx */
 function isRetryableError(err: unknown): boolean {
+  // HTTP 5xx 视为远端临时故障，可重试；4xx 不重试
+  if (err instanceof CosyVoiceHttpError) {
+    return err.status >= 500 && err.status < 600
+  }
   if (err instanceof Error) {
     const msg = err.message.toLowerCase()
     return (
@@ -220,7 +237,11 @@ export class CosyVoiceProvider implements TTSProvider {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'unknown error')
-      throw new Error(`CosyVoice TTS 错误：${response.status} - ${errorText}`)
+      // 抛带状态码的错误，便于 isRetryableError 按 5xx/4xx 区分重试
+      throw new CosyVoiceHttpError(
+        response.status,
+        `CosyVoice TTS 错误：${response.status} - ${errorText}`
+      )
     }
 
     const arrayBuffer = await response.arrayBuffer()

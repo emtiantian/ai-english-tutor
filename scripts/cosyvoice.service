@@ -16,6 +16,8 @@
 #   - deploy-to-server.sh 负责代码更新后重启：rsync 新代码 -> up --build -d 重建镜像。
 #   - 两者都调 docker compose up -d，幂等不冲突（up 是声明式：容器已存在则无操作）。
 #   - 本 unit 不带 --build（开机自启只拉起已有镜像；构建由 deploy 脚本负责）。
+#   - cosyvoice:local 镜像需由 `pnpm deploy:cosyvoice` 预先构建；本 unit 只负责
+#     开机拉起已有镜像，镜像缺失时 up 会尝试构建（首次部署前先跑 deploy:cosyvoice）。
 #   - AI_TUTOR_HOME 通过 Environment= 注入，compose 文件中的 ${AI_TUTOR_HOME:-...}
 #     可正常替换；backend 容器通过 env_file 读取 data/.env，不依赖 --env-file。
 #   - 若部署根非默认路径（/home/haohe/data/.ai-english-tutor），需同步修改

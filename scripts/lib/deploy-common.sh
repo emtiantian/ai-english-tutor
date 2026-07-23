@@ -45,6 +45,8 @@ SYNC_COUNT=0
 
 ENABLE_WHISPER=false
 ENABLE_COSYVOICE=false
+# cosyvoice:local 镜像缺失时置 true：主部署跳过 cosyvoice 服务，由 pnpm deploy:cosyvoice 单独构建
+COSYVOICE_IMAGE_MISSING=false
 # 由 deploy-to-server.sh 通过 --non-interactive-env 传入；自动化部署时基于远端现有 .env 非交互升级格式
 NONINTERACTIVE_ENV="${NONINTERACTIVE_ENV:-false}"
 
@@ -441,16 +443,16 @@ test_build_proxy() {
     log_error "请确认宿主机代理已运行，或通过 BUILD_PROXY 指定可用代理"
     exit 1
   fi
-  # CosyVoice 构建需 git clone GitHub，额外探测 github 可达性，避免构建中途失败
+  # CosyVoice 构建需 git clone GitHub，额外探测 github 可达性。
+  # 主部署已与 cosyvoice 构建解耦（不构建 cosyvoice），GitHub 不可达不应阻塞主部署，仅 warn。
+  # pnpm deploy:cosyvoice 实际构建时若 GitHub 不可达，会在 build 阶段（git clone）失败退出。
   if $ENABLE_COSYVOICE; then
     local gh_url="https://github.com"
     log_info "CosyVoice 启用：额外测试代理可达 ${gh_url} ..."
     if remote_exec_real "curl -fsS -o /dev/null --max-time 10 --proxy ${proxy} ${gh_url}" >/dev/null 2>&1; then
       log_info "GitHub 可达，CosyVoice 构建前置条件满足"
     else
-      log_error "代理无法访问 ${gh_url}：CosyVoice Dockerfile 内部 git clone GitHub 将失败"
-      log_error "请确认代理可访问 GitHub，或改用非 cosyvoice 的 TTS_PROVIDER"
-      exit 1
+      log_warn "代理无法访问 ${gh_url}：主部署不构建 cosyvoice 故不阻塞；若运行 pnpm deploy:cosyvoice，git clone GitHub 将失败"
     fi
   fi
   return 0
@@ -514,42 +516,19 @@ ensure_cosyvoice_image() {
   fi
   log_info "检查 cosyvoice:local 镜像..."
   if remote_exec_real "docker inspect --type=image cosyvoice:local >/dev/null 2>&1"; then
-    log_info "cosyvoice:local 已存在，跳过构建"
+    log_info "cosyvoice:local 已存在，将直接复用（不重新构建）"
+    COSYVOICE_IMAGE_MISSING=false
     return 0
   fi
-  local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
+  # 镜像缺失：已与主部署解耦，不再自动构建（避免构建失败拖累主部署）。
+  # 由独立的 pnpm deploy:cosyvoice 负责构建；主部署跳过 cosyvoice 服务，仅起核心服务。
+  COSYVOICE_IMAGE_MISSING=true
   if $DRY_RUN; then
-    log_dry "cosyvoice:local 缺失，将执行 docker compose build cosyvoice（首次约 5-10 分钟，代理 ${proxy}）"
+    log_dry "cosyvoice:local 缺失，主部署将跳过 cosyvoice 服务；请单独运行 pnpm deploy:cosyvoice 构建"
     return 0
   fi
-  log_warn "cosyvoice:local 不存在，开始自动构建（首次约 5-10 分钟，需代理 ${proxy}）..."
-  # 走 compose build 块（scripts/cosyvoice/Dockerfile + build.args），与手动 up 同一入口
-  if ! dc_tty "build cosyvoice"; then
-    log_error "CosyVoice 镜像构建失败"
-    cat >&2 <<HINT
-
-${YELLOW}[手动排查]${NC} CosyVoice 镜像构建依赖代理拉取 GitHub 源码与 pytorch 基础镜像：
-
-  ${GREEN}# 1. 确认远端代理可达 GitHub（Dockerfile 内部 git clone GitHub）${NC}
-  ssh ${REMOTE_USER}@${REMOTE_HOST} \
-    "curl -fsS -o /dev/null --max-time 10 --proxy ${proxy} https://github.com"
-
-  ${GREEN}# 2. 单独重试构建（输出详细日志）${NC}
-  ssh ${REMOTE_USER}@${REMOTE_HOST} \
-    "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} \
-       -f docker-compose.yml -f docker-compose.cosyvoice.yml build cosyvoice"
-
-  ${GREEN}# 3. 或用独立脚本构建（等价，便于切代理）${NC}
-  ssh ${REMOTE_USER}@${REMOTE_HOST} \
-    "cd ${REMOTE_APP_DIR} && BUILD_PROXY=${proxy} bash scripts/build-cosyvoice-image.sh"
-
-  ${GREEN}# 4. 基础镜像 pytorch:2.0.1-cuda11.7 拉取慢/失败时，为 docker daemon 配镜像加速${NC}
-  ssh ${REMOTE_USER}@${REMOTE_HOST} "cat /etc/docker/daemon.json"
-
-镜像就绪后重新运行部署脚本即可（已构建则自动跳过）。
-HINT
-    exit 1
-  fi
+  log_warn "cosyvoice:local 不存在，主部署将跳过 cosyvoice 服务（不阻塞）"
+  log_warn "  请单独运行: pnpm deploy:cosyvoice  （构建并启动 cosyvoice，约 5-10 分钟）"
 }
 
 # ── schema 变更探测 ──
@@ -576,10 +555,20 @@ deploy_services() {
 
   local proxy="${BUILD_PROXY:-http://127.0.0.1:7890}"
 
+  # 核心服务清单：主程序三件套 + whisper（whisper 为 pull 镜像，无需 build）。
+  # cosyvoice 镜像由独立的 pnpm deploy:cosyvoice 构建，不纳入主部署 build/up，
+  # 避免其构建失败拖累主部署；镜像已存在时 up -d 仍会一并拉起。
+  local core_services="backend frontend gateway"
+  $ENABLE_WHISPER && core_services="${core_services} whisper"
+
   if $DRY_RUN; then
     log_dry "将执行: docker compose down"
-    log_dry "将执行: docker compose build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy}"
-    log_dry "将执行: docker compose up -d"
+    log_dry "将执行: docker compose build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}"
+    if $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
+      log_dry "cosyvoice 镜像缺失，将仅 up 核心服务（不含 cosyvoice）: ${core_services}"
+    else
+      log_dry "将执行: docker compose up -d"
+    fi
     return 0
   fi
 
@@ -591,13 +580,23 @@ deploy_services() {
   # 也避免 Node.js 应用被 127.0.0.1:7890（bridge 容器内不可达）污染。
   # 注意：不能用 ~/.docker/config.json 的 proxies，它会被注入到运行时容器。
   # 代理地址可通过 BUILD_PROXY 环境变量覆盖。
-  if ! dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy}"; then
+  # 显式指定 core_services：cosyvoice 镜像由 pnpm deploy:cosyvoice 单独构建，不在此 build。
+  if ! dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}"; then
     log_error "docker compose build 失败"
     return 1
   fi
-  if ! dc_tty "up -d"; then
-    log_error "docker compose up 失败（启动失败）"
-    return 1
+
+  if $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
+    log_warn "cosyvoice:local 缺失，仅启动核心服务（不含 cosyvoice）；请随后运行 pnpm deploy:cosyvoice"
+    if ! dc_tty "up -d ${core_services}"; then
+      log_error "docker compose up 失败（启动失败）"
+      return 1
+    fi
+  else
+    if ! dc_tty "up -d"; then
+      log_error "docker compose up 失败（启动失败）"
+      return 1
+    fi
   fi
   log_info "服务已启动（后台），等待健康检查"
 }
@@ -684,7 +683,7 @@ except Exception as e:
   log_info "/api/config 可达"
 
   # 4. CosyVoice 可选探测（仅提示，不阻塞）
-  if $ENABLE_COSYVOICE; then
+  if $ENABLE_COSYVOICE && ! $COSYVOICE_IMAGE_MISSING; then
     local cv_status
     cv_status=$(remote_exec_real "curl -s -o /dev/null -w '%{http_code}' -X POST -F 'spk_id=EnglishTutor' http://localhost:50000/inference_sft" || true)
     if [ "${cv_status}" = "422" ] || [ "${cv_status}" = "200" ]; then
@@ -692,6 +691,8 @@ except Exception as e:
     else
       log_warn "CosyVoice 端到端探测未通过 (HTTP ${cv_status})，不阻塞部署"
     fi
+  elif $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
+    log_warn "CosyVoice 镜像缺失，已跳过端到端探测；请运行 pnpm deploy:cosyvoice 后再验证"
   fi
 
   return 0
@@ -699,6 +700,14 @@ except Exception as e:
 
 wait_cosyvoice_healthy() {
   if ! $ENABLE_COSYVOICE; then
+    return 0
+  fi
+  if $COSYVOICE_IMAGE_MISSING; then
+    log_info "cosyvoice 镜像缺失（已跳过启动），跳过健康等待"
+    return 0
+  fi
+  if $DRY_RUN; then
+    log_dry "将执行: 等待 cosyvoice 容器健康（模型加载约 90-120s）"
     return 0
   fi
   log_info "等待 cosyvoice 容器健康（模型加载约 90-120s）..."
@@ -812,7 +821,11 @@ print_report() {
   if ! $DRY_RUN; then
     echo "容器状态："
     dc "ps --format 'table {{.Name}}\t{{.Status}}'" || true
-    echo "CosyVoice：         $(get_cosyvoice_health)"
+    if $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
+      echo "CosyVoice：         镜像缺失（已跳过，请运行 pnpm deploy:cosyvoice）"
+    else
+      echo "CosyVoice：         $(get_cosyvoice_health)"
+    fi
   fi
   echo "结果：              ${status}"
   echo "=========================================="

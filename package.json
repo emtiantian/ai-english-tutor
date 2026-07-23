@@ -13,6 +13,7 @@
     "build": "pnpm --filter tutor-app build",
     "push:server": "bash scripts/deploy-to-server.sh",
     "push:server:generic": "bash scripts/deploy.sh",
+    "deploy:cosyvoice": "bash scripts/deploy-cosyvoice.sh",
     "verify:cosyvoice": "pnpm --filter @ai-english-tutor/server exec tsx ../../scripts/verify-cosyvoice.mts",
     "build:cosyvoice-spk2info": "pnpm --filter @ai-english-tutor/server exec tsx ../../scripts/build-cosyvoice-spk2info.mts",
     "lint": "eslint .",

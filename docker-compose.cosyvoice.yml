@@ -6,10 +6,11 @@
 # 说明：
 # - 主 docker-compose.yml 只包含 gateway / frontend / backend / whisper 核心服务
 # - CosyVoice 强依赖 GPU，作为可选 TTS Provider 拆到此 override 文件
-# - 镜像自动构建：cosyvoice:local 由本文件 build 块从 scripts/cosyvoice/Dockerfile
-#   构建（官方未发布镜像，Dockerfile 内部 git clone 源码）。首次 `up` 镜像不存在时
-#   自动触发，之后命中缓存跳过；构建需代理 BUILD_PROXY（默认 http://127.0.0.1:7890），
-#   build.network: host 让容器内代理直达宿主机。部署脚本同样走此 build 块。
+# - 镜像构建已与主部署解耦：cosyvoice:local 由本文件 build 块从 scripts/cosyvoice/Dockerfile
+#   构建（官方未发布镜像，Dockerfile 内部 git clone 源码）。主部署 push:server 不再自动
+#   构建 cosyvoice（避免其构建失败拖累主程序），请单独运行 `pnpm deploy:cosyvoice` 构建。
+#   镜像已存在时，push:server / 开机自启的 `up -d` 会直接复用拉起；构建需代理
+#   BUILD_PROXY（默认 http://127.0.0.1:7890），build.network: host 让容器内代理直达宿主机。
 # - 首次启动时会从 modelscope 拉取 iic/CosyVoice2-0.5B 模型到 modelscope 缓存
 # - 模型挂载随 AI_TUTOR_HOME（部署根）走，便于跨机/跨目录迁移并命中缓存：
 #     <root>/data/modelscope-cache -> /root/.cache/modelscope（modelscope 下载缓存，
@@ -66,16 +67,17 @@ services:
       options:
         max-size: '50m'
         max-file: '5'
-    # 健康探测：POST /inference_sft 判断 FastAPI 已起且端口监听正常；
-    # 4GB 显存机器上 healthcheck 也会占显存，间隔不要太短（≥30s）
+    # 健康探测：TCP 端口探测（不触发推理、不占 GPU 显存），仅判断 50000 端口已监听。
+    # 模型在 server.py 模块顶层加载、uvicorn.run 在最后，端口监听 ≈ 模型就绪；
+    # 即便过早 healthy，backend provider 的重试逻辑（5xx/超时自动重试）兜底。
     healthcheck:
       test:
         [
           'CMD-SHELL',
-          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:50000/inference_sft'', data=b''tts_text=test&spk_id=EnglishTutor'', timeout=10)"'
+          'python -c "import socket,sys; s=socket.socket(); s.settimeout(5); sys.exit(0 if s.connect_ex((''localhost'',50000))==0 else 1)"'
         ]
       interval: 30s
-      timeout: 15s
+      timeout: 10s
       retries: 5
       start_period: 120s
 

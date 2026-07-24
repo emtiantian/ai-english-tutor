@@ -37,6 +37,22 @@
 //     （官方 main 分支提供；若镜像基于旧 tag，API 可能略有差异）
 //   - 镜像内 python 默认指向 conda envs/cosyvoice（compose 的 command 直接用 python，已验证）
 //   - /opt/CosyVoice/CosyVoice 是代码根目录，`-w` 设为它后 `import cosyvoice` 才能命中
+//
+// 实测结论（cosyvoice:local 镜像，2026-07，GTX 970）：官方 main 分支结论大体成立，但有 3 处
+// 需针对本镜像适配（已在本脚本处理，直接 `pnpm build:cosyvoice-spk2info` 可跑通）：
+//   a. deepspeed：镜像无 nvcc/CUDA_HOME，`import cosyvoice` 时 installed_cuda_version 会
+//      raise MissingCUDAException 崩溃。仅 DS_BUILD_OPS=0 不够，需 sed patch builder.py 让其
+//      返回 torch CUDA 版本（与 scripts/cosyvoice-server-wrapper.py 同款，见 buildDockerCommand）。
+//   b. add_zero_shot_spk 的 prompt_wav 传「文件路径」而非 tensor：本镜像版本 frontend_zero_shot
+//      内部 _extract_speech_feat/_extract_speech_token/_extract_spk_embedding 均调用
+//      load_wav(prompt_wav)，而 load_wav 用 torchaudio.load 只接受路径，传 tensor 抛
+//      'Invalid file: tensor(...)'。故 add_zero_shot_spk('', AUDIO_PATH, spk_id)。
+//   c. 生成的 zero-shot 格式只有 llm_embedding/flow_embedding，缺 'embedding' 字段，而
+//      inference_sft 的 frontend_sft 取 spk2info[spk_id]['embedding']（SFT 格式）。
+//      故保存前补 spk_info['embedding'] = spk_info['llm_embedding']（二者同源于
+//      _extract_spk_embedding 的 campplus [1,192] 向量），使克隆音色可被 /inference_sft 直接调用。
+//   - 镜像内 python = /opt/conda/bin/python（Python 3.10），`-w /opt/CosyVoice/CosyVoice` 后
+//     heredoc (`python - <<'PY'`) 的 sys.path 含 cwd，import cosyvoice 命中。
 
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
@@ -113,6 +129,9 @@ function parseArgs(argv: string[]): CliArgs {
       case '--rm-wav':
         args.rmWav = true
         break
+      case '--':
+        // pnpm 透传的选项分隔符（如 `pnpm build:cosyvoice-spk2info -- --spk-id X`），跳过
+        break
       default:
         console.error(`未知参数: ${arg}`)
         console.error('使用 --help 查看用法')
@@ -158,7 +177,7 @@ function printHelp(): void {
 
 约束:
   - 参考音频与输出文件必须在同一目录（即 cosyvoice-spk2info 目录），该目录会被读写挂载到容器
-  - 首次在 GPU 机器运行需人工验证 CosyVoice2 API 是否与 cosyvoice:local 镜像版本匹配
+  - 已针对 cosyvoice:local 镜像适配（deepspeed patch / 传路径 / 补 embedding），详见文件头实测结论
 `.trim()
   )
 }
@@ -395,13 +414,23 @@ try:
     #   llm_embedding / flow_embedding
     # prompt_text 传空字符串即可: sft 推理只用到 embedding 字段,
     # zero-shot 推理才会用到 prompt_text_token（空 token 也能工作）
-    cosyvoice.add_zero_shot_spk('', prompt_speech_16k, SPK_ID)
+    # IMPORTANT: prompt_wav 传「文件路径」而非 tensor —— 当前镜像版本 frontend_zero_shot 内部
+    # _extract_speech_feat/_extract_speech_token/_extract_spk_embedding 均调用 load_wav(prompt_wav),
+    # 而 load_wav 用 torchaudio.load 只接受文件路径，传 tensor 会抛 'Invalid file: tensor(...)'。
+    # （上方 load_wav(AUDIO_PATH,16000) 仅用于打印时长，不参与 embedding 提取）
+    cosyvoice.add_zero_shot_spk('', AUDIO_PATH, SPK_ID)
     spk_info = cosyvoice.frontend.spk2info[SPK_ID]
     print(f'      embedding 维度: {spk_info["llm_embedding"].shape}', flush=True)
     print(f'      提取字段: {list(spk_info.keys())}', flush=True)
 
     print(f'[4/4] 保存 spk2info 到: {OUTPUT_PATH}', flush=True)
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    # 补 embedding 字段以兼容 /inference_sft:
+    # add_zero_shot_spk 生成的是 zero-shot 格式（含 llm_embedding/flow_embedding）,
+    # 而 frontend_sft 取 spk2info[spk_id]['embedding']（SFT 格式，EnglishTutor.pt 即此格式）。
+    # llm_embedding 与 flow_embedding 同源于 _extract_spk_embedding（campplus [1,192]），
+    # 故补 embedding = llm_embedding，使克隆音色可被 /inference_sft 直接调用。
+    spk_info['embedding'] = spk_info['llm_embedding']
     # 保存为 {spk_id: spk_info} 的 dict, 与 CosyVoice 默认 spk2info.pt 格式一致,
     # 加载端用 torch.load(..., weights_only=True) 能正常读取
     torch.save({SPK_ID: spk_info}, OUTPUT_PATH)
@@ -433,7 +462,20 @@ function buildDockerCommand(
   }
 ): string[] {
   // heredoc 通过 bash -c 传入, 'PY' 加引号禁止变量展开
-  const innerCmd = `python - <<'PY'\n${PYTHON_SCRIPT}\nPY`
+  // 先 patch deepspeed（与 scripts/cosyvoice-server-wrapper.py 一致）：本镜像无 nvcc/CUDA_HOME，
+  // DS_BUILD_OPS=0 不编译 op，但 installed_cuda_version 仍会 raise MissingCUDAException 致
+  // import cosyvoice 崩溃，需让其返回 torch CUDA 版本。docker run --rm 是全新容器，没有
+  // wrapper 的运行时 patch，故在此显式补上。
+  const innerCmd = [
+    `_py=/opt/conda/lib/python3.10/site-packages/deepspeed/ops/op_builder/builder.py`,
+    `if grep -q 'raise MissingCUDAException("CUDA_HOME does not exist, unable to compile CUDA op(s)")' "$_py"; then`,
+    `  sed -i 's|raise MissingCUDAException("CUDA_HOME does not exist, unable to compile CUDA op(s)")|return (12, 1)  # patched by build-cosyvoice-spk2info|' "$_py"`,
+    `  echo '[patch] deepspeed builder.py 已 patch'`,
+    `fi`,
+    `python - <<'PY'`,
+    PYTHON_SCRIPT,
+    `PY`
+  ].join('\n')
 
   return [
     'run',
@@ -451,6 +493,9 @@ function buildDockerCommand(
     `${paths.hostPretrainedModels}:${CONTAINER_PRETRAINED_MODELS}`,
     '-w',
     CONTAINER_WORKDIR,
+    // DS_BUILD_OPS=0 禁用 deepspeed CUDA op 编译（镜像 ENV 已设，显式注入便于脱离该镜像时仍生效）
+    '-e',
+    `DS_BUILD_OPS=0`,
     '-e',
     `SPK_ID=${args.spkId}`,
     '-e',

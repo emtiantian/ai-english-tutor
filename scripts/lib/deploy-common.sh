@@ -300,33 +300,21 @@ configure_remote_env() {
   # 非 dry-run 模式下由 deploy_main 末尾统一清理。
 }
 
-# 检查 .env 中是否存在明显占位符或空 API Key
+# 检查 .env 中是否存在明显占位符（未填写的模板默认值）
 # 返回 0 表示存在占位符（即有问题）
+# 注意：API Key 的空值校验由 validate_env --strict 按 provider 按需负责（见 validate-env.sh），
+#       此处只检测 your-xxx-api-key 这类字面占位符，避免对未启用 provider 的 key 误报阻塞部署
+#       （如 LLM_PROVIDER=volcengine 时 OPENAI_API_KEY 为空属正常）。
 check_env_has_placeholder() {
   local env_file="$1"
   if [ ! -f "${env_file}" ]; then
     return 1
   fi
-  # 匹配 your-xxx-api-key、空 API key 行、或全为空白的值
-  local patterns=(
-    'your-.*-api-key'
-    '^DEEPSEEK_API_KEY=$'
-    '^OPENAI_API_KEY=$'
-    '^XIAOMI_API_KEY=$'
-    '^XIAOMI_TTS_API_KEY=$'
-    '^XIAOMI_ASR_API_KEY=$'
-    '^VOLCENGINE_LLM_API_KEY=$'
-    '^VOLCENGINE_TTS_API_KEY=$'
-    '^VOLCENGINE_ASR_API_KEY=$'
-    '^VOLCENGINE_LLM_MODEL=$'
-  )
-  local pattern
-  for pattern in "${patterns[@]}"; do
-    if grep -qE "${pattern}" "${env_file}"; then
-      log_warn "检测到占位符或空值: ${pattern}"
-      return 0
-    fi
-  done
+  # 匹配 your-xxx-api-key 模板默认值（用户直接复制模板未填写）
+  if grep -qE 'your-.*-api-key' "${env_file}"; then
+    log_warn "检测到占位符: your-.*-api-key"
+    return 0
+  fi
   return 1
 }
 

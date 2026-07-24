@@ -60,16 +60,30 @@ describe('AudioPlayer', () => {
     beforeEach(() => {
       const mockBufferSource = {
         connect: vi.fn(),
+        disconnect: vi.fn(),
         start: vi.fn(),
+        stop: vi.fn(),
+        context: null as any,
         onended: null as any
       }
 
-      global.AudioContext = vi.fn().mockImplementation(() => ({
-        decodeAudioData: vi.fn().mockResolvedValue({ duration: 1 }),
-        createBufferSource: vi.fn().mockReturnValue(mockBufferSource),
-        destination: {},
-        close: vi.fn()
-      })) as any
+      global.AudioContext = vi.fn().mockImplementation(function () {
+        const ctx = {
+          decodeAudioData: vi.fn().mockResolvedValue({ duration: 1 }),
+          createBufferSource: vi.fn().mockReturnValue(mockBufferSource),
+          createAnalyser: vi.fn().mockReturnValue({
+            fftSize: 0,
+            frequencyBinCount: 256,
+            getByteFrequencyData: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn()
+          }),
+          destination: {},
+          close: vi.fn()
+        }
+        mockBufferSource.context = ctx
+        return ctx
+      }) as any
 
       global.atob = vi.fn().mockReturnValue('decoded') as any
 
@@ -107,6 +121,24 @@ describe('AudioPlayer', () => {
       await new Promise(r => setTimeout(r, 10))
 
       expect(onStart).toHaveBeenCalled()
+    })
+
+    it('should abort playback without triggering onEnd', async () => {
+      const onStart = vi.fn()
+      const onEnd = vi.fn()
+      player.onStart = onStart
+      player.onEnd = onEnd
+
+      player.feedAudioChunk({ audioBase64: 'chunk', format: 'mp3', isEnd: true })
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(player.isPlaying).toBe(true)
+
+      player.abort()
+
+      // abort 主动停止：播放状态清零，且不触发 onEnd（避免误触发“播放结束”逻辑）
+      expect(player.isPlaying).toBe(false)
+      expect(onEnd).not.toHaveBeenCalled()
     })
   })
 })

@@ -49,6 +49,12 @@ export const useTutorStore = defineStore('tutor', () => {
   const isConnected = ref(false)
   const isThinking = ref(false)
   const isPlaying = ref(false)
+  /** 打断标志：true 时可能抑制 in-flight 分片（配合 interruptedAtEpoch 按代判断） */
+  const interrupted = ref(false)
+  /** 请求代：每次发起用户请求 ++，用于区分新旧请求的流式分片 */
+  const requestEpoch = ref(0)
+  /** 打断态对应的请求代（被打断的请求），仅抑制同代 in-flight 分片，不影响新请求流式 */
+  const interruptedAtEpoch = ref(0)
   const messages = ref<ChatMessage[]>([])
   const ttsSource = ref<TTSSource>('local')
   const sessionId = ref<string | null>(null)
@@ -187,6 +193,25 @@ export const useTutorStore = defineStore('tutor', () => {
     }
   }
 
+  /**
+   * 用户打断当前老师回复：把残留的 streaming 消息定稿（保留已显示的半句文本），
+   * 置 interrupted=true 抑制后续 in-flight 分片，并清掉思考态。
+   * 由 SSE teacher.interrupted 事件触发。
+   */
+  function markStreamingInterrupted() {
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      const msg = messages.value[i]
+      if (msg.role === 'assistant' && msg.isStreaming) {
+        msg.isStreaming = false
+        break
+      }
+    }
+    interrupted.value = true
+    // 记录被打断请求的代：仅抑制同代 in-flight 分片，新请求（代不同）的流式不受影响
+    interruptedAtEpoch.value = requestEpoch.value
+    isThinking.value = false
+  }
+
   function setShowTextImmediately(value: boolean) {
     showTextImmediately.value = value
   }
@@ -318,6 +343,11 @@ export const useTutorStore = defineStore('tutor', () => {
     currentLevel,
     userId,
     connectionId,
+    // 打断
+    interrupted,
+    requestEpoch,
+    interruptedAtEpoch,
+    markStreamingInterrupted,
     // 文字显示时机
     showTextImmediately,
     // 场景运行时状态（持久化见 useScenarioProgressStore）

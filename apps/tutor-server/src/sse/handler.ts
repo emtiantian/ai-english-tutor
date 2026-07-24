@@ -47,6 +47,21 @@ function emitSessionDisconnect(sessionId: string): void {
 }
 
 /**
+ * 主动打断某 session 正在进行的老师回复。
+ *
+ * 复用 SSE 断开监听器机制触发当前请求的 AbortController.abort()（让 LLM 生成停下），
+ * 但**不销毁 SSE 连接**——区别于真正的连接断开。用于“用户开口/打字时让老师闭嘴”
+ * 的最小打断场景：TTS 由前端 abort，LLM 由这里的 signal abort 终止。
+ *
+ * 返回是否确实有正在进行的请求被打断。
+ */
+export function interruptSession(sessionId: string): boolean {
+  const had = disconnectListeners.has(sessionId)
+  emitSessionDisconnect(sessionId)
+  return had
+}
+
+/**
  * 强制关闭原始响应 socket，忽略错误。
  */
 function destroyRaw(reply: FastifyReply): void {

@@ -74,6 +74,8 @@ export function useTutorClient(config?: TutorClientConfig) {
   // --- 流式片段（合并：确保流式消息存在，然后追加）---
   unsubs.push(
     client.on('teacher.chunk', ({ chunk, isEnd }) => {
+      // 打断后忽略同代请求还在路上的 in-flight 文本分片；新请求代不同则正常流式
+      if (store.interrupted && store.interruptedAtEpoch === store.requestEpoch) return
       if (isEnd) return
       const msgs = store.messages
       const last = msgs[msgs.length - 1]
@@ -96,6 +98,8 @@ export function useTutorClient(config?: TutorClientConfig) {
       }
 
       store.finalizeStream(response)
+      // 回复完成，清掉打断态（下次请求的流式不再受抑制）
+      store.interrupted = false
 
       // 回复已就绪；始终清除思考状态。
       // isThinking 不依赖音频回调——空回复或 TTS 失败时音频事件可能不触发，
@@ -112,6 +116,10 @@ export function useTutorClient(config?: TutorClientConfig) {
       }
     })
   )
+
+  // 注：打断态由前端 interruptTeacher 本地驱动（store.markStreamingInterrupted），
+  // 不监听后端 teacher.interrupted——其异步到达会与新请求 chunk 竞态、误定稿新回复。
+  // 后端 teacher.interrupted 仅作 abort 信号，前端无需消费。
 
   // 注：isPlaying / showDelayedMessage / setSpeaking 全部由 useAudioPlayback 统一驱动
   // （AudioPlayer.onStart/onEnd/onVolume 是音频生命周期的唯一来源，覆盖 local/remote

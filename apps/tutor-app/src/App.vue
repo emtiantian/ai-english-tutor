@@ -230,11 +230,22 @@ const { client } = useTutorClient({
 const { learnWords } = useVocabSync(client)
 _learnWords = learnWords
 
-const { audioPlayer, replayAudio, unlockAudio } = useAudioPlayback(client, characterProvider)
+const {
+  audioPlayer,
+  replayAudio,
+  unlockAudio,
+  abort: abortPlayback
+} = useAudioPlayback(client, characterProvider)
 // 从 /api/config 加载 ASR/TTS 运行时配置。
 const { asrProvider, voiceStyleSelectable } = useASRConfig()
 const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } =
-  useAudioRecorder(client, sendToBackend, () => asrProvider.value, characterProvider)
+  useAudioRecorder(
+    client,
+    sendToBackend,
+    () => asrProvider.value,
+    characterProvider,
+    interruptTeacher
+  )
 const {
   init: initCharacter,
   switchLive2DModel,
@@ -249,6 +260,9 @@ provide('characterProvider', characterProvider)
 async function sendToBackend(
   payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }
 ) {
+  // 新请求代 ++：让旧打断态按代失效——仅同代 in-flight 分片被抑制，
+  // 新请求的分片正常流式显示（不再粗暴重置 interrupted=false）
+  store.requestEpoch++
   // 语音请求需要更多时间：ASR + LLM + TTS 可能需要 30-60 秒
   const timeoutMs = payload.audioBase64 ? 120000 : undefined
   return client.sendMessage(
@@ -262,6 +276,18 @@ async function sendToBackend(
     },
     timeoutMs
   )
+}
+
+/**
+ * 打断当前老师回复：停 TTS + 通知后端 abort LLM。
+ * 在用户开始录音或发送文字消息时调用，让老师“闭嘴”以支持插话。
+ */
+function interruptTeacher() {
+  // 本地立即定稿半句 + 置打断态（不等后端 teacher.interrupted 事件，
+  // 避免其异步到达与新请求 chunk 竞态、误抑制新回复流式）
+  store.markStreamingInterrupted()
+  abortPlayback()
+  client.interrupt()
 }
 
 onMounted(async () => {
@@ -486,6 +512,8 @@ function closeWordDetail() {
 
 // --- 发送文字 ---
 async function sendText(text: string) {
+  // 用户发送新消息即打断当前老师回复（停 TTS + abort LLM）
+  interruptTeacher()
   client.emit('message.user', { text, isVoice: false })
   client.emit('state.thinking', undefined)
 

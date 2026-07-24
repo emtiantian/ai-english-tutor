@@ -100,6 +100,23 @@ export class TutorClient {
     return result as ChatResponse
   }
 
+  /**
+   * 通知后端打断当前老师回复：abort 正在进行的 LLM 生成，但不断开 SSE。
+   * 即发即忘，失败静默（最坏情况是后端多生成几个 token，不影响用户）。
+   */
+  async interrupt(): Promise<void> {
+    try {
+      await this.fetchJson('/api/chat/interrupt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: this.options.sessionId }),
+        timeout: 5000
+      })
+    } catch (err) {
+      console.debug('[TutorClient] interrupt 请求失败（已忽略）:', err)
+    }
+  }
+
   async getSession(sessionId: string): Promise<unknown> {
     return this.fetchJson(`/api/session/${sessionId}`)
   }
@@ -254,6 +271,7 @@ export class TutorClient {
       'teacher.response',
       'teacher.chunk',
       'teacher.audio',
+      'teacher.interrupted',
       'error',
       'heartbeat'
     ] as const

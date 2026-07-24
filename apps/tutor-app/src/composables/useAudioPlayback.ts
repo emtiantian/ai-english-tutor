@@ -96,6 +96,8 @@ export function useAudioPlayback(
   )
 
   client.on('teacher.audio', chunk => {
+    // 打断后忽略同代请求还在路上的 in-flight TTS 片段；新请求代不同则正常播放
+    if (store.interrupted && store.interruptedAtEpoch === store.requestEpoch) return
     if (store.ttsSource === 'remote') {
       audioPlayer.feedAudioChunk(chunk)
       pendingAudioChunks.push(chunk.audioBase64)
@@ -133,6 +135,16 @@ export function useAudioPlayback(
     await audioPlayer.replayAudio(audioBase64, format)
   }
 
+  /**
+   * 打断当前 TTS 播放（用户开口/发送新消息时调用）。
+   * 手动重置播放状态，不走 onEnd 回调（避免触发延迟显示文本）。
+   */
+  function abort(): void {
+    audioPlayer.abort()
+    store.isPlaying = false
+    getProvider()?.setSpeaking?.(false)
+  }
+
   // 页面卸载/刷新时停止音频，防止刷新后继续播放
   const stopOnUnload = () => audioPlayer.stop()
   window.addEventListener('beforeunload', stopOnUnload)
@@ -142,5 +154,5 @@ export function useAudioPlayback(
     audioPlayer.stop()
   })
 
-  return { audioPlayer, unlockAudio, replayAudio }
+  return { audioPlayer, unlockAudio, replayAudio, abort }
 }

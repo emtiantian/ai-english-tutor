@@ -73,6 +73,20 @@ export interface HeartbeatEvent extends SSEEventBase {
   }
 }
 
+/** 教师回复被打断（用户开口/发送新消息时，后端 abort 当前 LLM 生成后广播） */
+export interface TeacherInterruptedEvent extends SSEEventBase {
+  event: 'teacher.interrupted'
+  data: {
+    /** 打断来源：user = 用户主动开口/发送新消息 */
+    reason?: 'user'
+  }
+}
+
 /** 所有 SSE 事件的联合类型 */
 export type SSEEvent =
-  ConfigEvent | TeacherResponseEvent | TeacherChunkEvent | TeacherAudioEvent | HeartbeatEvent
+  | ConfigEvent
+  | TeacherResponseEvent
+  | TeacherChunkEvent
+  | TeacherAudioEvent
+  | TeacherInterruptedEvent
+  | HeartbeatEvent

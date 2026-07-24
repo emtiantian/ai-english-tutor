@@ -45,6 +45,33 @@ describe('TutorStore', () => {
     expect(store.messages[0].text).toBe('Hello world')
   })
 
+  it('should mark streaming interrupted', () => {
+    const store = useTutorStore()
+    store.startAssistantStream()
+    store.appendStreamChunk('Hello')
+
+    store.markStreamingInterrupted()
+
+    // 残留 streaming 消息定稿，保留已显示的半句文本
+    expect(store.messages[0].isStreaming).toBe(false)
+    expect(store.messages[0].text).toBe('Hello')
+    // 置打断标志（抑制后续 in-flight 分片）+ 清思考态
+    expect(store.interrupted).toBe(true)
+    expect(store.isThinking).toBe(false)
+  })
+
+  it('should scope interrupt suppression to the same request epoch', () => {
+    const store = useTutorStore()
+    // 打断当前请求（代 0）：打断态记录同代，用于抑制同代 in-flight 分片
+    store.markStreamingInterrupted()
+    expect(store.interrupted).toBe(true)
+    expect(store.interruptedAtEpoch).toBe(store.requestEpoch)
+
+    // 新请求代 ++：旧打断态按代失效，新请求的流式分片不再被抑制
+    store.requestEpoch++
+    expect(store.interruptedAtEpoch).not.toBe(store.requestEpoch)
+  })
+
   it('should finalize stream', () => {
     const store = useTutorStore()
     const scenarioProgress = useScenarioProgressStore()

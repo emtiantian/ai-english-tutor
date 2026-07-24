@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { CEFRLevel } from '@ai-english-tutor/shared'
 import { logger } from '../logger.js'
-import { broadcastToSession, onSessionDisconnect } from '../sse/handler.js'
+import { broadcastToSession, interruptSession, onSessionDisconnect } from '../sse/handler.js'
 import { tutorEngine } from '../ai/engine.js'
-import type { TeacherResponseEvent } from '../sse/types.js'
+import type { TeacherInterruptedEvent, TeacherResponseEvent } from '../sse/types.js'
 
 interface ChatRequestBody {
   type: 'user.speak' | 'lesson.start'
@@ -225,6 +225,36 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
       })
     }
   })
+
+  /**
+   * POST /api/chat/interrupt - 用户打断当前老师回复
+   *
+   * 触发当前 session 正在进行的 LLM 生成 abort（复用 SSE 断开监听器，不断开 SSE），
+   * 随后广播 teacher.interrupted 事件让前端清理流式残留。
+   * 用于“用户开口/打字时让老师闭嘴”的最小打断场景。
+   */
+  server.post(
+    '/api/chat/interrupt',
+    async (request: FastifyRequest<{ Body: { sessionId?: string } }>, reply) => {
+      const { sessionId } = request.body ?? {}
+      if (!sessionId) {
+        return reply
+          .status(400)
+          .send({ error: 'sessionId is required', code: 'MISSING_SESSION_ID' })
+      }
+      // 仅当确实有正在进行的请求被打断时才广播 teacher.interrupted，
+      // 避免无在跑请求时（如老师只 TTS 在播、或已空闲）误触发前端打断态、
+      // 抑制用户紧接着的新回复流式。
+      const had = interruptSession(sessionId)
+      if (had) {
+        broadcastToSession(sessionId, {
+          event: 'teacher.interrupted',
+          data: { reason: 'user' }
+        } satisfies TeacherInterruptedEvent)
+      }
+      return reply.send({ ok: true })
+    }
+  )
 
   /**
    * GET /api/session/:id - 获取会话信息

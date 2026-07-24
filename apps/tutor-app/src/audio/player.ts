@@ -26,6 +26,10 @@ export class AudioPlayer {
   private isPlayingValue = false
   private synth = typeof window !== 'undefined' ? window.speechSynthesis : null
   private currentUtterance: SpeechSynthesisUtterance | null = null
+  /** 当前正在播放的远程音频 source（abort 时用以真正停止，区别于 suspend 暂停） */
+  private currentSource: AudioBufferSourceNode | null = null
+  /** abort 标志：抑制因 stop()/cancel() 间接触发的 onEnd 回调 */
+  private aborted = false
   private _onStart?: () => void
   private _onEnd?: () => void
   private _onVolume?: (volume: number) => void
@@ -137,6 +141,32 @@ export class AudioPlayer {
   }
 
   /**
+   * 打断当前播放（用户开口/发送新消息时调用）。
+   *
+   * 与 stop() 的区别：真正停止正在播放的 BufferSource（source.stop()）而非
+   * suspend() 暂停，并标记 aborted 以抑制由 stop()/cancel() 间接触发的 onEnd
+   * 回调，避免误触发“播放结束”逻辑（如延迟显示文本）。仅在有播放时标记 aborted，
+   * 防止标志残留污染下一次正常播放的结束回调（新播放开始时也会复位 aborted）。
+   */
+  abort(): void {
+    const wasPlaying = this.isPlayingValue
+    this.stopVolumeDetection()
+    try {
+      this.currentSource?.stop()
+    } catch {
+      // source 可能已结束，忽略
+    }
+    this.currentSource = null
+    this.synth?.cancel()
+    this.currentUtterance = null
+    this.audioChunks = []
+    this.isPlayingValue = false
+    if (wasPlaying) {
+      this.aborted = true
+    }
+  }
+
+  /**
    * 通过 base64 字符串重放音频（用于“重听”按钮）
    */
   async replayAudio(audioBase64: string, format: string = 'mp3'): Promise<void> {
@@ -156,6 +186,8 @@ export class AudioPlayer {
 
     try {
       this.isPlayingValue = true
+      // 新播放开始，清除可能残留的 aborted 标志，避免误抑制本次结束回调
+      this.aborted = false
       this._onStart?.()
 
       // 复用或创建 AudioContext；若处于 suspended 则恢复（iOS 要求）
@@ -181,10 +213,17 @@ export class AudioPlayer {
         { multiplier: 1.8 }
       )
 
+      this.currentSource = source
       source.onended = () => {
         this.stopVolumeDetection()
+        this.currentSource = null
         this.isPlayingValue = false
         this._onVolume?.(0) // 播放结束，嘴巴闭上
+        // abort 触发的结束不通知 onEnd，避免误触发“播放结束”逻辑（如延迟显示文本）
+        if (this.aborted) {
+          this.aborted = false
+          return
+        }
         this._onEnd?.()
       }
 
@@ -226,6 +265,8 @@ export class AudioPlayer {
 
       utterance.onstart = () => {
         this.isPlayingValue = true
+        // 新播放开始，清除可能残留的 aborted 标志
+        this.aborted = false
         this._onStart?.()
         this.startLocalVolumeSimulation()
       }
@@ -233,6 +274,12 @@ export class AudioPlayer {
         this.stopVolumeDetection()
         this.isPlayingValue = false
         this._onVolume?.(0)
+        // abort 触发的结束不通知 onEnd
+        if (this.aborted) {
+          this.aborted = false
+          resolve()
+          return
+        }
         this._onEnd?.()
         resolve()
       }
@@ -240,6 +287,12 @@ export class AudioPlayer {
         this.stopVolumeDetection()
         this.isPlayingValue = false
         this._onVolume?.(0)
+        // abort 触发的取消不通知 onEnd
+        if (this.aborted) {
+          this.aborted = false
+          resolve()
+          return
+        }
         this._onEnd?.()
         resolve()
       }

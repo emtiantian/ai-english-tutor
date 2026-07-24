@@ -37,6 +37,7 @@ export interface TutorEventMap {
   'teacher.response': TeachingResponse
   'teacher.chunk': { chunk: string; isEnd: boolean }
   'teacher.audio': { audioBase64: string; format: string; isEnd: boolean }
+  'teacher.interrupted': { reason?: 'user' }
 
   // 录音
   'recording.start': void

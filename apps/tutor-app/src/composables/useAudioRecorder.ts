@@ -28,7 +28,9 @@ export function useAudioRecorder(
     payload: Partial<ChatRequestBody> & { type: ChatRequestBody['type'] }
   ) => Promise<ChatResponse>,
   asrProvider: () => ASRProvider = () => 'xiaomi',
-  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null
+  characterProvider?: Ref<CharacterProvider | null> | CharacterProvider | null,
+  /** 用户开始录音时触发的打断回调（停 TTS + abort LLM） */
+  interrupt?: () => void
 ) {
   const store = useTutorStore()
   const { isEncoding, encode, terminate } = useAudioEncoder()
@@ -62,6 +64,9 @@ export function useAudioRecorder(
 
   async function startRecording() {
     if (isRecording.value) return
+
+    // 用户开始录音即打断当前老师回复（停 TTS + abort LLM），实现“像真人对话”的插话
+    interrupt?.()
 
     // ── 浏览器 ASR 路径 ──
     if (asrProvider() === 'browser') {

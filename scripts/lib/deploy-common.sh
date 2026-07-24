@@ -39,6 +39,8 @@ RSYNC_EXCLUDES=(
 HEALTH_CHECK_RETRIES=3
 HEALTH_CHECK_INTERVAL=10
 BACKUP_KEEP=${BACKUP_KEEP:-5}
+# build 阶段超时（秒）：build 卡死时超时退出，旧服务仍在运行不宕机（历史 buildkit 缓存损坏曾卡死 36 分钟）
+BUILD_TIMEOUT=${BUILD_TIMEOUT:-600}
 
 TEST_DURATION=0
 SYNC_COUNT=0
@@ -106,7 +108,10 @@ dc() {
 }
 
 dc_tty() {
-  remote_exec_tty "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
+  # DC_TTY_TIMEOUT 非空时，用 timeout 包裹 docker compose（用于 build 防卡死）
+  local timeout_prefix=""
+  [ -n "${DC_TTY_TIMEOUT:-}" ] && timeout_prefix="timeout ${DC_TTY_TIMEOUT} "
+  remote_exec_tty "cd ${REMOTE_APP_DIR} && AI_TUTOR_HOME=${REMOTE_DIR} ${timeout_prefix}docker compose --env-file ${REMOTE_ENV_FILE} $(compose_files) $*"
 }
 
 # ── 前置检查 ──
@@ -550,8 +555,8 @@ deploy_services() {
   $ENABLE_WHISPER && core_services="${core_services} whisper"
 
   if $DRY_RUN; then
+    log_dry "将执行: docker compose build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}（timeout ${BUILD_TIMEOUT}s）"
     log_dry "将执行: docker compose down"
-    log_dry "将执行: docker compose build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}"
     if $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
       log_dry "cosyvoice 镜像缺失，将仅 up 核心服务（不含 cosyvoice）: ${core_services}"
     else
@@ -560,7 +565,8 @@ deploy_services() {
     return 0
   fi
 
-  dc down
+  # ① 先 build（不停现有服务）：build 失败/超时时旧服务仍在运行，不宕机。
+  #    BUILD_TIMEOUT 兜底防止 build 卡死（历史 buildkit 缓存损坏曾卡死 36 分钟）。
   # build 期走宿主机 mihomo 代理拉取海外源（Alpine/pypi 等）。
   # 通过 --build-arg 注入 HTTP_PROXY/HTTPS_PROXY：docker 会自动将其作为环境变量传入每个 RUN，
   # 仅作用于 build 容器（配合 build.network: host，127.0.0.1:7890 即宿主机 mihomo）。
@@ -569,21 +575,23 @@ deploy_services() {
   # 注意：不能用 ~/.docker/config.json 的 proxies，它会被注入到运行时容器。
   # 代理地址可通过 BUILD_PROXY 环境变量覆盖。
   # 显式指定 core_services：cosyvoice 镜像由 pnpm deploy:cosyvoice 单独构建，不在此 build。
-  if ! dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}"; then
-    log_error "docker compose build 失败"
+  if ! DC_TTY_TIMEOUT=${BUILD_TIMEOUT} dc_tty "build --build-arg HTTP_PROXY=${proxy} --build-arg HTTPS_PROXY=${proxy} ${core_services}"; then
+    log_error "docker compose build 失败或超时（旧服务仍在运行，未切换）"
     return 1
   fi
 
+  # ② build 成功后切换镜像：down 旧服务 + up 新镜像（此阶段失败需回滚）
+  dc down
   if $ENABLE_COSYVOICE && $COSYVOICE_IMAGE_MISSING; then
     log_warn "cosyvoice:local 缺失，仅启动核心服务（不含 cosyvoice）；请随后运行 pnpm deploy:cosyvoice"
     if ! dc_tty "up -d ${core_services}"; then
       log_error "docker compose up 失败（启动失败）"
-      return 1
+      return 2
     fi
   else
     if ! dc_tty "up -d"; then
       log_error "docker compose up 失败（启动失败）"
-      return 1
+      return 2
     fi
   fi
   log_info "服务已启动（后台），等待健康检查"
@@ -821,7 +829,7 @@ print_report() {
 
 # 主流程
 deploy_main() {
-  local start_time deploy_duration
+  local start_time deploy_duration deploy_rc=0
 
   # 确保无论成功/失败都清理本地临时 .env 文件
   trap 'rm -f "${LOCAL_ENV_TEMP}"' EXIT
@@ -851,7 +859,14 @@ deploy_main() {
   ensure_whisper_model
   ensure_cosyvoice_image
 
-  if ! deploy_services; then
+  deploy_services || deploy_rc=$?
+  if [ "${deploy_rc}" -eq 1 ]; then
+    # build 失败/超时：旧服务仍在运行，无需回滚
+    deploy_duration=$(($(date +%s) - start_time))
+    print_report "构建失败（旧服务仍在运行）" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"
+    exit 1
+  elif [ "${deploy_rc}" -ne 0 ]; then
+    # up 失败：已 down，需回滚
     rollback
     deploy_duration=$(($(date +%s) - start_time))
     print_report "失败并已回滚" "${TEST_DURATION}" "${SYNC_COUNT}" "${deploy_duration}"

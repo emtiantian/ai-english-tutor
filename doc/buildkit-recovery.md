@@ -2,6 +2,25 @@
 
 > 生成于 2026-07-21。记录 ⑬ CosyVoice 全链路验证部署期间暴露的 buildkit 缓存损坏问题，供下次正规 rebuild 后端时参考。
 
+---
+
+## 〇、2026-07-24 复检结论：✅ 核心问题已解决
+
+| 检查项               | 07-21（故障时）                      | 07-24（复检）                            |
+| -------------------- | ------------------------------------ | ---------------------------------------- |
+| 最小 alpine+apk 构建 | 150s 仅 6/32 包，卡死 36 分钟        | **12 秒完成** ✅                         |
+| backend 镜像         | `5d545790`（docker commit 补丁镜像） | `90482cf3b841`（3 小时前正规 rebuild）✅ |
+| builder              | default，缓存疑似损坏                | default（v0.26.2），内嵌缓存自行恢复     |
+
+- **buildkit 卡死已恢复**：未走方案 A 新建 `fresh` builder，`default` 内嵌缓存自行恢复，实测最小构建 12s。
+- **backend 已正规 rebuild**：含 aee0f09 / c4ea1d9 最新代码，不再是 commit 补丁镜像。
+- **build cache 已清理**：`docker builder prune -f` 清掉 11.7GB 私有缓存（39.2GB → 27.5GB；剩余为被镜像引用的 shared 层，`-f` 不带 `--all` 保守保留）。
+- **deploy 脚本已加固**（方案五建议落实，详见第五节）：先 build 后 down + build 包 `timeout 600`，build 失败/超时旧服务零中断。
+
+> 下次若再现构建卡死，按下方方案 A/B/C/D 排查；正常部署已无需特殊处理。
+
+---
+
 ## 一、问题详述
 
 ### 现象
@@ -148,26 +167,33 @@ ssh haohe@100.100.132.72 \
   'docker logs ai-english-tutor-backend-1 2>&1 | grep -iE "tts.?health|cosyvoice" | head'
 ```
 
-## 五、预防 / deploy 脚本改进建议
+## 五、预防 / deploy 脚本改进建议（2026-07-24 已落实 ✅）
 
-`scripts/deploy-to-server.sh` 的 `deploy_services`（line 370-377）先 `dc down` 再 `up --build`，build 一卡就宕机。建议改进：
+> 部署脚本已重构：`deploy_services` 现位于 `scripts/lib/deploy-common.sh`（被 `scripts/deploy-to-server.sh` source）。下方三条建议已于 07-24 全部落实。
 
-1. **先 build 后 down**：`up --build -d` 拆成先 `build`、再 `down` + `up -d`。build 失败时旧服务仍在运行，不宕机。
-2. **build 加超时**：`build` 命令包 `timeout 600`，超时不 down 旧服务。
-3. **只 rebuild 变更服务**：用 `up -d --build backend`（仅 backend 有 Dockerfile 改动时），避免全量 rebuild frontend。
+原问题：`deploy_services` 先 `dc down` 再 `build`，build 一卡就宕机。建议与落实情况：
 
-示例改进（`deploy_services`）：
+1. ✅ **先 build 后 down**：`deploy_services`（`scripts/lib/deploy-common.sh:568-596`）改为先 `build`（不停现有服务）再 `down` + `up -d`。build 失败/超时返回 1，`deploy_main` 不回滚，旧服务零中断。
+2. ✅ **build 加超时**：`dc_tty` 支持 `DC_TTY_TIMEOUT` 前缀，build 调用 `DC_TTY_TIMEOUT=${BUILD_TIMEOUT:-600} dc_tty "build ..."`，卡死时 600s 超时退出（`timeout` 返回 124 → dc_tty 失败 → return 1）。
+3. ✅ **只 rebuild 变更服务**：`core_services="backend frontend gateway"`（+whisper），cosyvoice 由 `pnpm deploy:cosyvoice` 独立构建，不纳入主部署 build。
+
+当前 `deploy_services` 流程（`scripts/lib/deploy-common.sh`）：
 
 ```bash
 deploy_services() {
-  log_info "构建镜像（不停止现有服务）..."
-  dc_tty "build"          # 先 build，失败不宕机
-  log_info "切换到新镜像..."
+  ...
+  # ① 先 build（不停现有服务）：失败/超时 return 1，旧服务仍在运行
+  if ! DC_TTY_TIMEOUT=${BUILD_TIMEOUT} dc_tty "build --build-arg HTTP_PROXY=${proxy} ... ${core_services}"; then
+    log_error "docker compose build 失败或超时（旧服务仍在运行，未切换）"
+    return 1
+  fi
+  # ② build 成功后切换镜像：down + up（此阶段失败 return 2，触发回滚）
   dc down
-  dc "up -d"              # 用已构建好的镜像启动
-  log_info "服务已启动，等待健康检查"
+  if ! dc_tty "up -d ..."; then return 2; fi
 }
 ```
+
+`deploy_main` 据返回码决定是否回滚：`return 1`（build 失败）不回滚、旧服务继续运行；`return 2`（up 失败）触发 `rollback` 恢复备份。
 
 ## 六、相关 context
 

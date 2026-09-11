@@ -1489,8 +1489,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
     if (this.frameworkInitialized) return
 
     const option = new Option()
-    option.logFunction = (msg: string) => console.log('[Cubism]', msg)
-    option.loggingLevel = LogLevel.LogLevel_Verbose
+    // Cubism verbose diagnostics are too noisy for normal browser development.
+    option.logFunction = () => {}
+    option.loggingLevel = LogLevel.LogLevel_Error
 
     CubismFramework.startUp(option)
     CubismFramework.initialize()

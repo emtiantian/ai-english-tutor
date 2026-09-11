@@ -96,6 +96,20 @@ export class AudioPlayer {
       this.synth.speak(prime)
       this.synth.cancel()
     }
+    // Prime a native audio element during the user gesture. Later SSE playback
+    // happens asynchronously and may otherwise be rejected by autoplay policy.
+    if (!this.fallbackAudio) {
+      const audio = new Audio()
+      audio.muted = true
+      this.fallbackAudio = audio
+      try {
+        await audio.play()
+        audio.pause()
+        audio.currentTime = 0
+      } catch {
+        // The WebAudio path may still be available; defer the fallback attempt.
+      }
+    }
     this.audioUnlocked = true
   }
 
@@ -244,7 +258,9 @@ export class AudioPlayer {
     const bytes = base64ToArrayBuffer(audioBase64)
     const mime = format === 'wav' ? 'audio/wav' : `audio/${format || 'mpeg'}`
     this.fallbackAudioUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
-    const audio = new Audio(this.fallbackAudioUrl)
+    const audio = this.fallbackAudio ?? new Audio()
+    audio.src = this.fallbackAudioUrl
+    audio.muted = false
     this.fallbackAudio = audio
     audio.onended = () => {
       this.stopFallbackAudio()

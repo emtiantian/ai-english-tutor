@@ -75,3 +75,28 @@ export function saveMessage(message: Omit<Message, 'id'>): Message {
     ...message
   }
 }
+
+/** 将暂停会话的历史复制到新的连接会话。目标会话已有消息时保持幂等。 */
+export function copySessionMessages(sourceSessionId: string, targetSessionId: string): void {
+  if (sourceSessionId === targetSessionId) return
+  const db = getDb()
+  const targetCount = db
+    .prepare(
+      `SELECT COUNT(*) AS count FROM ${ConversationHistoryTable.name} WHERE ${C.session_id.name} = ?`
+    )
+    .get(targetSessionId) as { count: number }
+  if (targetCount.count > 0) return
+
+  db.prepare(
+    `INSERT INTO ${ConversationHistoryTable.name} (
+       ${C.session_id.name}, ${C.role.name}, ${C.content.name}, ${C.motion_id.name},
+       ${C.expression_id.name}, ${C.vocabulary.name}, ${C.vocabulary_sentences.name},
+       ${C.created_at.name})
+     SELECT ?, ${C.role.name}, ${C.content.name}, ${C.motion_id.name},
+       ${C.expression_id.name}, ${C.vocabulary.name}, ${C.vocabulary_sentences.name},
+       ${C.created_at.name}
+     FROM ${ConversationHistoryTable.name}
+     WHERE ${C.session_id.name} = ?
+     ORDER BY ${C.created_at.name} ASC, ${C.id.name} ASC`
+  ).run(targetSessionId, sourceSessionId)
+}

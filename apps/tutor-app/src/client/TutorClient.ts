@@ -40,6 +40,7 @@ export class TutorClient {
   private reconnectAttempt = 0
   private isDisposed = false
   private isConnectedValue = false
+  private currentRequestId: string | null = null
 
   constructor(private options: TutorClientOptions) {}
 
@@ -80,6 +81,7 @@ export class TutorClient {
     body: ChatRequestBody,
     timeoutMs?: number
   ): Promise<ChatResponse | { accepted: true }> {
+    if (body.requestId) this.currentRequestId = body.requestId
     const result = await this.fetchJson<ChatResponse | { accepted: true }>('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,12 +106,12 @@ export class TutorClient {
    * 通知后端打断当前老师回复：abort 正在进行的 LLM 生成，但不断开 SSE。
    * 即发即忘，失败静默（最坏情况是后端多生成几个 token，不影响用户）。
    */
-  async interrupt(): Promise<void> {
+  async interrupt(requestId: string | null = this.currentRequestId): Promise<void> {
     try {
       await this.fetchJson('/api/chat/interrupt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: this.options.sessionId }),
+        body: JSON.stringify({ sessionId: this.options.sessionId, requestId }),
         timeout: 5000
       })
     } catch (err) {
@@ -280,6 +282,11 @@ export class TutorClient {
       es.addEventListener(eventName, (e: MessageEvent) => {
         try {
           const data = JSON.parse(e.data)
+
+          // 打断后旧请求仍可能有网络数据在路上；只接收当前请求的事件。
+          if (data.requestId && this.currentRequestId && data.requestId !== this.currentRequestId) {
+            return
+          }
 
           // 触发原始 SSE 事件
           this.emit(eventName, data)

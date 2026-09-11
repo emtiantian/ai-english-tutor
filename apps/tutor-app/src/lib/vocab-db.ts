@@ -10,6 +10,7 @@ interface VocabRecord {
 
 interface PendingSyncRecord {
   id?: number
+  operationId: string
   word: string
   action: 'learn' | 'review'
   timestamp: number
@@ -24,6 +25,13 @@ const DB_NAME = 'english-tutor-vocab'
 const DB_VERSION = 1
 
 let dbPromise: Promise<IDBPDatabase> | null = null
+
+function createOperationId(): string {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `vocab-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  )
+}
 
 function getDB(): Promise<IDBPDatabase> {
   if (!dbPromise) {
@@ -48,23 +56,48 @@ function getDB(): Promise<IDBPDatabase> {
 }
 
 export const vocabDB = {
-  /** 保存已学单词（幂等） */
-  async saveWord(word: string): Promise<void> {
+  /** 首次保存单词并在同一事务中写入同步 outbox。 */
+  async saveWordForSync(word: string): Promise<boolean> {
+    const db = await getDB()
+    const tx = db.transaction(['words', 'pending-sync'], 'readwrite')
+    const existing = await tx.objectStore('words').get(word)
+    if (existing) {
+      await tx.done
+      return false
+    }
+    const now = Date.now()
+    await tx.objectStore('words').put({
+      word,
+      learnedAt: now,
+      reviewCount: 0,
+      lastReviewAt: 0,
+      synced: false
+    } as VocabRecord)
+    await tx.objectStore('pending-sync').add({
+      operationId: createOperationId(),
+      word,
+      action: 'learn',
+      timestamp: now
+    } as PendingSyncRecord)
+    await tx.done
+    return true
+  },
+
+  /** 幂等保存已学单词；返回是否是首次写入。 */
+  async saveWord(word: string): Promise<boolean> {
     const db = await getDB()
     const existing = await db.get('words', word)
     if (existing) {
-      existing.reviewCount++
-      existing.lastReviewAt = Date.now()
-      await db.put('words', existing)
-    } else {
-      await db.put('words', {
-        word,
-        learnedAt: Date.now(),
-        reviewCount: 1,
-        lastReviewAt: Date.now(),
-        synced: false
-      } as VocabRecord)
+      return false
     }
+    await db.put('words', {
+      word,
+      learnedAt: Date.now(),
+      reviewCount: 0,
+      lastReviewAt: 0,
+      synced: false
+    } as VocabRecord)
+    return true
   },
 
   /** 获取所有已学单词记录 */
@@ -94,6 +127,7 @@ export const vocabDB = {
   async addPendingSync(word: string, action: 'learn' | 'review'): Promise<void> {
     const db = await getDB()
     await db.add('pending-sync', {
+      operationId: createOperationId(),
       word,
       action,
       timestamp: Date.now()
@@ -114,30 +148,7 @@ export const vocabDB = {
       await tx.store.delete(id)
     }
     await tx.done
-  },
-
-  /** 保存场景进度快照 */
-  async saveScenarioProgress(scenarioId: string, wordsLearned: string[]): Promise<void> {
-    const db = await getDB()
-    // IndexedDB 的 structured clone 不能序列化 Vue reactive Proxy，
-    // 写入前先转成普通数组。
-    await db.put('scenario-progress', {
-      scenarioId,
-      wordsLearned: Array.from(wordsLearned),
-      savedAt: Date.now()
-    })
-  },
-
-  /** 恢复场景进度 */
-  async getScenarioProgress(scenarioId: string): Promise<string[] | null> {
-    const db = await getDB()
-    const record = await db.get('scenario-progress', scenarioId)
-    return record?.wordsLearned ?? null
-  },
-
-  /** 清除场景进度 */
-  async clearScenarioProgress(scenarioId: string): Promise<void> {
-    const db = await getDB()
-    await db.delete('scenario-progress', scenarioId)
   }
+
+  // legacy scenario-progress object store 保留，避免仅为删旧 store 升级 IndexedDB 版本。
 }

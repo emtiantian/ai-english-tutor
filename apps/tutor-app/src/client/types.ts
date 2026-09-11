@@ -34,10 +34,10 @@ export interface TutorEventMap {
   'state.thinking': void
 
   // SSE 原始事件
-  'teacher.response': TeachingResponse
-  'teacher.chunk': { chunk: string; isEnd: boolean }
-  'teacher.audio': { audioBase64: string; format: string; isEnd: boolean }
-  'teacher.interrupted': { reason?: 'user' }
+  'teacher.response': TeachingResponse & { requestId?: string }
+  'teacher.chunk': { chunk: string; isEnd: boolean; requestId?: string }
+  'teacher.audio': { audioBase64: string; format: string; isEnd: boolean; requestId?: string }
+  'teacher.interrupted': { reason?: 'user'; requestId?: string }
 
   // 录音
   'recording.start': void
@@ -48,7 +48,7 @@ export interface TutorEventMap {
   'vocab.new': { words: string[] }
 
   // 系统
-  error: { code: string; message: string }
+  error: { code: string; message: string; requestId?: string }
   heartbeat: { timestamp: number }
 }
 
@@ -57,6 +57,8 @@ export interface ChatRequestBody {
   text?: string
   level?: number
   sessionId?: string
+  /** 一次生成请求的唯一 ID，用于过滤打断后迟到的 SSE 数据。 */
+  requestId?: string
   stream?: boolean
   audioBase64?: string
   audioFormat?: string
@@ -147,6 +149,7 @@ export interface ReviewWord {
 
 /** 词汇同步项 */
 export interface VocabSyncItem {
+  operationId?: string
   word: string
   action: 'learn' | 'review'
   timestamp?: number

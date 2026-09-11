@@ -29,8 +29,6 @@ export interface OpeningStyle {
  * 设计说明：
  * - `buildSystemPrompt` 掌握完整提示词模板，使每个角色可拥有
  *   不同的规则、语气和输出格式。
- * - `buildLevelAssessPrompt` 独立出来，因为水平评估可能使用
- *   与对话角色不同的评估者人格。
  * - `styles` 使用数组，方便服务器随机选择或让用户自行挑选。
  */
 export interface CharacterPersona {
@@ -54,9 +52,6 @@ export interface CharacterPersona {
     motionBlock?: string,
     expressionBlock?: string
   ): string
-
-  /** 水平评估的系统提示词（可共用同一评估者，也可使用角色专属评估者） */
-  buildLevelAssessPrompt(motionBlock?: string, expressionBlock?: string): string
 }
 
 // ────────────────────────────────────────────────────────────
@@ -71,7 +66,6 @@ export interface PersonaJson {
   name: string
   levelDescriptions: Record<string, string>
   systemPromptTemplate: string
-  levelAssessPrompt: string
   styles: OpeningStyle[]
 }
 
@@ -148,19 +142,6 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
         level,
         personality,
         levelDescriptions: json.levelDescriptions,
-        motionBlock,
-        expressionBlock
-      })
-    },
-
-    buildLevelAssessPrompt(motionBlock?: string, expressionBlock?: string): string {
-      // levelAssessPrompt 模板不使用 {level} 或 {levelDescription} 占位符，
-      // 因此使用虚拟值是安全的。复用模板构建器是为了支持 {motionBlock}
-      // 与 {expressionBlock} 的替换。
-      return buildSystemPromptFromTemplate(json.levelAssessPrompt, {
-        name: json.name,
-        level: 0,
-        levelDescriptions: {},
         motionBlock,
         expressionBlock
       })

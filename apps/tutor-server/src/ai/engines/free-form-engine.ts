@@ -29,7 +29,8 @@ export class FreeFormEngine {
     userId?: string,
     style?: OpeningStyle,
     stream?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    requestId?: string
   ) {
     const { messages, style: chosenStyle } = buildLessonStartMessages(level, style, this.persona)
 
@@ -48,7 +49,7 @@ export class FreeFormEngine {
     this.sessions.saveSessionToDb(sessionId, level, chosenStyle.name, chosenStyle.voiceDesign)
 
     const rawContent = stream
-      ? await streamTeachingResponse(this.llm, messages, sessionId, signal)
+      ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId)
       : (await this.llm.complete(messages, signal)).content
     const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(parsed, sessionId, 'startFreeFormLesson')
@@ -60,12 +61,18 @@ export class FreeFormEngine {
       vocabularySentences: parsed.vocabularySentences
     })
 
-    const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
+    const audioResult = await this.audio.handleOutput(
+      parsed.text,
+      session.voiceDesign,
+      sessionId,
+      requestId,
+      signal
+    )
 
     if (stream) {
       const responseEvent: TeacherResponseEvent = {
         event: 'teacher.response',
-        data: { ...parsed }
+        data: { ...parsed, requestId }
       }
       broadcastToSession(sessionId, responseEvent)
     }

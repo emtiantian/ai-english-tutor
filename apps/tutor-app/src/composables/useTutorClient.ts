@@ -54,7 +54,15 @@ export function useTutorClient(config?: TutorClientConfig) {
 
       // 仅对终端/用户相关错误显示聊天消息，
       // 避免在短暂重连尝试期间刷屏。
-      if (code === 'RECONNECT_EXHAUSTED') {
+      if (code === 'STREAM_FAILED') {
+        store.markStreamingInterrupted()
+        store.messages.push({
+          id: createMessageId(),
+          role: 'assistant',
+          text: message || '回复生成失败，请重试',
+          timestamp: Date.now()
+        })
+      } else if (code === 'RECONNECT_EXHAUSTED') {
         store.messages.push({
           id: createMessageId(),
           role: 'assistant',

@@ -59,7 +59,8 @@ export async function streamTeachingResponse(
   llm: LLMProvider,
   messages: LLMMessage[],
   sessionId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  requestId?: string
 ): Promise<string> {
   const chunks: string[] = []
   const extractor = new JsonTextStreamExtractor()
@@ -72,7 +73,7 @@ export async function streamTeachingResponse(
     const response = await llm.complete(messages, signal)
     broadcastToSession(sessionId, {
       event: 'teacher.chunk',
-      data: { chunk: '', isEnd: true }
+      data: { chunk: '', isEnd: true, requestId }
     } satisfies TeacherChunkEvent)
     return response.content
   }
@@ -86,7 +87,7 @@ export async function streamTeachingResponse(
         visibleBytes += visible.length
         const event: TeacherChunkEvent = {
           event: 'teacher.chunk',
-          data: { chunk: visible, isEnd: false }
+          data: { chunk: visible, isEnd: false, requestId }
         }
         broadcastToSession(sessionId, event)
       }
@@ -97,12 +98,12 @@ export async function streamTeachingResponse(
         visibleBytes += tail.length
         broadcastToSession(sessionId, {
           event: 'teacher.chunk',
-          data: { chunk: tail, isEnd: false }
+          data: { chunk: tail, isEnd: false, requestId }
         } satisfies TeacherChunkEvent)
       }
       broadcastToSession(sessionId, {
         event: 'teacher.chunk',
-        data: { chunk: '', isEnd: true }
+        data: { chunk: '', isEnd: true, requestId }
       } satisfies TeacherChunkEvent)
       break
     }
@@ -137,6 +138,7 @@ export class ResponseOrchestrator {
       audioBase64?: string
       audioFormat?: string
       userId?: string
+      requestId?: string
       signal?: AbortSignal
     } = {}
   ): Promise<{
@@ -170,7 +172,8 @@ export class ResponseOrchestrator {
       stream = false,
       audioBase64,
       audioFormat = 'webm',
-      userId
+      userId,
+      requestId
     } = options
 
     logger.info(
@@ -265,7 +268,8 @@ export class ResponseOrchestrator {
         reviewWords,
         levelStr,
         isAudioInput,
-        options.signal
+        options.signal,
+        requestId
       )
     } else {
       return this.handleCompleteResponse(
@@ -277,7 +281,8 @@ export class ResponseOrchestrator {
         reviewWords,
         levelStr,
         isAudioInput,
-        options.signal
+        options.signal,
+        requestId
       )
     }
   }
@@ -291,7 +296,8 @@ export class ResponseOrchestrator {
     reviewWords?: ReviewWord[],
     levelStr?: string,
     isAudioInput?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    requestId?: string
   ) {
     const response = await this.llm.complete(messages, signal)
     return this.finalizeResponse(
@@ -302,7 +308,9 @@ export class ResponseOrchestrator {
       userId,
       reviewWords,
       levelStr,
-      isAudioInput
+      isAudioInput,
+      signal,
+      requestId
     )
   }
 
@@ -315,9 +323,16 @@ export class ResponseOrchestrator {
     reviewWords?: ReviewWord[],
     levelStr?: string,
     isAudioInput?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    requestId?: string
   ) {
-    const rawContent = await streamTeachingResponse(this.llm, messages, sessionId, signal)
+    const rawContent = await streamTeachingResponse(
+      this.llm,
+      messages,
+      sessionId,
+      signal,
+      requestId
+    )
     return this.finalizeResponse(
       sessionId,
       session,
@@ -326,7 +341,9 @@ export class ResponseOrchestrator {
       userId,
       reviewWords,
       levelStr,
-      isAudioInput
+      isAudioInput,
+      signal,
+      requestId
     )
   }
 
@@ -341,7 +358,9 @@ export class ResponseOrchestrator {
     userId?: string,
     reviewWords?: ReviewWord[],
     levelStr?: string,
-    isAudioInput?: boolean
+    isAudioInput?: boolean,
+    signal?: AbortSignal,
+    requestId?: string
   ) {
     const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
@@ -356,14 +375,9 @@ export class ResponseOrchestrator {
         session.scenario.wordsUsed.add(word)
       }
 
-      // LLM 引入的目标词汇也视为已遇到
+      // LLM 引入的词只用于消息展示；场景评分只统计学生实际说出的目标词。
       if (parsed.vocabulary) {
         const targetSet = new Set(session.scenario.targetWords.map(w => w.toLowerCase()))
-        for (const word of parsed.vocabulary) {
-          if (targetSet.has(word.toLowerCase())) {
-            session.scenario.wordsUsed.add(word.toLowerCase())
-          }
-        }
         // 将 vocabulary 过滤为仅保留目标词汇（避免 LLM 幻觉）
         parsed.vocabulary = parsed.vocabulary.filter(w => targetSet.has(w.toLowerCase()))
         if (parsed.vocabulary.length === 0) parsed.vocabulary = undefined
@@ -421,7 +435,7 @@ export class ResponseOrchestrator {
     const scenarioProgress = buildScenarioProgress(session)
     const completeEvent: TeacherResponseEvent = {
       event: 'teacher.response',
-      data: { ...parsed, scenario: scenarioProgress }
+      data: { ...parsed, scenario: scenarioProgress, requestId }
     }
     broadcastToSession(sessionId, completeEvent)
 
@@ -430,7 +444,13 @@ export class ResponseOrchestrator {
       { sessionId, textLength: parsed.text.length, hasVoiceDesign: !!session.voiceDesign },
       '准备生成 TTS'
     )
-    const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
+    const audioResult = await this.audio.handleOutput(
+      parsed.text,
+      session.voiceDesign,
+      sessionId,
+      requestId,
+      signal
+    )
 
     return {
       ...parsed,

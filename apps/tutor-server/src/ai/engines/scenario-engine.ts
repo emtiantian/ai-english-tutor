@@ -6,7 +6,7 @@ import type { CEFRLevel, CharacterPersona, OpeningStyle } from '@ai-english-tuto
 import { getScenarioProfile, getScenarioActs } from '@ai-english-tutor/shared'
 import type { LLMProvider } from '../llm.js'
 import type { AudioPipeline } from '../audio-pipeline.js'
-import { SessionManager, type SessionData, type ScenarioState } from '../session-manager.js'
+import { SessionManager, type ScenarioState } from '../session-manager.js'
 import { VocabTracker } from '../vocab-tracker.js'
 import { getScenarioById, type Scenario } from '../../vocab/loader.js'
 import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teaching.js'
@@ -21,6 +21,7 @@ import { pickScenarioVocabulary, DEFAULT_TARGET_COUNT } from '../scenario-vocab-
 import { lineGroupKey, getReusableLines, recordTeacherLine } from '../line-pool.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
 import { DEFAULT_MAX_TURNS } from '../utils/scenario-progress.js'
+import { copySessionMessages } from '../../db/repositories/message.js'
 
 export class ScenarioEngine {
   constructor(
@@ -40,7 +41,8 @@ export class ScenarioEngine {
     targetLevel?: CEFRLevel,
     resumeFrom?: string,
     stream?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    requestId?: string
   ) {
     const scenario = getScenarioById(scenarioId)
     if (!scenario) {
@@ -71,6 +73,7 @@ export class ScenarioEngine {
       }
       // 确保当前 sessionId 指向同一份会话数据
       this.sessions.set(sessionId, this.sessions.getOrCreate(resumeFrom, level))
+      copySessionMessages(resumeFrom, sessionId)
     } else {
       scenarioState = this.createScenarioState(scenario, cefrLevel)
     }
@@ -117,7 +120,7 @@ export class ScenarioEngine {
     ]
 
     const rawContent = stream
-      ? await streamTeachingResponse(this.llm, messages, sessionId, signal)
+      ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId)
       : (await this.llm.complete(messages, signal)).content
     const parsed = parseTeachingResponse(rawContent)
     warnIfMissingVocabSentences(
@@ -142,13 +145,19 @@ export class ScenarioEngine {
       this.vocabTracker.processTurn(userId, '', parsed.vocabulary, [], levelStr)
     }
 
-    const audioResult = await this.audio.handleOutput(parsed.text, session.voiceDesign, sessionId)
+    const audioResult = await this.audio.handleOutput(
+      parsed.text,
+      session.voiceDesign,
+      sessionId,
+      requestId,
+      signal
+    )
 
     const scenarioResponse = this.buildScenarioResponse(scenarioState)
     if (stream) {
       const responseEvent: TeacherResponseEvent = {
         event: 'teacher.response',
-        data: { ...parsed, scenario: scenarioResponse }
+        data: { ...parsed, scenario: scenarioResponse, requestId }
       }
       broadcastToSession(sessionId, responseEvent)
     }

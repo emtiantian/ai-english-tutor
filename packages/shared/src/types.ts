@@ -76,11 +76,6 @@ export interface TeachingResponse {
   }
 }
 
-export interface TeachingInput {
-  text: string
-  level?: number
-}
-
 export interface SpeakOptions {
   rate?: number
   pitch?: number

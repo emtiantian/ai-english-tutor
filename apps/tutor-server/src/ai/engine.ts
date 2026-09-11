@@ -23,10 +23,10 @@ import { ResponseOrchestrator } from './response/response-orchestrator.js'
  */
 export class TutorEngine {
   private llm = createLLMProvider()
-  private sessions = new SessionManager()
+  private persona = loadPersona()
+  private sessions = new SessionManager(this.persona)
   private audio = new AudioPipeline(createTTSProvider(), createASRProvider(), this.llm)
   private vocabTracker = new VocabTracker()
-  private persona = loadPersona()
 
   private freeForm = new FreeFormEngine(this.llm, this.sessions, this.audio, this.persona)
   private scenario = new ScenarioEngine(
@@ -57,7 +57,8 @@ export class TutorEngine {
     targetLevel?: CEFRLevel,
     resumeFrom?: string,
     stream?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    requestId?: string
   ): Promise<{
     text: string
     textZh?: string
@@ -103,12 +104,21 @@ export class TutorEngine {
         targetLevel,
         resumeFrom,
         stream,
-        signal
+        signal,
+        requestId
       )
     }
 
     // 否则开始自由对话课程
-    return this.freeForm.startFreeFormLesson(level, sid, userId, requestedStyle, stream, signal)
+    return this.freeForm.startFreeFormLesson(
+      level,
+      sid,
+      userId,
+      requestedStyle,
+      stream,
+      signal,
+      requestId
+    )
   }
 
   /**
@@ -123,6 +133,7 @@ export class TutorEngine {
       audioBase64?: string
       audioFormat?: string
       userId?: string
+      requestId?: string
       signal?: AbortSignal
     } = {}
   ) {

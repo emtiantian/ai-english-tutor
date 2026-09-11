@@ -146,6 +146,40 @@ describe('TutorClient', () => {
       expect(handler).toHaveBeenCalledWith({ chunk: 'Hello', isEnd: false })
     })
 
+    it('should ignore events from an interrupted older request', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ accepted: true })
+      })
+      await client.sendMessage({
+        type: 'user.speak',
+        text: 'new turn',
+        stream: true,
+        requestId: 'request-new'
+      })
+
+      const handler = vi.fn()
+      client.on('teacher.chunk', handler)
+      client.connect()
+      const eventHandler = mockES.addEventListener.mock.calls.find(
+        (call: any[]) => call[0] === 'teacher.chunk'
+      )?.[1]
+
+      eventHandler({
+        data: JSON.stringify({ chunk: 'old', isEnd: false, requestId: 'request-old' })
+      })
+      eventHandler({
+        data: JSON.stringify({ chunk: 'new', isEnd: false, requestId: 'request-new' })
+      })
+
+      expect(handler).toHaveBeenCalledTimes(1)
+      expect(handler).toHaveBeenCalledWith({
+        chunk: 'new',
+        isEnd: false,
+        requestId: 'request-new'
+      })
+    })
+
     it('should emit message.assistant on teacher.response', () => {
       const handler = vi.fn()
       client.on('message.assistant', handler)

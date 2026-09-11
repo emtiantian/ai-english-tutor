@@ -15,22 +15,17 @@ import { useTutorStore } from '../stores/tutor'
 export function useVocabSync(client: TutorClient) {
   const { isOnline } = useOnlineStatus()
   const store = useTutorStore()
+  let syncPromise: Promise<void> | null = null
 
   /** 记录学会的单词（本地持久化 + 尝试同步） */
   async function learnWords(words: string[]): Promise<void> {
     if (words.length === 0) return
 
-    for (const word of words) {
-      await vocabDB.saveWord(word)
-    }
-
-    // 保存场景进度快照
-    if (store.currentScenario) {
-      await vocabDB.saveScenarioProgress(
-        store.currentScenario.id,
-        // 避免把 Pinia reactive Proxy 传给 IndexedDB
-        Array.from(store.currentScenario.wordsLearned)
-      )
+    const normalizedWords = [
+      ...new Set(words.map(word => word.toLowerCase().trim()).filter(Boolean))
+    ]
+    for (const word of normalizedWords) {
+      await vocabDB.saveWordForSync(word)
     }
 
     // 尝试同步
@@ -38,21 +33,21 @@ export function useVocabSync(client: TutorClient) {
       try {
         await syncToBackend()
       } catch {
-        // 同步失败，加入待同步队列
-        for (const word of words) {
-          await vocabDB.addPendingSync(word, 'learn')
-        }
-      }
-    } else {
-      // 离线，加入待同步队列
-      for (const word of words) {
-        await vocabDB.addPendingSync(word, 'learn')
+        // 已在本地 outbox 中，保留等待下次自动同步。
       }
     }
   }
 
   /** 将待同步的词汇批量发送到后端 */
   async function syncToBackend(): Promise<void> {
+    if (syncPromise) return syncPromise
+    syncPromise = performSync().finally(() => {
+      syncPromise = null
+    })
+    return syncPromise
+  }
+
+  async function performSync(): Promise<void> {
     const pending = await vocabDB.getPendingSyncs()
     if (pending.length === 0) return
 
@@ -60,6 +55,7 @@ export function useVocabSync(client: TutorClient) {
 
     // 批量发送到独立词汇同步接口，避免占用聊天通道
     const words = pending.map(p => ({
+      operationId: p.operationId ?? `legacy-${store.userId}-${p.id}`,
       word: p.word,
       action: p.action,
       timestamp: p.timestamp
@@ -83,24 +79,22 @@ export function useVocabSync(client: TutorClient) {
     console.log(`[VocabSync] Synced ${response.synced} words`)
   }
 
-  /** 恢复场景进度 */
-  async function restoreScenarioProgress(scenarioId: string): Promise<string[] | null> {
-    return vocabDB.getScenarioProgress(scenarioId)
-  }
-
   // 上线时自动同步
-  watch(isOnline, online => {
-    if (online) {
-      console.log('[VocabSync] Back online, syncing...')
-      syncToBackend().catch(err => {
-        console.error('[VocabSync] Auto-sync failed:', err)
-      })
-    }
-  })
+  watch(
+    isOnline,
+    online => {
+      if (online) {
+        console.log('[VocabSync] Back online, syncing...')
+        syncToBackend().catch(err => {
+          console.error('[VocabSync] Auto-sync failed:', err)
+        })
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     learnWords,
-    syncToBackend,
-    restoreScenarioProgress
+    syncToBackend
   }
 }

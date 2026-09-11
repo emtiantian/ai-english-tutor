@@ -15,6 +15,7 @@ export interface SSEEventBase {
 export interface TeacherResponseEvent extends SSEEventBase {
   event: 'teacher.response'
   data: {
+    requestId?: string
     text: string
     textZh?: string
     motionId?: string
@@ -39,6 +40,7 @@ export interface TeacherResponseEvent extends SSEEventBase {
 export interface TeacherChunkEvent extends SSEEventBase {
   event: 'teacher.chunk'
   data: {
+    requestId?: string
     chunk: string
     isEnd: boolean
   }
@@ -48,6 +50,7 @@ export interface TeacherChunkEvent extends SSEEventBase {
 export interface TeacherAudioEvent extends SSEEventBase {
   event: 'teacher.audio'
   data: {
+    requestId?: string
     /** Base64 编码的音频分片 */
     audioBase64: string
     /** 音频格式：mp3 | opus | wav */
@@ -77,8 +80,19 @@ export interface HeartbeatEvent extends SSEEventBase {
 export interface TeacherInterruptedEvent extends SSEEventBase {
   event: 'teacher.interrupted'
   data: {
+    requestId?: string
     /** 打断来源：user = 用户主动开口/发送新消息 */
     reason?: 'user'
+  }
+}
+
+/** 已接受的异步请求在后台执行失败。 */
+export interface ErrorEvent extends SSEEventBase {
+  event: 'error'
+  data: {
+    requestId?: string
+    code: string
+    message: string
   }
 }
 
@@ -89,4 +103,5 @@ export type SSEEvent =
   | TeacherChunkEvent
   | TeacherAudioEvent
   | TeacherInterruptedEvent
+  | ErrorEvent
   | HeartbeatEvent

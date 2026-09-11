@@ -37,6 +37,24 @@ export interface VocabProgress {
 }
 
 export const vocabRepo = {
+  /** 记录用户遇到过该词；已有记录不改变 mastered/forgotten 状态。 */
+  recordEncounter(userId: string, word: string, level: string): void {
+    const db = getDb()
+    const now = Math.floor(Date.now() / 1000)
+    const nextReview = now + 600
+    db.prepare(
+      `INSERT INTO ${UserVocabularyTable.name} (
+         ${C.user_id.name}, ${C.word.name}, ${C.level.name}, ${C.status.name},
+         ${C.review_count.name}, ${C.correct_count.name}, ${C.incorrect_count.name},
+         ${C.consecutive_incorrect.name}, ${C.context_count.name}, ${C.contexts.name},
+         ${C.last_review_at.name}, ${C.next_review_at.name}, ${C.created_at.name})
+       VALUES (?, ?, ?, 'learning', 0, 0, 0, 0, 0, '[]', NULL, ?, ?)
+       ON CONFLICT(${C.user_id.name}, ${C.word.name}) DO UPDATE SET
+         ${C.level.name} = excluded.${C.level.name},
+         ${C.updated_at.name} = ?`
+    ).run(userId, word.toLowerCase(), level, nextReview, now, now)
+  },
+
   /**
    * 为用户记录一个单词（插入或更新）。
    * 新单词在首次复习前会有 10 分钟延迟。

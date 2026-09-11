@@ -47,4 +47,32 @@ describe('vocab routes', () => {
 
     await app.close()
   })
+
+  it('does not apply the same sync operation twice', async () => {
+    const { initSchema, getDb } = await import('@/db/index.js')
+    const { vocabRoutes } = await import('@/routes/vocab.js')
+
+    initSchema()
+    const app = Fastify()
+    await app.register(vocabRoutes)
+
+    const payload = {
+      userId: 'idempotent-user',
+      words: [
+        { operationId: 'learn-op-1', word: 'coffee', action: 'learn' },
+        { operationId: 'review-op-1', word: 'coffee', action: 'review' }
+      ]
+    }
+    const first = await app.inject({ method: 'POST', url: '/api/vocab/sync', payload })
+    const second = await app.inject({ method: 'POST', url: '/api/vocab/sync', payload })
+
+    expect(JSON.parse(first.body).synced).toBe(2)
+    expect(JSON.parse(second.body).synced).toBe(0)
+    const row = getDb()
+      .prepare('SELECT review_count FROM user_vocabulary WHERE user_id = ? AND word = ?')
+      .get('idempotent-user', 'coffee') as { review_count: number }
+    expect(row.review_count).toBe(1)
+
+    await app.close()
+  })
 })

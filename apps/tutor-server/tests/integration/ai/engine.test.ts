@@ -57,7 +57,8 @@ describe('TutorEngine', () => {
       sessionId,
       level: 2,
       stream: true,
-      userId
+      userId,
+      requestId: 'engine-stream-request'
     })
     expect(streamResult.text.length).toBeGreaterThan(0)
 
@@ -65,8 +66,13 @@ describe('TutorEngine', () => {
 
     const chunkEvents = collector.events.filter(e => e.event === 'teacher.chunk')
     expect(chunkEvents.length).toBeGreaterThan(0)
-    const lastChunk = chunkEvents[chunkEvents.length - 1].data as { chunk: string; isEnd: boolean }
+    const lastChunk = chunkEvents[chunkEvents.length - 1].data as {
+      chunk: string
+      isEnd: boolean
+      requestId?: string
+    }
     expect(lastChunk.isEnd).toBe(true)
+    expect(lastChunk.requestId).toBe('engine-stream-request')
 
     collector.req.destroy()
     await server.close()

@@ -13,6 +13,7 @@ import {
 } from '../vocab/loader.js'
 import { vocabRepo } from '../db/repositories/vocabulary.js'
 import { tutorEngine } from '../ai/engine.js'
+import { getDb } from '../db/index.js'
 
 /**
  * 单词释义的内存 LRU 缓存。
@@ -189,7 +190,12 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
       request: FastifyRequest<{
         Body: {
           userId: string
-          words: Array<{ word: string; action: 'learn' | 'review'; timestamp?: number }>
+          words: Array<{
+            operationId?: string
+            word: string
+            action: 'learn' | 'review'
+            timestamp?: number
+          }>
         }
       }>,
       reply
@@ -202,23 +208,35 @@ export async function vocabRoutes(server: FastifyInstance): Promise<void> {
         })
       }
 
-      let synced = 0
-      for (const item of words) {
-        const word = item.word?.toLowerCase().trim()
-        if (!word || !item.action) continue
+      const database = getDb()
+      const hasOperation = database.prepare(
+        'SELECT 1 FROM vocab_sync_operations WHERE operation_id = ?'
+      )
+      const recordOperation = database.prepare(
+        'INSERT INTO vocab_sync_operations (operation_id, user_id) VALUES (?, ?)'
+      )
+      const applyItems = database.transaction(() => {
+        let applied = 0
+        for (const item of words) {
+          const word = item.word?.toLowerCase().trim()
+          if (!word || (item.action !== 'learn' && item.action !== 'review')) continue
+          if (item.operationId && hasOperation.get(item.operationId)) continue
 
-        if (item.action === 'learn') {
-          const lookup = lookupWord(word)
-          const level = lookup?.level ?? 'B1'
-          vocabRepo.recordWord(userId, word, level, 'learning')
-          synced++
-        } else if (item.action === 'review') {
-          vocabRepo.reviewWord(userId, word, true)
-          synced++
+          if (item.action === 'learn') {
+            const lookup = lookupWord(word)
+            const level = lookup?.level ?? 'B1'
+            vocabRepo.recordEncounter(userId, word, level)
+          } else {
+            vocabRepo.reviewWord(userId, word, true)
+          }
+
+          if (item.operationId) recordOperation.run(item.operationId, userId)
+          applied++
         }
-      }
+        return applied
+      })
 
-      return reply.send({ success: true, synced })
+      return reply.send({ success: true, synced: applyItems() })
     }
   )
 

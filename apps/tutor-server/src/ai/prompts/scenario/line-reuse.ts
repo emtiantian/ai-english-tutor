@@ -1,5 +1,3 @@
-import { type CEFRLevel, type Scenario } from '@ai-english-tutor/shared'
-
 /**
  * 剥离基础角色人设的 OUTPUT FORMAT 段落，使场景自己的
  * OUTPUT FORMAT 成为唯一格式。

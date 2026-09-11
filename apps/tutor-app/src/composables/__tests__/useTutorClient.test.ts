@@ -56,6 +56,23 @@ describe('useTutorClient', () => {
     expect(store.isThinking).toBe(true)
   })
 
+  it('should finalize a partial stream and show a streaming failure', () => {
+    const store = useTutorStore()
+    const { client } = useTutorClient()
+    store.startAssistantStream()
+    store.appendStreamChunk('Partial')
+    store.isThinking = true
+
+    const errorHandler = (client.on as any).mock.calls.find(
+      (call: any[]) => call[0] === 'error'
+    )?.[1]
+    errorHandler?.({ code: 'STREAM_FAILED', message: '生成失败，请重试' })
+
+    expect(store.isThinking).toBe(false)
+    expect(store.messages[0].isStreaming).toBe(false)
+    expect(store.messages.at(-1)?.text).toBe('生成失败，请重试')
+  })
+
   it('should wire user message event to store', () => {
     const store = useTutorStore()
     const { client } = useTutorClient()

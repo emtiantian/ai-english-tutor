@@ -1,7 +1,10 @@
 import { onUnmounted, ref, computed, type Ref } from 'vue'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
-import { createCharacterProviderSafe, type CharacterProviderType } from '../providers/factory'
-import { RemoteTeacherProvider } from '../providers/remote-teacher'
+import {
+  createCharacterProvider,
+  createCharacterProviderSafe,
+  type CharacterProviderType
+} from '../providers/factory'
 import { useTutorStore } from '../stores/tutor'
 import type { TutorClient } from '../client/TutorClient'
 import { getLive2DModelId, setLive2DModelId } from '../lib/live2d-model-prefs'
@@ -36,7 +39,9 @@ export function useCharacterProvider(
   client: TutorClient,
   /** 外部传入的响应式引用，init/切换模型时写入新实例。
    *  Provider 不再放进 Pinia store，由 App.vue 前置声明并分发给各 composable。 */
-  providerRef: Ref<CharacterProvider | null>
+  providerRef: Ref<CharacterProvider | null>,
+  /** 使用 App 的统一文字提交入口，确保会话、用户、打断和错误处理保持一致。 */
+  submitText: (text: string) => Promise<void>
 ) {
   const store = useTutorStore()
   const providerType: CharacterProviderType =
@@ -44,9 +49,6 @@ export function useCharacterProvider(
 
   let currentProvider: CharacterProvider | null = null
   let eventUnsubscribers: (() => void)[] = []
-
-  // 点击身体时代替用户发言的远程教师 Provider
-  const teacherProvider = new RemoteTeacherProvider(client)
 
   // 当前最佳提示（用于点击角色身体时代替用户回答）
   const { suggestedPhrase: currentHint } = useCurrentHint({
@@ -65,25 +67,28 @@ export function useCharacterProvider(
    * 内部：基于 modelId 创建 provider 并装配事件。
    * 失败时 createCharacterProviderSafe 会自动降级到 SVG，这里只负责事件装配。
    */
-  async function buildProvider(modelId: string): Promise<CharacterProvider | null> {
+  async function buildProvider(
+    modelId: string,
+    allowSvgFallback = true
+  ): Promise<CharacterProvider | null> {
     if (!canvasRef.value) return null
-    const provider = await createCharacterProviderSafe({
+    const options = {
       type: providerType,
       canvas: canvasRef.value,
       live2dModelId: providerType === 'live2d' ? modelId : undefined
-    })
+    }
+    const provider = allowSvgFallback
+      ? await createCharacterProviderSafe(options)
+      : await createCharacterProvider(options)
 
     // 连接点击身体交互。
     // 当 LLM 提供了 studentReplyHints 时，点击角色会为用户说出最佳提示（“帮我回答”）。
     // 否则回退到一小套有趣、以学习为导向的彩蛋文案。
     provider.onTapBody?.(() => {
       const text = currentHint.value ?? getTapFallbackText()
-      teacherProvider
-        .generateResponse({
-          text,
-          level: store.currentLevel ?? undefined
-        })
-        .catch((err: unknown) => console.error('[CharacterProvider] Tap body failed:', err))
+      submitText(text).catch((err: unknown) =>
+        console.error('[CharacterProvider] Tap body failed:', err)
+      )
     })
 
     eventUnsubscribers = wireCharacterEvents(provider, client)
@@ -159,10 +164,8 @@ export function useCharacterProvider(
       currentProvider = null
       providerRef.value = null
 
-      // 2. 持久化用户选择 + 用新 ID 重建
-      setLive2DModelId(newModelId)
-      currentLive2DModelId.value = newModelId
-      const next = await buildProvider(newModelId)
+      // 2. 先确认模型能成功加载，再持久化用户选择。
+      const next = await buildProvider(newModelId, false)
 
       if (!next) {
         // canvas 不可用 — 极少见,等下次 init
@@ -171,6 +174,8 @@ export function useCharacterProvider(
 
       currentProvider = next
       providerRef.value = next
+      setLive2DModelId(newModelId)
+      currentLive2DModelId.value = newModelId
       console.log(`[CharacterProvider] Switched live2d model: ${previousModelId} → ${newModelId}`)
     } catch (err) {
       console.error(
@@ -179,12 +184,12 @@ export function useCharacterProvider(
       )
       // 失败兜底:尝试用 hiyori 重建。如果连 hiyori 都建不出来,记录但保持空。
       try {
-        setLive2DModelId('hiyori')
-        currentLive2DModelId.value = 'hiyori'
-        const fallback = await buildProvider('hiyori')
+        const fallback = await buildProvider('hiyori', false)
         if (fallback) {
           currentProvider = fallback
           providerRef.value = fallback
+          setLive2DModelId('hiyori')
+          currentLive2DModelId.value = 'hiyori'
         }
       } catch (fallbackErr) {
         console.error('[CharacterProvider] Even hiyori fallback failed:', fallbackErr)

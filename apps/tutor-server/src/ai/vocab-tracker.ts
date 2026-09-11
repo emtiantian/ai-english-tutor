@@ -32,25 +32,7 @@ export class VocabTracker {
    */
   getReviewWords(userId: string, limit: number = 5): ReviewWord[] {
     const dueWords = vocabRepo.getDueForReview(userId, limit)
-    return dueWords.map(w => ({
-      ...w,
-      contextCount: 0
-    }))
-  }
-
-  /**
-   * 构建 prompt 片段，指示 AI 自然地使用复习词。
-   */
-  buildReviewPrompt(reviewWords: ReviewWord[]): string {
-    if (reviewWords.length === 0) return ''
-
-    const wordList = reviewWords.map(w => `"${w.word}"`).join(', ')
-    return `
-词汇复习 —— 学生需要练习这些单词。请自然地把它们融入你的回复中，使用全新的语境（不同于之前的对话）。不要生硬堆砌，有机地穿插即可；如果某个词不适合当前语境，就跳过它。
-
-需要复习的单词：${wordList}
-
-使用到复习词后，请把它们包含在 JSON 响应的 "vocabulary" 字段中。`
+    return dueWords
   }
 
   /**
@@ -131,22 +113,25 @@ export class VocabTracker {
 
     // 标记正确使用的词
     for (const word of used) {
+      // 先记录独立语境，再更新复习结果，使第三个不同语境可以触发 mastered。
+      vocabRepo.addContext(userId, word, userText.trim())
       vocabRepo.reviewWord(userId, word, true)
       logger.info({ userId, word, isAudio: options.isAudioInput }, '词汇：用户使用了复习词')
     }
 
-    // 为未掌握的词安排重新复习
+    // 本轮没有出现不代表答错：自由对话可能根本没有给用户使用这些词的机会。
     for (const word of missed) {
-      vocabRepo.reviewWord(userId, word, false)
-      logger.debug({ userId, word }, '词汇：用户未掌握复习词，已重新安排复习')
+      logger.debug({ userId, word }, '词汇：本轮未考察复习词，不更新复习结果')
     }
 
     // 记录 AI 响应中的新词
     const newWords: string[] = []
+    const existingWords = new Set(vocabRepo.getAllWords(userId).map(item => item.word))
     for (const word of aiResponseWords) {
-      const existing = vocabRepo.getAllWords(userId).find(w => w.word === word.toLowerCase())
-      if (!existing) {
-        vocabRepo.recordWord(userId, word, level, 'learning')
+      const normalizedWord = word.toLowerCase()
+      if (!existingWords.has(normalizedWord)) {
+        vocabRepo.recordEncounter(userId, word, level)
+        existingWords.add(normalizedWord)
         newWords.push(word)
         logger.info({ userId, word, level }, '词汇：已记录新词')
       }

@@ -251,7 +251,7 @@ const {
   switchLive2DModel,
   currentLive2DModelId,
   isSwitching: isSwitchingModel
-} = useCharacterProvider(characterCanvas, client, characterProvider)
+} = useCharacterProvider(characterCanvas, client, characterProvider, sendText)
 
 // 向深层组件提供 character provider（避免通过 Pinia store 传递实例）
 provide('characterProvider', characterProvider)
@@ -263,6 +263,7 @@ async function sendToBackend(
   // 新请求代 ++：让旧打断态按代失效——仅同代 in-flight 分片被抑制，
   // 新请求的分片正常流式显示（不再粗暴重置 interrupted=false）
   store.requestEpoch++
+  const requestId = createMessageId().replace('msg-', 'req-')
   // 语音请求需要更多时间：ASR + LLM + TTS 可能需要 30-60 秒
   const timeoutMs = payload.audioBase64 ? 120000 : undefined
   return client.sendMessage(
@@ -271,6 +272,7 @@ async function sendToBackend(
       // 始终使用 connectionId 作为 sessionId — 这是 SSE 作用域键。
       // 后端使用同一个 ID 进行会话查找和 SSE 广播定向。
       sessionId: store.connectionId,
+      requestId,
       userId: store.userId,
       ...payload
     },

@@ -58,9 +58,12 @@ export class AsrAdapter {
       )
       return asrResult.text
     } catch (err) {
-      // ASR 失败时保留 return text 以维持调用方签名不变，但用 warn 明确标注失败
-      logger.warn({ err, provider: this.asr.name, text }, '[ASR] 转写失败，将返回原始文本')
-      return text
+      if (text.trim()) {
+        logger.warn({ err, provider: this.asr.name }, '[ASR] 转写失败，使用客户端提供的文本')
+        return text
+      }
+      logger.error({ err, provider: this.asr.name }, '[ASR] 转写失败且没有可用文本')
+      throw new Error('语音识别失败，请重试', { cause: err })
     }
   }
 }

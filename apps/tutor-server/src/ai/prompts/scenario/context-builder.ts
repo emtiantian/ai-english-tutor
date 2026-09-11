@@ -1,10 +1,4 @@
-import {
-  type CEFRLevel,
-  type Scenario,
-  type ScenarioLevelProfile,
-  getScenarioActs,
-  getScenarioProfile
-} from '@ai-english-tutor/shared'
+import { type CEFRLevel, type Scenario, type ScenarioLevelProfile } from '@ai-english-tutor/shared'
 
 /**
  * 构建要注入 system prompt 的场景上下文块。
@@ -29,7 +23,6 @@ export function buildScenarioContext(
           goal: obj.descriptionEn,
           vocabThemes: []
         })))
-  const actsCount = acts.length > 0 ? acts.length : 3
   const buckets = bucketWordsForActs(targetWords, acts)
   const currentActIndex = Math.min(buckets.length - 1, Math.max(0, state?.currentActIndex ?? 0))
   const currentBucket = buckets[currentActIndex]

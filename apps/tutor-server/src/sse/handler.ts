@@ -14,21 +14,34 @@ export function resolveCorsOrigin(requestOrigin?: string): string | false {
 const connections = new Map<string, FastifyReply>()
 
 /** 每个 sessionId 的断开监听器 */
-const disconnectListeners = new Map<string, Set<() => void>>()
+interface DisconnectListener {
+  requestId?: string
+  callback: () => void
+}
+
+const disconnectListeners = new Map<string, Set<DisconnectListener>>()
 
 /**
  * 注册一个回调，当某 session 的 SSE 连接关闭时调用。
  * 返回取消订阅函数。
  */
-export function onSessionDisconnect(sessionId: string, listener: () => void): () => void {
+export function onSessionDisconnect(
+  sessionId: string,
+  listener: () => void,
+  requestId?: string
+): () => void {
   let listeners = disconnectListeners.get(sessionId)
   if (!listeners) {
     listeners = new Set()
     disconnectListeners.set(sessionId, listeners)
   }
-  listeners.add(listener)
+  const entry = { requestId, callback: listener }
+  listeners.add(entry)
   return () => {
-    listeners?.delete(listener)
+    listeners?.delete(entry)
+    if (listeners?.size === 0 && disconnectListeners.get(sessionId) === listeners) {
+      disconnectListeners.delete(sessionId)
+    }
   }
 }
 
@@ -37,7 +50,7 @@ function emitSessionDisconnect(sessionId: string): void {
   if (!listeners) return
   for (const listener of listeners) {
     try {
-      listener()
+      listener.callback()
     } catch (err) {
       logger.warn({ err, sessionId }, 'SSE 断开监听器失败')
     }
@@ -55,10 +68,23 @@ function emitSessionDisconnect(sessionId: string): void {
  *
  * 返回是否确实有正在进行的请求被打断。
  */
-export function interruptSession(sessionId: string): boolean {
-  const had = disconnectListeners.has(sessionId)
-  emitSessionDisconnect(sessionId)
-  return had
+export function interruptSession(sessionId: string, requestId?: string): boolean {
+  const listeners = disconnectListeners.get(sessionId)
+  if (!listeners) return false
+
+  let interrupted = false
+  for (const entry of [...listeners]) {
+    if (requestId && entry.requestId !== requestId) continue
+    listeners.delete(entry)
+    interrupted = true
+    try {
+      entry.callback()
+    } catch (err) {
+      logger.warn({ err, sessionId, requestId }, '请求打断监听器失败')
+    }
+  }
+  if (listeners.size === 0) disconnectListeners.delete(sessionId)
+  return interrupted
 }
 
 /**
@@ -192,8 +218,8 @@ export async function registerSSE(server: FastifyInstance): Promise<void> {
           // 只有仍是我们的连接时才删除（避免被重连覆盖）
           if (connections.get(sessionId) === reply) {
             connections.delete(sessionId)
+            emitSessionDisconnect(sessionId)
           }
-          emitSessionDisconnect(sessionId)
           logger.debug({ sessionId, totalConnections: connections.size }, 'SSE 连接已关闭')
           resolve()
         })

@@ -1,6 +1,6 @@
 import { LRUCache } from 'lru-cache'
 import { logger } from '../logger.js'
-import type { CEFRLevel, ScenarioLevelProfile } from '@ai-english-tutor/shared'
+import type { CEFRLevel, CharacterPersona, ScenarioLevelProfile } from '@ai-english-tutor/shared'
 import type { OpeningStyle } from './prompts/teaching.js'
 import {
   saveSession,
@@ -77,6 +77,8 @@ function parseScenarioState(json: string): ScenarioState | undefined {
  * 优先读取缓存，回退到数据库，然后回填缓存。
  */
 export class SessionManager {
+  constructor(private persona?: CharacterPersona) {}
+
   private sessions = new LRUCache<string, SessionData>({
     max: 1000,
     ttl: 1000 * 60 * 60 // 1 小时
@@ -98,7 +100,12 @@ export class SessionManager {
       const session: SessionData = {
         level: dbSession.level,
         history: dbMessages.map(m => ({ role: m.role, content: m.content })),
-        vocabulary: new Set(),
+        vocabulary: new Set(
+          dbMessages.flatMap(message => message.vocabulary ?? []).map(word => word.toLowerCase())
+        ),
+        openingStyle: dbSession.styleName
+          ? this.persona?.styles.find(style => style.name === dbSession.styleName)
+          : undefined,
         voiceDesign: dbSession.voiceDesign,
         scenario: dbSession.scenarioState ? parseScenarioState(dbSession.scenarioState) : undefined
       }

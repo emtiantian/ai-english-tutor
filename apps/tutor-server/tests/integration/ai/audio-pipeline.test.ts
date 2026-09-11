@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createTestEnv } from '@tests/helpers/env.js'
-import { createSSEServer, collectSSE } from '@tests/helpers/sse.js'
 import { AudioPipeline } from '@/ai/audio-pipeline.js'
 import type { LLMProvider, LLMResponse } from '@/ai/llm/types.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '@/voice/tts.js'
@@ -66,11 +65,19 @@ describe('AudioPipeline', () => {
     expect(asrResult).toBe('mock transcription')
   })
 
-  it('synthesizes direct audio', async () => {
-    const { tts, asr, llm } = createMockProviders()
+  it('surfaces ASR failure when there is no fallback transcript', async () => {
+    const { tts, llm } = createMockProviders()
+    const asr: ASRProvider = {
+      name: 'failing-asr',
+      async transcribe() {
+        throw new Error('provider unavailable')
+      }
+    }
     const pipeline = new AudioPipeline(tts, asr, llm)
-    const direct = await pipeline.synthesizeDirect('hello')
-    expect(direct.length).toBe(12288)
+
+    await expect(pipeline.transcribeAudio('', 'base64data', 'webm')).rejects.toThrow(
+      '语音识别失败，请重试'
+    )
   })
 
   it('handles output audio as base64', async () => {
@@ -81,35 +88,27 @@ describe('AudioPipeline', () => {
     expect(Buffer.from(output.audioBase64!, 'base64').length).toBe(12288)
   })
 
-  it('broadcasts audio chunks via SSE', async () => {
-    const { tts, asr, llm } = createMockProviders()
+  it('does not return or broadcast audio after the request is aborted', async () => {
+    const { asr, llm } = createMockProviders()
+    let finishSynthesis!: (value: Buffer) => void
+    const tts: TTSProvider = {
+      name: 'slow-tts',
+      outputFormat: 'wav',
+      synthesize: () => new Promise(resolve => (finishSynthesis = resolve))
+    }
     const pipeline = new AudioPipeline(tts, asr, llm)
+    const controller = new AbortController()
 
-    const { server, port } = await createSSEServer()
-    const sessionId = 'audio-test-session'
-
-    const collector = await collectSSE(
-      `http://localhost:${port}/api/chat/stream?sessionId=${sessionId}`,
-      { minEvents: 1 }
+    const pending = pipeline.handleOutput(
+      'old response',
+      undefined,
+      'session',
+      'request-old',
+      controller.signal
     )
+    controller.abort()
+    finishSynthesis(Buffer.from('old audio'))
 
-    const audioBuffer = Buffer.alloc(12288, 0xcd)
-    pipeline.broadcastAudioChunksDirect(audioBuffer, 'mp3', sessionId, 'teacher.audio')
-
-    await new Promise(resolve => setTimeout(resolve, 200))
-
-    const audioEvents = collector.events.filter(e => e.event === 'teacher.audio')
-    expect(audioEvents.length).toBe(2)
-
-    const first = audioEvents[0].data as { audioBase64: string; format: string; isEnd: boolean }
-    const second = audioEvents[1].data as { audioBase64: string; format: string; isEnd: boolean }
-    expect(first.format).toBe('mp3')
-    expect(first.isEnd).toBe(false)
-    expect(second.isEnd).toBe(true)
-    expect(Buffer.from(first.audioBase64, 'base64').length).toBe(6144)
-    expect(Buffer.from(second.audioBase64, 'base64').length).toBe(6144)
-
-    collector.req.destroy()
-    await server.close()
+    await expect(pending).resolves.toEqual({})
   })
 })

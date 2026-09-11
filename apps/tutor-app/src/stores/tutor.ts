@@ -12,13 +12,7 @@ import {
 } from './scenario-progress.js'
 
 export type AppPhase =
-  | 'loading'
-  | 'ready'
-  | 'assessing'
-  | 'assess-result'
-  | 'scenario-select'
-  | 'teaching'
-  | 'scenario-complete'
+  'loading' | 'ready' | 'assess-result' | 'scenario-select' | 'teaching' | 'scenario-complete'
 
 export interface ChatMessage {
   id: string

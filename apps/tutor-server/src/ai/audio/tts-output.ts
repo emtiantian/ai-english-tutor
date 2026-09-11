@@ -34,7 +34,12 @@ export class TtsOutput {
    * browser 模式下真正的音频由前端 Web Speech API 生成，后端无需合成；
    * 直接返回 {} 避免白等 300ms 静音兜底 + 广播无用静音。
    */
-  async handleOutput(text: string, voiceDesign?: string): Promise<{ audioBase64?: string }> {
+  async handleOutput(
+    text: string,
+    voiceDesign?: string,
+    signal?: AbortSignal
+  ): Promise<{ audioBase64?: string }> {
+    if (signal?.aborted) return {}
     if (this.tts.name === 'browser') {
       return {}
     }
@@ -54,6 +59,7 @@ export class TtsOutput {
     try {
       logger.debug({ textLength: plainText.length, hasVoiceDesign: !!voiceDesign }, '生成 TTS 音频')
       const audioBuffer = await this.tts.synthesize(plainText, { voiceDesign })
+      if (signal?.aborted) return {}
       const audioBase64 = audioBuffer.toString('base64')
 
       logger.info({ size: audioBuffer.length }, 'TTS 音频生成完成')
@@ -71,19 +77,5 @@ export class TtsOutput {
       )
       return {}
     }
-  }
-
-  /**
-   * 直接将文本合成为音频缓冲区（不广播）。
-   * 用于在英语之外同步播放中文 TTS。
-   *
-   * browser 模式不支持直接合成（前端走 Web Speech API，后端无音频产出）。
-   */
-  async synthesizeDirect(text: string, voiceDesign?: string): Promise<Buffer> {
-    if (this.tts.name === 'browser') {
-      throw new Error('browser 模式不支持直接合成')
-    }
-    const plainText = extractPlainTextFromPossibleJson(text)
-    return this.tts.synthesize(plainText, { voiceDesign, format: this.tts.outputFormat })
   }
 }

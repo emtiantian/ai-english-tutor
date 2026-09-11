@@ -3,13 +3,28 @@ import type { CEFRLevel } from '@ai-english-tutor/shared'
 import { logger } from '../logger.js'
 import { broadcastToSession, interruptSession, onSessionDisconnect } from '../sse/handler.js'
 import { tutorEngine } from '../ai/engine.js'
-import type { TeacherInterruptedEvent, TeacherResponseEvent } from '../sse/types.js'
+import type { ErrorEvent, TeacherInterruptedEvent, TeacherResponseEvent } from '../sse/types.js'
+
+function reportStreamingFailure(
+  sessionId: string | undefined,
+  requestId: string | undefined,
+  err: unknown
+): void {
+  if (!sessionId) return
+  const message = err instanceof Error ? err.message : '生成回复失败'
+  broadcastToSession(sessionId, {
+    event: 'error',
+    data: { code: 'STREAM_FAILED', message, requestId }
+  } satisfies ErrorEvent)
+}
 
 interface ChatRequestBody {
   type: 'user.speak' | 'lesson.start'
   text?: string
   level?: number
   sessionId?: string
+  /** 单次生成请求 ID，用于打断和过滤迟到事件 */
+  requestId?: string
   stream?: boolean
   /** 用户语音音频，base64 编码（供支持语音的 provider 使用） */
   audioBase64?: string
@@ -37,11 +52,15 @@ interface ChatRequestBody {
  */
 export async function chatRoutes(server: FastifyInstance): Promise<void> {
   server.post('/api/chat', async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply) => {
+    if (!request.body || typeof request.body !== 'object') {
+      return reply.status(400).send({ error: 'JSON body is required', code: 'INVALID_BODY' })
+    }
     const {
       type,
       text,
       level,
       sessionId,
+      requestId,
       stream,
       audioBase64,
       audioFormat,
@@ -51,6 +70,20 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
       targetLevel,
       resumeFrom
     } = request.body
+    if (text !== undefined && typeof text !== 'string') {
+      return reply.status(400).send({ error: 'text must be a string', code: 'INVALID_TEXT' })
+    }
+    if (level !== undefined && (!Number.isInteger(level) || level < 1 || level > 6)) {
+      return reply
+        .status(400)
+        .send({ error: 'level must be an integer from 1 to 6', code: 'INVALID_LEVEL' })
+    }
+    if (type === 'user.speak' && !text?.trim() && !audioBase64) {
+      return reply.status(400).send({
+        error: 'text or audioBase64 is required for user.speak',
+        code: 'MISSING_INPUT'
+      })
+    }
     logger.info(
       {
         type,
@@ -77,7 +110,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
           // 则在 HTTP 请求本身关闭时 abort。
           let unsubscribeSSE: (() => void) | undefined
           if (stream && sessionId) {
-            unsubscribeSSE = onSessionDisconnect(sessionId, onClose)
+            unsubscribeSSE = onSessionDisconnect(sessionId, onClose, requestId)
           } else {
             request.raw.on('close', onClose)
           }
@@ -89,6 +122,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             audioBase64,
             audioFormat,
             userId,
+            requestId,
             signal: controller.signal
           })
 
@@ -100,6 +134,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             enginePromise
               .catch(err => {
                 logger.error({ err, sessionId }, 'Streaming user speak failed')
+                if (!controller.signal.aborted) reportStreamingFailure(sessionId, requestId, err)
               })
               .finally(() => {
                 unsubscribeSSE?.()
@@ -141,7 +176,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
           const onClose = () => controller.abort()
           let unsubscribeSSE: (() => void) | undefined
           if (stream && sessionId) {
-            unsubscribeSSE = onSessionDisconnect(sessionId, onClose)
+            unsubscribeSSE = onSessionDisconnect(sessionId, onClose, requestId)
           } else {
             request.raw.on('close', onClose)
           }
@@ -155,7 +190,8 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             targetLevel as CEFRLevel | undefined,
             resumeFrom,
             stream ?? false,
-            controller.signal
+            controller.signal,
+            requestId
           )
 
           // 流式模式：数据通过 SSE 推送；HTTP 仅确认接收。
@@ -163,6 +199,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             enginePromise
               .catch(err => {
                 logger.error({ err, sessionId }, 'Streaming lesson.start failed')
+                if (!controller.signal.aborted) reportStreamingFailure(sessionId, requestId, err)
               })
               .finally(() => {
                 unsubscribeSSE?.()
@@ -177,6 +214,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             const response: TeacherResponseEvent = {
               event: 'teacher.response',
               data: {
+                requestId,
                 text: result.text,
                 textZh: result.textZh,
                 motionId: result.motionId,
@@ -235,8 +273,11 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
    */
   server.post(
     '/api/chat/interrupt',
-    async (request: FastifyRequest<{ Body: { sessionId?: string } }>, reply) => {
-      const { sessionId } = request.body ?? {}
+    async (
+      request: FastifyRequest<{ Body: { sessionId?: string; requestId?: string } }>,
+      reply
+    ) => {
+      const { sessionId, requestId } = request.body ?? {}
       if (!sessionId) {
         return reply
           .status(400)
@@ -245,11 +286,11 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
       // 仅当确实有正在进行的请求被打断时才广播 teacher.interrupted，
       // 避免无在跑请求时（如老师只 TTS 在播、或已空闲）误触发前端打断态、
       // 抑制用户紧接着的新回复流式。
-      const had = interruptSession(sessionId)
+      const had = interruptSession(sessionId, requestId)
       if (had) {
         broadcastToSession(sessionId, {
           event: 'teacher.interrupted',
-          data: { reason: 'user' }
+          data: { reason: 'user', requestId }
         } satisfies TeacherInterruptedEvent)
       }
       return reply.send({ ok: true })

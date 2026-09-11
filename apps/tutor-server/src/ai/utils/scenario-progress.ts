@@ -1,7 +1,6 @@
 import type { CEFRLevel } from '@ai-english-tutor/shared'
 import { logger } from '../../logger.js'
 import type { ScenarioState } from '../session-manager.js'
-import { levelNumToCEFR } from './cefr.js'
 
 export const DEFAULT_MAX_TURNS = 20
 
@@ -17,8 +16,12 @@ export function computeStars(coverage: number): 0 | 3 | 4 | 5 {
   return 0
 }
 
-export function isScenarioComplete(turnsCount: number, coverage: number): boolean {
-  return turnsCount >= DEFAULT_MAX_TURNS || (turnsCount >= 6 && coverage >= 0.6)
+export function isScenarioComplete(
+  turnsCount: number,
+  coverage: number,
+  maxTurns: number = DEFAULT_MAX_TURNS
+): boolean {
+  return turnsCount >= maxTurns || (turnsCount >= 6 && coverage >= 0.6)
 }
 
 /**
@@ -52,7 +55,7 @@ export function buildScenarioProgress(session: { scenario?: ScenarioState }) {
   const wordsLearned = Array.from(scenario.wordsUsed)
   const coverage = computeCoverage(wordsLearned.length, scenario.targetWords.length)
   const stars = computeStars(coverage)
-  const completed = isScenarioComplete(scenario.turnsCount, coverage)
+  const completed = isScenarioComplete(scenario.turnsCount, coverage, scenario.maxTurns)
 
   const result: {
     id: string

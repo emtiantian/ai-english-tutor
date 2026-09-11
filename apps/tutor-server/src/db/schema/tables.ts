@@ -84,10 +84,23 @@ export const ConversationHistoryTable = defineTable(
   }
 )
 
+export const VocabSyncOperationsTable = defineTable(
+  'vocab_sync_operations',
+  {
+    operation_id: { type: 'TEXT', primaryKey: true },
+    user_id: { type: 'TEXT', nullable: false },
+    created_at: { type: 'INTEGER', default: '(unixepoch())' }
+  },
+  {
+    indexes: [{ name: 'idx_vocab_sync_operations_user', columns: ['user_id'] }]
+  }
+)
+
 /** 所有业务表，按依赖顺序排列（users 在前，因为 sessions 引用它）。 */
 export const allTables = [
   UsersTable,
   SessionsTable,
   UserVocabularyTable,
-  ConversationHistoryTable
+  ConversationHistoryTable,
+  VocabSyncOperationsTable
 ] as const

@@ -46,39 +46,21 @@ export class AudioPipeline {
   async handleOutput(
     text: string,
     voiceDesign?: string,
-    sessionId?: string
+    sessionId?: string,
+    requestId?: string,
+    signal?: AbortSignal
   ): Promise<{ audioBase64?: string }> {
-    const result = await this.ttsOutput.handleOutput(text, voiceDesign)
+    const result = await this.ttsOutput.handleOutput(text, voiceDesign, signal)
+    if (signal?.aborted) return {}
     if (result.audioBase64) {
       this.audioBroadcaster.broadcastAudioChunks(
         result.audioBase64,
         this.tts.outputFormat,
-        sessionId
+        sessionId,
+        requestId
       )
       logger.info({ size: Buffer.byteLength(result.audioBase64, 'base64') }, 'TTS 音频广播完成')
     }
     return result
-  }
-
-  /**
-   * 直接将文本合成为音频缓冲区（不广播）。
-   * 用于在英语之外同步播放中文 TTS。
-   */
-  async synthesizeDirect(text: string, voiceDesign?: string): Promise<Buffer> {
-    return this.ttsOutput.synthesizeDirect(text, voiceDesign)
-  }
-
-  /**
-   * 使用自定义 SSE 事件名广播音频分片。
-   * 接收原始 Buffer 并实时将每个分片编码为 base64，避免
-   * 把整个音频作为单个 base64 字符串加载到内存中。
-   */
-  broadcastAudioChunksDirect(
-    audioBuffer: Buffer,
-    format: string,
-    sessionId: string | undefined,
-    eventName: string
-  ): void {
-    this.audioBroadcaster.broadcastAudioChunksDirect(audioBuffer, format, sessionId, eventName)
   }
 }

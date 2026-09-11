@@ -18,4 +18,8 @@ function load(version: number, name: string): Migration {
   }
 }
 
-export const allMigrations: Migration[] = [load(1, 'init'), load(2, 'add_missing_columns')]
+export const allMigrations: Migration[] = [
+  load(1, 'init'),
+  load(2, 'add_missing_columns'),
+  load(3, 'vocab_sync_operations')
+]

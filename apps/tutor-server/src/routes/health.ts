@@ -2,7 +2,6 @@ import type { FastifyInstance } from 'fastify'
 import { getDb } from '../db/index.js'
 import { allMigrations } from '../db/migrations/index.js'
 import { config } from '../config.js'
-import { checkCosyVoiceHealth } from '../voice/tts-health.js'
 import { statfs } from 'node:fs/promises'
 
 interface HealthCheckResult {
@@ -87,77 +86,28 @@ export async function healthRoutes(server: FastifyInstance): Promise<void> {
 }
 
 function checkLlmReady(): boolean {
-  switch (config.LLM_PROVIDER) {
-    case 'mock':
-      return true
-    case 'deepseek':
-      return config.DEEPSEEK_API_KEY !== ''
-    case 'openai':
-      return config.OPENAI_API_KEY !== ''
-    case 'xiaomi':
-      return config.XIAOMI_API_KEY !== ''
-    case 'volcengine':
-      return config.VOLCENGINE_LLM_API_KEY !== '' && config.VOLCENGINE_LLM_MODEL !== ''
-    default:
-      return false
-  }
+  return (
+    config.LLM_PROVIDER === 'mock' ||
+    (config.LLM_PROVIDER === 'deepseek' && config.DEEPSEEK_API_KEY !== '')
+  )
 }
 
-async function checkTtsReady(): Promise<HealthCheckResult & { provider?: string }> {
+function checkTtsReady(): HealthCheckResult & { provider?: string } {
   switch (config.TTS_PROVIDER) {
     case 'browser':
       return { ok: true, provider: config.TTS_PROVIDER }
-    case 'volcengine':
-      return {
-        ok: config.VOLCENGINE_TTS_API_KEY !== '',
-        provider: config.TTS_PROVIDER
-      }
     case 'xiaomi':
       return {
         ok: config.XIAOMI_TTS_API_KEY !== '',
         provider: config.TTS_PROVIDER
       }
-    case 'cosyvoice': {
-      // 探测 CosyVoice 服务是否存活，但超时缩短到 2s，避免阻塞 Docker healthcheck
-      const result = await checkCosyVoiceHealth(
-        config.COSYVOICE_BASE_URL,
-        config.COSYVOICE_SPK_ID,
-        2000
-      )
-      return {
-        ok: result.ok,
-        provider: config.TTS_PROVIDER,
-        status: result.status,
-        error: result.error
-      }
-    }
     default:
       return { ok: false, provider: config.TTS_PROVIDER }
   }
 }
 
 function checkAsrReady(): HealthCheckResult & { provider?: string } {
-  switch (config.ASR_PROVIDER) {
-    case 'browser':
-    case 'whisper':
-      return { ok: true, provider: config.ASR_PROVIDER }
-    case 'volcengine': {
-      const key = config.VOLCENGINE_ASR_API_KEY || config.VOLCENGINE_TTS_API_KEY
-      return {
-        ok: key !== '',
-        provider: config.ASR_PROVIDER
-      }
-    }
-    case 'xiaomi': {
-      const key = config.XIAOMI_ASR_API_KEY || config.XIAOMI_API_KEY
-      return {
-        ok: key !== '',
-        provider: config.ASR_PROVIDER
-      }
-    }
-    default:
-      return { ok: false, provider: config.ASR_PROVIDER }
-  }
+  return { ok: config.ASR_PROVIDER === 'browser', provider: config.ASR_PROVIDER }
 }
 
 async function checkDiskSpace(): Promise<HealthCheckResult & { freePercent?: number }> {

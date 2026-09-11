@@ -1,6 +1,5 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
-import multipart from '@fastify/multipart'
 import { config } from './config.js'
 import { logger } from './logger.js'
 import { registerRoutes } from './routes/index.js'
@@ -16,8 +15,7 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
     logger: {
       level: config.LOG_LEVEL
     },
-    // ASR 返回的 WAV 音频可能很大（未压缩），将 body 限制提高到 25MB
-    bodyLimit: 25 * 1024 * 1024
+    bodyLimit: 1024 * 1024
   })
 
   // 注册 CORS
@@ -41,13 +39,6 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
       cb(new Error('CORS 不允许该来源'), false)
     },
     credentials: !isWildcardCors
-  })
-
-  // 注册 multipart，用于文件上传（ASR 音频）
-  await server.register(multipart, {
-    limits: {
-      fileSize: config.MAX_AUDIO_SIZE_MB * 1024 * 1024
-    }
   })
 
   // 初始化数据库、词汇表和场景

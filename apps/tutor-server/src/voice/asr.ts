@@ -1,7 +1,4 @@
 import { config } from '../config.js'
-import { VolcengineASRProvider } from './providers/volcengine-asr.js'
-import { WhisperASRProvider } from './providers/whisper-asr.js'
-import { XiaomiASRProvider } from './providers/xiaomi-asr.js'
 
 /**
  * ASR（自动语音识别）Provider 接口
@@ -35,12 +32,6 @@ export function createASRProvider(): ASRProvider {
   const provider = config.ASR_PROVIDER
 
   switch (provider) {
-    case 'whisper':
-      return new WhisperASRProvider()
-    case 'xiaomi':
-      return new XiaomiASRProvider()
-    case 'volcengine':
-      return new VolcengineASRProvider()
     case 'browser':
       // browser 模式由前端 Web Speech API 处理，后端不执行转写。
       // 保留该配置值是为了让 /api/config 能向前端声明本地识别；
@@ -54,7 +45,7 @@ export function createASRProvider(): ASRProvider {
         }
       }
     default:
-      throw new Error(`不支持的 ASR 提供商: ${provider}。请在 .env 中设置正确的 ASR_PROVIDER。`)
+      throw new Error(`不支持的 ASR 提供商: ${provider}。当前仅支持 browser。`)
   }
 }
 

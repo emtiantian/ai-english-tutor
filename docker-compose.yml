@@ -103,11 +103,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  # Whisper / CosyVoice 为可选叠加服务，不在主 compose：
-  #   ASR=whisper:   docker compose -f docker-compose.yml -f docker-compose.whisper.yml up -d
-  #   TTS=cosyvoice: docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml up -d
-
 networks:
   tutor-net:
     name: tutor-net

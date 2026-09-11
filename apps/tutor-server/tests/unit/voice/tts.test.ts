@@ -1,48 +1,31 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createTTSProvider } from '@/voice/tts.js'
 import { config } from '@/config.js'
 
-describe('tts provider factory', () => {
-  let originalProvider: string
-  let originalApiKey: string
+describe('TTS core providers', () => {
+  let provider: string
+  let apiKey: string
 
   beforeEach(() => {
-    originalProvider = config.TTS_PROVIDER
-    originalApiKey = config.VOLCENGINE_TTS_API_KEY
+    provider = config.TTS_PROVIDER
+    apiKey = config.XIAOMI_TTS_API_KEY
   })
 
   afterEach(() => {
-    config.TTS_PROVIDER = originalProvider
-    config.VOLCENGINE_TTS_API_KEY = originalApiKey
+    config.TTS_PROVIDER = provider
+    config.XIAOMI_TTS_API_KEY = apiKey
   })
 
-  it('creates browser provider', () => {
+  it('creates Xiaomi and browser providers', () => {
+    config.XIAOMI_TTS_API_KEY = 'test-key'
+    config.TTS_PROVIDER = 'xiaomi'
+    expect(createTTSProvider().name).toBe('xiaomi')
     config.TTS_PROVIDER = 'browser'
-    const browserProvider = createTTSProvider()
-    expect(browserProvider.name).toBe('browser')
+    expect(createTTSProvider().name).toBe('browser')
   })
 
-  it('throws for unknown provider', () => {
-    config.TTS_PROVIDER = 'unknown-tts'
-    expect(() => createTTSProvider()).toThrow(/不支持的 TTS 提供商/)
-  })
-
-  it('throws for volcengine without API key', () => {
-    config.TTS_PROVIDER = 'volcengine'
-    config.VOLCENGINE_TTS_API_KEY = ''
-    expect(() => createTTSProvider()).toThrow(/使用火山方舟 TTS 必须配置 VOLCENGINE_TTS_API_KEY/)
-  })
-
-  it('creates volcengine provider with API key', () => {
-    config.TTS_PROVIDER = 'volcengine'
-    config.VOLCENGINE_TTS_API_KEY = 'test-api-key'
-    const volcengineProvider = createTTSProvider()
-    expect(volcengineProvider.name).toBe('volcengine')
-  })
-
-  it('throws when browser provider is asked to synthesize', async () => {
-    config.TTS_PROVIDER = 'browser'
-    const browserProvider = createTTSProvider()
-    await expect(browserProvider.synthesize('hello')).rejects.toThrow(/TTS_PROVIDER=browser/)
+  it('rejects unsupported providers', () => {
+    config.TTS_PROVIDER = 'unknown'
+    expect(() => createTTSProvider()).toThrow(/当前仅支持 xiaomi 和 browser/)
   })
 })

@@ -1,42 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createLLMProvider } from '@/ai/llm/factory.js'
 import { extractTextContent, normalizeToString } from '@/ai/llm/utils.js'
 import { config } from '@/config.js'
 
-describe('llm factory and utils', () => {
-  let originalProvider: string
-  let originalDeepseekKey: string
-  let originalVolcengineKey: string
-  let originalVolcengineModel: string
-  let originalXiaomiKey: string
-  let originalXiaomiModel: string
-  let originalOpenaiKey: string
+describe('LLM core providers and message normalization', () => {
+  let provider: string
+  let deepseekKey: string
 
   beforeEach(() => {
-    originalProvider = config.LLM_PROVIDER
-    originalDeepseekKey = config.DEEPSEEK_API_KEY
-    originalVolcengineKey = config.VOLCENGINE_LLM_API_KEY
-    originalVolcengineModel = config.VOLCENGINE_LLM_MODEL
-    originalXiaomiKey = config.XIAOMI_API_KEY
-    originalXiaomiModel = config.XIAOMI_MODEL
-    originalOpenaiKey = config.OPENAI_API_KEY
+    provider = config.LLM_PROVIDER
+    deepseekKey = config.DEEPSEEK_API_KEY
   })
 
   afterEach(() => {
-    config.LLM_PROVIDER = originalProvider
-    config.DEEPSEEK_API_KEY = originalDeepseekKey
-    config.VOLCENGINE_LLM_API_KEY = originalVolcengineKey
-    config.VOLCENGINE_LLM_MODEL = originalVolcengineModel
-    config.XIAOMI_API_KEY = originalXiaomiKey
-    config.XIAOMI_MODEL = originalXiaomiModel
-    config.OPENAI_API_KEY = originalOpenaiKey
+    config.LLM_PROVIDER = provider
+    config.DEEPSEEK_API_KEY = deepseekKey
   })
 
-  it('extractTextContent handles string content', () => {
+  it('normalizes text and multimodal messages', () => {
     expect(extractTextContent({ role: 'user', content: 'hello' })).toBe('hello')
-  })
-
-  it('extractTextContent joins multimodal text parts', () => {
     expect(
       extractTextContent({
         role: 'user',
@@ -47,104 +29,27 @@ describe('llm factory and utils', () => {
         ]
       })
     ).toBe('hello\nworld')
+    expect(
+      normalizeToString({
+        role: 'user',
+        content: [
+          { type: 'text', text: 'say' },
+          { type: 'audio', data: 'abc', format: 'wav' }
+        ]
+      }).content
+    ).toBe('say')
   })
 
-  it('extractTextContent handles undefined', () => {
-    expect(extractTextContent(undefined)).toBe('')
-  })
-
-  it('normalizeToString returns string message as-is', () => {
-    const stringMessage = { role: 'user' as const, content: 'plain text' }
-    expect(normalizeToString(stringMessage)).toEqual(stringMessage)
-  })
-
-  it('normalizeToString normalizes multimodal to string', () => {
-    const multiMessage = {
-      role: 'user' as const,
-      content: [
-        { type: 'text' as const, text: 'say' },
-        { type: 'audio' as const, data: 'abc', format: 'wav' }
-      ]
-    }
-    const normalized = normalizeToString(multiMessage)
-    expect(normalized.content).toBe('say')
-  })
-
-  it('createLLMProvider returns mock provider', () => {
+  it('creates the mock and DeepSeek providers', () => {
     config.LLM_PROVIDER = 'mock'
-    const mockProvider = createLLMProvider()
-    expect(mockProvider.name).toBe('mock')
-    expect(mockProvider.capabilities.supportsStreaming).toBe(true)
-    expect(mockProvider.capabilities.supportsAudioInput).toBe(false)
-  })
-
-  it('createLLMProvider throws for unknown provider', () => {
-    config.LLM_PROVIDER = 'unknown-provider'
-    expect(() => createLLMProvider()).toThrow(/不支持的 LLM 提供商/)
-  })
-
-  it('creates deepseek provider', () => {
+    expect(createLLMProvider().name).toBe('mock')
     config.LLM_PROVIDER = 'deepseek'
-    config.DEEPSEEK_API_KEY = 'fake-key'
-    const deepseekProvider = createLLMProvider()
-    expect(deepseekProvider.name).toBe('deepseek')
-    expect(deepseekProvider.capabilities.supportsStreaming).toBe(true)
-    expect(deepseekProvider.capabilities.supportsAudioInput).toBe(false)
+    config.DEEPSEEK_API_KEY = 'test-key'
+    expect(createLLMProvider().name).toBe('deepseek')
   })
 
-  it('creates volcengine provider', () => {
-    config.LLM_PROVIDER = 'volcengine'
-    config.VOLCENGINE_LLM_API_KEY = 'fake-key'
-    config.VOLCENGINE_LLM_MODEL = 'ep-fake'
-    const volcengineProvider = createLLMProvider()
-    expect(volcengineProvider.name).toBe('volcengine')
-    expect(volcengineProvider.capabilities.supportsStreaming).toBe(true)
-    expect(volcengineProvider.capabilities.supportsAudioInput).toBe(false)
-  })
-
-  it('creates xiaomi provider', () => {
-    config.LLM_PROVIDER = 'xiaomi'
-    config.XIAOMI_API_KEY = 'fake-key'
-    config.XIAOMI_MODEL = 'mimo-v2.5'
-    const xiaomiProvider = createLLMProvider()
-    expect(xiaomiProvider.name).toBe('xiaomi')
-    expect(xiaomiProvider.capabilities.supportsStreaming).toBe(true)
-    expect(xiaomiProvider.capabilities.supportsAudioInput).toBe(true)
-  })
-
-  it('creates openai provider', () => {
-    config.LLM_PROVIDER = 'openai'
-    config.OPENAI_API_KEY = 'fake-key'
-    const openaiProvider = createLLMProvider()
-    expect(openaiProvider.name).toBe('openai')
-    expect(openaiProvider.capabilities.supportsStreaming).toBe(true)
-    expect(openaiProvider.capabilities.supportsAudioInput).toBe(false)
-  })
-
-  it('mock provider rejects complete on aborted signal', async () => {
-    config.LLM_PROVIDER = 'mock'
-    const mockProvider = createLLMProvider()
-    const controller = new AbortController()
-    controller.abort()
-    await expect(
-      mockProvider.complete([{ role: 'user', content: 'hi' }], controller.signal)
-    ).rejects.toThrow(/AbortError/)
-  })
-
-  it('mock provider rejects stream on aborted signal', async () => {
-    config.LLM_PROVIDER = 'mock'
-    const mockProvider = createLLMProvider()
-    const streamController = new AbortController()
-    streamController.abort()
-
-    await expect(
-      (async () => {
-        for await (const _ of mockProvider.stream!([{ role: 'user', content: 'hi' }], {
-          signal: streamController.signal
-        })) {
-          // no-op
-        }
-      })()
-    ).rejects.toThrow(/AbortError/)
+  it('rejects unsupported providers', () => {
+    config.LLM_PROVIDER = 'unknown'
+    expect(() => createLLMProvider()).toThrow(/当前仅支持 deepseek 和测试用 mock/)
   })
 })

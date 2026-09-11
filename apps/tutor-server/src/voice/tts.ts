@@ -1,7 +1,5 @@
 import { config } from '../config.js'
-import { CosyVoiceProvider } from './providers/cosyvoice.js'
 import { XiaomiTTSProvider } from './providers/xiaomi-tts.js'
-import { VolcengineTTSProvider } from './providers/volcengine-tts.js'
 
 /**
  * TTS（文本转语音）Provider 接口
@@ -52,10 +50,6 @@ export function createTTSProvider(): TTSProvider {
   switch (provider) {
     case 'xiaomi':
       return new XiaomiTTSProvider()
-    case 'cosyvoice':
-      return new CosyVoiceProvider()
-    case 'volcengine':
-      return new VolcengineTTSProvider()
     case 'browser':
       // browser 模式由前端 Web Speech API 处理，后端不合成音频。
       // 保留该配置值是为了让 /api/config 能向前端声明本地 TTS；
@@ -70,6 +64,6 @@ export function createTTSProvider(): TTSProvider {
         }
       }
     default:
-      throw new Error(`不支持的 TTS 提供商: ${provider}。请在 .env 中设置正确的 TTS_PROVIDER。`)
+      throw new Error(`不支持的 TTS 提供商: ${provider}。当前仅支持 xiaomi 和 browser。`)
   }
 }

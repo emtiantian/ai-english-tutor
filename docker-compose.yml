@@ -104,4 +104,5 @@ services:
 networks:
   tutor-net:
     name: tutor-net
+    external: true
     driver: bridge

@@ -41,9 +41,6 @@ RUN pnpm --filter @ai-english-tutor/server deploy --legacy --prod /prod/server
 FROM node:22-alpine
 WORKDIR /app
 
-# Install healthcheck tooling
-RUN apk add --no-cache wget
-
 # Copy the deployed bundle (includes dist, package.json, and full node_modules)
 COPY --from=builder /prod/server/dist ./dist
 COPY --from=builder /prod/server/package.json ./package.json

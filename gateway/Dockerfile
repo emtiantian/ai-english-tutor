@@ -1,5 +1,5 @@
 # ── AI English Tutor — Nginx Gateway ──
-# Handles CORS, reverse-proxies /api/* to backend,
+# Reverse-proxies /api/* to backend,
 # and serves frontend static files. Supports both HTTP (80) and
 # HTTPS (443) simultaneously — HTTPS is auto-enabled when TLS certs
 # are mounted at /etc/nginx/certs/{fullchain,privkey}.pem.
@@ -28,7 +28,6 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 # Default environment variables
 ENV BACKEND_URL=http://backend:3000
 ENV FRONTEND_URL=http://frontend:80
-ENV CORS_ORIGIN=*
 ENV SERVER_NAME=_
 ENV SERVE_STATIC=on
 

@@ -2,12 +2,16 @@ import { createServer } from './server.js'
 import { config } from './config.js'
 import { logger } from './logger.js'
 import { checkCosyVoiceHealth } from './voice/tts-health.js'
+import { closeDb } from './db/index.js'
+
+let server: Awaited<ReturnType<typeof createServer>> | undefined
+let shuttingDown = false
 
 /**
  * 应用入口
  */
 async function main(): Promise<void> {
-  const server = await createServer()
+  server = await createServer()
 
   try {
     await server.listen({ port: config.PORT, host: '0.0.0.0' })
@@ -49,15 +53,22 @@ async function main(): Promise<void> {
   }
 }
 
-// 优雅关闭
-process.on('SIGINT', async () => {
-  logger.info('收到 SIGINT，正在优雅关闭')
-  process.exit(0)
-})
+async function shutdown(signal: NodeJS.Signals): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
+  logger.info({ signal }, '收到退出信号，正在停止接收请求并关闭数据库')
 
-process.on('SIGTERM', async () => {
-  logger.info('收到 SIGTERM，正在优雅关闭')
-  process.exit(0)
-})
+  try {
+    await server?.close()
+    closeDb()
+    process.exit(0)
+  } catch (err) {
+    logger.error({ err, signal }, '服务关闭失败')
+    process.exit(1)
+  }
+}
+
+process.once('SIGINT', () => void shutdown('SIGINT'))
+process.once('SIGTERM', () => void shutdown('SIGTERM'))
 
 main()

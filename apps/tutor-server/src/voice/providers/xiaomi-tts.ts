@@ -4,10 +4,6 @@ import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 import { getOrSynthesizeCachedAudio } from '../tts-cache.js'
 import { getOrGenerateVoiceSample } from '../voice-samples.js'
 
-/** 默认英文音色设计描述：session 未提供 voiceDesign 时的兜底音色。 */
-const DEFAULT_VOICE_DESIGN =
-  '成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声'
-
 /** fetch 超时时间（毫秒） */
 const FETCH_TIMEOUT_MS = 30_000
 
@@ -249,7 +245,7 @@ export class XiaomiTTSProvider implements TTSProvider {
         // 优先级：session 中的动态 voiceDesign > 默认兜底。
         // 用 || 而非 ??：避免 voiceDesign 设成空串时漏到上游，
         // 触发小米「user message content must not be empty for voice design model」400。
-        const designDesc = options?.voiceDesign || DEFAULT_VOICE_DESIGN
+        const designDesc = options?.voiceDesign || config.XIAOMI_TTS_VOICE_DESIGN
         return {
           model: 'mimo-v2.5-tts-voicedesign',
           messages: [

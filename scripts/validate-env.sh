@@ -68,7 +68,12 @@ _is_set() {
   local file="$1" key="$2"
   local value
   value=$(_env_get "${file}" "${key}")
-  [ -n "${value}" ]
+  [ -n "${value}" ] && [[ ! "${value}" =~ ^your-.*-api-key$ ]]
+}
+
+_is_integer_in_range() {
+  local value="$1" min="$2" max="$3"
+  [[ "${value}" =~ ^[0-9]+$ ]] && [ "${value}" -ge "${min}" ] && [ "${value}" -le "${max}" ]
 }
 
 validate_env() {
@@ -182,14 +187,14 @@ EOF
     volcengine)
       if ! _is_set "${env_file}" "VOLCENGINE_ASR_API_KEY"; then
         if ! _is_set "${env_file}" "VOLCENGINE_TTS_API_KEY"; then
-          add_warning "ASR_PROVIDER=volcengine 时 VOLCENGINE_ASR_API_KEY 为空，且未配置 VOLCENGINE_TTS_API_KEY 作为回退"
+          add_error "ASR_PROVIDER=volcengine 时 VOLCENGINE_ASR_API_KEY 必填（或配置 VOLCENGINE_TTS_API_KEY 作为回退）"
         fi
       fi
       ;;
     xiaomi)
       if ! _is_set "${env_file}" "XIAOMI_ASR_API_KEY"; then
         if ! _is_set "${env_file}" "XIAOMI_API_KEY"; then
-          add_warning "ASR_PROVIDER=xiaomi 时 XIAOMI_ASR_API_KEY 为空，且未配置 XIAOMI_API_KEY 作为回退"
+          add_error "ASR_PROVIDER=xiaomi 时 XIAOMI_ASR_API_KEY 必填（或配置 XIAOMI_API_KEY 作为回退）"
         fi
       fi
       ;;
@@ -199,6 +204,30 @@ EOF
       add_error "未知的 ASR_PROVIDER: ${asr_provider}"
       ;;
   esac
+
+  if [ "${tts_provider}" = "cosyvoice" ] && ! _is_set "${env_file}" "COSYVOICE_BASE_URL"; then
+    add_error "TTS_PROVIDER=cosyvoice 时 COSYVOICE_BASE_URL 必填（容器部署应为 http://cosyvoice:50000）"
+  fi
+  if [ "${asr_provider}" = "whisper" ] && ! _is_set "${env_file}" "WHISPER_BASE_URL"; then
+    add_error "ASR_PROVIDER=whisper 时 WHISPER_BASE_URL 必填（容器部署应为 http://whisper:8080）"
+  fi
+
+  local port heartbeat log_level character_provider live2d_fps live2d_dpr xiaomi_tts_mode
+  port=$(_env_get "${env_file}" "PORT")
+  heartbeat=$(_env_get "${env_file}" "SSE_HEARTBEAT_INTERVAL")
+  log_level=$(_env_get "${env_file}" "LOG_LEVEL")
+  character_provider=$(_env_get "${env_file}" "VITE_CHARACTER_PROVIDER")
+  live2d_fps=$(_env_get "${env_file}" "VITE_LIVE2D_TARGET_FPS")
+  live2d_dpr=$(_env_get "${env_file}" "VITE_LIVE2D_MAX_DPR")
+  xiaomi_tts_mode=$(_env_get "${env_file}" "XIAOMI_TTS_MODE")
+
+  [ -z "${port}" ] || _is_integer_in_range "${port}" 1 65535 || add_error "PORT 必须是 1-65535 的整数"
+  [ -z "${heartbeat}" ] || _is_integer_in_range "${heartbeat}" 1000 300000 || add_error "SSE_HEARTBEAT_INTERVAL 必须是 1000-300000 毫秒的整数"
+  [ -z "${live2d_fps}" ] || _is_integer_in_range "${live2d_fps}" 1 120 || add_error "VITE_LIVE2D_TARGET_FPS 必须是 1-120 的整数"
+  [ -z "${log_level}" ] || [[ "${log_level}" =~ ^(debug|info|warn|error)$ ]] || add_error "LOG_LEVEL 必须是 debug/info/warn/error"
+  [ -z "${character_provider}" ] || [[ "${character_provider}" =~ ^(live2d|rive)$ ]] || add_error "VITE_CHARACTER_PROVIDER 必须是 live2d/rive"
+  [ -z "${xiaomi_tts_mode}" ] || [[ "${xiaomi_tts_mode}" =~ ^(preset|voicedesign|voiceclone)$ ]] || add_error "XIAOMI_TTS_MODE 必须是 preset/voicedesign/voiceclone"
+  [ -z "${live2d_dpr}" ] || [[ "${live2d_dpr}" =~ ^(1(\.0)?|1\.5|2(\.0)?)$ ]] || add_error "VITE_LIVE2D_MAX_DPR 必须是 1、1.5 或 2"
 
   # 检查未知变量
   local unknown_vars=()

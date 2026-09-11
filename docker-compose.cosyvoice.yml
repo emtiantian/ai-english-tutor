@@ -80,7 +80,3 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
-
-networks:
-  tutor-net:
-    external: true

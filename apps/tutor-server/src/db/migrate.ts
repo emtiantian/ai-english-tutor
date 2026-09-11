@@ -11,6 +11,9 @@ import { allMigrations } from './migrations/index.js'
  */
 
 const MIGRATION_TABLE = '__migrations'
+// 引入迁移元数据之前，线上旧库的结构已经等价于 0001 + 0002。
+// 只将这两版登记为历史基线；之后新增的迁移仍必须真实执行。
+const LEGACY_BASELINE_VERSION = 2
 
 export function migrate(db: Database.Database): void {
   db.exec(`
@@ -24,10 +27,10 @@ export function migrate(db: Database.Database): void {
     db.prepare(`SELECT version FROM ${MIGRATION_TABLE}`).pluck().all() as number[]
   )
 
-  // 旧数据库兼容：若元数据表为空但业务表已存在，说明是升级场景，直接标记全部当前迁移为已应用。
+  // 旧数据库兼容：若元数据表为空但业务表已存在，登记引入迁移系统前的历史基线。
   if (appliedVersions.size === 0 && hasLegacyTables(db)) {
     bootstrapLegacyDb(db)
-    for (const migration of allMigrations) {
+    for (const migration of allMigrations.filter(m => m.version <= LEGACY_BASELINE_VERSION)) {
       appliedVersions.add(migration.version)
     }
   }
@@ -52,8 +55,8 @@ function hasLegacyTables(db: Database.Database): boolean {
 
 function bootstrapLegacyDb(db: Database.Database): void {
   const insert = db.prepare(`INSERT OR IGNORE INTO ${MIGRATION_TABLE} (version) VALUES (?)`)
-  for (const migration of allMigrations) {
+  for (const migration of allMigrations.filter(m => m.version <= LEGACY_BASELINE_VERSION)) {
     insert.run(migration.version)
   }
-  logger.info('检测到旧数据库，已标记所有当前迁移为已应用')
+  logger.info({ baseline: LEGACY_BASELINE_VERSION }, '检测到旧数据库，已登记历史迁移基线')
 }

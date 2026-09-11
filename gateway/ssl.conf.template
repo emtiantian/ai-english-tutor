@@ -7,9 +7,9 @@
 # Env vars substituted at render time:
 #   SERVER_NAME   - virtual host for the 443 listener
 #
-# BACKEND_URL / FRONTEND_URL / CORS_ORIGIN are not re-substituted here;
+# BACKEND_URL / FRONTEND_URL are not re-substituted here;
 # the main nginx.conf already defines the $backend_target /
-# $frontend_target / $cors_allow_origin map variables, and we reuse
+# $frontend_target map variables, and we reuse
 # them so proxy_pass stays compatible with nginx's variable-upstream
 # requirement (resolver + map).
 #

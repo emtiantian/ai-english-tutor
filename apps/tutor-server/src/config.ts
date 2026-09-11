@@ -129,6 +129,11 @@ export const config = {
   /** 小米 MiMo TTS 音色（preset 模式，例如 'Chloe'、'mimo_default'） */
   XIAOMI_TTS_VOICE: process.env.XIAOMI_TTS_VOICE ?? 'Chloe',
 
+  /** voicedesign 模式在会话没有指定音色描述时使用的默认值。 */
+  XIAOMI_TTS_VOICE_DESIGN:
+    process.env.XIAOMI_TTS_VOICE_DESIGN ??
+    '成熟知性的御姐，声线低沉磁性、略带沙哑，慵懒从容，语速偏慢，句尾带轻气声',
+
   /** 小米 MiMo TTS 声音克隆样本 base64（voiceclone 模式） */
   XIAOMI_TTS_VOICE_CLONE: process.env.XIAOMI_TTS_VOICE_CLONE ?? '',
 

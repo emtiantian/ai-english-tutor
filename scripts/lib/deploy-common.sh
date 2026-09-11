@@ -51,6 +51,8 @@ ENABLE_COSYVOICE=false
 COSYVOICE_IMAGE_MISSING=false
 # 由 deploy-to-server.sh 通过 --non-interactive-env 传入；自动化部署时基于远端现有 .env 非交互升级格式
 NONINTERACTIVE_ENV="${NONINTERACTIVE_ENV:-false}"
+# 远程部署只以远端已有配置和模板为输入，避免本机 shell 的密钥覆盖生产值。
+GENERATE_USE_PROCESS_ENV=false
 
 EXISTING_ENV_FILE=""
 
@@ -255,12 +257,18 @@ configure_remote_env() {
     fi
     if $reconfigure; then
       generate_env "${LOCAL_ENV_TEMP}" "${EXISTING_ENV_FILE:-}" false
-      validate_env "${LOCAL_ENV_TEMP}" || true
+      if ! validate_env --strict "${LOCAL_ENV_TEMP}" || check_env_has_placeholder "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 校验失败，未覆盖服务器配置"
+        exit 1
+      fi
       if $DRY_RUN; then
         log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
       else
         scp "${LOCAL_ENV_TEMP}" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
       fi
+    elif ! validate_env --strict "${EXISTING_ENV_FILE}" || check_env_has_placeholder "${EXISTING_ENV_FILE}"; then
+      log_error "服务器现有 .env 校验失败，请重新运行并选择交互式配置"
+      exit 1
     fi
     [ -n "${EXISTING_ENV_FILE}" ] && rm -f "${EXISTING_ENV_FILE}"
     EXISTING_ENV_FILE=""
@@ -291,7 +299,10 @@ configure_remote_env() {
     fi
     if prompt_yes_no "是否交互式创建 .env"; then
       generate_env "${LOCAL_ENV_TEMP}" "" false
-      validate_env "${LOCAL_ENV_TEMP}" || true
+      if ! validate_env --strict "${LOCAL_ENV_TEMP}" || check_env_has_placeholder "${LOCAL_ENV_TEMP}"; then
+        log_error "生成后的 .env 校验失败，未上传到服务器"
+        exit 1
+      fi
       if $DRY_RUN; then
         log_dry "将 scp ${LOCAL_ENV_TEMP} -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_ENV_FILE}"
       else
@@ -326,9 +337,33 @@ check_env_has_placeholder() {
 # ── 备份 / 同步 / 初始化 ──
 backup_remote() {
   log_info "备份服务器数据..."
+  local backend_was_running=false
+  local backup_failed=false
+
+  # SQLite 数据库及 WAL/SHM 文件必须在同一个一致性时点复制。已有 backend 仅暂停备份所需的几秒，
+  # 完成后立即恢复；后续镜像构建期间旧服务仍继续提供服务。
+  if ! $DRY_RUN; then
+    local backend_id
+    backend_id=$(dc "ps -q backend 2>/dev/null || true" | head -1 | tr -d '[:space:]')
+    if [ -n "${backend_id}" ]; then
+      log_info "短暂停止 backend，以生成一致的 SQLite 备份..."
+      dc "stop backend"
+      backend_was_running=true
+    fi
+  fi
+
   remote_exec "mkdir -p ${BACKUP_DATA_DIR} ${BACKUP_APP_DIR}"
-  remote_exec "if [ -d ${REMOTE_DATA_DIR} ]; then find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models -exec cp -a {} ${BACKUP_DATA_DIR}/ \\; 2>/dev/null || true; fi"
-  remote_exec "if [ -d ${REMOTE_APP_DIR} ]; then cp -a ${REMOTE_APP_DIR}/. ${BACKUP_APP_DIR}/ 2>/dev/null || true; fi"
+  remote_exec "if [ -d ${REMOTE_DATA_DIR} ]; then find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models ! -name modelscope-cache ! -name tts-cache -exec cp -a {} ${BACKUP_DATA_DIR}/ \\; 2>/dev/null; fi" || backup_failed=true
+  remote_exec "if [ -d ${REMOTE_APP_DIR} ]; then cp -a ${REMOTE_APP_DIR}/. ${BACKUP_APP_DIR}/ 2>/dev/null; fi" || backup_failed=true
+
+  if $backend_was_running; then
+    dc "start backend"
+    log_info "backend 已恢复运行"
+  fi
+  if $backup_failed; then
+    log_error "服务器备份失败，已终止部署"
+    return 1
+  fi
   log_info "数据备份: ${BACKUP_DATA_DIR}"
   log_info "代码备份: ${BACKUP_APP_DIR}"
 }
@@ -362,15 +397,16 @@ sync_code() {
 
 init_remote_data_dir() {
   log_info "在服务器初始化 data/ 目录..."
-  remote_exec "bash ${REMOTE_APP_DIR}/scripts/init-host-dir.sh ${REMOTE_DIR}"
+  remote_exec "bash ${REMOTE_APP_DIR}/scripts/init-host-dir.sh --skip-mkcert ${REMOTE_DIR}"
 }
 
 sync_certs() {
-  local local_cert="${LOCAL_PROJECT_ROOT}/data/certs/fullchain.pem"
-  local local_key="${LOCAL_PROJECT_ROOT}/data/certs/privkey.pem"
+  local local_data_root="${AI_TUTOR_HOME:-$HOME/.ai-english-tutor}/data"
+  local local_cert="${local_data_root}/certs/fullchain.pem"
+  local local_key="${local_data_root}/certs/privkey.pem"
   if [ ! -f "$local_cert" ] || [ ! -f "$local_key" ]; then
     log_warn "本地未发现 ${local_cert} / ${local_key}，跳过 HTTPS 部署"
-    log_warn "  如需 HTTPS：先在本机跑 'bash scripts/init-host-dir.sh' 生成 mkcert 证书，再重跑部署"
+    log_warn "  如需 HTTPS：先在本机跑 'pnpm setup' 生成 mkcert 证书，再重跑部署"
     return 0
   fi
   log_info "上传 mkcert 证书到 ${REMOTE_DATA_DIR}/certs/ ..."
@@ -769,7 +805,7 @@ rollback() {
     log_dry "将执行: docker compose down"
     log_dry "将执行: 恢复 ${BACKUP_APP_DIR} -> ${REMOTE_APP_DIR}"
     if $DB_SCHEMA_WILL_CHANGE; then
-      log_dry "将执行: 恢复 ${BACKUP_DATA_DIR} -> ${REMOTE_DATA_DIR}（检测到 schema 变更）"
+      log_dry "将执行: 恢复 ${BACKUP_DATA_DIR} 中的配置与数据库，并保留模型和缓存目录（检测到 schema 变更）"
     fi
     log_dry "将执行: docker compose up -d"
     return 0
@@ -780,7 +816,7 @@ rollback() {
 
   if [ "${RESTORE_DATA_ON_ROLLBACK:-false}" = "true" ] || $DB_SCHEMA_WILL_CHANGE; then
     log_warn "恢复部署前数据备份 ${BACKUP_DATA_DIR}..."
-    remote_exec "rm -rf ${REMOTE_DATA_DIR} && cp -a ${BACKUP_DATA_DIR} ${REMOTE_DATA_DIR}"
+    remote_exec "mkdir -p ${REMOTE_DATA_DIR} && find ${REMOTE_DATA_DIR} -mindepth 1 -maxdepth 1 ! -name whisper-models ! -name cosyvoice-models ! -name modelscope-cache ! -name tts-cache -exec rm -rf {} + && cp -a ${BACKUP_DATA_DIR}/. ${REMOTE_DATA_DIR}/"
   else
     log_warn "未恢复 data/（避免丢失新数据）；如需恢复，数据备份在 ${BACKUP_DATA_DIR}"
     log_warn "  手动恢复: ssh ${REMOTE_USER}@${REMOTE_HOST} 'rm -rf ${REMOTE_DATA_DIR} && cp -a ${BACKUP_DATA_DIR} ${REMOTE_DATA_DIR}'"

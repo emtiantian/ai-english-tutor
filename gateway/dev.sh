@@ -34,6 +34,5 @@ docker run --rm \
     --add-host=host.docker.internal:host-gateway \
     -e "BACKEND_URL=http://host.docker.internal:3000" \
     -e "FRONTEND_URL=http://host.docker.internal:6173" \
-    -e "CORS_ORIGIN=*" \
     --name ai-tutor-gateway \
     ai-tutor-gateway:dev

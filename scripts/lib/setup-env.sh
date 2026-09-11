@@ -103,9 +103,9 @@ resolve_value() {
   local default_value="$4"
   local env_value=""
 
-  # 仅交互式生成时读进程环境变量；非交互式（自动化部署）忽略，
-  # 避免部署者本地 shell 中的 *_API_KEY 等环境变量污染生产 .env。
-  if [ "${GENERATE_NONINTERACTIVE:-false}" != "true" ]; then
+  # setup.sh --yes 也支持用进程环境变量生成配置；远程部署脚本会显式关闭，
+  # 避免部署者本机 shell 中的 *_API_KEY 覆盖服务器已有值。
+  if [ "${GENERATE_USE_PROCESS_ENV:-true}" = "true" ]; then
     eval "env_value=\"\${${env_name}:-}\""
     if [ -n "${env_value}" ]; then
       echo "${env_value}"
@@ -144,7 +144,7 @@ generate_env() {
   local existing_file="${2:-}"
   local noninteractive="${3:-false}"
 
-  # 暴露给 resolve_value：非交互模式下不读进程环境变量，避免部署者环境污染
+  # 记录生成模式供提示逻辑使用；是否读取进程环境由 GENERATE_USE_PROCESS_ENV 控制。
   GENERATE_NONINTERACTIVE="${noninteractive}"
 
   local timestamp
@@ -324,7 +324,7 @@ generate_env() {
   local volcengine_tts_api_key volcengine_tts_resource_id volcengine_tts_base_url
   local volcengine_tts_speaker volcengine_tts_format volcengine_tts_sample_rate
   local xiaomi_tts_api_key xiaomi_tts_base_url xiaomi_tts_mode xiaomi_tts_voice
-  local xiaomi_tts_voice_clone xiaomi_tts_voice_design xiaomi_tts_zh_voice_design
+  local xiaomi_tts_voice_clone xiaomi_tts_voice_design
   local cosyvoice_base_url cosyvoice_spk_id cosyvoice_speed cosyvoice_sample_rate
   local cosyvoice_health_check
 
@@ -341,7 +341,6 @@ generate_env() {
   xiaomi_tts_voice=$(resolve_example "XIAOMI_TTS_VOICE" "${existing_file}" "XIAOMI_TTS_VOICE")
   xiaomi_tts_voice_clone=$(resolve_example "XIAOMI_TTS_VOICE_CLONE" "${existing_file}" "XIAOMI_TTS_VOICE_CLONE")
   xiaomi_tts_voice_design=$(resolve_example "XIAOMI_TTS_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_VOICE_DESIGN")
-  xiaomi_tts_zh_voice_design=$(resolve_example "XIAOMI_TTS_ZH_VOICE_DESIGN" "${existing_file}" "XIAOMI_TTS_ZH_VOICE_DESIGN")
 
   cosyvoice_base_url=$(resolve_example "COSYVOICE_BASE_URL" "${existing_file}" "COSYVOICE_BASE_URL")
   cosyvoice_spk_id=$(resolve_example "COSYVOICE_SPK_ID" "${existing_file}" "COSYVOICE_SPK_ID")
@@ -406,7 +405,6 @@ generate_env() {
   append_override "${overrides_file}" "XIAOMI_TTS_VOICE" "${xiaomi_tts_voice}"
   append_override "${overrides_file}" "XIAOMI_TTS_VOICE_CLONE" "${xiaomi_tts_voice_clone}"
   append_override "${overrides_file}" "XIAOMI_TTS_VOICE_DESIGN" "${xiaomi_tts_voice_design}"
-  append_override "${overrides_file}" "XIAOMI_TTS_ZH_VOICE_DESIGN" "${xiaomi_tts_zh_voice_design}"
   append_override "${overrides_file}" "COSYVOICE_BASE_URL" "${cosyvoice_base_url}"
   append_override "${overrides_file}" "COSYVOICE_SPK_ID" "${cosyvoice_spk_id}"
   append_override "${overrides_file}" "COSYVOICE_SPEED" "${cosyvoice_speed}"

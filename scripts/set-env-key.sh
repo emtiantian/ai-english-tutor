@@ -113,7 +113,7 @@ fi
 mv "${TMP_FILE}" "${ENV_FILE}"
 
 # 校验
-if bash "${PROJECT_ROOT}/scripts/validate-env.sh" "${ENV_FILE}"; then
+if bash "${PROJECT_ROOT}/scripts/validate-env.sh" --strict "${ENV_FILE}"; then
   cp "${ENV_FILE}" "$(dirname "${ENV_FILE}")/.env.last-known-good"
   log_info "校验通过，已更新 last-known-good"
   rm -f "${BACKUP_FILE}"

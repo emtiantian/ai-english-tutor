@@ -1,7 +1,7 @@
 #!/bin/sh
 # ── AI English Tutor — Gateway entrypoint ──
 # 1. envsubst the main nginx.conf template (substitutes ${BACKEND_URL},
-#    ${FRONTEND_URL}, ${CORS_ORIGIN}, ${SERVER_NAME}).
+#    ${FRONTEND_URL}, ${SERVER_NAME}).
 # 2. If /etc/nginx/certs/{fullchain,privkey}.pem exist, render the
 #    443 server block from ssl.conf.template into
 #    /etc/nginx/conf.d/ssl.conf so HTTPS is enabled.
@@ -14,7 +14,7 @@ set -e
 mkdir -p /etc/nginx/conf.d
 
 # 1. Render main config
-envsubst '$BACKEND_URL $FRONTEND_URL $CORS_ORIGIN $SERVER_NAME' \
+envsubst '$BACKEND_URL $FRONTEND_URL $SERVER_NAME' \
     < /etc/nginx/nginx.conf.template \
     > /etc/nginx/nginx.conf
 

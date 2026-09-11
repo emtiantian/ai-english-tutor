@@ -4,7 +4,7 @@ import type {
   Live2DModelManifest,
   MotionRegistry
 } from '@ai-english-tutor/shared'
-import { HIYORI_MANIFEST } from '@ai-english-tutor/shared'
+import { MAO_PRO_MANIFEST } from '@ai-english-tutor/shared'
 
 import { CubismFramework, Option, LogLevel } from '@/lib/cubism-framework/live2dcubismframework'
 import { CubismModelSettingJson } from '@/lib/cubism-framework/cubismmodelsettingjson'
@@ -1261,7 +1261,7 @@ export class Live2DCharacterProvider implements CharacterProvider {
    * @param manifest 模型清单。不传则使用默认的 Hiyori manifest,
    *   行为与重构前完全一致(向后兼容)。
    */
-  constructor(manifest: Live2DModelManifest = HIYORI_MANIFEST) {
+  constructor(manifest: Live2DModelManifest = MAO_PRO_MANIFEST) {
     this._manifest = manifest
     this._registry = manifest.motionRegistry
   }

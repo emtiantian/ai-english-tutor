@@ -1,5 +1,3 @@
 export * from './types.js'
 export * from './list.js'
-export { HIYORI_MANIFEST } from './registry/hiyori.js'
-export { SHIZUKU_MANIFEST } from './registry/shizuku.js'
 export { MAO_PRO_MANIFEST } from './registry/mao_pro.js'

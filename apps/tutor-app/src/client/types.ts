@@ -71,6 +71,18 @@ export interface ChatRequestBody {
   resumeFrom?: string
 }
 
+export interface ScenarioSummary {
+  id: string
+  name: string
+  nameEn: string
+  icon: string
+}
+
+export interface RuntimeConfig {
+  asrProvider: string
+  ttsProvider: string
+}
+
 /** 后端返回的场景进度信息 */
 export interface ScenarioProgress {
   id: string

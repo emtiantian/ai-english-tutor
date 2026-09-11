@@ -7,7 +7,9 @@ import type {
   VocabProgress,
   ReviewWord,
   VocabSyncItem,
-  WordExplanation
+  WordExplanation,
+  RuntimeConfig,
+  ScenarioSummary
 } from './types'
 
 export interface TutorClientOptions {
@@ -121,6 +123,15 @@ export class TutorClient {
 
   async getSession(sessionId: string): Promise<unknown> {
     return this.fetchJson(`/api/session/${sessionId}`)
+  }
+
+  async getRuntimeConfig(): Promise<RuntimeConfig> {
+    return this.fetchJson('/api/config')
+  }
+
+  async getScenarios(): Promise<ScenarioSummary[]> {
+    const data = await this.fetchJson<{ scenarios: ScenarioSummary[] }>('/api/scenarios')
+    return data.scenarios
   }
 
   // --- 词汇接口 ---

@@ -14,9 +14,6 @@
   },
   "dependencies": {
     "@ai-english-tutor/shared": "workspace:*",
-    "@esotericsoftware/spine-webgl": "4.3.7",
-    "@rive-app/canvas": "^2.38.1",
-    "idb": "^8.0.3",
     "lamejs": "^1.2.1",
     "mitt": "^3.0.1",
     "pinia": "3.0.2",
@@ -29,7 +26,6 @@
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/test-utils": "^2.4.11",
-    "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "playwright-core": "^1.60.0",
     "typescript": "~5.7.0",

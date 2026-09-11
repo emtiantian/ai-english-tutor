@@ -40,9 +40,6 @@ export function useAudioPlayback(
     store.isPlaying = false
     getProvider()?.setSpeaking?.(false)
     // 如果开关关闭，语音结束后显示延迟的文本
-    if (!store.showTextImmediately) {
-      store.showDelayedMessage()
-    }
   }
   audioPlayer.onVolume = volume => {
     getProvider()?.setMouthOpen?.(volume)

@@ -1,17 +1,15 @@
 <template>
   <div class="input-bar-container">
-    <!-- 场景状态条（v2：三段进度 + 换场景 + 目标词抽屉入口） -->
-    <ScenarioStatusStrip
-      v-if="scenario"
-      :level="scenario.level"
-      :turns-count="scenario.turnsCount ?? 0"
-      :max-turns="scenario.maxTurns ?? 20"
-      :words-learned="scenario.wordsLearned"
-      :target-words-total="scenario.targetWordsTotal"
-      :coverage-rate="scenario.coverageRate"
-      @show-target-words="showTargetWords = true"
-      @switch-scenario="showSwitchConfirm = true"
-    />
+    <div v-if="scenario" class="mb-6px flex items-center justify-between px-4px text-12px">
+      <span class="text-white/60">{{ scenario.icon }} {{ scenario.name }}</span>
+      <button
+        type="button"
+        class="cursor-pointer border-0 bg-transparent px-6px py-4px text-white/65 hover:text-white"
+        @click="$emit('switch-scenario')"
+      >
+        切换场景
+      </button>
+    </div>
 
     <!-- 💡 学生回复提示（下一回合学习者可以说的话） -->
     <div v-if="scenario && suggestedPhrase" class="scenario-hint">
@@ -109,36 +107,12 @@
         处理中...
       </div>
     </Teleport>
-
-    <!-- 目标词抽屉 -->
-    <Teleport to="body">
-      <TargetWordsPanel
-        v-if="showTargetWords && scenario"
-        :target-words="scenario.targetWords"
-        :words-learned="scenario.wordsLearned"
-        :level="scenario.level"
-        @close="showTargetWords = false"
-      />
-    </Teleport>
-
-    <!-- 切换场景确认 -->
-    <Teleport to="body">
-      <SwitchScenarioConfirm
-        v-if="showSwitchConfirm && scenario"
-        :turns-count="scenario.turnsCount ?? 0"
-        @confirm="handleSwitchScenario"
-        @cancel="showSwitchConfirm = false"
-      />
-    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { ScenarioProgress } from '../client/types'
-import ScenarioStatusStrip from './ScenarioStatusStrip.vue'
-import TargetWordsPanel from './TargetWordsPanel.vue'
-import SwitchScenarioConfirm from './SwitchScenarioConfirm.vue'
 
 const props = defineProps<{
   isRecording: boolean
@@ -171,10 +145,6 @@ const isCancelled = ref(false)
 const startY = ref(0)
 const currentY = ref(0)
 const CANCEL_THRESHOLD = -80
-
-// --- v2：抽屉 / 确认状态 ---
-const showTargetWords = ref(false)
-const showSwitchConfirm = ref(false)
 
 function toggleInputMode() {
   inputMode.value = inputMode.value === 'voice' ? 'keyboard' : 'voice'
@@ -248,11 +218,6 @@ const inputPlaceholder = computed(() => {
   }
   return '输入英文...'
 })
-
-function handleSwitchScenario() {
-  showSwitchConfirm.value = false
-  emit('switch-scenario')
-}
 
 // --- 录音错误处理 ---
 watch(

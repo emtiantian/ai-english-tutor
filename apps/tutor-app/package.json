@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@ai-english-tutor/shared": "workspace:*",
-    "lamejs": "^1.2.1",
     "mitt": "^3.0.1",
     "pinia": "3.0.2",
     "vue": "3.5.13"

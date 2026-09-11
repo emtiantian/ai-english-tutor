@@ -4,9 +4,6 @@ import type {
   TutorEventMap,
   ChatRequestBody,
   ChatResponse,
-  VocabProgress,
-  ReviewWord,
-  VocabSyncItem,
   WordExplanation,
   RuntimeConfig,
   ScenarioSummary
@@ -135,32 +132,6 @@ export class TutorClient {
   }
 
   // --- 词汇接口 ---
-  async getVocabProgress(userId: string): Promise<VocabProgress> {
-    return this.fetchJson(`/api/vocab/progress/${userId}`, {
-      timeout: this.options.requestTimeoutMs ?? 15000
-    })
-  }
-
-  async getDueReviewWords(userId: string, limit = 10): Promise<ReviewWord[]> {
-    const data = await this.fetchJson<{ dueCount: number; words: ReviewWord[] }>(
-      `/api/vocab/review/due/${userId}?limit=${limit}`,
-      { timeout: this.options.requestTimeoutMs ?? 15000 }
-    )
-    return data.words
-  }
-
-  async syncVocabulary(
-    userId: string,
-    words: VocabSyncItem[]
-  ): Promise<{ success: boolean; synced: number }> {
-    return this.fetchJson('/api/vocab/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, words }),
-      timeout: 15000
-    })
-  }
-
   async explainWord(word: string, sentence?: string): Promise<WordExplanation> {
     return this.fetchJson('/api/vocab/explain', {
       method: 'POST',

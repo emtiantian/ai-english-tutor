@@ -60,15 +60,9 @@ export interface ChatRequestBody {
   /** 一次生成请求的唯一 ID，用于过滤打断后迟到的 SSE 数据。 */
   requestId?: string
   stream?: boolean
-  audioBase64?: string
-  audioFormat?: string
-  styleName?: string
   scenarioId?: string
-  userId?: string
-  /** v2: 场景挑战的目标 CEFR 档（A1-C2） */
-  targetLevel?: CEFRLevel
-  /** v2: 从暂停快照恢复时携带的后端 sessionId */
-  resumeFrom?: string
+  /** User-selected Xiaomi Voice Design description, independent of scenario. */
+  voiceDesign?: string
 }
 
 export interface ScenarioSummary {
@@ -81,6 +75,7 @@ export interface ScenarioSummary {
 export interface RuntimeConfig {
   asrProvider: string
   ttsProvider: string
+  voiceStyleSelectable?: boolean
 }
 
 /** 后端返回的场景进度信息 */
@@ -91,38 +86,6 @@ export interface ScenarioProgress {
   targetWords: string[]
   targetWordsTotal: number
   wordsLearned: string[]
-  completed?: boolean
-  summary?: {
-    wordsUsed: string[]
-    wordsTotal: number
-    turnsCount: number
-  }
-  /** v2: 当前挑战的 CEFR 档（A1-C2）。后端按用户档抽词后回填。 */
-  level?: CEFRLevel
-  /** v2: 当前已进行的轮次（用户每说一句 +1） */
-  turnsCount?: number
-  /** v2: 硬上限轮次，默认 20，到此强制结束 */
-  maxTurns?: number
-  /** v2: 词覆盖率 0-1（wordsLearned.length / targetWordsTotal） */
-  coverageRate?: number
-  /** v2: 通关星数。0 = 未达标（<60%），3/4/5 = 60%+/75%+/90%+ */
-  stars?: 0 | 3 | 4 | 5
-}
-
-/**
- * v2: 每个用户对每个场景的累积进度（前端持久化在 store + localStorage）。
- * highestClearedLevel = null 表示该场景从未通关；通关一次后值升级。
- */
-export interface UserScenarioProgress {
-  scenarioId: string
-  /** 已通关的最高档；null = 还没通关任何档 */
-  highestClearedLevel: CEFRLevel | null
-  /** 每档历史最高星数 */
-  starsByLevel: Partial<Record<CEFRLevel, 3 | 4 | 5>>
-  /** 总尝试次数（含失败/重玩） */
-  attempts: number
-  /** 最后一次进入该场景的时间戳 */
-  lastPlayedAt: number
 }
 
 export interface ChatResponse {
@@ -137,32 +100,4 @@ export interface ChatResponse {
   audioBase64?: string
   sessionId?: string
   scenario?: ScenarioProgress
-}
-
-/** 词汇进度统计 */
-export interface VocabProgress {
-  totalWords: number
-  learning: number
-  mastered: number
-  forgotten: number
-  dueForReview: number
-  masteryRate: number
-}
-
-/** 待复习单词 */
-export interface ReviewWord {
-  word: string
-  level: string
-  status: string
-  nextReviewAt: number
-  correctCount: number
-  incorrectCount: number
-}
-
-/** 词汇同步项 */
-export interface VocabSyncItem {
-  operationId?: string
-  word: string
-  action: 'learn' | 'review'
-  timestamp?: number
 }

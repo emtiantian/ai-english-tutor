@@ -9,6 +9,7 @@
 
     <ScenarioPicker
       v-if="store.phase === 'scenario-select'"
+      v-model:voice-design="voiceDesign"
       :scenarios="availableScenarios"
       @select="handleScenarioSelect"
     />
@@ -87,6 +88,7 @@ const store = useTutorStore()
 const showCharacterCanvas = ref(false)
 const characterCanvas = ref<HTMLCanvasElement | null>(null)
 const availableScenarios = ref<ScenarioSummary[]>([])
+const voiceDesign = ref('温柔、清晰、自然的成年女性英语教师，语速适中，发音清楚')
 const characterProvider = shallowRef<CharacterProvider | null>(null)
 
 const { client } = useTutorClient({ characterProvider })
@@ -126,7 +128,7 @@ async function sendToBackend(
       requestId,
       ...payload
     },
-    payload.audioBase64 ? 120000 : undefined
+    undefined
   )
 }
 
@@ -163,6 +165,7 @@ async function handleScenarioSelect(scenarioId: string) {
     await sendToBackend({
       type: 'lesson.start',
       scenarioId,
+      voiceDesign: voiceDesign.value,
       stream: true
     })
   } catch (err) {

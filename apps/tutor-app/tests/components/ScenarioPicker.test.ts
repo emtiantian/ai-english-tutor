@@ -6,6 +6,7 @@ describe('ScenarioPicker', () => {
   it('shows scenarios and starts the selected conversation', async () => {
     const wrapper = mount(ScenarioPicker, {
       props: {
+        voiceDesign: '温柔、清晰、自然的成年女性英语教师，语速适中，发音清楚',
         scenarios: [
           {
             id: 'restaurant-ordering',
@@ -24,5 +25,8 @@ describe('ScenarioPicker', () => {
     await wrapper.findAll('section button')[0].trigger('click')
 
     expect(wrapper.emitted('select')).toEqual([['restaurant-ordering']])
+
+    await wrapper.find('select').setValue('活泼明亮的年轻女性声音，节奏轻快，英语发音清晰自然')
+    expect(wrapper.emitted('update:voiceDesign')).toHaveLength(1)
   })
 })

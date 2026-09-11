@@ -4,8 +4,7 @@ import defaultPersonaJsonRaw from './persona-default.json' with { type: 'json' }
 /**
  * 开场风格 —— 一种人格预设，让老师拥有鲜明的个性风味。
  *
- * 每种风格定义老师如何问候学生、使用怎样的声音，
- * 以及符合该调性的动作/表情。
+ * 每种风格定义老师如何组织语言以及符合该调性的动作/表情。
  */
 export interface OpeningStyle {
   /** 风格标识符，用于日志和持久化 */
@@ -16,8 +15,6 @@ export interface OpeningStyle {
   motionHint: MotionId
   /** 开场问候建议使用的表情 */
   expressionHint: ExpressionId
-  /** TTS 音色设计描述，让人格与声线匹配 */
-  voiceDesign: string
 }
 
 /**

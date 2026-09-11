@@ -19,7 +19,7 @@ const envPaths = IS_DEPLOY
 
 for (const envPath of envPaths) {
   if (existsSync(envPath)) {
-    loadEnv({ path: envPath })
+    loadEnv({ path: envPath, quiet: true })
     break
   }
 }

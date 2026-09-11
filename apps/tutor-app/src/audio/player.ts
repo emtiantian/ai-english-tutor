@@ -28,6 +28,8 @@ export class AudioPlayer {
   private currentUtterance: SpeechSynthesisUtterance | null = null
   /** 当前正在播放的远程音频 source（abort 时用以真正停止，区别于 suspend 暂停） */
   private currentSource: AudioBufferSourceNode | null = null
+  private fallbackAudio: HTMLAudioElement | null = null
+  private fallbackAudioUrl: string | null = null
   /** abort 标志：抑制因 stop()/cancel() 间接触发的 onEnd 回调 */
   private aborted = false
   private _onStart?: () => void
@@ -135,6 +137,7 @@ export class AudioPlayer {
       this.audioContext.suspend()
     }
     this.synth?.cancel()
+    this.stopFallbackAudio()
     this.currentUtterance = null
     this.isPlayingValue = false
     this.audioChunks = []
@@ -158,6 +161,7 @@ export class AudioPlayer {
     }
     this.currentSource = null
     this.synth?.cancel()
+    this.stopFallbackAudio()
     this.currentUtterance = null
     this.audioChunks = []
     this.isPlayingValue = false
@@ -229,11 +233,40 @@ export class AudioPlayer {
 
       source.start()
     } catch (err) {
-      console.error('[AudioPlayer] Failed to play remote audio:', err)
+      console.warn('[AudioPlayer] WebAudio 不可用，切换 HTMLAudio 播放:', err)
       this.stopVolumeDetection()
+      await this.playFallbackAudio(fullBase64, this.currentFormat)
+    }
+  }
+
+  private async playFallbackAudio(audioBase64: string, format: string): Promise<void> {
+    this.stopFallbackAudio()
+    const bytes = base64ToArrayBuffer(audioBase64)
+    const mime = format === 'wav' ? 'audio/wav' : `audio/${format || 'mpeg'}`
+    this.fallbackAudioUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
+    const audio = new Audio(this.fallbackAudioUrl)
+    this.fallbackAudio = audio
+    audio.onended = () => {
+      this.stopFallbackAudio()
+      this.isPlayingValue = false
+      this._onVolume?.(0)
+      this._onEnd?.()
+    }
+    audio.onerror = () => {
+      this.stopFallbackAudio()
       this.isPlayingValue = false
       this._onEnd?.()
     }
+    this.isPlayingValue = true
+    this._onStart?.()
+    await audio.play()
+  }
+
+  private stopFallbackAudio(): void {
+    this.fallbackAudio?.pause()
+    this.fallbackAudio = null
+    if (this.fallbackAudioUrl) URL.revokeObjectURL(this.fallbackAudioUrl)
+    this.fallbackAudioUrl = null
   }
 
   // --- 内部：通过 speechSynthesis 播放本地 TTS ---

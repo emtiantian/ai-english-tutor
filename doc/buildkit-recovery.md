@@ -1,10 +1,8 @@
 # buildkitd 损伤排查与修复手册
 
-> 生成于 2026-07-21。记录 ⑬ CosyVoice 全链路验证部署期间暴露的 buildkit 缓存损坏问题，供下次正规 rebuild 后端时参考。
+> 2026-07-21 生成，2026-07-24 复检精简。buildkit 缓存损坏导致构建卡死的应急手册。
 
----
-
-## 〇、2026-07-24 复检结论：✅ 核心问题已解决
+## 一、2026-07-24 复检结论：✅ 核心问题已解决
 
 | 检查项               | 07-21（故障时）                      | 07-24（复检）                            |
 | -------------------- | ------------------------------------ | ---------------------------------------- |
@@ -14,44 +12,12 @@
 
 - **buildkit 卡死已恢复**：未走方案 A 新建 `fresh` builder，`default` 内嵌缓存自行恢复，实测最小构建 12s。
 - **backend 已正规 rebuild**：含 aee0f09 / c4ea1d9 最新代码，不再是 commit 补丁镜像。
-- **build cache 已清理**：`docker builder prune -f` 清掉 11.7GB 私有缓存（39.2GB → 27.5GB；剩余为被镜像引用的 shared 层，`-f` 不带 `--all` 保守保留）。
-- **deploy 脚本已加固**（方案五建议落实，详见第五节）：先 build 后 down + build 包 `timeout 600`，build 失败/超时旧服务零中断。
+- **build cache 已清理**：`docker builder prune -f` 清掉 11.7GB 私有缓存（39.2GB -> 27.5GB；剩余为被镜像引用的 shared 层）。
+- **deploy 脚本已加固**（见三）：build 失败/超时旧服务零中断。
 
-> 下次若再现构建卡死，按下方方案 A/B/C/D 排查；正常部署已无需特殊处理。
+> **根因**：build 被 `pkill`/kill 中断致 buildkit 内部 gc/索引不一致，缓存损坏后构建与 `prune` 均卡在 I/O。此风险源未消除（人为 kill / OOM / 部署中断均可再触发），故下方应急方案长期保留。
 
----
-
-## 一、问题详述
-
-### 现象
-
-- `docker compose up --build`（deploy 脚本 `deploy_services` 触发）卡死在 `apk add` 阶段：36 分钟仅 10s CPU，纯 I/O 等待。
-- 独立 alpine 容器 `docker run --rm alpine apk add ...` 60 秒完成 → **排除网络问题**。
-- `docker builder prune` 两次超时（60s / 180s）→ buildkit 缓存删除极慢，状态受损。
-- 测试构建 alpine+apk，150 秒仅完成 6/32 个包 → buildkit 构建极慢。
-
-### 根因
-
-buildkit 内嵌缓存状态损坏（推测：此前一次构建被 `pkill`/kill 中断，buildkit 内部 gc / 索引不一致）。损坏的缓存导致：
-
-- 后续构建读取缓存层时卡在 I/O；
-- `prune` 删除损坏记录时同样卡死。
-
-### 当前状态（2026-07-21 诊断）
-
-```
-builder:    仅 default（driver=docker，内嵌 buildkit v0.26.2），无独立 buildkit 容器
-Build Cache: 10.59GB / 232 条，reclaimable 7.58GB（膨胀且疑似损坏）
-Images:     30.28GB，92% reclaimable（大量悬空旧镜像）
-backend 镜像: ai-english-tutor-backend:latest (5d545790，docker commit 补丁镜像，非正规 rebuild)
-```
-
-## 二、影响
-
-1. **部署卡死 + 生产宕机**：`scripts/deploy-to-server.sh` 的 `deploy_services`（line 370-377）先 `dc down`（停所有服务）再 `up --build`。buildkit 一旦卡死 → 服务已停却起不来 → 宕机。本次靠绕过 `up -d`（不 rebuild）恢复。
-2. **backend 镜像过时**：当前 `5d545790` 是 `docker commit` 补 SQL 的镜像，**缺 aee0f09（tts-health 启动探测）+ c4ea1d9（spk2info wrapper）后端侧改动**。合成功能不受影响，但缺启动期 cosyvoice 探活告警。
-
-## 三、解决方案（按推荐顺序）
+## 二、应急方案（按推荐顺序）
 
 ### 方案 A（推荐）：新建独立 buildx builder，绕过损坏的内嵌缓存
 
@@ -71,15 +37,15 @@ EOF
 '
 ```
 
-若 `bktest` 构建 60-90 秒完成 → 修复成功，后续 build 用 `fresh` builder。
-若仍卡 → 跳方案 B。
+若 `bktest` 构建 60-90 秒完成 -> 修复成功，后续 build 用 `fresh` builder。
+若仍卡 -> 跳方案 B。
 
 - **优点**：不碰损坏缓存，立即可用；`default` builder 仍保留。
 - **缺点**：首次 build 无层缓存，略慢（但能完成）。
 
 ### 方案 B：清理 build cache + 重启 dockerd（彻底，需短暂停服）
 
-直接清除损坏的 10GB 缓存。prune 可能仍卡，配合重启 dockerd 强制释放。
+直接清除损坏的缓存。prune 可能仍卡，配合重启 dockerd 强制释放。
 
 ```bash
 ssh haohe@100.100.132.72 '
@@ -98,7 +64,7 @@ ssh haohe@100.100.132.72 '
 '
 ```
 
-> ⚠️ `systemctl restart docker` 会停所有容器。`cosyvoice.service` 是 oneshot（仅开机触发），docker restart **不会**自动重跑它，必须手动 `up -d` 恢复。
+> ⚠️ `systemctl restart docker` 会短暂停止所有容器。当前 Compose 服务使用 `restart: unless-stopped`，Docker 恢复后通常会自动拉起；仍需用 `docker compose ps` 验证。
 
 - **优点**：彻底清除损坏缓存，`default` builder 恢复正常。
 - **缺点**：需短暂停服（几十秒）。
@@ -124,60 +90,20 @@ ssh haohe@100.100.132.72 '
 
 ```bash
 ssh haohe@100.100.132.72 'sudo reboot'
-# 等 60-90s，cosyvoice.service 开机自启拉起整个栈
+# 等 60-90s，Compose 的 restart policy 会恢复服务
 ```
 
-仅当 A/B/C 都失败。systemd 已配 `cosyvoice.service`（enabled），开机自动 `docker compose up -d`。
+仅当 A/B/C 都失败。重启后必须检查 Docker 和全部 Compose 服务的健康状态。
 
-## 四、修复后：正规 rebuild backend 验证
+## 三、deploy 脚本加固（2026-07-24 已落实 ✅）
 
-修好 buildkit 后，正规 rebuild backend 镜像（含 aee0f09 / c4ea1d9 最新代码）。
+> 部署脚本已重构：`deploy_services` 现位于 `scripts/deploy/lib/common.sh`（被 `scripts/deploy/server.sh` source）。原问题：`deploy_services` 先 `dc down` 再 `build`，build 一卡就宕机。已落实：
 
-> Dockerfile（`apps/tutor-server/Dockerfile`）line 41 + line 62 都有 `COPY *.sql`，正规 rebuild **必然含 SQL**，不会再现 ENOENT。
-
-```bash
-# 方式 1：完整部署（本地跑，会触发 up --build）
-pnpm push:server --skip-tests
-
-# 方式 2：只 rebuild backend（不跑完整 deploy，更安全）
-ssh haohe@100.100.132.72 '
-  cd /home/haohe/data/.ai-english-tutor/app && \
-  AI_TUTOR_HOME=/home/haohe/data/.ai-english-tutor \
-  docker compose --env-file /home/haohe/data/.ai-english-tutor/data/.env \
-    -f docker-compose.yml -f docker-compose.cosyvoice.yml up -d --build backend
-'
-```
-
-### 验证清单
-
-```bash
-# 1. 镜像已更新（ID 变化、CreatedSince 变 just now）
-ssh haohe@100.100.132.72 \
-  'docker images ai-english-tutor-backend --format "{{.ID}} | {{.CreatedSince}} | {{.Size}}"'
-
-# 2. SQL 文件在镜像内（正规 rebuild 不会再现 ENOENT）
-ssh haohe@100.100.132.72 \
-  'docker run --rm --entrypoint sh ai-english-tutor-backend:latest -c "ls -la /app/dist/db/migrations/"'
-
-# 3. backend healthy + 含 tts-health 启动探测
-ssh haohe@100.100.132.72 \
-  'docker compose -f /home/haohe/data/.ai-english-tutor/app/docker-compose.yml \
-     -f /home/haohe/data/.ai-english-tutor/app/docker-compose.cosyvoice.yml ps'
-ssh haohe@100.100.132.72 \
-  'docker logs ai-english-tutor-backend-1 2>&1 | grep -iE "tts.?health|cosyvoice" | head'
-```
-
-## 五、预防 / deploy 脚本改进建议（2026-07-24 已落实 ✅）
-
-> 部署脚本已重构：`deploy_services` 现位于 `scripts/lib/deploy-common.sh`（被 `scripts/deploy-to-server.sh` source）。下方三条建议已于 07-24 全部落实。
-
-原问题：`deploy_services` 先 `dc down` 再 `build`，build 一卡就宕机。建议与落实情况：
-
-1. ✅ **先 build 后 down**：`deploy_services`（`scripts/lib/deploy-common.sh:568-596`）改为先 `build`（不停现有服务）再 `down` + `up -d`。build 失败/超时返回 1，`deploy_main` 不回滚，旧服务零中断。
-2. ✅ **build 加超时**：`dc_tty` 支持 `DC_TTY_TIMEOUT` 前缀，build 调用 `DC_TTY_TIMEOUT=${BUILD_TIMEOUT:-600} dc_tty "build ..."`，卡死时 600s 超时退出（`timeout` 返回 124 → dc_tty 失败 → return 1）。
+1. ✅ **先 build 后 down**：`deploy_services`（`scripts/deploy/lib/common.sh`）改为先 `build`（不停现有服务）再 `down` + `up -d`。build 失败/超时返回 1，`deploy_main` 不回滚，旧服务零中断。
+2. ✅ **build 加超时**：`dc_tty` 支持 `DC_TTY_TIMEOUT` 前缀，build 调用 `DC_TTY_TIMEOUT=${BUILD_TIMEOUT:-600} dc_tty "build ..."`，卡死时 600s 超时退出（`timeout` 返回 124 -> dc_tty 失败 -> return 1）。
 3. ✅ **只 rebuild 变更服务**：`core_services="backend frontend gateway"`（+whisper），cosyvoice 由 `pnpm deploy:cosyvoice` 独立构建，不纳入主部署 build。
 
-当前 `deploy_services` 流程（`scripts/lib/deploy-common.sh`）：
+当前 `deploy_services` 流程：
 
 ```bash
 deploy_services() {
@@ -195,7 +121,7 @@ deploy_services() {
 
 `deploy_main` 据返回码决定是否回滚：`return 1`（build 失败）不回滚、旧服务继续运行；`return 2`（up 失败）触发 `rollback` 恢复备份。
 
-## 六、相关 context
+## 四、相关 context
 
-- `⑫ CosyVoice 远程部署稳定性优化`（ctx-20260720-103841763730-3ef8b97b）—— systemd 自启、cosyvoice compose 叠加
-- 本次 `⑬ spk2info wrapper + 全链路验证 + systemd 自启`（待记录）
+- `⑫ CosyVoice 远程部署稳定性优化`（ctx-20260720-103841763730-3ef8b97b）-- systemd 自启、cosyvoice compose 叠加
+- `⑬ spk2info wrapper + 全链路验证 + systemd 自启`

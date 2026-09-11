@@ -1,61 +1,55 @@
 # CLAUDE.md
 
-本文件为 Claude Code 提供项目级最小工作指引。详细参考见 `.context/INDEX.md` 与 `.context/entries/reference/`。
+AI English Tutor 是个人使用的英语场景对话练习应用。当前产品边界是“选择场景 → 与 AI 对话 → 获得即时纠错与学习记录”；不要把主线改成技能短课或课程闯关，除非用户明确改变方向。
 
-## 项目概览
+## 先读这里
 
-AI English Tutor — 基于 AI 的英语口语陪练 SPA（Vue 3 + Fastify + SQLite + 角色渲染）。
+- 包管理器固定为 `pnpm 10.7.1`，不要使用 npm 或 yarn。
+- 日常开发运行 `pnpm local`：后端 `3000`，前端 `6173`。
+- 先查看目标代码和相邻测试；不要为了解项目遍历 `.claude/`、`.dev-data/` 或旧规划文档。
+- `.context/INDEX.md` 只保存当前决策和近期修复的索引，需要追溯时再按条目读取。
+- `.dev-data/` 是本地运行数据，不是实现依据；数据库文件不可随意删除。
 
-## 包管理器与 Workspace
+## Workspace
 
-- 包管理器：pnpm 10.7.1（仅 pnpm）
-- `apps/tutor-app` — Vue 3 SPA（Vite + Pinia + UnoCSS）
-- `apps/tutor-server` — Fastify + better-sqlite3 后端（ESM、tsx 直跑 TS）
-- `packages/shared`（`@ai-english-tutor/shared`）— 前后端共享类型与数据
-- `gateway/` — Nginx 反代（生产 Docker，开发可选）
+| 路径                | 职责                                   |
+| ------------------- | -------------------------------------- |
+| `apps/tutor-app`    | Vue 3 SPA：Vite、Pinia、UnoCSS         |
+| `apps/tutor-server` | Fastify API：SQLite、LLM、ASR、TTS     |
+| `packages/shared`   | 前后端共享类型、场景和静态数据         |
+| `gateway`           | Nginx HTTPS / WebSocket / SSE 反代     |
+| `scripts`           | 按功能分组的开发、配置、部署和诊断脚本 |
 
-## 最常用命令
+主要请求链路：页面组件 → Pinia store → `apps/tutor-app/src/api/` → Fastify route → service/provider → SQLite。修改接口时同步检查共享类型、前端调用、后端 schema 和测试。
+
+## 常用命令
 
 ```bash
-# 开发
-pnpm local            # 后端(:3000) + 前端(:6173)，日常默认
-pnpm server           # 仅后端（tsx watch，读仓库根 .env）
-pnpm dev              # 仅前端
-pnpm dev:clean        # 杀掉 3000/6173 端口残留
-
-# 构建
+pnpm local                         # 前后端本地开发
+pnpm dev                           # 仅前端
+pnpm server                        # 仅后端
+pnpm dev:clean                     # 清理 3000/6173 残留进程
+pnpm typecheck
 pnpm build
-pnpm --filter @ai-english-tutor/server build
-
-# 部署
-pnpm push:server      # 远端部署：rsync → docker compose up
-
-# 测试
 pnpm --filter tutor-app test
 pnpm --filter @ai-english-tutor/server test
-pnpm --filter @ai-english-tutor/server test:unit
-pnpm --filter @ai-english-tutor/server test:integration
+pnpm push:server                   # rsync + Docker Compose 远程部署
+pnpm deploy:cosyvoice              # 单独构建/部署 CosyVoice
 ```
 
-## ESM + `.js` 后缀
+脚本用途和直接调用方式见 `scripts/README.md`。
 
-后端与 shared 包均为 ESM，import 必须带 `.js`：
+## 实现约束
 
-```ts
-import { config } from './config.js' // ✅
-import { config } from './config' // ❌ 运行时找不到模块
-```
+- 后端和 shared 都是 ESM；相对 import 必须写运行时 `.js` 后缀，例如 `import { config } from './config.js'`。
+- 新增 LLM Provider 放在 `apps/tutor-server/src/ai/providers/`，优先继承 `openai-base.ts`，并在 `ai/llm/factory.ts` 注册。
+- 新增 ASR/TTS Provider 放在 `apps/tutor-server/src/voice/providers/`，并在 `voice/asr.ts` 或 `voice/tts.ts` 注册。
+- 新增或修改环境变量时，同时更新 `.env.example`、`apps/tutor-server/src/config.ts`、配置生成与校验脚本。
+- 部署数据目录由 `AI_TUTOR_HOME` 指定；生产配置位于 `${AI_TUTOR_HOME}/data/.env`，不要将密钥提交到仓库。
+- Docker 服务使用固定网络 `tutor-net`；Node 后端由 Compose 的 `restart: unless-stopped` 保活。
+- 对话流中的 `requestId` 要贯穿消息、流式响应和重试逻辑，避免旧请求覆盖新状态。
+- 学习记录只有在对应业务操作成功后才能计数；不要用重复提交或重试放大统计。
 
-## Provider 模式
+## 完成标准
 
-新增后端 Provider（LLM / TTS / ASR / 角色）时：
-
-1. 在对应 `ai/providers/` 或 `voice/providers/` 实现；LLM 优先继承 `ai/providers/openai-base.ts`。
-2. 在工厂（`ai/llm/factory.ts`、`voice/tts.ts`、`voice/asr.ts`）注册。
-3. 在 `.env.example` 补充 env 文档。
-
-详细 Provider 规范见 `.context/entries/reference/`。
-
-## 检索更多上下文
-
-任务开始前查询 `.context/INDEX.md`，按 `tags` / `files` / `title` 关键字定位条目。架构、配置、测试、端口、新增场景 / Live2D 模型等详细指南位于 `.context/entries/reference/`。
+根据改动范围至少运行 `pnpm typecheck` 和相关 workspace 测试。部署脚本改动还需执行 Shell 语法检查、`docker compose config`，并用 `pnpm push:server -- --dry-run` 检查流程。完成后更新仍然有效的文档，避免新增一次性计划和重复说明。

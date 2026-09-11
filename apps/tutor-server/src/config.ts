@@ -45,7 +45,7 @@ export const config = {
   TTS_FORMAT: process.env.TTS_FORMAT ?? 'mp3',
   TTS_SPEED: Number.parseFloat(process.env.TTS_SPEED ?? '1'),
   XIAOMI_TTS_API_KEY: process.env.XIAOMI_TTS_API_KEY ?? '',
-  XIAOMI_TTS_BASE_URL: process.env.XIAOMI_TTS_BASE_URL ?? 'https://token-plan-cn.xiaomimimo.com/v1',
+  XIAOMI_TTS_BASE_URL: process.env.XIAOMI_TTS_BASE_URL ?? 'https://api.xiaomimimo.com/v1',
   XIAOMI_TTS_MODE: process.env.XIAOMI_TTS_MODE ?? 'preset',
   XIAOMI_TTS_VOICE: process.env.XIAOMI_TTS_VOICE ?? 'Chloe',
   XIAOMI_TTS_VOICE_DESIGN: process.env.XIAOMI_TTS_VOICE_DESIGN ?? '',

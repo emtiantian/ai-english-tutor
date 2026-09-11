@@ -1,50 +1,67 @@
 #!/usr/bin/env bash
-# AI English Tutor — 一键部署到服务器
-# 用法: ./scripts/deploy/server.sh [--use-local-env] [--skip-tests] [--non-interactive-env] [--dry-run]
-#
-# 流程: git clean → ssh 检查 → 交互式 .env → 备份 → rsync → docker compose up → 健康检查 → 报告
-# 默认最小栈: 浏览器 ASR/TTS + mock LLM；需要时自动叠加 whisper / cosyvoice compose。
-
 set -euo pipefail
 
-USE_LOCAL_ENV=false
-SKIP_TESTS=false
-NONINTERACTIVE_ENV=false
-DRY_RUN=false
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -h|--help) sed -n '2,5p' "$0"; exit 0 ;;
-    --use-local-env)       USE_LOCAL_ENV=true ;;
-    --skip-tests)          SKIP_TESTS=true ;;
-    --non-interactive-env) NONINTERACTIVE_ENV=true ;;
-    --dry-run)             DRY_RUN=true ;;
-    --) ;;  # 忽略 pnpm 透传的 -- 分隔符（由外层 shift 跳过），支持 `pnpm push:server -- --use-local-env`
-    *)         echo "未知参数: $1" >&2; sed -n '2,5p' "$0"; exit 1 ;;
-  esac
-  shift
-done
-
-# ════════════════════════════════════════
-# 配置（环境变量可覆盖）
-# ════════════════════════════════════════
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REMOTE_HOST="${REMOTE_HOST:-100.100.132.72}"
 REMOTE_USER="${REMOTE_USER:-haohe}"
 REMOTE_DIR="${REMOTE_DIR:-/home/haohe/data/.ai-english-tutor}"
-REMOTE_APP_DIR="${REMOTE_DIR}/app"
-REMOTE_DATA_DIR="${REMOTE_DIR}/data"
-REMOTE_BACKUP_DIR="${REMOTE_DIR}/backups"
-REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
+REMOTE_APP="$REMOTE_DIR/app"
+REMOTE_DATA="$REMOTE_DIR/data"
+DRY_RUN=false
+SKIP_TESTS=false
+USE_LOCAL_ENV=false
 
-LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --skip-tests) SKIP_TESTS=true ;;
+    --use-local-env) USE_LOCAL_ENV=true ;;
+    --) ;;
+    *) echo "未知参数: $arg" >&2; exit 1 ;;
+  esac
+done
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_DATA_DIR="${REMOTE_BACKUP_DIR}/data-${TIMESTAMP}"
-BACKUP_APP_DIR="${REMOTE_BACKUP_DIR}/app-${TIMESTAMP}"
+run() {
+  if $DRY_RUN; then printf '[dry-run]'; printf ' %q' "$@"; printf '\n'; else "$@"; fi
+}
+remote() {
+  if $DRY_RUN; then echo "[dry-run] ssh $REMOTE_USER@$REMOTE_HOST $*"; else ssh "$REMOTE_USER@$REMOTE_HOST" "$@"; fi
+}
 
-# 加载公共部署库
-source "${LOCAL_PROJECT_ROOT}/scripts/deploy/lib/common.sh"
+if ! $SKIP_TESTS; then
+  pnpm typecheck
+  pnpm --filter tutor-app test
+  pnpm --filter @ai-english-tutor/server test
+  pnpm build
+fi
 
-# 启动主流程
-deploy_main
+git diff --quiet && git diff --cached --quiet || {
+  echo '工作区有未提交改动，拒绝部署。' >&2
+  exit 1
+}
+
+remote "mkdir -p '$REMOTE_APP' '$REMOTE_DATA' '$REMOTE_DIR/backups'"
+if $USE_LOCAL_ENV; then
+  [[ -f "$ROOT/.env" ]] || { echo '缺少本地 .env' >&2; exit 1; }
+  run scp "$ROOT/.env" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DATA/.env"
+fi
+
+remote "test -f '$REMOTE_DATA/.env'" || {
+  echo "远端缺少 $REMOTE_DATA/.env，请先运行 scripts/config/init-host.sh 或使用 --use-local-env" >&2
+  exit 1
+}
+
+stamp="$(date +%Y%m%d-%H%M%S)"
+remote "if [ -f '$REMOTE_APP/docker-compose.yml' ]; then tar -czf '$REMOTE_DIR/backups/app-$stamp.tar.gz' -C '$REMOTE_APP' .; fi"
+
+rsync_args=(-az --delete --exclude .git --exclude node_modules --exclude .env --exclude .dev-data)
+$DRY_RUN && rsync_args+=(--dry-run)
+rsync "${rsync_args[@]}" "$ROOT/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_APP/"
+
+remote "cd '$REMOTE_APP' && bash scripts/config/validate.sh '$REMOTE_DATA/.env'"
+remote "cd '$REMOTE_APP' && AI_TUTOR_HOME='$REMOTE_DIR' docker compose config --quiet"
+remote "cd '$REMOTE_APP' && AI_TUTOR_HOME='$REMOTE_DIR' docker compose up -d --build --remove-orphans"
+remote "cd '$REMOTE_APP' && AI_TUTOR_HOME='$REMOTE_DIR' docker compose ps"
+remote "curl -fsS --retry 12 --retry-delay 5 'http://127.0.0.1/api/health'"
+
+echo "部署完成: $REMOTE_USER@$REMOTE_HOST ($REMOTE_APP)"

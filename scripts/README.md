@@ -1,14 +1,12 @@
 # Scripts
 
-脚本按职责分组，日常优先使用根目录 `package.json` 中的 pnpm 命令。
+脚本按职责分组，第一版只维护当前实际运行的 DeepSeek + Xiaomi TTS + 浏览器 ASR 路径。
 
-| 目录         | 用途                              | 主要入口                                                 |
-| ------------ | --------------------------------- | -------------------------------------------------------- |
-| `dev/`       | 本地启动和端口清理                | `pnpm local`、`pnpm dev:clean`                           |
-| `config/`    | 初始化数据目录、生成和校验 `.env` | `pnpm run setup`、`pnpm run setup:set`                   |
-| `deploy/`    | 主服务和 CosyVoice 远程部署       | `pnpm push:server`、`pnpm deploy:cosyvoice`              |
-| `cosyvoice/` | CosyVoice 镜像资源与诊断工具      | `pnpm verify:cosyvoice`、`pnpm build:cosyvoice-spk2info` |
-| `test/`      | 远程 ASR 和测试音频工具           | 直接执行对应脚本                                         |
-| `hooks/`     | Git hooks 安装                    | `bash scripts/hooks/install.sh`                          |
+| 目录      | 用途                    | 常用命令                        |
+| --------- | ----------------------- | ------------------------------- |
+| `dev/`    | 本地启动与端口清理      | `pnpm local`, `pnpm dev:clean`  |
+| `config/` | 创建、修改和验证 `.env` | `pnpm setup`, `pnpm setup:set`  |
+| `deploy/` | Docker Compose 远程部署 | `pnpm push:server`              |
+| `hooks/`  | 安装仓库 Git hooks      | `bash scripts/hooks/install.sh` |
 
-`config/lib/` 和 `deploy/lib/` 是内部库，不作为独立入口。远程目标默认使用个人服务器配置，也可通过 `REMOTE_HOST`、`REMOTE_USER`、`REMOTE_DIR` 覆盖。
+部署脚本在上传前要求工作区干净，并默认执行类型检查、前后端测试和生产构建。远端由 Docker Compose 的 `restart: unless-stopped` 保持服务运行，不依赖 PM2。

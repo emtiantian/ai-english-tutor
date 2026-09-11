@@ -4,7 +4,6 @@ import { config } from './config.js'
 import { logger } from './logger.js'
 import { registerRoutes } from './routes/index.js'
 import { registerSSE } from './sse/handler.js'
-import { initSchema } from './db/index.js'
 import { loadAllVocabulary, loadAllScenarios } from './vocab/loader.js'
 
 /**
@@ -41,8 +40,7 @@ export async function createServer(): Promise<ReturnType<typeof Fastify>> {
     credentials: !isWildcardCors
   })
 
-  // 初始化数据库、词汇表和场景
-  initSchema()
+  // Load the static lesson data used by the first-release flow.
   loadAllVocabulary()
   loadAllScenarios()
 

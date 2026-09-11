@@ -49,20 +49,12 @@ export const config = {
   XIAOMI_TTS_MODE: process.env.XIAOMI_TTS_MODE ?? 'preset',
   XIAOMI_TTS_VOICE: process.env.XIAOMI_TTS_VOICE ?? 'Chloe',
   XIAOMI_TTS_VOICE_DESIGN: process.env.XIAOMI_TTS_VOICE_DESIGN ?? '',
-  XIAOMI_TTS_VOICE_CLONE: process.env.XIAOMI_TTS_VOICE_CLONE ?? '',
 
   ASR_PROVIDER: process.env.ASR_PROVIDER ?? 'browser',
   ASR_LANGUAGE: process.env.ASR_LANGUAGE ?? 'en-US',
 
   DATA_DIR: dataDir,
-  DB_PATH: process.env.DB_PATH ?? join(dataDir, 'tutor.db'),
-  CONFIG_DIR: process.env.CONFIG_DIR ?? dataDir,
-  TTS_CACHE_DIR: process.env.TTS_CACHE_DIR ?? join(dataDir, 'tts-cache'),
-  TTS_CACHE_MAX_MB: Number.parseInt(process.env.TTS_CACHE_MAX_MB ?? '1024', 10),
-  TTS_CACHE_MAX_FILES: Number.parseInt(process.env.TTS_CACHE_MAX_FILES ?? '5000', 10),
-  LINE_POOL_DIR: process.env.LINE_POOL_DIR ?? join(dataDir, 'line-pool'),
-  LINE_POOL_MAX_LINES: Number.parseInt(process.env.LINE_POOL_MAX_LINES ?? '200', 10),
-  LINE_POOL_INJECT_LIMIT: Number.parseInt(process.env.LINE_POOL_INJECT_LIMIT ?? '30', 10)
+  CONFIG_DIR: process.env.CONFIG_DIR ?? dataDir
 } as const
 
 export function getTtsSource(): 'local' | 'remote' {

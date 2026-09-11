@@ -1,38 +1,23 @@
+import type { CharacterPersona } from '@ai-english-tutor/shared'
+import { LUNA_PERSONA } from '@ai-english-tutor/shared'
 import { logger } from '../../logger.js'
 import { broadcastToSession } from '../../sse/handler.js'
 import type { TeacherChunkEvent, TeacherResponseEvent } from '../../sse/types.js'
-import type { CEFRLevel, CharacterPersona } from '@ai-english-tutor/shared'
-import { extractTextContent, type LLMMessage } from '../llm.js'
-import type { LLMProvider } from '../llm.js'
-import type { AudioPipeline } from '../audio-pipeline.js'
-import { SessionManager, type SessionData } from '../session-manager.js'
-import { VocabTracker, type ReviewWord } from '../vocab-tracker.js'
-import { parseTeachingResponse } from '../response-parser.js'
-import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
-import { buildTeachingMessages, buildScenarioTeachingMessages } from '../prompts/teaching.js'
-import { lineGroupKey, getReusableLines, recordTeacherLine } from '../line-pool.js'
 import { getScenarioById } from '../../vocab/loader.js'
-import { levelNumToCEFR } from '../utils/cefr.js'
-import { computeCurrentActIndex, buildScenarioProgress } from '../utils/scenario-progress.js'
+import type { AudioPipeline } from '../audio-pipeline.js'
+import type { LLMMessage, LLMProvider } from '../llm.js'
+import { buildScenarioTeachingMessages } from '../prompts/teaching.js'
+import { parseTeachingResponse } from '../response-parser.js'
+import type { SessionData } from '../session-manager.js'
+import { SessionManager } from '../session-manager.js'
+import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
 
-/**
- * 当 LLM 响应缺少 `vocabularySentences` 时发出警告。
- *
- * 💡 提示 UI 依赖每轮提供的例句；缺失不会导致崩溃（前端会降级为显示词汇列表，然后隐藏），
- * 但值得记录下来，以便发现 prompt 遵循度回退。
- */
 export function warnIfMissingVocabSentences(
   parsed: { vocabulary?: string[]; vocabularySentences?: string[] },
   sessionId: string,
   origin: string
 ): void {
-  // 按 prompt 约定：vocabulary 为空时允许省略 vocabularySentences，
-  // 只在有词汇却缺少例句时报警，避免正常空回复也刷 WARN。
-  if (
-    parsed.vocabulary &&
-    parsed.vocabulary.length > 0 &&
-    (!parsed.vocabularySentences || parsed.vocabularySentences.length === 0)
-  ) {
+  if (parsed.vocabulary?.length && !parsed.vocabularySentences?.length) {
     logger.warn(
       { sessionId, origin, vocabulary: parsed.vocabulary },
       'LLM 响应缺少 vocabularySentences'
@@ -40,21 +25,6 @@ export function warnIfMissingVocabSentences(
   }
 }
 
-/**
- * 生成稳定、唯一的 session ID。
- *
- * 使用时间戳加随机后缀，避免客户端未提供自己的 sessionId 时发生冲突。
- */
-function generateSessionId(): string {
-  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-/**
- * 公共流式教学响应辅助函数。
- *
- * 遍历 LLM 流式输出，通过 JsonTextStreamExtractor 实时提取 `text` 字段并通过 SSE
- * 广播 `teacher.chunk`。返回完整原始 content 字符串，供调用方解析为 TeachingResponse。
- */
 export async function streamTeachingResponse(
   llm: LLMProvider,
   messages: LLMMessage[],
@@ -62,14 +32,7 @@ export async function streamTeachingResponse(
   signal?: AbortSignal,
   requestId?: string
 ): Promise<string> {
-  const chunks: string[] = []
-  const extractor = new JsonTextStreamExtractor()
-  let rawBytes = 0
-  let visibleBytes = 0
-
   if (!llm.stream) {
-    // 降级方案：provider 不支持流式。发送结束标记让前端流式状态 UI 清空，
-    // 然后返回完整响应由调用方解析并广播 teacher.response。
     const response = await llm.complete(messages, signal)
     broadcastToSession(sessionId, {
       event: 'teacher.chunk',
@@ -78,42 +41,31 @@ export async function streamTeachingResponse(
     return response.content
   }
 
+  const chunks: string[] = []
+  const extractor = new JsonTextStreamExtractor()
   for await (const chunk of llm.stream(messages, { signal })) {
     if (chunk.content) {
       chunks.push(chunk.content)
-      rawBytes += chunk.content.length
       const visible = extractor.push(chunk.content)
-      if (visible) {
-        visibleBytes += visible.length
-        const event: TeacherChunkEvent = {
+      if (visible)
+        broadcastToSession(sessionId, {
           event: 'teacher.chunk',
           data: { chunk: visible, isEnd: false, requestId }
-        }
-        broadcastToSession(sessionId, event)
-      }
+        } satisfies TeacherChunkEvent)
     }
     if (chunk.isEnd) {
       const tail = extractor.flush()
-      if (tail) {
-        visibleBytes += tail.length
+      if (tail)
         broadcastToSession(sessionId, {
           event: 'teacher.chunk',
           data: { chunk: tail, isEnd: false, requestId }
         } satisfies TeacherChunkEvent)
-      }
       broadcastToSession(sessionId, {
         event: 'teacher.chunk',
         data: { chunk: '', isEnd: true, requestId }
       } satisfies TeacherChunkEvent)
-      break
     }
   }
-
-  logger.debug(
-    { sessionId, rawBytes, visibleBytes, droppedBytes: rawBytes - visibleBytes },
-    '流式过滤：在 SSE 前丢弃推理/JSON 语法字节'
-  )
-
   return chunks.join('')
 }
 
@@ -122,341 +74,91 @@ export class ResponseOrchestrator {
     private llm: LLMProvider,
     private sessions: SessionManager,
     private audio: AudioPipeline,
-    private vocabTracker: VocabTracker,
-    private persona: CharacterPersona
+    private persona: CharacterPersona = LUNA_PERSONA
   ) {}
 
-  /**
-   * 处理用户语音/文本输入并生成教学响应
-   */
   async handleUserSpeak(
     text: string,
     options: {
       sessionId?: string
       level?: number
       stream?: boolean
-      audioBase64?: string
-      audioFormat?: string
-      userId?: string
       requestId?: string
       signal?: AbortSignal
     } = {}
-  ): Promise<{
-    text: string
-    transcript?: string
-    motionId?: string
-    expressionId?: string
-    vocabulary?: string[]
-    vocabularySentences?: string[]
-    studentReplyHints?: string[]
-    audioBase64?: string
-    scenario?: {
-      id: string
-      name: string
-      icon: string
-      targetWords: string[]
-      targetWordsTotal: number
-      wordsLearned: string[]
-      completed?: boolean
-      level?: CEFRLevel
-      turnsCount?: number
-      maxTurns?: number
-      coverageRate?: number
-      stars?: 0 | 3 | 4 | 5
-      summary?: { wordsUsed: string[]; wordsTotal: number; turnsCount: number }
-    }
-  }> {
-    const {
-      sessionId,
-      level = 3,
-      stream = false,
-      audioBase64,
-      audioFormat = 'webm',
-      userId,
-      requestId
-    } = options
+  ) {
+    const sessionId = options.sessionId
+    if (!sessionId) throw new Error('场景对话缺少 sessionId')
+    const session = this.sessions.getFromCache(sessionId)
+    if (!session?.scenario) throw new Error('场景会话不存在，请重新选择场景')
+    const scenario = getScenarioById(session.scenario.id)
+    if (!scenario) throw new Error(`场景不存在：${session.scenario.id}`)
 
-    logger.info(
-      {
-        text: text.slice(0, 50),
-        sessionId,
-        level,
-        stream,
-        hasAudio: !!audioBase64,
-        provider: this.llm.name,
-        hasScenario: !!sessionId && !!this.sessions.getFromCache(sessionId)?.scenario
-      },
-      '处理用户发言'
+    const messages = buildScenarioTeachingMessages(
+      text,
+      scenario,
+      session.level,
+      session.scenario.level,
+      session.history,
+      session.openingStyle,
+      this.persona,
+      session.scenario.targetWords,
+      { wordsUsed: Array.from(session.scenario.wordsUsed) }
     )
-
-    const sid = sessionId ?? generateSessionId()
-    const session = this.sessions.getOrCreate(sid, level)
-    session.userId = userId
-
-    // 记录输入是否为音频（用于模糊词汇匹配）
-    const isAudioInput = !!audioBase64
-
-    // 按需转录音频
-    const userText = await this.audio.transcribeAudio(text, audioBase64, audioFormat)
-
-    // 获取复习词（间隔重复）
-    const reviewWords = userId ? this.vocabTracker.getReviewWords(userId) : []
-    const levelStr = levelNumToCEFR(level)
-
-    // 根据是否处于场景中构建消息
-    let messages: LLMMessage[]
-    const scenarioState = session.scenario
-    const scenario = scenarioState ? getScenarioById(scenarioState.id) : undefined
-    if (scenario && scenarioState) {
-      const targetLevel = scenarioState.level ?? levelNumToCEFR(session.level)
-      const reusableLines = await getReusableLines(
-        lineGroupKey(scenario.id, targetLevel, session.voiceDesign)
-      )
-      messages = buildScenarioTeachingMessages(
-        userText,
-        scenario,
-        session.level,
-        targetLevel,
-        session.history,
-        session.openingStyle,
-        this.persona,
-        reviewWords.length > 0 ? reviewWords : undefined,
-        reusableLines,
-        scenarioState.targetWords,
-        {
-          currentActIndex: computeCurrentActIndex(scenarioState),
-          wordsUsed: Array.from(scenarioState.wordsUsed)
-        },
-        scenarioState.levelProfile
-      )
-    } else {
-      messages = buildTeachingMessages(
-        userText,
-        session.level,
-        session.history,
-        session.openingStyle,
-        this.persona,
-        reviewWords.length > 0 ? reviewWords : undefined
-      )
-    }
-
-    // 支持音频输入的 LLM 可自行转录并理解音频，因此没有跑独立 ASR（transcribeAudio 提前返回）。
-    // 在此处把原始音频附加到最后一条用户轮次，否则模型只能看到空/占位文本，无法真正“听到”用户。
-    if (isAudioInput && audioBase64 && this.llm.capabilities.supportsAudioInput) {
-      const lastMsg = messages[messages.length - 1]
-      if (lastMsg && lastMsg.role === 'user') {
-        const existingText = extractTextContent(lastMsg)
-        lastMsg.content = [
-          { type: 'text', text: existingText || 'Please listen to the audio and respond.' },
-          { type: 'audio', data: audioBase64, format: audioFormat }
-        ]
-        logger.info(
-          { llm: this.llm.name, audioFormat, base64Size: audioBase64.length },
-          '[LLM] 已为支持语音的 LLM 附加音频到用户轮次'
+    const raw = options.stream
+      ? await streamTeachingResponse(
+          this.llm,
+          messages,
+          sessionId,
+          options.signal,
+          options.requestId
         )
-      }
-    }
-
-    // 调用 LLM 并收尾
-    if (stream) {
-      return this.handleStreamingResponse(
-        messages,
-        session,
-        userText,
-        sid,
-        userId,
-        reviewWords,
-        levelStr,
-        isAudioInput,
-        options.signal,
-        requestId
-      )
-    } else {
-      return this.handleCompleteResponse(
-        messages,
-        session,
-        userText,
-        sid,
-        userId,
-        reviewWords,
-        levelStr,
-        isAudioInput,
-        options.signal,
-        requestId
-      )
-    }
+      : (await this.llm.complete(messages, options.signal)).content
+    return this.finalize(sessionId, session, text, raw, options.signal, options.requestId)
   }
 
-  private async handleCompleteResponse(
-    messages: LLMMessage[],
-    session: SessionData,
-    userText: string,
-    sessionId: string,
-    userId?: string,
-    reviewWords?: ReviewWord[],
-    levelStr?: string,
-    isAudioInput?: boolean,
-    signal?: AbortSignal,
-    requestId?: string
-  ) {
-    const response = await this.llm.complete(messages, signal)
-    return this.finalizeResponse(
-      sessionId,
-      session,
-      userText,
-      response.content,
-      userId,
-      reviewWords,
-      levelStr,
-      isAudioInput,
-      signal,
-      requestId
-    )
-  }
-
-  private async handleStreamingResponse(
-    messages: LLMMessage[],
-    session: SessionData,
-    userText: string,
-    sessionId: string,
-    userId?: string,
-    reviewWords?: ReviewWord[],
-    levelStr?: string,
-    isAudioInput?: boolean,
-    signal?: AbortSignal,
-    requestId?: string
-  ) {
-    const rawContent = await streamTeachingResponse(
-      this.llm,
-      messages,
-      sessionId,
-      signal,
-      requestId
-    )
-    return this.finalizeResponse(
-      sessionId,
-      session,
-      userText,
-      rawContent,
-      userId,
-      reviewWords,
-      levelStr,
-      isAudioInput,
-      signal,
-      requestId
-    )
-  }
-
-  /**
-   * 统一收尾：解析 → 持久化 → 广播 SSE → 处理音频 → 跟踪词汇 → 跟踪场景
-   */
-  private async finalizeResponse(
+  private async finalize(
     sessionId: string,
     session: SessionData,
     userText: string,
-    rawContent: string,
-    userId?: string,
-    reviewWords?: ReviewWord[],
-    levelStr?: string,
-    isAudioInput?: boolean,
+    raw: string,
     signal?: AbortSignal,
     requestId?: string
   ) {
-    const parsed = parseTeachingResponse(rawContent)
+    const parsed = parseTeachingResponse(raw)
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
-
-    // 在场景中使用 VocabTracker 匹配跟踪用户使用的词汇
-    if (session.scenario) {
-      session.scenario.turnsCount++
-      const { used } = this.vocabTracker.analyzeUserText(userText, session.scenario.targetWords, {
-        isAudioInput
-      })
-      for (const word of used) {
-        session.scenario.wordsUsed.add(word)
-      }
-
-      // LLM 引入的词只用于消息展示；场景评分只统计学生实际说出的目标词。
-      if (parsed.vocabulary) {
-        const targetSet = new Set(session.scenario.targetWords.map(w => w.toLowerCase()))
-        // 将 vocabulary 过滤为仅保留目标词汇（避免 LLM 幻觉）
-        parsed.vocabulary = parsed.vocabulary.filter(w => targetSet.has(w.toLowerCase()))
-        if (parsed.vocabulary.length === 0) parsed.vocabulary = undefined
-      }
-
-      // 持久化更新后的场景进度，使其在服务端重启后仍能保留。
-      try {
-        this.sessions.saveScenarioState(sessionId, session.scenario)
-      } catch (err) {
-        logger.warn({ err, sessionId }, '持久化场景状态失败')
-      }
-    }
-
+    this.recordUsedWords(session, userText)
     this.sessions.addMessage(sessionId, session, 'user', userText)
-    this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, {
-      motionId: parsed.motionId,
-      expressionId: parsed.expressionId,
-      vocabulary: parsed.vocabulary,
-      vocabularySentences: parsed.vocabularySentences
-    })
+    this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 
-    // 记住这句台词以复用（仅在场景中生效，台词池按场景/等级/音色分组，并在 prompt 中回传）。
-    if (session.scenario) {
-      const targetLevel = session.scenario.level ?? levelNumToCEFR(session.level)
-      await recordTeacherLine(
-        lineGroupKey(session.scenario.id, targetLevel, session.voiceDesign),
-        parsed.text
-      )
+    const scenario = session.scenario && {
+      id: session.scenario.id,
+      name: session.scenario.name,
+      icon: session.scenario.icon,
+      targetWords: session.scenario.targetWords,
+      targetWordsTotal: session.scenario.targetWords.length,
+      wordsLearned: Array.from(session.scenario.wordsUsed)
     }
-
-    // 跟踪词汇（间隔重复）
-    if (userId && reviewWords && levelStr) {
-      const vocabAnalysis = this.vocabTracker.processTurn(
-        userId,
-        userText,
-        parsed.vocabulary ?? [],
-        reviewWords,
-        levelStr,
-        { isAudioInput }
-      )
-      if (vocabAnalysis.usedWords.length > 0 || vocabAnalysis.newWords.length > 0) {
-        logger.info(
-          {
-            userId,
-            isAudio: isAudioInput,
-            used: vocabAnalysis.usedWords,
-            missed: vocabAnalysis.missedWords,
-            new: vocabAnalysis.newWords
-          },
-          '词汇跟踪更新'
-        )
-      }
-    }
-
-    const scenarioProgress = buildScenarioProgress(session)
-    const completeEvent: TeacherResponseEvent = {
+    broadcastToSession(sessionId, {
       event: 'teacher.response',
-      data: { ...parsed, scenario: scenarioProgress, requestId }
-    }
-    broadcastToSession(sessionId, completeEvent)
-
-    // 生成英文 TTS
-    logger.debug(
-      { sessionId, textLength: parsed.text.length, hasVoiceDesign: !!session.voiceDesign },
-      '准备生成 TTS'
-    )
-    const audioResult = await this.audio.handleOutput(
+      data: { ...parsed, scenario, requestId }
+    } satisfies TeacherResponseEvent)
+    const audio = await this.audio.handleOutput(
       parsed.text,
       session.voiceDesign,
       sessionId,
       requestId,
       signal
     )
+    return { ...parsed, transcript: userText, ...audio, scenario }
+  }
 
-    return {
-      ...parsed,
-      transcript: userText,
-      audioBase64: audioResult.audioBase64,
-      scenario: scenarioProgress
+  private recordUsedWords(session: SessionData, text: string): void {
+    if (!session.scenario) return
+    const normalized = text.toLowerCase()
+    for (const word of session.scenario.targetWords) {
+      const escaped = word.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      if (new RegExp(`\\b${escaped}\\b`, 'i').test(normalized)) session.scenario.wordsUsed.add(word)
     }
   }
 }

@@ -1,7 +1,6 @@
 import { createServer } from './server.js'
 import { config } from './config.js'
 import { logger } from './logger.js'
-import { closeDb } from './db/index.js'
 
 let server: Awaited<ReturnType<typeof createServer>> | undefined
 let shuttingDown = false
@@ -26,11 +25,10 @@ async function main(): Promise<void> {
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
   if (shuttingDown) return
   shuttingDown = true
-  logger.info({ signal }, '收到退出信号，正在停止接收请求并关闭数据库')
+  logger.info({ signal }, '收到退出信号，正在停止接收请求')
 
   try {
     await server?.close()
-    closeDb()
     process.exit(0)
   } catch (err) {
     logger.error({ err, signal }, '服务关闭失败')

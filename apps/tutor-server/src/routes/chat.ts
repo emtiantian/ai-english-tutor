@@ -1,5 +1,4 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import type { CEFRLevel } from '@ai-english-tutor/shared'
 import { logger } from '../logger.js'
 import { broadcastToSession, interruptSession, onSessionDisconnect } from '../sse/handler.js'
 import { tutorEngine } from '../ai/engine.js'
@@ -26,20 +25,10 @@ interface ChatRequestBody {
   /** 单次生成请求 ID，用于打断和过滤迟到事件 */
   requestId?: string
   stream?: boolean
-  /** 用户语音音频，base64 编码（供支持语音的 provider 使用） */
-  audioBase64?: string
-  /** 提供 audioBase64 时的音频格式：webm | mp4 | mp3 | wav */
-  audioFormat?: string
-  /** 用户 ID，用于词汇跟踪（间隔重复） */
-  userId?: string
-  /** 人格风格名称（用于 lesson.start） */
-  styleName?: string
   /** 场景化课程 ID（用于 lesson.start） */
   scenarioId?: string
-  /** v2：场景化课程的目标 CEFR 等级（用于 lesson.start） */
-  targetLevel?: string
-  /** v2：通过服务端 sessionId 恢复暂停的场景会话（用于 lesson.start） */
-  resumeFrom?: string
+  /** 用户选择的小米 Voice Design 描述；与场景无关。 */
+  voiceDesign?: string
 }
 
 /**
@@ -55,21 +44,8 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
     if (!request.body || typeof request.body !== 'object') {
       return reply.status(400).send({ error: 'JSON body is required', code: 'INVALID_BODY' })
     }
-    const {
-      type,
-      text,
-      level,
-      sessionId,
-      requestId,
-      stream,
-      audioBase64,
-      audioFormat,
-      userId,
-      styleName,
-      scenarioId,
-      targetLevel,
-      resumeFrom
-    } = request.body
+    const { type, text, level, sessionId, requestId, stream, scenarioId, voiceDesign } =
+      request.body
     if (text !== undefined && typeof text !== 'string') {
       return reply.status(400).send({ error: 'text must be a string', code: 'INVALID_TEXT' })
     }
@@ -78,9 +54,9 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
         .status(400)
         .send({ error: 'level must be an integer from 1 to 6', code: 'INVALID_LEVEL' })
     }
-    if (type === 'user.speak' && !text?.trim() && !audioBase64) {
+    if (type === 'user.speak' && !text?.trim()) {
       return reply.status(400).send({
-        error: 'text or audioBase64 is required for user.speak',
+        error: 'text is required for user.speak',
         code: 'MISSING_INPUT'
       })
     }
@@ -91,10 +67,8 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
         level,
         sessionId,
         stream,
-        hasAudio: !!audioBase64,
         scenarioId,
-        targetLevel,
-        resumeFrom
+        hasVoiceDesign: !!voiceDesign
       },
       'Chat request'
     )
@@ -119,9 +93,6 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             sessionId,
             level,
             stream: stream ?? false,
-            audioBase64,
-            audioFormat,
-            userId,
             requestId,
             signal: controller.signal
           })
@@ -181,14 +152,17 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
             request.raw.on('close', onClose)
           }
 
+          if (!scenarioId) {
+            return reply.status(400).send({
+              error: 'scenarioId is required for lesson.start',
+              code: 'MISSING_SCENARIO_ID'
+            })
+          }
           const enginePromise = tutorEngine.startLesson(
             level ?? 1,
             sessionId,
-            userId,
             scenarioId,
-            styleName,
-            targetLevel as CEFRLevel | undefined,
-            resumeFrom,
+            voiceDesign,
             stream ?? false,
             controller.signal,
             requestId

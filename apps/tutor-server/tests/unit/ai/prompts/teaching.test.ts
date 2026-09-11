@@ -15,7 +15,6 @@ describe('scenario teaching prompts', () => {
       'A1',
       undefined,
       LUNA_PERSONA,
-      undefined,
       runtimeWords
     )
     const startSystem = String(startMessages[0].content)
@@ -43,8 +42,6 @@ describe('scenario teaching prompts', () => {
       [],
       undefined,
       LUNA_PERSONA,
-      undefined,
-      undefined,
       runtimeWords,
       { currentActIndex: 0, wordsUsed: usedWords }
     )

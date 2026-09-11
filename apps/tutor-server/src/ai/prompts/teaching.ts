@@ -1,5 +1,3 @@
-export { buildLessonStartMessages } from './free-form/lesson-start.js'
-export { buildTeachingMessages } from './free-form/teaching-turn.js'
 export { buildScenarioStartMessages } from './scenario/scenario-start.js'
 export { buildScenarioTeachingMessages } from './scenario/scenario-turn.js'
 export {

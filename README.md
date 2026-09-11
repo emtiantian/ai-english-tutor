@@ -198,7 +198,7 @@ CosyVoice2-0.5B 预置音色表里只有 `EnglishTutor` 一个音色（开箱即
    docker compose -f docker-compose.yml -f docker-compose.cosyvoice.yml restart cosyvoice
    ```
 
-   `server.py` 经 `scripts/cosyvoice-server-wrapper.py` 启动，会自动扫描挂载目录的 `*.pt` 合并加载到 `frontend.spk2info`，无需手工注入 modelscope 缓存。
+   `server.py` 经 `scripts/cosyvoice/server-wrapper.py` 启动，会自动扫描挂载目录的 `*.pt` 合并加载到 `frontend.spk2info`，无需手工注入 modelscope 缓存。
 
 该目录通过 compose 只读挂载到容器 `/opt/CosyVoice/spk2info`；部署时把 `<spk_id>.pt` 放到 `~/.ai-english-tutor/data/cosyvoice-spk2info/` 即可，换机器随 `data/` 迁移。
 
@@ -209,7 +209,7 @@ CosyVoice2-0.5B 预置音色表里只有 `EnglishTutor` 一个音色（开箱即
 `docker-compose.cosyvoice.yml` 已设置 `restart: unless-stopped`，可保证容器崩溃后自动恢复。若还需保证**宿主机重启后**自动拉起 CosyVoice，可安装 systemd unit：
 
 ```bash
-sudo cp scripts/cosyvoice.service /etc/systemd/system/
+sudo cp scripts/cosyvoice/systemd.service.example /etc/systemd/system/cosyvoice.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now cosyvoice
 ```

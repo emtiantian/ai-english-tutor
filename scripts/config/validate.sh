@@ -4,9 +4,9 @@
 # 可直接执行，也可被 source 后调用 validate_env 函数。
 #
 # 用法：
-#   bash scripts/validate-env.sh [.env 文件路径]        # 默认校验当前目录 .env
-#   bash scripts/validate-env.sh --strict [.env 文件路径] # 未知变量也报错
-#   source scripts/validate-env.sh
+#   bash scripts/config/validate.sh [.env 文件路径]        # 默认校验当前目录 .env
+#   bash scripts/config/validate.sh --strict [.env 文件路径] # 未知变量也报错
+#   source scripts/config/validate.sh
 #   validate_env [.env 文件路径] [--strict]
 #
 # 校验规则：
@@ -19,7 +19,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 if [ -t 2 ]; then
   RED=$'\033[0;31m'

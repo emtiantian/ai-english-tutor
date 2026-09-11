@@ -2,7 +2,7 @@
 # ── AI English Tutor — 清理开发端口 ──
 # 释放本地开发占用的端口 (3000, 6173)
 #
-# Usage: pnpm dev:clean  或  bash scripts/kill-ports.sh
+# Usage: pnpm dev:clean  或  bash scripts/dev/clean.sh
 
 set -e
 

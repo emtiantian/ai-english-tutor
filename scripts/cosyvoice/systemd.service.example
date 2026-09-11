@@ -2,7 +2,7 @@
 # 用途：开机自启 AI English Tutor CosyVoice TTS（顺带拉起整个 docker compose 栈）
 #
 # 安装：
-#   sudo cp scripts/cosyvoice.service /etc/systemd/system/
+#   sudo cp scripts/cosyvoice/systemd.service.example /etc/systemd/system/cosyvoice.service
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now cosyvoice
 #

@@ -1,8 +1,8 @@
 # AI English Tutor —— .env 模板渲染公共库
-# 被 scripts/lib/setup-env.sh 调用。
+# 被 scripts/config/lib/setup-env.sh 调用。
 #
 # 用法：
-#   source scripts/lib/render-env.sh
+#   source scripts/config/lib/render-env.sh
 #   render_env <template_path> <output_path> <overrides_file>
 #
 # 行为：

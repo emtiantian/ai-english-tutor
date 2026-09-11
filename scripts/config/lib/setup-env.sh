@@ -1,5 +1,5 @@
 # AI English Tutor —— 交互式 .env 配置公共库
-# 被 scripts/setup.sh 和 scripts/deploy-to-server.sh source 使用。
+# 被 scripts/config/setup.sh 和 scripts/deploy/lib/common.sh source 使用。
 # 本文件只包含纯配置生成逻辑，不涉及 SSH、rsync、备份等远端操作。
 #
 # 设计原则：

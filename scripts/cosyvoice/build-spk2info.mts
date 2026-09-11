@@ -1,4 +1,4 @@
-// scripts/build-cosyvoice-spk2info.mts
+// scripts/cosyvoice/build-spk2info.mts
 //
 // 从参考音频生成 CosyVoice2 的 spk2info.pt（自定义音色 embedding 文件）。
 //
@@ -10,7 +10,7 @@
 //   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.wav
 //   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.mp3  # 自动转 WAV
 //   pnpm build:cosyvoice-spk2info -- --spk-id MyVoice --audio /abs/ref.mp3 --rm-wav
-//   npx tsx scripts/build-cosyvoice-spk2info.mts -- --help
+//   pnpm build:cosyvoice-spk2info -- --help
 //
 // 默认路径：
 //   参考音频 = <data-root>/cosyvoice-spk2info/<spk-id>.wav
@@ -42,7 +42,7 @@
 // 需针对本镜像适配（已在本脚本处理，直接 `pnpm build:cosyvoice-spk2info` 可跑通）：
 //   a. deepspeed：镜像无 nvcc/CUDA_HOME，`import cosyvoice` 时 installed_cuda_version 会
 //      raise MissingCUDAException 崩溃。仅 DS_BUILD_OPS=0 不够，需 sed patch builder.py 让其
-//      返回 torch CUDA 版本（与 scripts/cosyvoice-server-wrapper.py 同款，见 buildDockerCommand）。
+//      返回 torch CUDA 版本（与 scripts/cosyvoice/server-wrapper.py 同款，见 buildDockerCommand）。
 //   b. add_zero_shot_spk 的 prompt_wav 传「文件路径」而非 tensor：本镜像版本 frontend_zero_shot
 //      内部 _extract_speech_feat/_extract_speech_token/_extract_spk_embedding 均调用
 //      load_wav(prompt_wav)，而 load_wav 用 torchaudio.load 只接受路径，传 tensor 抛
@@ -61,7 +61,7 @@ import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const REPO_ROOT = path.resolve(__dirname, '..')
+const REPO_ROOT = path.resolve(__dirname, '../..')
 
 /** CosyVoice 自托管镜像名（与 docker-compose.cosyvoice.yml 一致） */
 const IMAGE = 'cosyvoice:local'
@@ -152,7 +152,7 @@ function printHelp(): void {
     `
 用法:
   pnpm build:cosyvoice-spk2info [-- <选项>]
-  npx tsx scripts/build-cosyvoice-spk2info.mts [-- <选项>]
+  pnpm build:cosyvoice-spk2info -- [选项]
 
 从参考音频生成 CosyVoice2 的 spk2info.pt（自定义音色 embedding 文件）。
 在本机通过 docker run --gpus all 调用 cosyvoice:local 镜像执行，无需安装 conda/PyTorch。
@@ -262,7 +262,7 @@ function preflightChecks(args: CliArgs): {
   for (const dir of [hostModelscopeCache, hostPretrainedModels]) {
     if (!existsSync(dir)) {
       console.warn(`警告: 挂载源目录不存在，自动创建: ${dir}`)
-      console.warn('  （若首次运行，建议先跑 bash scripts/init-host-dir.sh 完成目录初始化）')
+      console.warn('  （若首次运行，建议先跑 bash scripts/config/init-host.sh 完成目录初始化）')
       try {
         mkdirSync(dir, { recursive: true })
       } catch (e) {
@@ -462,7 +462,7 @@ function buildDockerCommand(
   }
 ): string[] {
   // heredoc 通过 bash -c 传入, 'PY' 加引号禁止变量展开
-  // 先 patch deepspeed（与 scripts/cosyvoice-server-wrapper.py 一致）：本镜像无 nvcc/CUDA_HOME，
+  // 先 patch deepspeed（与 scripts/cosyvoice/server-wrapper.py 一致）：本镜像无 nvcc/CUDA_HOME，
   // DS_BUILD_OPS=0 不编译 op，但 installed_cuda_version 仍会 raise MissingCUDAException 致
   // import cosyvoice 崩溃，需让其返回 torch CUDA 版本。docker run --rm 是全新容器，没有
   // wrapper 的运行时 patch，故在此显式补上。

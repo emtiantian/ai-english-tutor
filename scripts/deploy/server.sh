@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# AI English Tutor — 一键部署到服务器（个人使用，硬编码目标）
-# 用法: ./scripts/deploy-to-server.sh [--use-local-env] [--skip-tests] [--non-interactive-env] [--dry-run]
+# AI English Tutor — 一键部署到服务器
+# 用法: ./scripts/deploy/server.sh [--use-local-env] [--skip-tests] [--non-interactive-env] [--dry-run]
 #
 # 流程: git clean → ssh 检查 → 交互式 .env → 备份 → rsync → docker compose up → 健康检查 → 报告
 # 默认最小栈: 浏览器 ASR/TTS + mock LLM；需要时自动叠加 whisper / cosyvoice compose。
@@ -26,17 +26,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ════════════════════════════════════════
-# 配置（个人使用，硬编码）
+# 配置（环境变量可覆盖）
 # ════════════════════════════════════════
-REMOTE_HOST="100.100.132.72"
-REMOTE_USER="haohe"
-REMOTE_DIR="/home/haohe/data/.ai-english-tutor"
+REMOTE_HOST="${REMOTE_HOST:-100.100.132.72}"
+REMOTE_USER="${REMOTE_USER:-haohe}"
+REMOTE_DIR="${REMOTE_DIR:-/home/haohe/data/.ai-english-tutor}"
 REMOTE_APP_DIR="${REMOTE_DIR}/app"
 REMOTE_DATA_DIR="${REMOTE_DIR}/data"
 REMOTE_BACKUP_DIR="${REMOTE_DIR}/backups"
 REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
 
-LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
 
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -44,7 +44,7 @@ BACKUP_DATA_DIR="${REMOTE_BACKUP_DIR}/data-${TIMESTAMP}"
 BACKUP_APP_DIR="${REMOTE_BACKUP_DIR}/app-${TIMESTAMP}"
 
 # 加载公共部署库
-source "${LOCAL_PROJECT_ROOT}/scripts/lib/deploy-common.sh"
+source "${LOCAL_PROJECT_ROOT}/scripts/deploy/lib/common.sh"
 
 # 启动主流程
 deploy_main

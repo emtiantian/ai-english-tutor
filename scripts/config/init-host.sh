@@ -8,14 +8,14 @@
 #   所有用户可编辑的配置（.env / persona.json / scenarios.json / vocab/）
 #   都必须放在 data/ 下，否则容器读不到。
 #
-# Usage: bash scripts/init-host-dir.sh [--skip-mkcert] [自定义路径]
+# Usage: bash scripts/config/init-host.sh [--skip-mkcert] [自定义路径]
 #   默认: ~/.ai-english-tutor/
-#   示例: bash scripts/init-host-dir.sh /opt/ai-tutor
-#   示例: bash scripts/init-host-dir.sh --skip-mkcert /opt/ai-tutor
+#   示例: bash scripts/config/init-host.sh /opt/ai-tutor
+#   示例: bash scripts/config/init-host.sh --skip-mkcert /opt/ai-tutor
 
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 SKIP_MKCERT=false
 TUTOR_HOME_ARG=""
@@ -139,7 +139,7 @@ ensure_mkcert_certs() {
     echo ""
   fi
   echo "   ✅ 装完后任选其一继续："
-  echo "        1) 重跑本脚本：bash scripts/init-host-dir.sh"
+  echo "        1) 重跑本脚本：bash scripts/config/init-host.sh"
   echo "        2) 手动签发："
   echo "             mkcert -cert-file $cert_file \\"
   echo "                      -key-file  $key_file  localhost 127.0.0.1 ::1"
@@ -183,7 +183,7 @@ ensure_mkcert_certs() {
       fi
       ;;
     *)
-      echo "   ⏭️  跳过安装。稍后装好再跑 'bash scripts/init-host-dir.sh' 生成证书"
+      echo "   ⏭️  跳过安装。稍后装好再跑 'bash scripts/config/init-host.sh' 生成证书"
       ;;
   esac
   echo ""
@@ -273,4 +273,3 @@ $HOME/.ai-english-tutor/data/logs/gateway/*.log {
 EOF
 echo "💡 日志轮转示例已写入 $LOGROTATE_EXAMPLE"
 echo "   需要时以 root 复制到 /etc/logrotate.d/ai-english-tutor 并调整路径/用户"
-

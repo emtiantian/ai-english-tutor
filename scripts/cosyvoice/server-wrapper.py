@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# scripts/cosyvoice-server-wrapper.py
+# scripts/cosyvoice/server-wrapper.py
 #
 # CosyVoice 官方 server.py 的启动包装器。
 #
@@ -7,7 +7,7 @@
 #   官方 server.py 启动时 AutoModel(model_dir) -> CosyVoice2.__init__ ->
 #   CosyVoiceFrontEnd 只从 {model_dir}/spk2info.pt 单文件加载音色表，
 #   不会扫描 docker-compose.cosyvoice.yml 挂载的 /opt/CosyVoice/spk2info 目录。
-#   因此 build-cosyvoice-spk2info.mts 生成的 <spk_id>.pt 分文件不会被自动加载，
+#   因此 scripts/cosyvoice/build-spk2info.mts 生成的 <spk_id>.pt 分文件不会被自动加载，
 #   此前只能靠手工把音色注入 modelscope 缓存的 spk2info.pt 才可用，换机器即丢失。
 #
 # 本包装器的做法（不改官方源码、不污染 modelscope 缓存）：

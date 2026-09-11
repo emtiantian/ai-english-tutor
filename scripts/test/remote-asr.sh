@@ -23,13 +23,13 @@ REMOTE_TMP_AUDIO="/tmp/ai-tutor-test-asr.mp3"
 # L4 后端 API 协议：默认 http；HTTPS（如 mkcert 自签）设 REMOTE_SCHEME=https
 REMOTE_SCHEME="${REMOTE_SCHEME:-http}"
 
-LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 AUDIO_GENERATOR="${LOCAL_PROJECT_ROOT}/scripts/generate-test-audio.sh"
 
 # docker compose project 名来自 docker-compose.yml 顶层的 name: ai-english-tutor
 PROJECT_NAME="ai-english-tutor"
 WHISPER_CONTAINER="${PROJECT_NAME}-whisper-1"
-TUTOR_NETWORK="${PROJECT_NAME}_tutor-net"
+TUTOR_NETWORK="tutor-net"
 
 RED=$'\033[0;31m'
 GREEN=$'\033[0;32m'

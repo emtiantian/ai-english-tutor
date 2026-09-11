@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
 # AI English Tutor — 交互式配置向导
 # 用法：
-#   bash scripts/setup.sh              # 交互模式
-#   bash scripts/setup.sh --yes        # 非交互模式，使用环境变量/默认值
-#   bash scripts/setup.sh --validate-only [.env]
-#   bash scripts/setup.sh --restore-last-known-good [.env]
-#   AI_TUTOR_HOME=/opt/ai-tutor bash scripts/setup.sh --yes
+#   bash scripts/config/setup.sh              # 交互模式
+#   bash scripts/config/setup.sh --yes        # 非交互模式，使用环境变量/默认值
+#   bash scripts/config/setup.sh --validate-only [.env]
+#   bash scripts/config/setup.sh --restore-last-known-good [.env]
 #
 # 生成 ~/.ai-english-tutor/data/.env 并初始化数据目录，供 docker compose 部署使用。
 
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-source "${PROJECT_ROOT}/scripts/lib/render-env.sh"
-source "${PROJECT_ROOT}/scripts/lib/setup-env.sh"
-source "${PROJECT_ROOT}/scripts/validate-env.sh"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "${PROJECT_ROOT}/scripts/config/lib/render-env.sh"
+source "${PROJECT_ROOT}/scripts/config/lib/setup-env.sh"
+source "${PROJECT_ROOT}/scripts/config/validate.sh"
 
 AUTO_YES=false
 VALIDATE_ONLY=false
@@ -27,8 +26,8 @@ show_help() {
 AI English Tutor — 交互式配置向导
 
 用法:
-  bash scripts/setup.sh [选项] [.env 文件路径]
-  pnpm setup [选项]
+  bash scripts/config/setup.sh [选项] [.env 文件路径]
+  pnpm run setup -- [选项]
 
 选项:
   -y, --yes                    非交互模式，使用环境变量或默认值
@@ -211,9 +210,9 @@ main() {
   # 3. 初始化目录
   log_info "初始化数据目录..."
   if $AUTO_YES; then
-    bash "${PROJECT_ROOT}/scripts/init-host-dir.sh" --skip-mkcert "${AI_TUTOR_HOME}"
+    bash "${PROJECT_ROOT}/scripts/config/init-host.sh" --skip-mkcert "${AI_TUTOR_HOME}"
   else
-    bash "${PROJECT_ROOT}/scripts/init-host-dir.sh" "${AI_TUTOR_HOME}"
+    bash "${PROJECT_ROOT}/scripts/config/init-host.sh" "${AI_TUTOR_HOME}"
   fi
 
   # 4. 生成/更新 .env

@@ -7,7 +7,7 @@
 # 说明：
 #   - 主部署 push:server 不再自动构建 cosyvoice 镜像（避免构建失败拖累主程序）。
 #   - 本命令负责：rsync 代码 -> docker compose build cosyvoice -> up -d cosyvoice -> 健康检查。
-#   - 复用 scripts/lib/deploy-common.sh 的工具函数（remote_exec/dc/sync_code/test_build_proxy 等）。
+#   - 复用 scripts/deploy/lib/common.sh 的工具函数（remote_exec/dc/sync_code/test_build_proxy 等）。
 #   - 仅当远端 .env 的 TTS_PROVIDER=cosyvoice 时才有意义；否则提示并退出。
 #   - 镜像构建约 5-10 分钟，需代理 BUILD_PROXY（默认 http://127.0.0.1:7890，可用 --proxy 覆盖）。
 
@@ -39,12 +39,12 @@ REMOTE_DATA_DIR="${REMOTE_DIR}/data"
 REMOTE_BACKUP_DIR="${REMOTE_DIR}/backups"
 REMOTE_ENV_FILE="${REMOTE_DATA_DIR}/.env"
 
-LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 LOCAL_ENV_TEMP="${LOCAL_PROJECT_ROOT}/.env.deploy.generated"
 
 # 加载公共部署库（提供 remote_exec / dc / log_* / sync_code / test_build_proxy /
 # wait_cosyvoice_healthy / detect_compose_overlays / get_cosyvoice_health 等函数）
-source "${LOCAL_PROJECT_ROOT}/scripts/lib/deploy-common.sh"
+source "${LOCAL_PROJECT_ROOT}/scripts/deploy/lib/common.sh"
 
 PROXY="${BUILD_PROXY:-http://127.0.0.1:7890}"
 

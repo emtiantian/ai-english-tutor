@@ -2,14 +2,14 @@
 # ── AI English Tutor - 本地开发（无 Docker）──
 # 同时启动后端和前端，不启动网关
 #
-# Usage: pnpm local  或  bash scripts/dev-local.sh
+# Usage: pnpm local  或  bash scripts/dev/start.sh
 #
 # Architecture:
 #   Browser -> Vite (6173) -> proxy /api/* -> Backend (3000)
 
 set -eo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # 存储子进程 PID

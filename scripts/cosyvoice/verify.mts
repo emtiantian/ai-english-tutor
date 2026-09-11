@@ -2,8 +2,9 @@
 // 运行：COSYVOICE_BASE_URL=http://localhost:50000 COSYVOICE_SPK_ID=EnglishTutor npx tsx <本文件>
 import assert from 'node:assert'
 
-const { config } = await import('../apps/tutor-server/src/config.js')
-const { CosyVoiceProvider } = await import('../apps/tutor-server/src/voice/providers/cosyvoice.ts')
+const { config } = await import('../../apps/tutor-server/src/config.js')
+const { CosyVoiceProvider } =
+  await import('../../apps/tutor-server/src/voice/providers/cosyvoice.ts')
 
 async function main() {
   const provider = new CosyVoiceProvider()

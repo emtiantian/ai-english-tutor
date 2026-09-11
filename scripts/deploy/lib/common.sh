@@ -1,5 +1,5 @@
 # AI English Tutor —— 部署脚本公共库
-# 被 scripts/deploy-to-server.sh 和 scripts/deploy.sh source 使用。
+# 被 scripts/deploy/server.sh 和 scripts/deploy/cosyvoice.sh source 使用。
 #
 # 本文件不直接执行，只提供部署流程函数。调用方需要先设置以下变量：
 #   REMOTE_HOST, REMOTE_USER, REMOTE_DIR
@@ -8,8 +8,8 @@
 #   USE_LOCAL_ENV, SKIP_TESTS, DRY_RUN
 
 # 加载配置生成库
-source "${LOCAL_PROJECT_ROOT}/scripts/lib/setup-env.sh"
-source "${LOCAL_PROJECT_ROOT}/scripts/validate-env.sh"
+source "${LOCAL_PROJECT_ROOT}/scripts/config/lib/setup-env.sh"
+source "${LOCAL_PROJECT_ROOT}/scripts/config/validate.sh"
 
 WHISPER_MODEL_FILE="${WHISPER_MODEL:-ggml-base.en.bin}"
 WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${WHISPER_MODEL_FILE}"
@@ -397,7 +397,7 @@ sync_code() {
 
 init_remote_data_dir() {
   log_info "在服务器初始化 data/ 目录..."
-  remote_exec "bash ${REMOTE_APP_DIR}/scripts/init-host-dir.sh --skip-mkcert ${REMOTE_DIR}"
+  remote_exec "bash ${REMOTE_APP_DIR}/scripts/config/init-host.sh --skip-mkcert ${REMOTE_DIR}"
 }
 
 sync_certs() {
@@ -406,7 +406,7 @@ sync_certs() {
   local local_key="${local_data_root}/certs/privkey.pem"
   if [ ! -f "$local_cert" ] || [ ! -f "$local_key" ]; then
     log_warn "本地未发现 ${local_cert} / ${local_key}，跳过 HTTPS 部署"
-    log_warn "  如需 HTTPS：先在本机跑 'pnpm setup' 生成 mkcert 证书，再重跑部署"
+    log_warn "  如需 HTTPS：先在本机跑 'pnpm run setup' 生成 mkcert 证书，再重跑部署"
     return 0
   fi
   log_info "上传 mkcert 证书到 ${REMOTE_DATA_DIR}/certs/ ..."

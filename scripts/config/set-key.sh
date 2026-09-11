@@ -2,8 +2,8 @@
 # AI English Tutor —— 单 key 增量修改 .env
 #
 # 用法：
-#   pnpm setup:set KEY=VALUE
-#   pnpm setup:set KEY=VALUE --file /path/to/.env
+#   pnpm run setup:set -- KEY=VALUE
+#   pnpm run setup:set -- KEY=VALUE --file /path/to/.env
 #
 # 行为：
 #   1. 备份当前 .env。
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 RED=$'\033[0;31m'
 GREEN=$'\033[0;32m'
@@ -31,8 +31,8 @@ ENV_FILE="${AI_TUTOR_HOME}/data/.env"
 usage() {
   cat <<EOF
 用法:
-  pnpm setup:set KEY=VALUE
-  pnpm setup:set KEY=VALUE --file /path/to/.env
+  pnpm run setup:set -- KEY=VALUE
+  pnpm run setup:set -- KEY=VALUE --file /path/to/.env
 
 选项:
   --file PATH   指定 .env 文件路径（默认: \${AI_TUTOR_HOME}/data/.env）
@@ -75,7 +75,7 @@ VALUE="${KV_ARG#*=}"
 
 if [ ! -f "${ENV_FILE}" ]; then
   log_error "找不到 .env 文件: ${ENV_FILE}"
-  log_info "可先运行: pnpm setup"
+  log_info "可先运行: pnpm run setup"
   exit 1
 fi
 
@@ -113,7 +113,7 @@ fi
 mv "${TMP_FILE}" "${ENV_FILE}"
 
 # 校验
-if bash "${PROJECT_ROOT}/scripts/validate-env.sh" --strict "${ENV_FILE}"; then
+if bash "${PROJECT_ROOT}/scripts/config/validate.sh" --strict "${ENV_FILE}"; then
   cp "${ENV_FILE}" "$(dirname "${ENV_FILE}")/.env.last-known-good"
   log_info "校验通过，已更新 last-known-good"
   rm -f "${BACKUP_FILE}"

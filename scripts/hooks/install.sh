@@ -4,7 +4,7 @@
 
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOKS_DIR="${REPO_ROOT}/.githooks"
 
 if [ ! -d "${HOOKS_DIR}" ]; then

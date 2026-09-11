@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUTPUT="${1:-${LOCAL_PROJECT_ROOT}/.dev-data/test-asr.mp3}"
 TEXT="Hello, I would like to order a cup of coffee."
 

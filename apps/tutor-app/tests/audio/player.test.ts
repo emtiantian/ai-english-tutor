@@ -10,6 +10,8 @@ describe('AudioPlayer', () => {
 
   afterEach(() => {
     player?.stop()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('local TTS mode', () => {
@@ -58,36 +60,58 @@ describe('AudioPlayer', () => {
 
   describe('remote TTS mode', () => {
     beforeEach(() => {
-      const mockBufferSource = {
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        start: vi.fn(),
-        stop: vi.fn(),
-        context: null as any,
-        onended: null as any
-      }
-
-      global.AudioContext = vi.fn().mockImplementation(function () {
-        const ctx = {
-          decodeAudioData: vi.fn().mockResolvedValue({ duration: 1 }),
-          createBufferSource: vi.fn().mockReturnValue(mockBufferSource),
-          createAnalyser: vi.fn().mockReturnValue({
-            fftSize: 0,
-            frequencyBinCount: 256,
-            getByteFrequencyData: vi.fn(),
-            connect: vi.fn(),
-            disconnect: vi.fn()
-          }),
-          destination: {},
-          close: vi.fn()
-        }
-        mockBufferSource.context = ctx
-        return ctx
-      }) as any
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        this.dispatchEvent(new Event('playing'))
+        return Promise.resolve()
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+      vi.stubGlobal(
+        'AudioContext',
+        vi.fn(() => {
+          throw new Error('Device failure')
+        })
+      )
+      vi.stubGlobal('URL', {
+        createObjectURL: vi.fn(() => 'blob:test-audio'),
+        revokeObjectURL: vi.fn()
+      })
 
       global.atob = vi.fn().mockReturnValue('decoded') as any
 
       player = new AudioPlayer('remote')
+    })
+
+    it('primes a valid source without waiting for playback and reuses it for the opening', async () => {
+      const audioElements: HTMLAudioElement[] = []
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLAudioElement
+      ) {
+        audioElements.push(this)
+        if (audioElements.length === 1) {
+          expect(this.src).toMatch(/^data:audio\/wav/)
+          return new Promise<void>(() => {})
+        }
+        this.dispatchEvent(new Event('playing'))
+        return Promise.resolve()
+      })
+      await player.unlockAudio()
+      player.feedAudioChunk({ audioBase64: 'chunk', format: 'wav', isEnd: true })
+      await Promise.resolve()
+      expect(audioElements).toHaveLength(2)
+      expect(audioElements[1]).toBe(audioElements[0])
+      expect(player.isPlaying).toBe(true)
+      expect(AudioContext).not.toHaveBeenCalled()
+    })
+
+    it('reports rejected playback and clears playing state', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(new Error('NotAllowedError'))
+      const onError = vi.fn()
+      player.onError = onError
+      await player.replayAudio('chunk', 'wav')
+      expect(player.isPlaying).toBe(false)
+      expect(onError).toHaveBeenCalledOnce()
     })
 
     it('should accumulate audio chunks and play when isEnd=true', async () => {

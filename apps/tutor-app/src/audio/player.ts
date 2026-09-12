@@ -1,5 +1,6 @@
 import type { SpeakOptions, TTSSource } from '@ai-english-tutor/shared'
-import { base64ToArrayBuffer, createVolumeMeter } from './utils.js'
+import { base64ToArrayBuffer } from './utils.js'
+import { audioDiagnostic } from './diagnostics.js'
 
 export type { TTSSource }
 
@@ -11,33 +12,61 @@ export interface AudioChunk {
 
 /**
  * 双模式音频播放器：
- * - remote：接收后端 base64 音频块，通过 AudioContext 播放
+ * - remote：接收后端 base64 音频块，通过原生 Audio 元素播放
  * - local：使用浏览器 speechSynthesis API
  *
  * iOS Safari 注意：
- * - AudioContext 初始为 "suspended"，需要通过用户手势恢复
+ * - 通过用户手势预热同一个 Audio 元素
  * - speechSynthesis.speak() 必须在用户手势上下文中调用
  * - 首次调用 getVoices() 会返回空列表；语音列表异步加载
  */
 export class AudioPlayer {
-  private audioContext: AudioContext | null = null
   private audioChunks: string[] = []
   private currentFormat = 'mp3'
   private isPlayingValue = false
   private synth = typeof window !== 'undefined' ? window.speechSynthesis : null
   private currentUtterance: SpeechSynthesisUtterance | null = null
-  /** 当前正在播放的远程音频 source（abort 时用以真正停止，区别于 suspend 暂停） */
-  private currentSource: AudioBufferSourceNode | null = null
+  /** 跨回复复用已在用户手势中预热的原生播放器。 */
   private fallbackAudio: HTMLAudioElement | null = null
   private fallbackAudioUrl: string | null = null
   /** abort 标志：抑制因 stop()/cancel() 间接触发的 onEnd 回调 */
   private aborted = false
+  private _onError?: (error: Error) => void
   private _onStart?: () => void
   private _onEnd?: () => void
   private _onVolume?: (volume: number) => void
   private volumeMeterCleanup: (() => void) | null = null
-  /** AudioContext 是否已通过用户手势解锁（iOS 要求） */
+  /** 是否已尝试通过用户手势预热。 */
   private audioUnlocked = false
+  private diagnosticTimer: ReturnType<typeof setTimeout> | undefined
+
+  private trace(stage: string, extra: Record<string, unknown> = {}): void {
+    const audio = this.fallbackAudio
+    audioDiagnostic(stage, {
+      source: this.ttsSource,
+      secureContext: window.isSecureContext,
+      protocol: window.location.protocol,
+      userActive: navigator.userActivation?.isActive,
+      userHasInteracted: navigator.userActivation?.hasBeenActive,
+      visibility: document.visibilityState,
+      paused: audio?.paused,
+      muted: audio?.muted,
+      volume: audio?.volume,
+      readyState: audio?.readyState,
+      networkState: audio?.networkState,
+      currentTime: audio?.currentTime,
+      duration: audio?.duration,
+      buffered: audio
+        ? Array.from({ length: audio.buffered.length }, (_, i) => ({
+            start: audio.buffered.start(i),
+            end: audio.buffered.end(i)
+          }))
+        : [],
+      mediaErrorCode: audio?.error?.code,
+      mediaErrorMessage: audio?.error?.message,
+      ...extra
+    })
+  }
   /** 为 iOS 异步加载缓存的语音列表 */
   private voices: SpeechSynthesisVoice[] = []
 
@@ -59,10 +88,15 @@ export class AudioPlayer {
    */
   setTTSSource(source: TTSSource): void {
     this.ttsSource = source
+    this.trace('source.configured')
   }
 
   get isPlaying(): boolean {
     return this.isPlayingValue
+  }
+
+  set onError(fn: ((error: Error) => void) | undefined) {
+    this._onError = fn
   }
 
   set onStart(fn: (() => void) | undefined) {
@@ -83,33 +117,17 @@ export class AudioPlayer {
    */
   async unlockAudio(): Promise<void> {
     if (this.audioUnlocked) return
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext()
-    }
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume()
-    }
-    // 预热 speechSynthesis（iOS 需要在手势上下文中至少调用一次 speak()）
-    if (this.synth) {
-      const prime = new SpeechSynthesisUtterance('')
-      prime.volume = 0
-      this.synth.speak(prime)
-      this.synth.cancel()
-    }
-    // Prime a native audio element during the user gesture. Later SSE playback
-    // happens asynchronously and may otherwise be rejected by autoplay policy.
-    if (!this.fallbackAudio) {
-      const audio = new Audio()
-      audio.muted = true
-      this.fallbackAudio = audio
-      try {
-        await audio.play()
-        audio.pause()
-        audio.currentTime = 0
-      } catch {
-        // The WebAudio path may still be available; defer the fallback attempt.
-      }
-    }
+    const audio = this.fallbackAudio ?? new Audio()
+    this.fallbackAudio = audio
+    // A valid silent WAV primes the same element in the user gesture.
+    // Never block lesson.start on device initialization.
+    audio.src =
+      'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQIAAAAAAA=='
+    this.trace('unlock.request')
+    void audio.play().then(
+      () => this.trace('unlock.resolved'),
+      error => this.trace('unlock.rejected', { name: error?.name, message: error?.message })
+    )
     this.audioUnlocked = true
   }
 
@@ -145,11 +163,8 @@ export class AudioPlayer {
   }
 
   stop(): void {
+    this.trace('play.stop')
     this.stopVolumeDetection()
-    // 不要关闭 AudioContext — 复用它以避免 iOS 解锁问题
-    if (this.audioContext?.state === 'running') {
-      this.audioContext.suspend()
-    }
     this.synth?.cancel()
     this.stopFallbackAudio()
     this.currentUtterance = null
@@ -160,20 +175,14 @@ export class AudioPlayer {
   /**
    * 打断当前播放（用户开口/发送新消息时调用）。
    *
-   * 与 stop() 的区别：真正停止正在播放的 BufferSource（source.stop()）而非
-   * suspend() 暂停，并标记 aborted 以抑制由 stop()/cancel() 间接触发的 onEnd
+   * 标记 aborted 以抑制由 stop()/cancel() 间接触发的 onEnd
    * 回调，避免误触发“播放结束”逻辑（如延迟显示文本）。仅在有播放时标记 aborted，
    * 防止标志残留污染下一次正常播放的结束回调（新播放开始时也会复位 aborted）。
    */
   abort(): void {
+    this.trace('play.abort')
     const wasPlaying = this.isPlayingValue
     this.stopVolumeDetection()
-    try {
-      this.currentSource?.stop()
-    } catch {
-      // source 可能已结束，忽略
-    }
-    this.currentSource = null
     this.synth?.cancel()
     this.stopFallbackAudio()
     this.currentUtterance = null
@@ -188,6 +197,7 @@ export class AudioPlayer {
    * 通过 base64 字符串重放音频（用于“重听”按钮）
    */
   async replayAudio(audioBase64: string, format: string = 'mp3'): Promise<void> {
+    this.trace('replay.request', { base64Length: audioBase64.length, format })
     if (!audioBase64) return
     this.stop()
     this.currentFormat = format
@@ -202,87 +212,108 @@ export class AudioPlayer {
 
     if (!fullBase64) return
 
+    this.aborted = false
     try {
-      this.isPlayingValue = true
-      // 新播放开始，清除可能残留的 aborted 标志，避免误抑制本次结束回调
-      this.aborted = false
-      this._onStart?.()
-
-      // 复用或创建 AudioContext；若处于 suspended 则恢复（iOS 要求）
-      if (!this.audioContext) {
-        this.audioContext = new AudioContext()
-      }
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume()
-      }
-      const arrayBuffer = base64ToArrayBuffer(fullBase64)
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
-
-      const source = this.audioContext.createBufferSource()
-      source.buffer = audioBuffer
-
-      // 音量检测（口型同步）+ 输出到扬声器
-      source.connect(this.audioContext.destination)
-      this.volumeMeterCleanup = createVolumeMeter(
-        source,
-        volume => {
-          this._onVolume?.(volume)
-        },
-        { multiplier: 1.8 }
-      )
-
-      this.currentSource = source
-      source.onended = () => {
-        this.stopVolumeDetection()
-        this.currentSource = null
-        this.isPlayingValue = false
-        this._onVolume?.(0) // 播放结束，嘴巴闭上
-        // abort 触发的结束不通知 onEnd，避免误触发“播放结束”逻辑（如延迟显示文本）
-        if (this.aborted) {
-          this.aborted = false
-          return
-        }
-        this._onEnd?.()
-      }
-
-      source.start()
-    } catch (err) {
-      console.warn('[AudioPlayer] WebAudio 不可用，切换 HTMLAudio 播放:', err)
-      this.stopVolumeDetection()
       await this.playFallbackAudio(fullBase64, this.currentFormat)
+    } catch (error) {
+      this.trace('play.rejected', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : String(error)
+      })
+      this.stopFallbackAudio()
+      this.isPlayingValue = false
+      this._onEnd?.()
+      this._onError?.(error instanceof Error ? error : new Error('音频播放失败'))
     }
   }
 
   private async playFallbackAudio(audioBase64: string, format: string): Promise<void> {
     this.stopFallbackAudio()
     const bytes = base64ToArrayBuffer(audioBase64)
-    const mime = format === 'wav' ? 'audio/wav' : `audio/${format || 'mpeg'}`
+    const header = String.fromCharCode(...new Uint8Array(bytes, 0, Math.min(12, bytes.byteLength)))
+    // Stored messages from earlier versions omitted the format. Trust the WAV
+    // header rather than incorrectly labelling a replay as MPEG.
+    const isWav = header.startsWith('RIFF') && header.endsWith('WAVE')
+    const mime =
+      isWav || format === 'wav'
+        ? 'audio/wav'
+        : `audio/${format === 'mp3' ? 'mpeg' : format || 'mpeg'}`
     this.fallbackAudioUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
     const audio = this.fallbackAudio ?? new Audio()
     audio.src = this.fallbackAudioUrl
+    audio.preload = 'auto'
     audio.muted = false
     this.fallbackAudio = audio
+    this.trace('play.request', {
+      bytes: bytes.byteLength,
+      format,
+      mime,
+      isWav,
+      riffBytes: isWav ? new DataView(bytes).getUint32(4, true) + 8 : undefined,
+      supported: audio.canPlayType(mime)
+    })
+    audio.onloadedmetadata = () => this.trace('media.loadedmetadata')
+    audio.oncanplay = () => this.trace('media.canplay')
+    audio.onwaiting = () => this.trace('media.waiting')
+    audio.onstalled = () => {
+      this.trace('media.stalled')
+      this.showDiagnosticControls(audio)
+    }
     audio.onended = () => {
+      this.trace('media.ended')
       this.stopFallbackAudio()
       this.isPlayingValue = false
       this._onVolume?.(0)
       this._onEnd?.()
     }
     audio.onerror = () => {
+      this.trace('media.error')
       this.stopFallbackAudio()
       this.isPlayingValue = false
       this._onEnd?.()
+      this._onError?.(new Error('音频设备或音频解码失败'))
     }
-    this.isPlayingValue = true
-    this._onStart?.()
+    audio.onplaying = () => {
+      this.trace('media.playing')
+      this.isPlayingValue = true
+      this._onStart?.()
+      this.startLocalVolumeSimulation()
+    }
+    this.diagnosticTimer = setTimeout(() => {
+      this.trace('play.after2s')
+      if (audio.currentTime === 0) this.showDiagnosticControls(audio)
+    }, 2000)
     await audio.play()
+    this.trace('play.resolved')
   }
 
   private stopFallbackAudio(): void {
-    this.fallbackAudio?.pause()
-    this.fallbackAudio = null
+    clearTimeout(this.diagnosticTimer)
+    if (this.fallbackAudio) {
+      this.fallbackAudio.onended = null
+      this.fallbackAudio.onerror = null
+      this.fallbackAudio.onplaying = null
+      this.fallbackAudio.onloadedmetadata = null
+      this.fallbackAudio.oncanplay = null
+      this.fallbackAudio.onwaiting = null
+      this.fallbackAudio.onstalled = null
+      this.fallbackAudio.pause()
+      this.fallbackAudio.removeAttribute('src')
+      this.fallbackAudio.remove()
+    }
+    this.stopVolumeDetection()
     if (this.fallbackAudioUrl) URL.revokeObjectURL(this.fallbackAudioUrl)
     this.fallbackAudioUrl = null
+  }
+
+  /** Expose native controls only while diagnosing a stalled local playback. */
+  private showDiagnosticControls(audio: HTMLAudioElement): void {
+    if (!import.meta.env.DEV || audio.isConnected) return
+    audio.controls = true
+    audio.setAttribute('aria-label', '语音诊断：浏览器原生播放器')
+    audio.style.cssText = 'position:fixed;left:16px;top:16px;z-index:9999;width:300px'
+    document.body.append(audio)
+    this.trace('diagnostic.controls-visible')
   }
 
   // --- 内部：通过 speechSynthesis 播放本地 TTS ---

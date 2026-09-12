@@ -1,6 +1,13 @@
 <template>
   <div class="relative flex h-100dvh items-center justify-center overflow-hidden bg-black">
     <OfflineBanner />
+    <div
+      v-if="playbackError"
+      role="alert"
+      class="absolute top-16px z-30 rounded-12px bg-black/80 p-12px text-white"
+    >
+      {{ playbackError }}
+    </div>
     <canvas
       ref="characterCanvas"
       class="absolute inset-0 z-1 h-full w-full opacity-0 transition-opacity-800ms md:(bottom-0 top-auto h-55%)"
@@ -83,6 +90,7 @@ import OfflineBanner from './components/OfflineBanner.vue'
 import type { ChatRequestBody, ScenarioSummary, WordExplanation } from './client/types.js'
 import { createMessageId } from './lib/message-utils.js'
 import { blobToBase64 } from './audio/utils.js'
+import { audioDiagnostic } from './audio/diagnostics.js'
 
 const store = useTutorStore()
 const showCharacterCanvas = ref(false)
@@ -94,6 +102,7 @@ const characterProvider = shallowRef<CharacterProvider | null>(null)
 const { client } = useTutorClient({ characterProvider })
 const {
   audioPlayer,
+  playbackError,
   replayAudio,
   unlockAudio,
   abort: abortPlayback
@@ -184,6 +193,11 @@ async function handleSwitchScenario() {
 
 function handleReplay(messageId: string) {
   const message = store.messages.find(item => item.id === messageId)
+  audioDiagnostic('ui.replay', {
+    found: !!message,
+    source: store.ttsSource,
+    audioLength: message?.audioBase64?.length ?? 0
+  })
   if (!message) return
 
   if (store.ttsSource === 'remote' && message.audioBase64) {

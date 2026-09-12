@@ -1,9 +1,10 @@
-import { onUnmounted, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
 import type { TutorClient } from '../client/TutorClient'
 import { useTutorStore } from '../stores/tutor'
 import { AudioPlayer } from '../audio/player'
+import { audioDiagnostic } from '../audio/diagnostics.js'
 
 /**
  * 管理 AudioPlayer 生命周期，并将 TutorClient SSE 流与播放器事件连接起来的 composable。
@@ -14,6 +15,10 @@ export function useAudioPlayback(
 ) {
   const store = useTutorStore()
   const audioPlayer = new AudioPlayer(store.ttsSource)
+  const playbackError = ref('')
+  audioPlayer.onError = () => {
+    playbackError.value = '语音未能播放，请点击消息上的重听按钮重试。'
+  }
 
   // 使 AudioPlayer 与服务器驱动的 ttsSource 保持同步（配置 SSE 事件可能在播放器创建后才到达，
   // 因此当真实来源已知时需要更新初始的 'local' 默认值）。
@@ -33,6 +38,7 @@ export function useAudioPlayback(
     characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider
 
   audioPlayer.onStart = () => {
+    playbackError.value = ''
     store.isPlaying = true
     getProvider()?.setSpeaking?.(true)
   }
@@ -93,6 +99,18 @@ export function useAudioPlayback(
   )
 
   client.on('teacher.audio', chunk => {
+    if (pendingAudioChunks.length === 0 || chunk.isEnd) {
+      audioDiagnostic('sse.audio', {
+        requestId: chunk.requestId,
+        source: store.ttsSource,
+        chunkLength: chunk.audioBase64.length,
+        isEnd: chunk.isEnd,
+        format: chunk.format,
+        ignored:
+          (store.interrupted && store.interruptedAtEpoch === store.requestEpoch) ||
+          store.ttsSource !== 'remote'
+      })
+    }
     // 打断后忽略同代请求还在路上的 in-flight TTS 片段；新请求代不同则正常播放
     if (store.interrupted && store.interruptedAtEpoch === store.requestEpoch) return
     if (store.ttsSource === 'remote') {
@@ -151,5 +169,5 @@ export function useAudioPlayback(
     audioPlayer.stop()
   })
 
-  return { audioPlayer, unlockAudio, replayAudio, abort }
+  return { audioPlayer, unlockAudio, replayAudio, abort, playbackError }
 }

@@ -73,6 +73,8 @@ XIAOMI_TTS_VOICE_DESIGN=...
 
 ## 部署和进程保活
 
+生产部署地址：[https://emengtt.com](https://emengtt.com)。
+
 ```bash
 bash scripts/config/init-host.sh
 pnpm push:server

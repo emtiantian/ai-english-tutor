@@ -3,7 +3,6 @@ import type { CharacterProvider } from '@ai-english-tutor/shared'
 import type { TutorClient } from '../client/TutorClient.js'
 import type { ChatRequestBody, ChatResponse } from '../client/types.js'
 import { isBrowserASRSupported, recognizeSpeech } from '../audio/browser-asr.js'
-import { createMessageId } from '../lib/message-utils.js'
 import { useTutorStore } from '../stores/tutor.js'
 
 /** Browser SpeechRecognition lifecycle for the first-release voice input. */
@@ -57,12 +56,7 @@ export function useAudioRecorder(
     } catch (error) {
       if (!currentController.signal.aborted) {
         store.isThinking = false
-        store.messages.push({
-          id: createMessageId(),
-          role: 'system',
-          text: `⚠️ 语音输入失败: ${error instanceof Error ? error.message : '未知错误'}`,
-          timestamp: Date.now()
-        })
+        console.warn('[ASR] voice input failed', error)
       }
     } finally {
       finish()

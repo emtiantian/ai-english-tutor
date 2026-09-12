@@ -12,7 +12,7 @@ import { TutorClient } from '../../src/client/TutorClient.js'
 import { useTutorStore } from '../../src/stores/tutor.js'
 
 describe('useAudioRecorder', () => {
-  it('reports recognition failures as system messages without sending a turn', async () => {
+  it('reports recognition failures outside the conversation without sending a turn', async () => {
     setActivePinia(createPinia())
     vi.mocked(recognizeSpeech).mockRejectedValueOnce(new Error('没有识别结果'))
     const send = vi.fn()
@@ -20,7 +20,7 @@ describe('useAudioRecorder', () => {
       new TutorClient({ baseUrl: '', sessionId: 'test' }),
       send
     ).startRecording()
-    expect(useTutorStore().messages.at(-1)).toMatchObject({ role: 'system' })
+    expect(useTutorStore().messages).toHaveLength(0)
     expect(send).not.toHaveBeenCalled()
   })
   it('releases the button to finish recognition and send, rather than cancel', async () => {

@@ -149,6 +149,8 @@ watch(
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  min-height: 0;
   /* 为底部固定输入栏预留空间。
      输入栏：约 64px 基础 + 场景区约 90px + 生词区约 50px + 安全区约 34px
      最坏情况下约 240px。用 padding-bottom 让消息滚动到输入栏上方。 */
@@ -171,6 +173,7 @@ watch(
   overflow-wrap: break-word;
   color: white;
   pointer-events: auto; /* Re-enable pointer events for bubbles (replay buttons etc.) */
+  flex: none;
 }
 
 .voice-transcript {

@@ -8,7 +8,7 @@ export type AppPhase = 'loading' | 'scenario-select' | 'teaching'
 
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   text: string
   transcript?: string
   textZh?: string

@@ -58,14 +58,14 @@ export function useTutorClient(config?: TutorClientConfig) {
         store.markStreamingInterrupted()
         store.messages.push({
           id: createMessageId(),
-          role: 'assistant',
+          role: 'system',
           text: message || '回复生成失败，请重试',
           timestamp: Date.now()
         })
       } else if (code === 'RECONNECT_EXHAUSTED') {
         store.messages.push({
           id: createMessageId(),
-          role: 'assistant',
+          role: 'system',
           text: message || '连接已断开，请刷新页面重试',
           timestamp: Date.now()
         })

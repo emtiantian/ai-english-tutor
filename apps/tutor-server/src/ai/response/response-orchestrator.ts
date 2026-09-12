@@ -7,7 +7,7 @@ import { getScenarioById } from '../../vocab/loader.js'
 import type { AudioPipeline } from '../audio-pipeline.js'
 import type { LLMMessage, LLMProvider } from '../llm.js'
 import { buildScenarioTeachingMessages } from '../prompts/teaching.js'
-import { parseTeachingResponse } from '../response-parser.js'
+import { parseCompleteTeachingResponse } from './complete-teaching-response.js'
 import type { SessionData } from '../session-manager.js'
 import { SessionManager } from '../session-manager.js'
 import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
@@ -125,7 +125,7 @@ export class ResponseOrchestrator {
     signal?: AbortSignal,
     requestId?: string
   ) {
-    const parsed = parseTeachingResponse(raw)
+    const parsed = await parseCompleteTeachingResponse(raw, this.llm, signal)
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
     this.recordUsedWords(session, userText)
     this.sessions.addMessage(sessionId, session, 'user', userText)

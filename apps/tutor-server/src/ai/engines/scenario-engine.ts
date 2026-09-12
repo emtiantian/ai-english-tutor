@@ -5,7 +5,7 @@ import { getScenarioById } from '../../vocab/loader.js'
 import type { AudioPipeline } from '../audio-pipeline.js'
 import type { LLMProvider } from '../llm.js'
 import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teaching.js'
-import { parseTeachingResponse } from '../response-parser.js'
+import { parseCompleteTeachingResponse } from '../response/complete-teaching-response.js'
 import {
   streamTeachingResponse,
   warnIfMissingVocabSentences
@@ -65,7 +65,7 @@ export class ScenarioEngine {
     const raw = stream
       ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId)
       : (await this.llm.complete(messages, signal)).content
-    const parsed = parseTeachingResponse(raw)
+    const parsed = await parseCompleteTeachingResponse(raw, this.llm, signal)
     warnIfMissingVocabSentences(parsed, sessionId, 'startScenarioLesson')
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 

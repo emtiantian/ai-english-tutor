@@ -59,7 +59,7 @@ ASR_PROVIDER=browser
 
 ```dotenv
 XIAOMI_TTS_MODE=preset
-XIAOMI_TTS_VOICE=Chloe
+XIAOMI_TTS_VOICE=Mia
 ```
 
 使用 Voice Design 时，音色描述来自用户设置或独立默认配置，与场景和 LLM 人格无关：
@@ -81,5 +81,7 @@ pnpm push:server
 ```
 
 部署使用 Docker Compose。`backend`、`frontend` 和 `gateway` 都配置了 `restart: unless-stopped`，容器进程异常退出或 Docker 服务重启后会自动拉起，因此 Node 服务不需要 PM2。Docker 服务本身需要在宿主机启用开机启动。
+
+容器不设置固定 DNS，默认由 Docker 使用宿主机 DNS；服务器的 Docker 全局配置也不应覆盖 `dns`。切换宿主机网络后，若容器仍使用旧 DNS，应重建受影响的容器并验证域名解析。自定义网络中显示的 `127.0.0.11` 是 Docker 内置解析器，并非旧路由器地址。
 
 部署脚本默认先执行类型检查、前后端测试和生产构建，要求 Git 工作区干净，然后备份、同步、构建容器并检查 `/api/health`。详见 [scripts/README.md](scripts/README.md)。

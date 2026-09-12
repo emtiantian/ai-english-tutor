@@ -22,41 +22,51 @@ export function useAudioRecorder(
   const recordingDuration = ref(0)
   let timer: ReturnType<typeof setInterval> | undefined
   let controller: AbortController | undefined
+  let stopController: AbortController | undefined
   const character = () =>
     characterProvider && 'value' in characterProvider ? characterProvider.value : characterProvider
 
   async function startRecording() {
-    if (isRecording.value) return
-    if (!isBrowserASRSupported()) throw new Error('当前浏览器不支持语音识别，请使用文字输入。')
+    if (isRecording.value || isEncoding.value) return
     interrupt?.()
     isRecording.value = true
     recordingDuration.value = 0
     timer = setInterval(() => recordingDuration.value++, 1000)
     controller = new AbortController()
+    const currentController = controller
+    stopController = new AbortController()
     client.emit('recording.start', undefined)
     try {
-      const result = await recognizeSpeech({ lang: 'en-US' })
-      if (controller.signal.aborted) return
+      if (!isBrowserASRSupported()) throw new Error('当前浏览器不支持语音识别，请使用文字输入。')
+      const result = await recognizeSpeech({
+        lang: 'en-US',
+        signal: currentController.signal,
+        stopSignal: stopController.signal
+      })
+      if (currentController.signal.aborted) return
+      finish()
+      isEncoding.value = true
       client.emit('recording.stop', {
         durationMs: recordingDuration.value * 1000,
         cancelled: false
       })
-      client.emit('message.user', { text: '[语音]', isVoice: true })
+      client.emit('message.user', { text: result.transcript, isVoice: true })
       client.emit('state.thinking', undefined)
       store.setLastUserTranscript(result.transcript)
       await sendToBackend({ type: 'user.speak', text: result.transcript, stream: true })
     } catch (error) {
-      if (!controller.signal.aborted) {
+      if (!currentController.signal.aborted) {
         store.isThinking = false
         store.messages.push({
           id: createMessageId(),
-          role: 'assistant',
-          text: `⚠️ 语音识别失败: ${error instanceof Error ? error.message : '未知错误'}`,
+          role: 'system',
+          text: `⚠️ 语音输入失败: ${error instanceof Error ? error.message : '未知错误'}`,
           timestamp: Date.now()
         })
       }
     } finally {
       finish()
+      isEncoding.value = false
     }
   }
 
@@ -69,12 +79,16 @@ export function useAudioRecorder(
 
   async function stopRecording() {
     if (!isRecording.value) return
+    isEncoding.value = true
+    stopController?.abort()
+    finish()
+  }
+
+  const cancelRecording = () => {
     controller?.abort()
     client.emit('recording.stop', { durationMs: recordingDuration.value * 1000, cancelled: true })
     finish()
   }
-
-  const cancelRecording = stopRecording
   onUnmounted(() => {
     controller?.abort()
     finish()

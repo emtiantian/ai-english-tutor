@@ -50,6 +50,7 @@
       @send-text="sendText"
       @record-start="startRecording"
       @record-stop="stopRecording"
+      @record-cancel="cancelRecording"
       @switch-scenario="handleSwitchScenario"
     />
 
@@ -108,14 +109,20 @@ const {
   abort: abortPlayback
 } = useAudioPlayback(client, characterProvider)
 const { asrProvider } = useASRConfig(client)
-const { isRecording, isEncoding, recordingDuration, startRecording, stopRecording } =
-  useAudioRecorder(
-    client,
-    sendToBackend,
-    () => asrProvider.value,
-    characterProvider,
-    interruptTeacher
-  )
+const {
+  isRecording,
+  isEncoding,
+  recordingDuration,
+  startRecording,
+  stopRecording,
+  cancelRecording
+} = useAudioRecorder(
+  client,
+  sendToBackend,
+  () => asrProvider.value,
+  characterProvider,
+  interruptTeacher
+)
 const { init: initCharacter } = useCharacterProvider(characterCanvas, client, characterProvider)
 const { suggestedPhrase } = useCurrentHint({
   messages: computed(() => store.messages),
@@ -198,7 +205,7 @@ function handleReplay(messageId: string) {
     source: store.ttsSource,
     audioLength: message?.audioBase64?.length ?? 0
   })
-  if (!message) return
+  if (!message || message.role !== 'assistant' || message.isStreaming) return
 
   if (store.ttsSource === 'remote' && message.audioBase64) {
     replayAudio(message.audioBase64)
@@ -261,7 +268,7 @@ async function sendText(text: string) {
     store.isThinking = false
     store.messages.push({
       id: createMessageId(),
-      role: 'assistant',
+      role: 'system',
       text: err instanceof Error ? err.message : '发送失败，请重试',
       timestamp: Date.now()
     })

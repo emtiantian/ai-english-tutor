@@ -8,7 +8,8 @@ import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teachin
 import { parseCompleteTeachingResponse } from '../response/complete-teaching-response.js'
 import {
   streamTeachingResponse,
-  warnIfMissingVocabSentences
+  warnIfMissingVocabSentences,
+  ensureReplyVocabulary
 } from '../response/response-orchestrator.js'
 import { pickScenarioVocabulary, DEFAULT_TARGET_COUNT } from '../scenario-vocab-picker.js'
 import { SessionManager, type ScenarioState } from '../session-manager.js'
@@ -65,7 +66,10 @@ export class ScenarioEngine {
     const raw = stream
       ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId)
       : (await this.llm.complete(messages, signal)).content
-    const parsed = await parseCompleteTeachingResponse(raw, this.llm, signal)
+    const parsed = ensureReplyVocabulary(
+      await parseCompleteTeachingResponse(raw, this.llm, signal),
+      state.targetWords
+    )
     warnIfMissingVocabSentences(parsed, sessionId, 'startScenarioLesson')
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 

@@ -25,6 +25,22 @@ export function warnIfMissingVocabSentences(
   }
 }
 
+/** Recover target words actually used in the reply when the model omits vocabulary metadata. */
+export function ensureReplyVocabulary<T extends { text: string; vocabulary?: string[] }>(
+  parsed: T,
+  targetWords: string[]
+): T {
+  const existing = new Set((parsed.vocabulary ?? []).map(word => word.toLowerCase()))
+  const detected = targetWords.filter(word => {
+    if (existing.has(word.toLowerCase())) return false
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`\\b${escaped}\\b`, 'i').test(parsed.text)
+  })
+  return detected.length
+    ? { ...parsed, vocabulary: [...(parsed.vocabulary ?? []), ...detected] }
+    : parsed
+}
+
 export async function streamTeachingResponse(
   llm: LLMProvider,
   messages: LLMMessage[],
@@ -125,7 +141,12 @@ export class ResponseOrchestrator {
     signal?: AbortSignal,
     requestId?: string
   ) {
-    const parsed = await parseCompleteTeachingResponse(raw, this.llm, signal)
+    const scenarioState = session.scenario
+    if (!scenarioState) throw new Error('场景会话不存在，请重新选择场景')
+    const parsed = ensureReplyVocabulary(
+      await parseCompleteTeachingResponse(raw, this.llm, signal),
+      scenarioState.targetWords
+    )
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
     this.recordUsedWords(session, userText)
     this.sessions.addMessage(sessionId, session, 'user', userText)

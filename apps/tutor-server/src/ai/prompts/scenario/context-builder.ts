@@ -115,7 +115,7 @@ Scenario rules:
 - Keep replies concise (1-3 sentences).
 - In the middle act(s), introduce natural twists or complications to make the conversation realistic (do not rely on pre-written turns).
 - When the student has used enough target words or the conversation has run long enough, naturally transition to the closing act and wrap up.
-- studentReplyHints must be 1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Prefer hints that can naturally include the focus words above.`
+- studentReplyHints must be 1-3 optional complete English lines the student (playing ${activeRole.student}) could say next, written in the student's own voice. Prefer one line that naturally includes a focus word. These are optional suggestions: always respond naturally if the student ignores or changes them. Never include translations, explanations, or meta language.`
 
   // 提示词：输出格式 —— 要求模型必须返回合法 JSON，并说明每个字段的含义
   const outputFormat = `
@@ -128,7 +128,7 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
   "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
   "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
   "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; do not reuse sentences from earlier turns. Each sentence must contain at least one word from the pool above. Empty array if vocabulary is empty."],
-  "studentReplyHints": ["1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Prefer hints that fit the current scene stage and can naturally use focus words. Never write meta/teaching sentences like 'You can say X when Y' or 'This is how to use X' — these are actual lines the student would say. Provide at least one hint."]
+  "studentReplyHints": ["1-3 optional complete English lines the student could say next. These are actual lines, never explanations or translations."]
 }`
 
   const scenarioContextBlock =
@@ -173,7 +173,7 @@ Scenario rules:
 - Begin the scene naturally and introduce the setting and your role.
 - Use target words naturally when they fit; if a word does not fit right now, model it in your own line instead of forcing the student.
 - Keep replies concise (1-3 sentences).
-- studentReplyHints must be 1-3 short replies the student (playing ${activeRole.student}) could naturally say next, written in the student's own voice. Provide at least one hint.`
+- studentReplyHints must contain 1-3 optional complete English lines the student (playing ${activeRole.student}) could say next, written in the student's own voice. The student may ignore them, and you must respond naturally to any relevant answer.`
 
   const outputFormat = `
 
@@ -185,7 +185,7 @@ OUTPUT FORMAT — You MUST respond with valid JSON:
   "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
   "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
   "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; empty array if vocabulary is empty."],
-  "studentReplyHints": ["1-3 short replies the student could naturally say next, written in the student's own voice. Provide at least one hint."]
+  "studentReplyHints": ["1-3 optional complete English lines the student could say next. These are actual lines, never explanations or translations."]
 }`
 
   return scenarioHeader + vocabularyPool + scenarioRules + outputFormat

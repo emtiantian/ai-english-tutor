@@ -12,8 +12,18 @@
     </div>
 
     <!-- 💡 学生回复提示（下一回合学习者可以说的话） -->
-    <div v-if="scenario && suggestedPhrase" class="scenario-hint">
-      <div class="suggested-phrase">💡 {{ suggestedPhrase }}</div>
+    <div v-if="scenario && normalizedSuggestedPhrases.length" class="scenario-hint">
+      <div class="suggested-phrase-label">💡 你可以这样说</div>
+      <button
+        v-for="phrase in normalizedSuggestedPhrases"
+        :key="phrase"
+        type="button"
+        class="suggested-phrase"
+        :aria-label="`播放提示：${phrase}`"
+        @click="$emit('speak-hint', phrase)"
+      >
+        <span class="hint-speaker">🔊</span>{{ phrase }}
+      </button>
     </div>
 
     <!-- 输入栏 -->
@@ -120,6 +130,8 @@ const props = defineProps<{
   recordingDuration: number
   scenario?: ScenarioProgress | null
   /** 💡 提示 */
+  suggestedPhrases?: string[]
+  /** 兼容旧调用方，新的页面使用 suggestedPhrases。 */
   suggestedPhrase?: string
   recordError?: string | null
 }>()
@@ -129,6 +141,7 @@ const emit = defineEmits<{
   'record-start': []
   'record-stop': []
   'record-cancel': []
+  'speak-hint': [phrase: string]
   'switch-scenario': []
   'update:record-error': [error: string | null]
 }>()
@@ -213,11 +226,19 @@ function sendText() {
 
 // --- 建议话术（💡 提示） ---
 const inputPlaceholder = computed(() => {
-  if (props.scenario && props.suggestedPhrase) {
+  if (props.scenario && normalizedSuggestedPhrases.value.length) {
     return '输入你的回复...'
   }
   return '输入英文...'
 })
+
+const normalizedSuggestedPhrases = computed(() =>
+  props.suggestedPhrases?.length
+    ? props.suggestedPhrases
+    : props.suggestedPhrase
+      ? [props.suggestedPhrase]
+      : []
+)
 
 // --- 录音错误处理 ---
 watch(
@@ -271,11 +292,31 @@ onUnmounted(() => {
 }
 
 .suggested-phrase {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
   color: rgba(255, 255, 255, 0.45);
   font-size: 11px;
   font-style: italic;
   text-align: center;
   padding-left: 2px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.suggested-phrase-label {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.suggested-phrase:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hint-speaker {
+  margin-right: 5px;
 }
 
 /* 输入栏玻璃效果 */

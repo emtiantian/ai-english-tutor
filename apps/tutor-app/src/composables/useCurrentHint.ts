@@ -10,16 +10,10 @@ export interface UseCurrentHintOptions {
 }
 
 /**
- * 获取当前最佳学生回复提示。
- *
- * 退化顺序：
- * 1. 最近助教消息中的 studentReplyHints（学生口吻、贴合当前对话）
- * 2. 最近助教消息中的 vocabularySentences（教学例句）
- * 3. 最近助教消息中的 vocabulary（词列表）
- * 4. 空字符串
+ * 获取最近一条助手消息提供的可选学生回复提示。
  */
 export function useCurrentHint(options: UseCurrentHintOptions) {
-  const suggestedPhrase = computed(() => {
+  const suggestedPhrases = computed(() => {
     const messages = unref(options.messages)
     const targetWords = unref(options.targetWords)
     const wordsLearned = unref(options.wordsLearned)
@@ -29,23 +23,14 @@ export function useCurrentHint(options: UseCurrentHintOptions) {
       const msg = messages[i]
       if (msg.role !== 'assistant') continue
 
-      if (msg.studentReplyHints?.length) {
-        const picked = pickBestStudentHint(msg.studentReplyHints, hintOptions)
-        if (picked) return picked
-      }
-
-      if (msg.vocabularySentences?.length) {
-        const picked = pickBestStudentHint(msg.vocabularySentences, hintOptions)
-        if (picked) return picked
-      }
-
-      if (msg.vocabulary?.length) {
-        return msg.vocabulary.join(', ')
-      }
+      if (!msg.studentReplyHints?.length) continue
+      const picked = pickBestStudentHint(msg.studentReplyHints, hintOptions)
+      const rest = msg.studentReplyHints.filter(hint => hint !== picked)
+      return [picked, ...rest].filter((hint): hint is string => Boolean(hint)).slice(0, 3)
     }
 
-    return undefined
+    return []
   })
 
-  return { suggestedPhrase }
+  return { suggestedPhrases }
 }

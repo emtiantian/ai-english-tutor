@@ -46,11 +46,12 @@
       :is-encoding="isEncoding"
       :recording-duration="recordingDuration"
       :scenario="store.currentScenario"
-      :suggested-phrase="suggestedPhrase"
+      :suggested-phrases="suggestedPhrases"
       @send-text="sendText"
       @record-start="startRecording"
       @record-stop="stopRecording"
       @record-cancel="cancelRecording"
+      @speak-hint="handleSpeakHint"
       @switch-scenario="handleSwitchScenario"
     />
 
@@ -124,7 +125,7 @@ const {
   interruptTeacher
 )
 const { init: initCharacter } = useCharacterProvider(characterCanvas, client, characterProvider)
-const { suggestedPhrase } = useCurrentHint({
+const { suggestedPhrases } = useCurrentHint({
   messages: computed(() => store.messages),
   targetWords: computed(() => store.currentScenario?.targetWords),
   wordsLearned: computed(() => store.currentScenario?.wordsLearned)
@@ -212,6 +213,20 @@ function handleReplay(messageId: string) {
     return
   }
   audioPlayer.speak(message.text, { lang: 'en-US' })
+}
+
+async function handleSpeakHint(phrase: string) {
+  if (!phrase.trim()) return
+  if (store.ttsSource === 'remote') {
+    try {
+      const { arrayBuffer, format } = await client.synthesizeSpeech(phrase)
+      await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
+      return
+    } catch (err) {
+      console.error('[App] Remote hint TTS failed, using browser speech:', err)
+    }
+  }
+  audioPlayer.speak(phrase, { lang: 'en-US' })
 }
 
 const activeWord = ref<string | null>(null)

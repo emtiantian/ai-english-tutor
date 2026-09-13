@@ -8,7 +8,7 @@
 import { isLLMError, normalizeLLMError, type LLMError } from './errors.js'
 
 export interface RetryOptions {
-  /** 最大重试次数（不含首次请求），默认 2 */
+  /** 最大重试次数（不含首次请求），默认 4；覆盖短暂 DNS/网络抖动。 */
   maxRetries?: number
   /** 外部 abort 信号；一旦 abort 立即停止重试并抛出 abort 错误 */
   signal?: AbortSignal
@@ -39,7 +39,7 @@ function backoffDelay(attempt: number, baseDelay: number): number {
  * 返回值已是归一化后的 LLMError（若抛错）。
  */
 export async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
-  const maxRetries = options?.maxRetries ?? 2
+  const maxRetries = options?.maxRetries ?? 4
   const baseDelay = options?.baseDelay ?? 500
   const signal = options?.signal
 

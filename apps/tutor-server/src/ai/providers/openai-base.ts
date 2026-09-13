@@ -74,7 +74,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     this.model = options.model
     this.temperature = options.temperature ?? 0.7
     this.maxTokens = options.maxTokens ?? 512
-    this.maxRetries = options.maxRetries ?? 2
+    this.maxRetries = options.maxRetries ?? 4
     this.timeout = options.timeout ?? 30_000
     // maxRetries: 0 禁用 SDK 内置重试，由 withRetry 中间件统一接管（避免双重重试）。
     // timeout 仅对非流式请求生效；流式依赖外部 AbortSignal 控制生命周期。

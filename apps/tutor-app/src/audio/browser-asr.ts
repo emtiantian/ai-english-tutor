@@ -12,6 +12,7 @@ export interface BrowserASROptions {
 
 interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList
+  resultIndex?: number
 }
 
 interface SpeechRecognitionErrorEvent extends Event {
@@ -55,12 +56,14 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
 
   const recognition = new SpeechRecognitionCtor()
   recognition.lang = options.lang ?? 'en-US'
-  recognition.continuous = false
+  // 长句可能被浏览器拆成多个 final result；持续识别并在松开时统一停止。
+  recognition.continuous = true
   recognition.interimResults = false
   recognition.maxAlternatives = 1
 
   return new Promise<BrowserASRResult>((resolve, reject) => {
     let settled = false
+    let finalTranscript = ''
     const cleanup = () => {
       clearTimeout(timeout)
       options.signal?.removeEventListener('abort', cancel)
@@ -93,15 +96,12 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
     }
 
     recognition.onresult = event => {
-      const result = event.results[0]?.[0]
-      if (result?.transcript.trim() && !settled) {
-        settled = true
-        cleanup()
-        recognition.stop()
-        resolve({
-          transcript: result.transcript,
-          confidence: result.confidence ?? 0
-        })
+      // 只合并 final 结果，避免 interim 结果重复拼接；从 resultIndex 开始处理新结果。
+      const start = event.resultIndex ?? 0
+      for (let index = start; index < event.results.length; index += 1) {
+        const result = event.results[index]?.[0]
+        if (result && !event.results[index].isFinal) continue
+        if (result?.transcript.trim()) finalTranscript += `${result.transcript.trim()} `
       }
     }
 
@@ -118,7 +118,14 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
 
     recognition.onend = () => {
       if (settled) return
-      fail(new Error('语音识别未返回任何结果，请重试。'))
+      const transcript = finalTranscript.trim()
+      if (!transcript) {
+        fail(new Error('语音识别未返回任何结果，请重试。'))
+        return
+      }
+      settled = true
+      cleanup()
+      resolve({ transcript, confidence: 0 })
     }
 
     try {

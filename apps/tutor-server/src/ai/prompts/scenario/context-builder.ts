@@ -221,12 +221,3 @@ export function buildActsBlock(acts: Scenario['acts']): string {
   const actsBlock = `Three-act structure (guide the conversation through these stages in order):\n${lines.map(l => `- ${l}`).join('\n')}`
   return actsBlock
 }
-
-export function buildObjectivesBlock(objectives: Scenario['objectives']): string {
-  const objectivesText = objectives
-    .map((obj, i) => `${i + 1}. ${obj.descriptionEn} — Keywords: [${obj.keywords.join(', ')}]`)
-    .join('\n')
-  // 提示词：对话阶段说明 —— 要求模型按顺序引导学生完成各个阶段目标
-  const objectivesBlock = `Conversation stages (guide the student through these in order):\n${objectivesText}`
-  return objectivesBlock
-}

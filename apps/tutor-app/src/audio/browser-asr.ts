@@ -58,14 +58,18 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
   recognition.lang = options.lang ?? 'en-US'
   // 长句可能被浏览器拆成多个 final result；持续识别并在松开时统一停止。
   recognition.continuous = true
-  recognition.interimResults = false
+  recognition.interimResults = true
   recognition.maxAlternatives = 1
 
   return new Promise<BrowserASRResult>((resolve, reject) => {
     let settled = false
     let finalTranscript = ''
+    let interimTranscript = ''
+    let stopTimer: ReturnType<typeof setTimeout> | undefined
+    let stopping = false
     const cleanup = () => {
       clearTimeout(timeout)
+      if (stopTimer) clearTimeout(stopTimer)
       options.signal?.removeEventListener('abort', cancel)
       options.stopSignal?.removeEventListener('abort', stop)
       recognition.onresult = null
@@ -81,8 +85,17 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
     }
     const cancel = () => fail(new DOMException('录音已取消', 'AbortError'))
     const stop = () => {
+      if (stopping || settled) return
+      stopping = true
       try {
         recognition.stop()
+        stopTimer = setTimeout(() => {
+          const transcript = `${finalTranscript} ${interimTranscript}`.trim()
+          if (!transcript || settled) return
+          settled = true
+          cleanup()
+          resolve({ transcript, confidence: 0 })
+        }, 2500)
       } catch (error) {
         fail(error instanceof Error ? error : new Error('停止语音识别失败'))
       }
@@ -97,10 +110,14 @@ export function recognizeSpeech(options: BrowserASROptions = {}): Promise<Browse
 
     recognition.onresult = event => {
       // 只合并 final 结果，避免 interim 结果重复拼接；从 resultIndex 开始处理新结果。
+      interimTranscript = ''
       const start = event.resultIndex ?? 0
       for (let index = start; index < event.results.length; index += 1) {
         const result = event.results[index]?.[0]
-        if (result && !event.results[index].isFinal) continue
+        if (result && !event.results[index].isFinal) {
+          interimTranscript += `${result.transcript.trim()} `
+          continue
+        }
         if (result?.transcript.trim()) finalTranscript += `${result.transcript.trim()} `
       }
     }

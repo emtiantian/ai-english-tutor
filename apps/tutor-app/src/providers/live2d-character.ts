@@ -77,14 +77,14 @@ function getDefaultMaxDpr(): number {
   if ((deviceMemory != null && deviceMemory <= 4) || hardwareConcurrency <= 4) {
     return 1.0
   }
-  return 1.5
+  return 2.0
 }
 
 /**
  * Canvas 渲染缩放上限。
  *
  * 直接用 window.devicePixelRatio 在 Retina 屏(2x)上会让 WebGL 画布变成 4 倍像素，
- * Live2D 每帧都要填充/采样这些像素，是 CPU/GPU 占用的主要来源。限制到 1.5 可以在
+ * Live2D 每帧都要填充/采样这些像素，是 CPU/GPU 占用的主要来源。限制到 2.0 可以在
  * 清晰度和性能之间取得平衡；若仍觉卡顿可在 .env 设置 VITE_LIVE2D_MAX_DPR=1.0。
  */
 const DEFAULT_MAX_DPR = getDefaultMaxDpr()
@@ -1320,8 +1320,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
     // 设置 canvas 物理像素尺寸（考虑 DPR，但限制上限避免 Retina 屏过度占用 GPU）
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
+    canvas.width = Math.round(rect.width * dpr)
+    canvas.height = Math.round(rect.height * dpr)
     ctx.viewport(0, 0, canvas.width, canvas.height)
 
     // 加载模型
@@ -1597,8 +1597,8 @@ export class Live2DCharacterProvider implements CharacterProvider {
 
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     const rect = this.canvas.getBoundingClientRect()
-    this.canvas.width = rect.width * dpr
-    this.canvas.height = rect.height * dpr
+    this.canvas.width = Math.round(rect.width * dpr)
+    this.canvas.height = Math.round(rect.height * dpr)
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
     // 重新计算模型缩放和居中（与 Spine resize 一致）

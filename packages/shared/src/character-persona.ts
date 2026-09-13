@@ -21,7 +21,7 @@ export interface OpeningStyle {
  * CharacterPersona —— 汇总定义虚拟角色所需的一切。
  *
  * 实现该接口即可创建新角色（不同名字、声音、人格预设、提示词风格）。
- * 默认的 `LUNA_PERSONA` 是一位英语老师的完整参考实现。
+ * 默认的 `LUNA_PERSONA` 是一位英语对话伙伴的完整参考实现。
  *
  * 设计说明：
  * - `buildSystemPrompt` 掌握完整提示词模板，使每个角色可拥有
@@ -147,7 +147,7 @@ export function personaFromJson(json: PersonaJson): CharacterPersona {
 }
 
 /**
- * 默认人设：Luna —— 一位友好、有耐心的 AI 英语老师。
+ * 默认人设：Luna —— 一位友好、有耐心的英语对话伙伴。
  * 直接由 persona-default.json 生成，确保 JSON 与 TS 源码永远一致。
  */
 export const LUNA_PERSONA: CharacterPersona = personaFromJson(defaultPersonaJson)

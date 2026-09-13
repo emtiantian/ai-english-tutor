@@ -150,13 +150,19 @@ export class TutorClient {
    */
   async synthesizeSpeech(
     text: string,
-    options: { voice?: string; format?: string; speed?: number; timeoutMs?: number } = {}
+    options: {
+      voice?: string
+      format?: string
+      speed?: number
+      hint?: boolean
+      timeoutMs?: number
+    } = {}
   ): Promise<{ arrayBuffer: ArrayBuffer; format: string }> {
-    const { voice, format, speed, timeoutMs } = options
+    const { voice, format, speed, hint, timeoutMs } = options
     const res = await fetchWithTimeout(`${this.options.baseUrl}/api/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice, format, speed }),
+      body: JSON.stringify({ text, voice, format, speed, hint }),
       timeout: timeoutMs ?? this.options.requestTimeoutMs ?? 30000
     })
 

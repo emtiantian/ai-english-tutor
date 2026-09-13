@@ -219,7 +219,7 @@ async function handleSpeakHint(phrase: string) {
   if (!phrase.trim()) return
   if (store.ttsSource === 'remote') {
     try {
-      const { arrayBuffer, format } = await client.synthesizeSpeech(phrase)
+      const { arrayBuffer, format } = await client.synthesizeSpeech(phrase, { hint: true })
       await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
       return
     } catch (err) {

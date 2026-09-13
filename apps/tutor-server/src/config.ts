@@ -49,6 +49,10 @@ export const config = {
   XIAOMI_TTS_MODE: process.env.XIAOMI_TTS_MODE ?? 'preset',
   XIAOMI_TTS_VOICE: process.env.XIAOMI_TTS_VOICE ?? 'Mia',
   XIAOMI_TTS_VOICE_DESIGN: process.env.XIAOMI_TTS_VOICE_DESIGN ?? '',
+  XIAOMI_TTS_HINT_VOICE: process.env.XIAOMI_TTS_HINT_VOICE ?? 'Mia',
+  XIAOMI_TTS_HINT_VOICE_DESIGN:
+    process.env.XIAOMI_TTS_HINT_VOICE_DESIGN ??
+    'A clear, calm female English pronunciation coach. Speak slowly and distinctly.',
 
   ASR_PROVIDER: process.env.ASR_PROVIDER ?? 'browser',
   ASR_LANGUAGE: process.env.ASR_LANGUAGE ?? 'en-US',

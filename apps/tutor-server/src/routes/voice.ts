@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { config } from '../config.js'
 import { logger } from '../logger.js'
 import { createTTSProvider } from '../voice/tts.js'
 
@@ -7,6 +8,7 @@ interface TTSRequestBody {
   voice?: string
   format?: string
   speed?: number
+  hint?: boolean
 }
 
 /**
@@ -25,7 +27,7 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
    * 响应：音频文件（Content-Type 根据 format 决定）
    */
   server.post('/api/tts', async (request: FastifyRequest<{ Body: TTSRequestBody }>, reply) => {
-    const { text, voice, format, speed } = request.body
+    const { text, voice, format, speed, hint } = request.body
 
     if (!text || text.trim().length === 0) {
       return reply.status(400).send({
@@ -38,9 +40,10 @@ export async function voiceRoutes(server: FastifyInstance): Promise<void> {
 
     try {
       const audioBuffer = await tts.synthesize(text, {
-        voice,
+        voice: hint ? config.XIAOMI_TTS_HINT_VOICE : voice,
         format,
-        speed
+        speed,
+        voiceDesign: hint ? config.XIAOMI_TTS_HINT_VOICE_DESIGN : undefined
       })
 
       // 用 provider 实际产出格式作为 Content-Type，保证与返回字节一致。

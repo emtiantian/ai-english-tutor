@@ -7,6 +7,7 @@ APP_DIR="${AI_TUTOR_APP:-$AI_TUTOR_HOME/app}"
 ACME_HOME="${ACME_HOME:-$HOME/.acme.sh}"
 ACME_BIN="${ACME_BIN:-$ACME_HOME/acme.sh}"
 LOG_DIR="${AI_TUTOR_LOG_DIR:-$AI_TUTOR_HOME/data/logs}"
+export AI_TUTOR_HOME
 mkdir -p "$LOG_DIR"
 exec >>"$LOG_DIR/cert-renewal.log" 2>&1
 

@@ -5,6 +5,7 @@ DOMAIN="${1:-${CERT_DOMAIN:-emengtt.com}}"
 AI_TUTOR_HOME="${AI_TUTOR_HOME:-/home/haohe/data/.ai-english-tutor}"
 APP_DIR="${AI_TUTOR_APP:-$AI_TUTOR_HOME/app}"
 CERT_DIR="${AI_TUTOR_CERT_DIR:-$AI_TUTOR_HOME/data/certs}"
+export AI_TUTOR_HOME
 
 fail() { printf '证书检查失败: %s\n' "$1" >&2; exit 1; }
 [[ -r "$CERT_DIR/fullchain.pem" ]] || fail "缺少 $CERT_DIR/fullchain.pem"

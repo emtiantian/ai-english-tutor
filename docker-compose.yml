@@ -15,6 +15,9 @@ services:
       - BACKEND_URL=http://backend:${PORT:-3000}
       - FRONTEND_URL=http://frontend:80
       - SERVER_NAME=${SERVER_NAME:-_}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       # TLS certs；缺失时 entrypoint 静默禁用 443，可安全挂载
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/certs:/etc/nginx/certs:ro
@@ -77,6 +80,9 @@ services:
     # 所有运行时配置均来自 env_file；不在 environment 中硬编码，避免静默覆盖 .env。
     env_file:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data/.env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       - ${AI_TUTOR_HOME:-~/.ai-english-tutor}/data:/app/data
     networks:

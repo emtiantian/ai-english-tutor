@@ -18,6 +18,7 @@ export class XiaomiTTSProvider implements TTSProvider {
     const body = this.buildRequest(text, options)
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 30_000)
+    const startTime = Date.now()
     try {
       const response = await fetch(`${config.XIAOMI_TTS_BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -33,6 +34,14 @@ export class XiaomiTTSProvider implements TTSProvider {
       const audio = result.choices?.[0]?.message?.audio?.data
       if (!audio) throw new Error('小米 TTS 响应缺少音频数据')
       return Buffer.from(audio, 'base64')
+    } catch (err) {
+      const failureType =
+        err instanceof Error && err.name === 'AbortError' ? 'timeout' : classifyTtsFailure(err)
+      logger.error(
+        { provider: this.name, duration: Date.now() - startTime, failureType },
+        'TTS Provider 请求失败'
+      )
+      throw err
     } finally {
       clearTimeout(timeout)
     }
@@ -58,4 +67,13 @@ export class XiaomiTTSProvider implements TTSProvider {
       audio: { format: 'wav', voice: options?.voice ?? config.XIAOMI_TTS_VOICE }
     }
   }
+}
+
+function classifyTtsFailure(err: unknown): string {
+  if (!(err instanceof Error)) return 'unknown'
+  if (err.message.includes('getaddrinfo')) return 'dns'
+  if (err.message.includes('TTS 错误：')) return 'http'
+  if (err.message.includes('响应缺少音频')) return 'invalid-response'
+  if (err.message.includes('fetch failed')) return 'network'
+  return 'unknown'
 }

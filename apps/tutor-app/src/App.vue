@@ -100,6 +100,8 @@ const characterCanvas = ref<HTMLCanvasElement | null>(null)
 const availableScenarios = ref<ScenarioSummary[]>([])
 const voiceDesign = ref('温柔、清晰、自然的成年女性英语教师，语速适中，发音清楚')
 const characterProvider = shallowRef<CharacterProvider | null>(null)
+// 远程 TTS 在网络响应期间尚未进入 audioPlayer.isPlaying，单靠播放状态无法防止重复点击。
+const speechRequestActive = ref(false)
 
 const { client } = useTutorClient({ characterProvider })
 const {
@@ -199,7 +201,8 @@ async function handleSwitchScenario() {
   store.phase = 'scenario-select'
 }
 
-function handleReplay(messageId: string) {
+async function handleReplay(messageId: string) {
+  if (speechRequestActive.value) return
   const message = store.messages.find(item => item.id === messageId)
   audioDiagnostic('ui.replay', {
     found: !!message,
@@ -209,24 +212,39 @@ function handleReplay(messageId: string) {
   if (!message || message.role !== 'assistant' || message.isStreaming) return
 
   if (store.ttsSource === 'remote' && message.audioBase64) {
-    replayAudio(message.audioBase64)
+    speechRequestActive.value = true
+    try {
+      await replayAudio(message.audioBase64)
+    } finally {
+      speechRequestActive.value = false
+    }
     return
   }
-  audioPlayer.speak(message.text, { lang: 'en-US' })
+  speechRequestActive.value = true
+  try {
+    await audioPlayer.speak(message.text, { lang: 'en-US' })
+  } finally {
+    speechRequestActive.value = false
+  }
 }
 
 async function handleSpeakHint(phrase: string) {
-  if (!phrase.trim()) return
-  if (store.ttsSource === 'remote') {
-    try {
-      const { arrayBuffer, format } = await client.synthesizeSpeech(phrase, { hint: true })
-      await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
-      return
-    } catch (err) {
-      console.error('[App] Remote hint TTS failed, using browser speech:', err)
+  if (!phrase.trim() || speechRequestActive.value) return
+  speechRequestActive.value = true
+  try {
+    if (store.ttsSource === 'remote') {
+      try {
+        const { arrayBuffer, format } = await client.synthesizeSpeech(phrase, { hint: true })
+        await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
+        return
+      } catch (err) {
+        console.error('[App] Remote hint TTS failed, using browser speech:', err)
+      }
     }
+    await audioPlayer.speak(phrase, { lang: 'en-US' })
+  } finally {
+    speechRequestActive.value = false
   }
-  audioPlayer.speak(phrase, { lang: 'en-US' })
 }
 
 const activeWord = ref<string | null>(null)
@@ -235,18 +253,23 @@ const wordLoading = ref(false)
 const wordError = ref<string | null>(null)
 
 async function handleSpeakWord(word: string) {
-  if (!word) return
+  if (!word || speechRequestActive.value) return
+  speechRequestActive.value = true
 
-  if (store.ttsSource === 'remote') {
-    try {
-      const { arrayBuffer, format } = await client.synthesizeSpeech(word)
-      await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
-      return
-    } catch (err) {
-      console.error('[App] Remote word TTS failed, using browser speech:', err)
+  try {
+    if (store.ttsSource === 'remote') {
+      try {
+        const { arrayBuffer, format } = await client.synthesizeSpeech(word)
+        await replayAudio(await blobToBase64(new Blob([arrayBuffer])), format)
+        return
+      } catch (err) {
+        console.error('[App] Remote word TTS failed, using browser speech:', err)
+      }
     }
+    await audioPlayer.speak(word, { lang: 'en-US' })
+  } finally {
+    speechRequestActive.value = false
   }
-  audioPlayer.speak(word, { lang: 'en-US' })
 }
 
 async function handleWordDetail({ word, sentence }: { word: string; sentence?: string }) {

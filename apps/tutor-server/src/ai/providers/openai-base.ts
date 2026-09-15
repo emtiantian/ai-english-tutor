@@ -93,22 +93,37 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 完整请求')
 
     const startTime = Date.now()
-    const response = await withRetry(
-      () =>
-        this.client.chat.completions.create(this.buildRequestOptions(normalizedMessages, false), {
-          signal
-        }) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
-      {
-        maxRetries: this.maxRetries,
-        signal,
-        onRetry: (err, attempt, delay) => {
-          logger.warn(
-            { provider: this.name, attempt, delay, code: err.code, status: err.status },
-            'LLM 请求重试'
-          )
+    let response: OpenAI.Chat.Completions.ChatCompletion
+    try {
+      response = await withRetry(
+        () =>
+          this.client.chat.completions.create(this.buildRequestOptions(normalizedMessages, false), {
+            signal
+          }) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
+        {
+          maxRetries: this.maxRetries,
+          signal,
+          onRetry: (err, attempt, delay) => {
+            logger.warn(
+              { provider: this.name, attempt, delay, code: err.code, status: err.status },
+              'LLM 请求重试'
+            )
+          }
         }
-      }
-    )
+      )
+    } catch (err) {
+      const normalized = normalizeLLMError(err)
+      logger.error(
+        {
+          provider: this.name,
+          duration: Date.now() - startTime,
+          code: normalized.code,
+          status: normalized.status
+        },
+        'LLM 完整请求失败'
+      )
+      throw normalized
+    }
     const duration = Date.now() - startTime
 
     const content = this.extractContent(response)
@@ -132,6 +147,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 流式请求')
 
     const startTime = Date.now()
+    let totalTokens = 0
 
     // 流式请求不重试：重试会重复输出已 yield 的内容，导致前端气泡重复。
     // 仅做错误归一化，把 SDK/网络错误统一成 LLMError 供上层处理。
@@ -141,8 +157,6 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
       }
 
       const stream = await this.createStream(normalizedMessages, signal)
-
-      let totalTokens = 0
 
       for await (const chunk of stream) {
         if (signal?.aborted) {
@@ -161,7 +175,18 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
       const duration = Date.now() - startTime
       this.logStreamComplete(duration, totalTokens)
     } catch (err) {
-      throw normalizeLLMError(err)
+      const normalized = normalizeLLMError(err)
+      logger.error(
+        {
+          provider: this.name,
+          duration: Date.now() - startTime,
+          code: normalized.code,
+          status: normalized.status,
+          totalTokens
+        },
+        'LLM 流式请求失败'
+      )
+      throw normalized
     }
 
     yield {

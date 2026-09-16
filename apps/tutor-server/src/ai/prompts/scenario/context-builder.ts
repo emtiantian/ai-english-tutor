@@ -1,4 +1,5 @@
 import { type CEFRLevel, type Scenario, type ScenarioLevelProfile } from '@ai-english-tutor/shared'
+import { DEFAULT_VOCABULARY_POLICY } from '../../vocabulary-policy.js'
 
 /**
  * 构建要注入 system prompt 的场景上下文块。
@@ -45,7 +46,7 @@ export function buildScenarioContext(
 
   const actsBlock = buildActsBlock(acts)
 
-  const focusList = focusWords.slice(0, 5)
+  const focusList = focusWords.slice(0, DEFAULT_VOCABULARY_POLICY.focusWordsPerTurn)
   const nextList = nextBucketWords.slice(0, 3)
 
   // 提示词：本轮焦点词 —— 告诉模型优先使用或示范这些尚未使用的目标词

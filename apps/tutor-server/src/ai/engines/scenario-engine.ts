@@ -11,7 +11,8 @@ import {
   warnIfMissingVocabSentences,
   ensureReplyVocabulary
 } from '../response/response-orchestrator.js'
-import { pickScenarioVocabulary, DEFAULT_TARGET_COUNT } from '../scenario-vocab-picker.js'
+import { pickScenarioVocabulary } from '../scenario-vocab-picker.js'
+import { DEFAULT_VOCABULARY_POLICY } from '../vocabulary-policy.js'
 import { SessionManager, type ScenarioState } from '../session-manager.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
 import { broadcastToSession } from '../../sse/handler.js'
@@ -43,7 +44,11 @@ export class ScenarioEngine {
       name: scenario.name,
       icon: scenario.icon,
       level: cefrLevel,
-      targetWords: pickScenarioVocabulary(scenario, cefrLevel, DEFAULT_TARGET_COUNT),
+      targetWords: pickScenarioVocabulary(
+        scenario,
+        cefrLevel,
+        DEFAULT_VOCABULARY_POLICY.targetPoolSize
+      ),
       wordsUsed: new Set()
     }
     const style = pickOpeningStyle(this.persona)

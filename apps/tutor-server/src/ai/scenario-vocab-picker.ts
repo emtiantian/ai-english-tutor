@@ -1,12 +1,8 @@
 import type { CEFRLevel, Scenario, ScenarioLevelProfile } from '@ai-english-tutor/shared'
 import { getVocabularyByLevel } from '../vocab/loader.js'
+import { DEFAULT_VOCABULARY_POLICY, type VocabularyPolicy } from './vocabulary-policy.js'
 
 const CEFR_ORDER: CEFRLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
-export const DEFAULT_TARGET_COUNT = 30
-const BORROW_RATIO = 0.3
-
-/** 70/20/10 混合比例：本档 / 复习 / 挑战 */
-const MIX_RATIOS = { primary: 0.7, review: 0.2, challenge: 0.1 }
 
 function nextLevel(level: CEFRLevel): CEFRLevel | undefined {
   const idx = CEFR_ORDER.indexOf(level)
@@ -42,14 +38,15 @@ function candidatesForLevelAndThemes(level: CEFRLevel | undefined, themes: Set<s
 }
 
 /**
- * 为单幕按主题抽词，使用 70% 本档 + 20% 复习 + 10% 挑战的混合策略。
- * 若某档同主题词不足，优先从本档全局补齐，保证返回 count 个唯一词。
+ * 为单幕按主题和策略配置抽词。
+ * 某档同主题词不足时只从其他档的同主题词补充，最多返回 count 个唯一词。
  * globalUsed 用于跨幕去重；传入后本函数不会返回其中已存在的词。
  */
 function pickWordsForAct(
   targetLevel: CEFRLevel,
   themes: string[],
   count: number,
+  policy: VocabularyPolicy,
   globalUsed?: Set<string>
 ): string[] {
   const themeSet = new Set(themes.map(t => t.toLowerCase()))
@@ -57,8 +54,8 @@ function pickWordsForAct(
   const reviewLevel = prevLevel(targetLevel)
   const challengeLevel = nextLevel(targetLevel)
 
-  const primaryTarget = Math.ceil(count * MIX_RATIOS.primary)
-  const reviewTarget = Math.ceil(count * MIX_RATIOS.review)
+  const primaryTarget = Math.ceil(count * policy.levelMix.primary)
+  const reviewTarget = Math.ceil(count * policy.levelMix.review)
   const challengeTarget = Math.max(0, count - primaryTarget - reviewTarget)
 
   const picked: string[] = []
@@ -90,65 +87,26 @@ function pickWordsForAct(
     primaryTarget + reviewTarget + challengeTarget
   )
 
-  // 4) 还不足则 fallback：本档全部词随机补齐
+  // 4) 配额不足时，只在同主题候选池中补齐；不引入与场景无关的词。
   if (picked.length < count) {
-    const allPrimary = shuffleArray(getVocabularyByLevel(primaryLevel).words.map(w => w.word))
-    addUnique(allPrimary, count)
+    addUnique(candidatesForLevelAndThemes(primaryLevel, themeSet), count)
+    addUnique(candidatesForLevelAndThemes(reviewLevel, themeSet), count)
+    addUnique(candidatesForLevelAndThemes(challengeLevel, themeSet), count)
   }
 
   return picked.slice(0, count)
 }
 
 /**
- * 传统全局 topic 过滤抽词（无 levelProfile 时回退使用）。
+ * 全局 topic 过滤抽词（无 levelProfile 时回退使用）。
  */
 function pickVocabularyByGlobalTopics(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetCount: number
+  targetCount: number,
+  policy: VocabularyPolicy
 ): string[] {
-  const topics = new Set((scenario.topics ?? []).map(t => t.toLowerCase()))
-
-  function wordsForLevel(level: CEFRLevel): string[] {
-    const vocab = getVocabularyByLevel(level)
-    if (topics.size === 0) return vocab.words.map(w => w.word)
-    return vocab.words.filter(w => topics.has(w.topic.toLowerCase())).map(w => w.word)
-  }
-
-  const picked: string[] = []
-  const used = new Set<string>()
-
-  function addUnique(words: string[], max: number): void {
-    for (const word of words) {
-      if (used.has(word.toLowerCase())) continue
-      if (picked.length >= max) return
-      used.add(word.toLowerCase())
-      picked.push(word)
-    }
-  }
-
-  // 1. 本档按 topic 抽
-  addUnique(shuffleArray(wordsForLevel(targetLevel)), targetCount)
-
-  // 2. 从下一档借 30%
-  if (picked.length < targetCount) {
-    const nxt = nextLevel(targetLevel)
-    if (nxt) {
-      const borrowCount = Math.ceil(targetCount * BORROW_RATIO)
-      addUnique(
-        shuffleArray(wordsForLevel(nxt)),
-        Math.min(targetCount, picked.length + borrowCount)
-      )
-    }
-  }
-
-  // 3. fallback：本档全部词随机补齐
-  if (picked.length < targetCount) {
-    const allLevelWords = shuffleArray(getVocabularyByLevel(targetLevel).words.map(w => w.word))
-    addUnique(allLevelWords, targetCount)
-  }
-
-  return picked.slice(0, targetCount)
+  return pickWordsForAct(targetLevel, scenario.topics ?? [], targetCount, policy)
 }
 
 /**
@@ -158,11 +116,12 @@ function pickVocabularyByActs(
   scenario: Scenario,
   targetLevel: CEFRLevel,
   profile: ScenarioLevelProfile,
-  targetCount: number
+  targetCount: number,
+  policy: VocabularyPolicy
 ): string[] {
   const acts = profile.acts ?? []
   if (acts.length === 0) {
-    return pickVocabularyByGlobalTopics(scenario, targetLevel, targetCount)
+    return pickVocabularyByGlobalTopics(scenario, targetLevel, targetCount, policy)
   }
 
   const perActCount = Math.ceil(targetCount / acts.length)
@@ -171,7 +130,7 @@ function pickVocabularyByActs(
 
   for (const act of acts) {
     const themes = act.vocabThemes ?? scenario.topics ?? []
-    const words = pickWordsForAct(targetLevel, themes, perActCount, used)
+    const words = pickWordsForAct(targetLevel, themes, perActCount, policy, used)
     for (const word of words) {
       if (used.has(word.toLowerCase())) continue
       used.add(word.toLowerCase())
@@ -186,20 +145,10 @@ function pickVocabularyByActs(
     const remaining = pickVocabularyByGlobalTopics(
       scenario,
       targetLevel,
-      targetCount - result.length
+      targetCount - result.length,
+      policy
     )
     for (const word of remaining) {
-      if (used.has(word.toLowerCase())) continue
-      used.add(word.toLowerCase())
-      result.push(word)
-      if (result.length >= targetCount) break
-    }
-  }
-
-  // 最后保险：仍不足则直接从本档全部词随机补齐
-  if (result.length < targetCount) {
-    const allWords = shuffleArray(getVocabularyByLevel(targetLevel).words.map(w => w.word))
-    for (const word of allWords) {
       if (used.has(word.toLowerCase())) continue
       used.add(word.toLowerCase())
       result.push(word)
@@ -215,20 +164,21 @@ function pickVocabularyByActs(
  *
  * 规则：
  * 1. 若场景在当前等级存在 levelProfile.acts 且带 vocabThemes，则按幕逐幕抽词，
- *    每幕内部使用 70% 本档 + 20% 低一档复习 + 10% 高一档挑战的混合策略，
+ *    每幕内部使用策略配置的等级混合比例，
  *    返回的数组按幕顺序排列。
- * 2. 否则回退到旧逻辑：从 targetLevel 的 config/vocab/{level}.json 中按 scenario.topics 过滤，
- *    不足时从下一档借 30%，再不足则用本档全部词补齐。
+ * 2. 否则按 scenario.topics 使用同一等级混合策略。
+ * 3. 只返回主题相关词；相关词不足时允许少于上限，不使用无关词强行补齐。
  */
 export function pickScenarioVocabulary(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetCount: number = DEFAULT_TARGET_COUNT
+  targetCount: number = DEFAULT_VOCABULARY_POLICY.targetPoolSize,
+  policy: VocabularyPolicy = DEFAULT_VOCABULARY_POLICY
 ): string[] {
   const profile = scenario.levelProfiles?.[targetLevel]
   if (profile?.acts?.some(act => act.vocabThemes && act.vocabThemes.length > 0)) {
-    return pickVocabularyByActs(scenario, targetLevel, profile, targetCount)
+    return pickVocabularyByActs(scenario, targetLevel, profile, targetCount, policy)
   }
 
-  return pickVocabularyByGlobalTopics(scenario, targetLevel, targetCount)
+  return pickVocabularyByGlobalTopics(scenario, targetLevel, targetCount, policy)
 }

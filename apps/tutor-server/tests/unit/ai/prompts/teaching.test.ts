@@ -5,7 +5,7 @@ import { buildScenarioTeachingMessages } from '@/ai/prompts/scenario/scenario-tu
 import { buildScenarioContext } from '@/ai/prompts/scenario/context-builder.js'
 
 const restaurant = scenarios.find(s => s.id === 'restaurant-ordering')!
-const runtimeWords = Array.from({ length: 30 }, (_, i) => `word${i + 1}`)
+const runtimeWords = Array.from({ length: 60 }, (_, i) => `word${i + 1}`)
 
 describe('scenario teaching prompts', () => {
   it('start messages inject runtime target words', () => {
@@ -55,9 +55,14 @@ describe('scenario teaching prompts', () => {
     const bucketSize = Math.ceil(runtimeWords.length / 3)
     const firstBucket = runtimeWords.slice(0, bucketSize)
     const firstBucketUnused = firstBucket.filter(w => !usedWords.includes(w))
-    for (const w of firstBucketUnused.slice(0, 5)) {
+    for (const w of firstBucketUnused.slice(0, 10)) {
       expect(teachingSystem).toContain(`- ${w}`)
     }
+
+    const focusSection = teachingSystem
+      .split('Focus words for this turn')[1]
+      .split(/Coming up|Words the student|The student has/)[0]
+    expect(focusSection.match(/^- word\d+$/gm)).toHaveLength(10)
 
     expect(teachingSystem).toContain('studentReplyHints must be')
   })

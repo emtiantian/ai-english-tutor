@@ -34,10 +34,11 @@ describe('pickScenarioVocabulary', () => {
     getVocabularyByLevelSpy?.mockRestore()
   })
 
-  it('picks 30 words by default', () => {
+  it('默认最多抽取 100 个场景相关词', () => {
     const scenario = vocabLoader.getScenarioById('restaurant-ordering')!
     const wordsA1 = pickScenarioVocabulary(scenario, 'A1')
-    expect(wordsA1.length).toBe(30)
+    expect(wordsA1.length).toBeGreaterThan(0)
+    expect(wordsA1.length).toBeLessThanOrEqual(100)
   })
 
   it('returns unique words', () => {
@@ -47,16 +48,18 @@ describe('pickScenarioVocabulary', () => {
     expect(unique.size).toBe(wordsA1.length)
   })
 
-  it('respects targetCount', () => {
+  it('将 targetCount 作为上限', () => {
     const scenario = vocabLoader.getScenarioById('restaurant-ordering')!
     const words10 = pickScenarioVocabulary(scenario, 'A1', 10)
-    expect(words10.length).toBe(10)
+    expect(words10.length).toBeGreaterThan(0)
+    expect(words10.length).toBeLessThanOrEqual(10)
   })
 
-  it('still returns 30 words for C2', () => {
+  it('C2 也只返回存在的相关词，不用无关词补满', () => {
     const scenario = vocabLoader.getScenarioById('restaurant-ordering')!
     const wordsC2 = pickScenarioVocabulary(scenario, 'C2')
-    expect(wordsC2.length).toBe(30)
+    expect(wordsC2.length).toBeGreaterThan(0)
+    expect(wordsC2.length).toBeLessThanOrEqual(100)
   })
 
   it('per-act vocabThemes 抽词结果符合幕主题', () => {
@@ -138,6 +141,43 @@ describe('pickScenarioVocabulary', () => {
     // 若使用全局 topics=['food']，则抽不到任何词（mock 中没有 food）；
     // 只有使用 profile 的 vocabThemes 才能拿到 hello/please。
     expect(words).toEqual(expect.arrayContaining(['hello', 'please']))
+  })
+
+  it('相关词不足时不使用其他主题的词补齐', () => {
+    getVocabularyByLevelSpy = vi
+      .spyOn(vocabLoader, 'getVocabularyByLevel')
+      .mockImplementation((level: string) => {
+        if (level === 'A1') {
+          return makeVocab([
+            { word: 'menu', topic: 'food' },
+            { word: 'airport', topic: 'travel' }
+          ])
+        }
+        return makeVocab([])
+      })
+
+    const words = pickScenarioVocabulary(baseScenario, 'A1', 100)
+    expect(words).toEqual(['menu'])
+    expect(words).not.toContain('airport')
+  })
+
+  it('可通过策略参数替换等级混合规则', () => {
+    getVocabularyByLevelSpy = vi
+      .spyOn(vocabLoader, 'getVocabularyByLevel')
+      .mockImplementation((level: string) => {
+        if (level === 'A1') return makeVocab([{ word: 'basic', topic: 'food' }])
+        if (level === 'A2') return makeVocab([{ word: 'current', topic: 'food' }])
+        if (level === 'B1') return makeVocab([{ word: 'advanced', topic: 'food' }])
+        return makeVocab([])
+      })
+
+    const words = pickScenarioVocabulary(baseScenario, 'A2', 1, {
+      targetPoolSize: 1,
+      focusWordsPerTurn: 1,
+      maxAnnotatedWordsPerReply: 1,
+      levelMix: { primary: 0, review: 0, challenge: 1 }
+    })
+    expect(words).toEqual(['advanced'])
   })
 
   it('返回的目标词按幕顺序分组', () => {

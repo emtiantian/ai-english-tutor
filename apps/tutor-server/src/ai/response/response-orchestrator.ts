@@ -11,6 +11,9 @@ import { parseCompleteTeachingResponse } from './complete-teaching-response.js'
 import type { SessionData } from '../session-manager.js'
 import { SessionManager } from '../session-manager.js'
 import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
+import { ensureReplyVocabulary } from './reply-vocabulary.js'
+
+export { ensureReplyVocabulary } from './reply-vocabulary.js'
 
 export function warnIfMissingVocabSentences(
   parsed: { vocabulary?: string[]; vocabularySentences?: string[] },
@@ -23,22 +26,6 @@ export function warnIfMissingVocabSentences(
       'LLM 响应缺少 vocabularySentences'
     )
   }
-}
-
-/** Recover target words actually used in the reply when the model omits vocabulary metadata. */
-export function ensureReplyVocabulary<T extends { text: string; vocabulary?: string[] }>(
-  parsed: T,
-  targetWords: string[]
-): T {
-  const existing = new Set((parsed.vocabulary ?? []).map(word => word.toLowerCase()))
-  const detected = targetWords.filter(word => {
-    if (existing.has(word.toLowerCase())) return false
-    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`\\b${escaped}\\b`, 'i').test(parsed.text)
-  })
-  return detected.length
-    ? { ...parsed, vocabulary: [...(parsed.vocabulary ?? []), ...detected] }
-    : parsed
 }
 
 export async function streamTeachingResponse(

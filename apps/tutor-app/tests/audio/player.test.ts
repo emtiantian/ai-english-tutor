@@ -65,6 +65,15 @@ describe('AudioPlayer', () => {
 
       expect(global.speechSynthesis!.speak).toHaveBeenCalled()
     })
+
+    it('可在用户点击阶段静音预热浏览器语音', () => {
+      player.setTTSSource('remote')
+
+      player.primeBrowserSpeech()
+
+      expect(global.speechSynthesis!.speak).toHaveBeenCalled()
+      expect(SpeechSynthesisUtterance).toHaveBeenCalledWith('\u00a0')
+    })
   })
 
   describe('remote TTS mode', () => {

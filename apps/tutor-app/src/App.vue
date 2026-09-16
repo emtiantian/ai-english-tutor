@@ -142,7 +142,7 @@ async function sendToBackend(
   const requestId = createMessageId().replace('msg-', 'req-')
   return client.sendMessage(
     {
-      level: 1,
+      level: 4,
       sessionId: store.connectionId,
       requestId,
       ...payload
@@ -230,6 +230,8 @@ async function handleReplay(messageId: string) {
 
 async function handleSpeakHint(phrase: string) {
   if (!phrase.trim() || speechRequestActive.value) return
+  // 必须在点击手势仍有效时预热；等待远程请求失败后再初始化会被部分浏览器拦截。
+  audioPlayer.primeBrowserSpeech()
   speechRequestActive.value = true
   try {
     if (store.ttsSource === 'remote') {

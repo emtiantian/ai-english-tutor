@@ -170,6 +170,20 @@ export class AudioPlayer {
     return this.speakLocal(text, options)
   }
 
+  /**
+   * 在点击事件仍具有用户激活权限时静音预热 SpeechSynthesis。
+   * 远程请求异步失败后即可继续播放真正的兜底语音。
+   */
+  primeBrowserSpeech(): void {
+    const synth = window.speechSynthesis ?? this.synth
+    if (!synth) return
+    this.synth = synth
+    const utterance = new SpeechSynthesisUtterance('\u00a0')
+    utterance.lang = 'en-US'
+    utterance.volume = 0
+    synth.speak(utterance)
+  }
+
   stop(): void {
     this.trace('play.stop')
     this.stopVolumeDetection()

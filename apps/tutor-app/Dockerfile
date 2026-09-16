@@ -36,4 +36,5 @@ RUN pnpm --filter tutor-app build
 # ── Serve Stage ──
 FROM nginx:alpine
 COPY --from=builder /app/apps/tutor-app/dist /usr/share/nginx/html
+COPY apps/tutor-app/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

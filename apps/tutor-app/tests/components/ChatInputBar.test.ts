@@ -65,6 +65,20 @@ describe('ChatInputBar', () => {
     expect(wrapper.find('.btn-primary').attributes('disabled')).toBeDefined()
   })
 
+  it('收到新一轮提示 props 后替换旧提示', async () => {
+    const wrapper = mountComponent({
+      scenario: { id: 'shopping', name: '购物', icon: '🛒' },
+      suggestedPhrases: ['How much is it?']
+    })
+
+    expect(wrapper.find('.suggested-phrase').text()).toContain('How much is it?')
+
+    await wrapper.setProps({ suggestedPhrases: ['Can I try it on?'] })
+
+    expect(wrapper.find('.suggested-phrase').text()).toContain('Can I try it on?')
+    expect(wrapper.text()).not.toContain('How much is it?')
+  })
+
   it('按住语音按钮触发 record-start', async () => {
     const wrapper = mountComponent()
 

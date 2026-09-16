@@ -158,8 +158,15 @@ function interruptTeacher() {
 }
 
 onMounted(async () => {
-  await initCharacter()
-  showCharacterCanvas.value = true
+  // Live2D 首次加载包含较大的模型纹理，不能阻塞场景选择界面。
+  // 页面和 API 先进入可用状态，角色在后台完成初始化后再渐显。
+  void initCharacter()
+    .then(() => {
+      showCharacterCanvas.value = true
+    })
+    .catch(err => {
+      console.error('[App] Character initialization failed:', err)
+    })
   await loadScenarios()
   store.phase = 'scenario-select'
 })

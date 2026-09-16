@@ -241,7 +241,7 @@ async function handleSpeakHint(phrase: string) {
         console.error('[App] Remote hint TTS failed, using browser speech:', err)
       }
     }
-    await audioPlayer.speak(phrase, { lang: 'en-US' })
+    await audioPlayer.speakBrowser(phrase, { lang: 'en-US' })
   } finally {
     speechRequestActive.value = false
   }

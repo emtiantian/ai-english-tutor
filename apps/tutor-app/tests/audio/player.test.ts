@@ -56,6 +56,15 @@ describe('AudioPlayer', () => {
       player.stop()
       expect(global.speechSynthesis!.cancel).toHaveBeenCalled()
     })
+
+    it('远程模式失败后可明确调用浏览器语音兜底', async () => {
+      player.setTTSSource('remote')
+
+      void player.speakBrowser('Fallback speech', { lang: 'en-US' })
+      await new Promise(r => setTimeout(r, 50))
+
+      expect(global.speechSynthesis!.speak).toHaveBeenCalled()
+    })
   })
 
   describe('remote TTS mode', () => {

@@ -162,6 +162,14 @@ export class AudioPlayer {
     return this.speakLocal(text, options)
   }
 
+  /**
+   * 明确使用浏览器 SpeechSynthesis 播放。
+   * 用于远程 TTS 请求失败后的兜底，不改变全局 ttsSource。
+   */
+  async speakBrowser(text: string, options?: SpeakOptions & { lang?: string }): Promise<void> {
+    return this.speakLocal(text, options)
+  }
+
   stop(): void {
     this.trace('play.stop')
     this.stopVolumeDetection()
@@ -321,64 +329,98 @@ export class AudioPlayer {
     text: string,
     options?: SpeakOptions & { lang?: string }
   ): Promise<void> {
-    if (!this.synth) return
+    // Safari/Chrome 可能在页面初始化后才提供 SpeechSynthesis，兜底播放时重新读取。
+    const synth = window.speechSynthesis ?? this.synth
+    if (!synth) {
+      this._onError?.(new Error('当前浏览器不支持语音合成'))
+      return
+    }
+    this.synth = synth
 
     return new Promise(resolve => {
-      this.synth!.cancel()
-
-      const utterance = new SpeechSynthesisUtterance(text)
       const lang = options?.lang ?? 'en-US'
-      utterance.lang = lang
-      if (options?.rate !== undefined) utterance.rate = options.rate
-      if (options?.pitch !== undefined) utterance.pitch = options.pitch
-      if (options?.volume !== undefined) utterance.volume = options.volume
+      let attempt = 0
+      let settled = false
+      let startTimer: ReturnType<typeof setTimeout> | undefined
 
-      // 使用缓存的语音列表（iOS 首次 getVoices() 返回空）
-      const voices = this.voices.length > 0 ? this.voices : this.synth!.getVoices()
-      const langPrefix = lang.split('-')[0]
-      const preferredVoice =
-        langPrefix === 'zh'
-          ? voices.find(v => v.lang.startsWith('zh'))
-          : voices.find(v => v.lang.startsWith('en') && v.voiceURI.includes('Samantha')) ||
-            voices.find(v => v.lang.startsWith('en'))
-      if (preferredVoice) utterance.voice = preferredVoice
-
-      utterance.onstart = () => {
-        this.isPlayingValue = true
-        // 新播放开始，清除可能残留的 aborted 标志
-        this.aborted = false
-        this._onStart?.()
-        this.startLocalVolumeSimulation()
-      }
-      utterance.onend = () => {
+      const finish = (notifyEnd: boolean) => {
+        if (settled) return
+        settled = true
+        clearTimeout(startTimer)
         this.stopVolumeDetection()
         this.isPlayingValue = false
         this._onVolume?.(0)
-        // abort 触发的结束不通知 onEnd
-        if (this.aborted) {
-          this.aborted = false
-          resolve()
-          return
-        }
-        this._onEnd?.()
-        resolve()
-      }
-      utterance.onerror = () => {
-        this.stopVolumeDetection()
-        this.isPlayingValue = false
-        this._onVolume?.(0)
-        // abort 触发的取消不通知 onEnd
-        if (this.aborted) {
-          this.aborted = false
-          resolve()
-          return
-        }
-        this._onEnd?.()
+        if (notifyEnd) this._onEnd?.()
         resolve()
       }
 
-      this.currentUtterance = utterance
-      this.synth!.speak(utterance)
+      const play = () => {
+        attempt++
+        synth.cancel()
+
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = lang
+        if (options?.rate !== undefined) utterance.rate = options.rate
+        if (options?.pitch !== undefined) utterance.pitch = options.pitch
+        if (options?.volume !== undefined) utterance.volume = options.volume
+
+        const voices = this.voices.length > 0 ? this.voices : synth.getVoices()
+        const langPrefix = lang.split('-')[0]
+        const preferredVoice =
+          langPrefix === 'zh'
+            ? voices.find(v => v.lang.startsWith('zh'))
+            : voices.find(v => v.lang.startsWith('en') && v.voiceURI.includes('Samantha')) ||
+              voices.find(v => v.lang.startsWith('en'))
+        if (preferredVoice) utterance.voice = preferredVoice
+
+        utterance.onstart = () => {
+          clearTimeout(startTimer)
+          this.isPlayingValue = true
+          this.aborted = false
+          this._onStart?.()
+          this.startLocalVolumeSimulation()
+        }
+        utterance.onend = () => {
+          if (this.aborted) {
+            this.aborted = false
+            finish(false)
+            return
+          }
+          finish(true)
+        }
+        utterance.onerror = () => {
+          clearTimeout(startTimer)
+          if (this.aborted) {
+            this.aborted = false
+            finish(false)
+            return
+          }
+          if (attempt < 2) {
+            setTimeout(play, 100)
+            return
+          }
+          finish(true)
+          this._onError?.(new Error('浏览器语音合成失败'))
+        }
+
+        this.currentUtterance = utterance
+        // 部分 Chromium 在 cancel 后立即 speak 会静默丢弃；下一任务再提交。
+        setTimeout(() => {
+          if (settled) return
+          synth.speak(utterance)
+          startTimer = setTimeout(() => {
+            if (this.isPlayingValue || settled) return
+            if (attempt < 2) {
+              play()
+              return
+            }
+            finish(false)
+            this._onError?.(new Error('浏览器语音合成未能开始'))
+          }, 1200)
+        }, 0)
+      }
+
+      play()
     })
   }
 

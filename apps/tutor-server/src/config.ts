@@ -30,6 +30,10 @@ export const config = {
   PORT: Number.parseInt(process.env.PORT ?? '3000', 10),
   NODE_ENV: process.env.NODE_ENV ?? 'development',
   LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
+  LOG_CONTENT_ENABLED: process.env.LOG_CONTENT_ENABLED !== 'false',
+  LOG_CONTENT_FILE_MAX_MB: Number.parseInt(process.env.LOG_CONTENT_FILE_MAX_MB ?? '20', 10),
+  LOG_CONTENT_MAX_FILES: Number.parseInt(process.env.LOG_CONTENT_MAX_FILES ?? '5', 10),
+  LOG_CONTENT_MAX_CHARS: Number.parseInt(process.env.LOG_CONTENT_MAX_CHARS ?? '1000000', 10),
   CORS_ORIGIN: (process.env.CORS_ORIGIN ?? '*')
     .split(',')
     .map(value => value.trim())

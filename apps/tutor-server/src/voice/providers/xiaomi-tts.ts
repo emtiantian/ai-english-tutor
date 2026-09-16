@@ -1,5 +1,5 @@
 import { config } from '../../config.js'
-import { logger } from '../../logger.js'
+import { contentLogger, logger } from '../../logger.js'
 import type { TTSProvider, TTSSynthesizeOptions } from '../tts.js'
 
 interface XiaomiTTSResponse {
@@ -19,6 +19,15 @@ export class XiaomiTTSProvider implements TTSProvider {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 30_000)
     const startTime = Date.now()
+    contentLogger?.info(
+      {
+        event: 'tts.request',
+        provider: this.name,
+        text: text.slice(0, config.LOG_CONTENT_MAX_CHARS),
+        textChars: text.length
+      },
+      'TTS 请求内容'
+    )
     try {
       const response = await fetch(`${config.XIAOMI_TTS_BASE_URL}/chat/completions`, {
         method: 'POST',

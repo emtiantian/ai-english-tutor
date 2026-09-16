@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
-import { logger } from '../../logger.js'
+import { contentLogger, logger } from '../../logger.js'
+import { config } from '../../config.js'
 import type {
   LLMProvider,
   LLMMessage,
@@ -93,6 +94,16 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 完整请求')
 
     const startTime = Date.now()
+    contentLogger?.info(
+      {
+        event: 'llm.request',
+        provider: this.name,
+        model: this.model,
+        stream: false,
+        messages: truncateContent(normalizedMessages)
+      },
+      'LLM 请求内容'
+    )
     let response: OpenAI.Chat.Completions.ChatCompletion
     try {
       response = await withRetry(
@@ -130,6 +141,15 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     const usage = response.usage
 
     logger.info({ provider: this.name, duration, tokens: usage?.total_tokens }, 'LLM 完整响应')
+    contentLogger?.info(
+      {
+        event: 'llm.response',
+        provider: this.name,
+        model: this.model,
+        content: truncateContent(content)
+      },
+      'LLM 响应内容'
+    )
 
     return {
       content,
@@ -147,7 +167,18 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 流式请求')
 
     const startTime = Date.now()
+    contentLogger?.info(
+      {
+        event: 'llm.request',
+        provider: this.name,
+        model: this.model,
+        stream: true,
+        messages: truncateContent(normalizedMessages)
+      },
+      'LLM 请求内容'
+    )
     let totalTokens = 0
+    let responseContent = ''
 
     // 流式请求不重试：重试会重复输出已 yield 的内容，导致前端气泡重复。
     // 仅做错误归一化，把 SDK/网络错误统一成 LLMError 供上层处理。
@@ -164,6 +195,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
         }
         const content = this.handleStreamChunk(chunk)
         if (content) {
+          responseContent += content
           totalTokens += content.length
           yield {
             content,
@@ -174,6 +206,15 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
 
       const duration = Date.now() - startTime
       this.logStreamComplete(duration, totalTokens)
+      contentLogger?.info(
+        {
+          event: 'llm.response',
+          provider: this.name,
+          model: this.model,
+          content: truncateContent(responseContent)
+        },
+        'LLM 流式响应内容'
+      )
     } catch (err) {
       const normalized = normalizeLLMError(err)
       logger.error(
@@ -272,4 +313,17 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
   ): void {
     logger.info({ provider: this.name, duration, totalTokens, ...extra }, 'LLM 流式完成')
   }
+}
+
+function truncateContent(value: unknown): unknown {
+  const maxChars = config.LOG_CONTENT_MAX_CHARS
+  if (typeof value === 'string')
+    return value.length > maxChars ? `${value.slice(0, maxChars)}…[truncated]` : value
+  if (Array.isArray(value)) return value.map(item => truncateContent(item))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, truncateContent(item)])
+    )
+  }
+  return value
 }

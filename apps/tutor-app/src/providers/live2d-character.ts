@@ -1469,7 +1469,9 @@ export class Live2DCharacterProvider implements CharacterProvider {
   /** 等待 CDN 上的 Live2D Cubism Core 加载 */
   private waitForCore(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const maxWait = 15000
+      // 生产 ECS 带宽为 3 Mbps，首次下载 Core 实测可能超过 15 秒。
+      // 页面已不再等待角色初始化，因此允许后台等待更久，避免资源刚下载完就永久降级。
+      const maxWait = 60000
       const start = Date.now()
       const check = () => {
         if (typeof (window as any).Live2DCubismCore !== 'undefined') {

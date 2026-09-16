@@ -99,6 +99,12 @@ export function useAudioPlayback(
   )
 
   client.on('teacher.audio', chunk => {
+    // 音频事件本身证明后端当前使用远程 TTS。即使连接初期的 config SSE
+    // 丢失或延迟，也不能把已经收到的小米音频按 local 模式直接丢弃。
+    if (store.ttsSource !== 'remote') {
+      store.ttsSource = 'remote'
+      audioPlayer.setTTSSource('remote')
+    }
     if (pendingAudioChunks.length === 0 || chunk.isEnd) {
       audioDiagnostic('sse.audio', {
         requestId: chunk.requestId,
@@ -113,22 +119,20 @@ export function useAudioPlayback(
     }
     // 打断后忽略同代请求还在路上的 in-flight TTS 片段；新请求代不同则正常播放
     if (store.interrupted && store.interruptedAtEpoch === store.requestEpoch) return
-    if (store.ttsSource === 'remote') {
-      audioPlayer.feedAudioChunk(chunk)
-      pendingAudioChunks.push(chunk.audioBase64)
+    audioPlayer.feedAudioChunk(chunk)
+    pendingAudioChunks.push(chunk.audioBase64)
 
-      // 在回复的第一个音频片段上捕获目标消息 ID
-      if (!audioTargetMsgId) {
-        const msgs = store.messages
-        const last = msgs[msgs.length - 1]
-        if (last?.role === 'assistant') {
-          audioTargetMsgId = last.id
-        }
+    // 在回复的第一个音频片段上捕获目标消息 ID
+    if (!audioTargetMsgId) {
+      const msgs = store.messages
+      const last = msgs[msgs.length - 1]
+      if (last?.role === 'assistant') {
+        audioTargetMsgId = last.id
       }
+    }
 
-      if (chunk.isEnd) {
-        flushPendingAudio()
-      }
+    if (chunk.isEnd) {
+      flushPendingAudio()
     }
   })
 

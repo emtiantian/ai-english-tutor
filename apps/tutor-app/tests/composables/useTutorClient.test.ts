@@ -8,6 +8,7 @@ const mockConnect = vi.fn()
 const mockDisconnect = vi.fn()
 const mockOn = vi.fn().mockReturnValue(vi.fn())
 const mockSendMessage = vi.fn()
+const mockGetRuntimeConfig = vi.fn()
 
 vi.mock('../../src/client/TutorClient.js', () => ({
   TutorClient: class MockTutorClient {
@@ -15,6 +16,7 @@ vi.mock('../../src/client/TutorClient.js', () => ({
     disconnect = mockDisconnect
     on = mockOn
     sendMessage = mockSendMessage
+    getRuntimeConfig = mockGetRuntimeConfig
     isConnected = false
   }
 }))
@@ -23,6 +25,7 @@ describe('useTutorClient', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    mockGetRuntimeConfig.mockResolvedValue({ ttsProvider: 'browser', asrProvider: 'browser' })
   })
 
   it('should create TutorClient with correct config', () => {
@@ -41,6 +44,18 @@ describe('useTutorClient', () => {
     expect(store.isConnected).toBe(false)
     connectedHandler?.()
     expect(store.isConnected).toBe(true)
+  })
+
+  it('连接后主动同步远程 TTS 配置', async () => {
+    mockGetRuntimeConfig.mockResolvedValue({ ttsProvider: 'xiaomi', asrProvider: 'browser' })
+    const store = useTutorStore()
+    const { client } = useTutorClient()
+    const connectedHandler = (client.on as any).mock.calls.find(
+      (call: any[]) => call[0] === 'connected'
+    )?.[1]
+
+    connectedHandler?.()
+    await vi.waitFor(() => expect(store.ttsSource).toBe('remote'))
   })
 
   it('should wire thinking event to store', () => {

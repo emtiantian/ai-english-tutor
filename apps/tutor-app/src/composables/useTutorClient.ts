@@ -44,7 +44,19 @@ export function useTutorClient(config?: TutorClientConfig) {
 
   // --- 连接事件 ---
   unsubs.push(
-    client.on('connected', () => (store.isConnected = true)),
+    client.on('connected', () => {
+      store.isConnected = true
+      // config SSE 是首个事件，但网络重连或监听器时序不应决定 TTS 模式。
+      // 连接成功后主动读取一次运行配置，作为可靠补偿。
+      void client
+        .getRuntimeConfig()
+        .then(runtimeConfig => {
+          store.ttsSource = runtimeConfig.ttsProvider === 'browser' ? 'local' : 'remote'
+        })
+        .catch(err => {
+          console.warn('[TutorClient] Failed to refresh runtime config:', err)
+        })
+    }),
     client.on('disconnected', () => (store.isConnected = false)),
     client.on('error', ({ code, message }) => {
       // SSE 流错误（例如 LLM 服务中断、重连耗尽）

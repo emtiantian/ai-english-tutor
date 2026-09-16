@@ -2,13 +2,22 @@
   <div class="input-bar-container">
     <div v-if="scenario" class="mb-6px flex items-center justify-between px-4px text-12px">
       <span class="text-white/60">{{ scenario.icon }} {{ scenario.name }}</span>
-      <button
-        type="button"
-        class="cursor-pointer border-0 bg-transparent px-6px py-4px text-white/65 hover:text-white"
-        @click="$emit('switch-scenario')"
-      >
-        切换场景
-      </button>
+      <div class="flex items-center gap-4px">
+        <button
+          type="button"
+          class="cursor-pointer border-0 bg-transparent px-6px py-4px text-white/65 hover:text-white"
+          @click="$emit('switch-level')"
+        >
+          切换难度 ({{ levelLabel }})
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer border-0 bg-transparent px-6px py-4px text-white/65 hover:text-white"
+          @click="$emit('switch-scenario')"
+        >
+          切换场景
+        </button>
+      </div>
     </div>
 
     <!-- 💡 学生回复提示（下一回合学习者可以说的话） -->
@@ -129,6 +138,7 @@ const props = defineProps<{
   isEncoding: boolean
   recordingDuration: number
   scenario?: ScenarioProgress | null
+  level?: number
   /** 💡 提示 */
   suggestedPhrases?: string[]
   /** 兼容旧调用方，新的页面使用 suggestedPhrases。 */
@@ -143,6 +153,7 @@ const emit = defineEmits<{
   'record-cancel': []
   'speak-hint': [phrase: string]
   'switch-scenario': []
+  'switch-level': []
   'update:record-error': [error: string | null]
 }>()
 
@@ -231,6 +242,15 @@ const inputPlaceholder = computed(() => {
   }
   return '输入英文...'
 })
+
+const LEVEL_LABELS: Record<number, string> = {
+  1: 'A1',
+  2: 'A2',
+  3: 'B1',
+  4: 'B2',
+  5: 'C1-C2'
+}
+const levelLabel = computed(() => LEVEL_LABELS[props.level ?? 4] ?? 'B2')
 
 const normalizedSuggestedPhrases = computed(() =>
   props.suggestedPhrases?.length

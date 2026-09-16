@@ -7,18 +7,35 @@
       <p class="m-0 text-14px text-white/60">在真实情境中，用英语完成一段对话</p>
     </header>
 
-    <label class="mb-16px flex w-full max-w-380px flex-col gap-6px text-13px text-white/70">
-      老师音色
-      <select
-        class="rounded-10px border border-white/15 bg-black/50 px-12px py-9px text-14px text-white outline-none"
-        :value="voiceDesign"
-        @change="emit('update:voiceDesign', ($event.target as HTMLSelectElement).value)"
-      >
-        <option v-for="voice in voices" :key="voice.value" :value="voice.value">
-          {{ voice.label }}
-        </option>
-      </select>
-    </label>
+    <div class="mb-16px grid w-full max-w-380px grid-cols-2 gap-12px">
+      <label class="flex min-w-0 flex-col gap-6px text-13px text-white/70">
+        对话难度
+        <select
+          aria-label="对话难度"
+          class="min-w-0 rounded-10px border border-white/15 bg-black/50 px-10px py-9px text-14px text-white outline-none"
+          :value="level"
+          @change="emit('update:level', Number(($event.target as HTMLSelectElement).value))"
+        >
+          <option v-for="option in levels" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+
+      <label class="flex min-w-0 flex-col gap-6px text-13px text-white/70">
+        老师音色
+        <select
+          aria-label="老师音色"
+          class="min-w-0 rounded-10px border border-white/15 bg-black/50 px-10px py-9px text-14px text-white outline-none"
+          :value="voiceDesign"
+          @change="emit('update:voiceDesign', ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="voice in voices" :key="voice.value" :value="voice.value">
+            {{ voice.label }}
+          </option>
+        </select>
+      </label>
+    </div>
 
     <section class="grid w-full max-w-380px grid-cols-2 gap-12px" aria-label="英语练习场景">
       <button
@@ -52,11 +69,20 @@
 import { computed, ref } from 'vue'
 import type { ScenarioSummary } from '../client/types.js'
 
-const props = defineProps<{ scenarios: ScenarioSummary[]; voiceDesign: string }>()
+const props = defineProps<{ scenarios: ScenarioSummary[]; voiceDesign: string; level: number }>()
 const emit = defineEmits<{
   select: [scenarioId: string]
   'update:voiceDesign': [value: string]
+  'update:level': [value: number]
 }>()
+
+const levels = [
+  { label: 'A1 入门', value: 1 },
+  { label: 'A2 初级', value: 2 },
+  { label: 'B1 中级', value: 3 },
+  { label: 'B2 中高级', value: 4 },
+  { label: 'C1-C2 高级', value: 5 }
+]
 
 const voices = [
   { label: '温柔清晰', value: '温柔、清晰、自然的成年女性英语教师，语速适中，发音清楚' },

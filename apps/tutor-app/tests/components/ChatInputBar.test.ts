@@ -272,4 +272,23 @@ describe('ChatInputBar', () => {
     await switchButton!.trigger('click')
     expect(wrapper.emitted('switch-scenario')).toHaveLength(1)
   })
+
+  it('在切换场景旁显示当前难度并允许切换难度', async () => {
+    const wrapper = mountComponent({
+      level: 3,
+      scenario: {
+        id: 'restaurant-ordering',
+        name: '餐厅点餐',
+        icon: '🍽️',
+        targetWords: [],
+        targetWordsTotal: 0,
+        wordsLearned: []
+      }
+    })
+
+    const switchButton = wrapper.findAll('button').find(button => button.text() === '切换难度 (B1)')
+    expect(switchButton).toBeDefined()
+    await switchButton!.trigger('click')
+    expect(wrapper.emitted('switch-level')).toHaveLength(1)
+  })
 })

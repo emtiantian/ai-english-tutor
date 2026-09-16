@@ -17,6 +17,7 @@
     <ScenarioPicker
       v-if="store.phase === 'scenario-select'"
       v-model:voice-design="voiceDesign"
+      v-model:level="selectedLevel"
       :scenarios="availableScenarios"
       @select="handleScenarioSelect"
     />
@@ -46,6 +47,7 @@
       :is-encoding="isEncoding"
       :recording-duration="recordingDuration"
       :scenario="store.currentScenario"
+      :level="selectedLevel"
       :suggested-phrases="suggestedPhrases"
       @send-text="sendText"
       @record-start="startRecording"
@@ -53,6 +55,7 @@
       @record-cancel="cancelRecording"
       @speak-hint="handleSpeakHint"
       @switch-scenario="handleSwitchScenario"
+      @switch-level="handleSwitchLevel"
     />
 
     <div
@@ -99,6 +102,7 @@ const showCharacterCanvas = ref(false)
 const characterCanvas = ref<HTMLCanvasElement | null>(null)
 const availableScenarios = ref<ScenarioSummary[]>([])
 const voiceDesign = ref('温柔、清晰、自然的成年女性英语教师，语速适中，发音清楚')
+const selectedLevel = ref(4)
 const characterProvider = shallowRef<CharacterProvider | null>(null)
 // 远程 TTS 在网络响应期间尚未进入 audioPlayer.isPlaying，单靠播放状态无法防止重复点击。
 const speechRequestActive = ref(false)
@@ -142,7 +146,7 @@ async function sendToBackend(
   const requestId = createMessageId().replace('msg-', 'req-')
   return client.sendMessage(
     {
-      level: 4,
+      level: selectedLevel.value,
       sessionId: store.connectionId,
       requestId,
       ...payload
@@ -201,6 +205,14 @@ async function handleScenarioSelect(scenarioId: string) {
 }
 
 async function handleSwitchScenario() {
+  await returnToScenarioPicker()
+}
+
+async function handleSwitchLevel() {
+  await returnToScenarioPicker()
+}
+
+async function returnToScenarioPicker() {
   interruptTeacher()
   store.currentScenario = null
   store.messages = []

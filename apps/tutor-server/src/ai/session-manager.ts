@@ -1,5 +1,5 @@
 import { LRUCache } from 'lru-cache'
-import type { CEFRLevel, OpeningStyle } from '@ai-english-tutor/shared'
+import type { CEFRLevel, OpeningStyle, TeachingResponse } from '@ai-english-tutor/shared'
 
 export interface ScenarioState {
   id: string
@@ -36,9 +36,11 @@ export class SessionManager {
     session: SessionData,
     role: 'user' | 'assistant',
     content: string,
-    metadata?: { vocabulary?: string[] }
+    metadata?: TeachingResponse
   ): void {
-    session.history.push({ role, content })
+    const historyContent =
+      role === 'assistant' && metadata ? serializeAssistantHistory(metadata, content) : content
+    session.history.push({ role, content: historyContent })
     for (const word of metadata?.vocabulary ?? []) session.vocabulary.add(word.toLowerCase())
   }
 
@@ -55,4 +57,20 @@ export class SessionManager {
       vocabularyCount: session.vocabulary.size
     }
   }
+}
+
+/**
+ * Assistant 历史必须保持与当前响应契约相同的 JSON 形状。
+ * 若只保存解析后的英文正文，模型会逐轮模仿纯文本历史并停止返回结构化字段。
+ */
+function serializeAssistantHistory(metadata: TeachingResponse, fallbackText: string): string {
+  return JSON.stringify({
+    text: metadata.text || fallbackText,
+    textZh: metadata.textZh ?? '',
+    motionId: metadata.motionId ?? 'nod',
+    expressionId: metadata.expressionId ?? 'neutral',
+    vocabulary: metadata.vocabulary ?? [],
+    vocabularySentences: metadata.vocabularySentences ?? [],
+    studentReplyHints: metadata.studentReplyHints ?? []
+  })
 }

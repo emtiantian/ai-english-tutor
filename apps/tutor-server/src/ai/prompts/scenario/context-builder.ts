@@ -1,5 +1,6 @@
 import { type CEFRLevel, type Scenario, type ScenarioLevelProfile } from '@ai-english-tutor/shared'
 import { DEFAULT_VOCABULARY_POLICY } from '../../vocabulary-policy.js'
+import { buildTeachingOutputContract } from './output-contract.js'
 
 /**
  * 构建要注入 system prompt 的场景上下文块。
@@ -118,19 +119,7 @@ Scenario rules:
 - When the student has used enough target words or the conversation has run long enough, naturally transition to the closing act and wrap up.
 - studentReplyHints must be 1-3 optional complete English lines the student (playing ${activeRole.student}) could say next, written in the student's own voice. Prefer one line that naturally includes a focus word. These are optional suggestions: always respond naturally if the student ignores or changes them. Never include translations, explanations, or meta language.`
 
-  // 提示词：输出格式 —— 要求模型必须返回合法 JSON，并说明每个字段的含义
-  const outputFormat = `
-
-OUTPUT FORMAT — You MUST respond with valid JSON:
-{
-  "text": "Your in-character reply in English",
-  "textZh": "A short Chinese translation to help the student understand",
-  "motionId": "Choose the motion that best fits the text from wave|nod|think|gesture|clap|point|write|surprised",
-  "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
-  "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
-  "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; do not reuse sentences from earlier turns. Each sentence must contain at least one word from the pool above. Empty array if vocabulary is empty."],
-  "studentReplyHints": ["1-3 optional complete English lines the student could say next. These are actual lines, never explanations or translations."]
-}`
+  const outputFormat = buildTeachingOutputContract(activeRole.student)
 
   const scenarioContextBlock =
     scenarioHeader + vocabularyPool + progressSection + scenarioRules + outputFormat
@@ -176,18 +165,7 @@ Scenario rules:
 - Keep replies concise (1-3 sentences).
 - studentReplyHints must contain 1-3 optional complete English lines the student (playing ${activeRole.student}) could say next, written in the student's own voice. The student may ignore them, and you must respond naturally to any relevant answer.`
 
-  const outputFormat = `
-
-OUTPUT FORMAT — You MUST respond with valid JSON:
-{
-  "text": "Your in-character reply in English",
-  "textZh": "A short Chinese translation to help the student understand",
-  "motionId": "Choose the motion that best fits the text from wave|nod|think|gesture|clap|point|write|surprised",
-  "expressionId": "Choose the expression that best fits the text from happy|neutral|curious|surprised|encouraging|thoughtful",
-  "vocabulary": ["Words you used from the target vocabulary pool above, and only from that pool"],
-  "vocabularySentences": ["Teaching example sentences — one fresh, natural sentence per vocabulary word; empty array if vocabulary is empty."],
-  "studentReplyHints": ["1-3 optional complete English lines the student could say next. These are actual lines, never explanations or translations."]
-}`
+  const outputFormat = buildTeachingOutputContract(activeRole.student)
 
   return scenarioHeader + vocabularyPool + scenarioRules + outputFormat
 }

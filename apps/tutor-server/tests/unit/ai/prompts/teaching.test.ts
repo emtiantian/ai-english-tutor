@@ -26,7 +26,10 @@ describe('scenario teaching prompts', () => {
     expect(startSystem).toContain('Setting:')
     expect(startSystem).toContain('Your role:')
     expect(startSystem).toContain('Target CEFR level: A1')
-    expect(startSystem).toContain('OUTPUT FORMAT')
+    expect(startSystem).toContain('RESPONSE CONTRACT — HIGHEST PRIORITY')
+    expect(startSystem).toContain('Every key below is required on every turn')
+    expect(startSystem).toContain('textZh is non-empty')
+    expect(startSystem).toContain('studentReplyHints contains 1-3 non-empty strings')
     expect(startSystem).not.toContain('Current act:')
     expect(startSystem).not.toContain('Focus words for this turn')
     expect(startSystem).not.toContain('Three-act structure')
@@ -65,6 +68,7 @@ describe('scenario teaching prompts', () => {
     expect(focusSection.match(/^- word\d+$/gm)).toHaveLength(10)
 
     expect(teachingSystem).toContain('studentReplyHints must be')
+    expect(teachingSystem.match(/RESPONSE CONTRACT — HIGHEST PRIORITY/g)).toHaveLength(1)
   })
 
   it('buildScenarioContext 正确注入 twist 和 vocabThemes', () => {

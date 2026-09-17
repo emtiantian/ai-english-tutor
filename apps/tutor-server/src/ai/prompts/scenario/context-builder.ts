@@ -1,21 +1,14 @@
 import { type CEFRLevel, type Scenario, type ScenarioLevelProfile } from '@ai-english-tutor/shared'
-import { DEFAULT_VOCABULARY_POLICY } from '../../vocabulary-policy.js'
 import { buildTeachingOutputContract } from './output-contract.js'
 
 /** 构建场景对话上下文，不引入固定角色名、教师身份或三幕阶段。 */
 export function buildScenarioContext(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetWords: string[],
-  state?: { wordsUsed?: string[] },
   levelProfile?: ScenarioLevelProfile
 ): string {
   const activeSetting = levelProfile?.setting ?? scenario.setting
   const activeRole = levelProfile?.role ?? scenario.role
-  const usedSet = new Set((state?.wordsUsed ?? []).map(word => word.toLowerCase()))
-  const focusWords = targetWords
-    .filter(word => !usedSet.has(word.toLowerCase()))
-    .slice(0, DEFAULT_VOCABULARY_POLICY.focusWordsPerTurn)
 
   return `${buildRolePlaySystemPrompt()}
 
@@ -29,11 +22,12 @@ Conversation goals:
 ${buildConversationGoals(scenario, levelProfile)}
 ${levelProfile?.twist ? `\nOptional natural complication: ${levelProfile.twist}` : ''}
 
-VOCABULARY GUIDANCE
-Target vocabulary pool: ${targetWords.join(', ')}
-Relevant unused vocabulary for the next reply: ${focusWords.join(', ') || 'none'}
-- Vocabulary is guidance, not a script. Use only words that fit the user's latest message naturally.
-- Do not force a goal or vocabulary item into the current reply.
+VOCABULARY ANNOTATION
+- Write the scene reply naturally first; never alter the dialogue merely to create vocabulary annotations.
+- Then select 0-3 useful words or phrases that actually appear in your reply and would challenge this ${targetLevel} learner.
+- Aim near the upper edge of ${targetLevel} or roughly one CEFR step above it.
+- Prefer practical collocations, phrasal verbs, idiomatic expressions, and scene-relevant vocabulary.
+- Select nothing when the reply contains no worthwhile learning item.
 
 CURRENT-TURN RULES
 - Respond to what the user actually said and continue the scene naturally.
@@ -46,10 +40,9 @@ ${buildTeachingOutputContract(activeRole.student)}`
 export function buildScenarioOpeningContext(
   scenario: Scenario,
   targetLevel: CEFRLevel,
-  targetWords: string[],
   levelProfile?: ScenarioLevelProfile
 ): string {
-  return buildScenarioContext(scenario, targetLevel, targetWords, undefined, levelProfile)
+  return buildScenarioContext(scenario, targetLevel, levelProfile)
 }
 
 function buildRolePlaySystemPrompt(): string {

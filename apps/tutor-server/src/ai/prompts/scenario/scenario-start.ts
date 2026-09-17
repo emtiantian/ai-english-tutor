@@ -6,11 +6,9 @@ export function buildScenarioStartMessages(
   scenario: Scenario,
   _level: number,
   targetLevel: CEFRLevel,
-  targetWords?: string[],
   levelProfile?: ScenarioLevelProfile
 ): { messages: LLMMessage[] } {
-  const words = targetWords?.length ? targetWords : scenario.targetWords
-  const systemPrompt = buildScenarioOpeningContext(scenario, targetLevel, words, levelProfile)
+  const systemPrompt = buildScenarioOpeningContext(scenario, targetLevel, levelProfile)
   const activeSetting = levelProfile?.setting ?? scenario.setting
 
   return {

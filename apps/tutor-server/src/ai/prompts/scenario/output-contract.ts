@@ -15,7 +15,7 @@ Every key below is required on every turn. Before sending, verify that textZh is
   "textZh": "A faithful, non-empty Simplified Chinese translation of text",
   "motionId": "one of: wave|nod|think|gesture|clap|point|write|surprised",
   "expressionId": "one of: happy|neutral|curious|surprised|encouraging|thoughtful",
-  "vocabulary": ["0-3 words that occur verbatim in text and belong to the target vocabulary pool"],
+  "vocabulary": ["0-3 useful words or phrases copied verbatim from text that are challenging for the user's CEFR level"],
   "vocabularySentences": ["One fresh teaching example for each vocabulary item, in the same order"],
   "studentReplyHints": ["1-3 complete English replies the student could say next as ${studentRole}"]
 }
@@ -24,6 +24,8 @@ Field invariants:
 - textZh must translate text from the current turn; never omit it and never return an empty string.
 - studentReplyHints must be newly generated for the current conversational state, written in the student's own voice.
 - studentReplyHints are actual lines the student can say next, not explanations, translations, templates, or meta language.
-- vocabulary and vocabularySentences must have the same length. Use [] for both when no target-pool word appears in text.
+- vocabulary and vocabularySentences must have the same length. Use [] for both when text contains no genuinely useful challenge for this learner.
+- Prefer practical collocations, phrasal verbs, idiomatic expressions, and upper-edge vocabulary for the requested CEFR level.
+- Do not select names, numbers, function words, or vocabulary that is clearly below the user's level.
 - Never copy the assistant's text into studentReplyHints.`
 }

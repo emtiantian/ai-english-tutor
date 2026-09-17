@@ -8,15 +8,12 @@ export function buildScenarioTeachingMessages(
   _level: number,
   targetLevel: CEFRLevel,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
-  targetWords?: string[],
-  vocabState?: { wordsUsed?: string[] },
   levelProfile?: ScenarioLevelProfile
 ): LLMMessage[] {
-  const words = targetWords?.length ? targetWords : scenario.targetWords
   const messages: LLMMessage[] = [
     {
       role: 'system',
-      content: buildScenarioContext(scenario, targetLevel, words, vocabState, levelProfile)
+      content: buildScenarioContext(scenario, targetLevel, levelProfile)
     }
   ]
 

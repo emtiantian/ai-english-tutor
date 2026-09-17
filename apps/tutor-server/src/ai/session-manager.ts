@@ -6,8 +6,6 @@ export interface ScenarioState {
   name: string
   icon: string
   level: CEFRLevel
-  targetWords: string[]
-  wordsUsed: Set<string>
 }
 
 export interface SessionData {

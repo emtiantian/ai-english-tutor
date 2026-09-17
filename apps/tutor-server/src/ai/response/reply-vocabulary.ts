@@ -6,49 +6,36 @@ interface VocabularyReply {
   vocabularySentences?: string[]
 }
 
-function containsWord(text: string, word: string): boolean {
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function containsTerm(text: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`\\b${escaped}\\b`, 'i').test(text)
 }
 
 /**
- * 只保留回复正文中实际出现且属于目标词池的词，并限制单轮标注数量。
- * LLM 返回的词优先；遗漏的实际目标词再按目标池顺序补充。
+ * 校验模型按学习者难度挑出的生词：必须逐字出现在正文中、例句一一对应、
+ * 尚未在当前会话标注，并限制单轮数量。难度判断由拥有完整语境的 LLM 完成。
  */
 export function ensureReplyVocabulary<T extends VocabularyReply>(
   parsed: T,
-  targetWords: string[],
+  previouslyAnnotated: Iterable<string> = [],
   maxWords: number = DEFAULT_VOCABULARY_POLICY.maxAnnotatedWordsPerReply
 ): T {
-  const canonicalTargets = new Map(targetWords.map(word => [word.toLowerCase(), word]))
+  const previous = new Set(Array.from(previouslyAnnotated, term => term.toLowerCase()))
   const selected: string[] = []
+  const examples: string[] = []
   const selectedKeys = new Set<string>()
 
-  const addIfValid = (word: string): void => {
-    const canonical = canonicalTargets.get(word.toLowerCase())
-    if (!canonical || selectedKeys.has(canonical.toLowerCase())) return
-    if (!containsWord(parsed.text, canonical)) return
-    selectedKeys.add(canonical.toLowerCase())
-    selected.push(canonical)
+  for (const [index, rawTerm] of (parsed.vocabulary ?? []).entries()) {
+    const term = rawTerm.trim()
+    const key = term.toLowerCase()
+    const example = parsed.vocabularySentences?.[index]?.trim()
+    if (!term || !example || previous.has(key) || selectedKeys.has(key)) continue
+    if (!containsTerm(parsed.text, term)) continue
+    selectedKeys.add(key)
+    selected.push(term)
+    examples.push(example)
+    if (selected.length >= Math.max(0, maxWords)) break
   }
 
-  for (const word of parsed.vocabulary ?? []) addIfValid(word)
-  for (const word of targetWords) addIfValid(word)
-
-  const vocabulary = selected.slice(0, Math.max(0, maxWords))
-  const sentenceByOriginalWord = new Map<string, string>()
-  for (const [index, word] of (parsed.vocabulary ?? []).entries()) {
-    const sentence = parsed.vocabularySentences?.[index]
-    if (sentence) sentenceByOriginalWord.set(word.toLowerCase(), sentence)
-  }
-  const vocabularySentences = vocabulary
-    .map(word => sentenceByOriginalWord.get(word.toLowerCase()))
-    .filter((sentence): sentence is string => Boolean(sentence))
-  const hasCompleteSentenceMapping = vocabularySentences.length === vocabulary.length
-
-  return {
-    ...parsed,
-    vocabulary,
-    vocabularySentences: hasCompleteSentenceMapping ? vocabularySentences : undefined
-  }
+  return { ...parsed, vocabulary: selected, vocabularySentences: examples }
 }

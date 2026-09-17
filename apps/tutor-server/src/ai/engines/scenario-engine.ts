@@ -9,8 +9,6 @@ import {
   warnIfMissingVocabSentences,
   ensureReplyVocabulary
 } from '../response/response-orchestrator.js'
-import { pickScenarioVocabulary } from '../scenario-vocab-picker.js'
-import { DEFAULT_VOCABULARY_POLICY } from '../vocabulary-policy.js'
 import { SessionManager, type ScenarioState } from '../session-manager.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
 import { broadcastToSession } from '../../sse/handler.js'
@@ -40,15 +38,9 @@ export class ScenarioEngine {
       id: scenario.id,
       name: scenario.name,
       icon: scenario.icon,
-      level: cefrLevel,
-      targetWords: pickScenarioVocabulary(
-        scenario,
-        cefrLevel,
-        DEFAULT_VOCABULARY_POLICY.targetPoolSize
-      ),
-      wordsUsed: new Set()
+      level: cefrLevel
     }
-    const { messages } = buildScenarioStartMessages(scenario, level, cefrLevel, state.targetWords)
+    const { messages } = buildScenarioStartMessages(scenario, level, cefrLevel)
     const session = this.sessions.getOrCreate(sessionId, level)
     session.history = []
     session.vocabulary.clear()
@@ -61,12 +53,12 @@ export class ScenarioEngine {
       : (await this.llm.complete(messages, signal, { responseFormat: 'json' })).content
     const parsed = ensureReplyVocabulary(
       await parseCompleteTeachingResponse(raw, this.llm, signal),
-      state.targetWords
+      session.vocabulary
     )
     warnIfMissingVocabSentences(parsed, sessionId, 'startScenarioLesson')
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 
-    const scenarioResponse = this.toResponse(state)
+    const scenarioResponse = this.toResponse(state, session.vocabulary)
     if (stream) {
       broadcastToSession(sessionId, {
         event: 'teacher.response',
@@ -83,14 +75,14 @@ export class ScenarioEngine {
     return { ...parsed, ...audio, scenario: scenarioResponse }
   }
 
-  private toResponse(state: ScenarioState) {
+  private toResponse(state: ScenarioState, annotated: Set<string>) {
     return {
       id: state.id,
       name: state.name,
       icon: state.icon,
-      targetWords: state.targetWords,
-      targetWordsTotal: state.targetWords.length,
-      wordsLearned: Array.from(state.wordsUsed)
+      targetWords: [],
+      targetWordsTotal: 0,
+      wordsLearned: Array.from(annotated)
     }
   }
 }

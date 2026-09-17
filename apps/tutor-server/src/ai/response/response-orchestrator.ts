@@ -103,9 +103,7 @@ export class ResponseOrchestrator {
       scenario,
       session.level,
       session.scenario.level,
-      session.history,
-      session.scenario.targetWords,
-      { wordsUsed: Array.from(session.scenario.wordsUsed) }
+      session.history
     )
     const raw = options.stream
       ? await streamTeachingResponse(
@@ -132,10 +130,9 @@ export class ResponseOrchestrator {
     if (!scenarioState) throw new Error('场景会话不存在，请重新选择场景')
     const parsed = ensureReplyVocabulary(
       await parseCompleteTeachingResponse(raw, this.llm, signal),
-      scenarioState.targetWords
+      session.vocabulary
     )
     warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
-    this.recordUsedWords(session, userText)
     this.sessions.addMessage(sessionId, session, 'user', userText)
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 
@@ -143,9 +140,9 @@ export class ResponseOrchestrator {
       id: session.scenario.id,
       name: session.scenario.name,
       icon: session.scenario.icon,
-      targetWords: session.scenario.targetWords,
-      targetWordsTotal: session.scenario.targetWords.length,
-      wordsLearned: Array.from(session.scenario.wordsUsed)
+      targetWords: [],
+      targetWordsTotal: 0,
+      wordsLearned: Array.from(session.vocabulary)
     }
     broadcastToSession(sessionId, {
       event: 'teacher.response',
@@ -159,14 +156,5 @@ export class ResponseOrchestrator {
       signal
     )
     return { ...parsed, transcript: userText, ...audio, scenario }
-  }
-
-  private recordUsedWords(session: SessionData, text: string): void {
-    if (!session.scenario) return
-    const normalized = text.toLowerCase()
-    for (const word of session.scenario.targetWords) {
-      const escaped = word.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      if (new RegExp(`\\b${escaped}\\b`, 'i').test(normalized)) session.scenario.wordsUsed.add(word)
-    }
   }
 }

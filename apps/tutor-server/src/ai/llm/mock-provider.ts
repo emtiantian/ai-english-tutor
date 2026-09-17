@@ -37,10 +37,13 @@ export class MockProvider implements LLMProvider {
 
     return {
       content: JSON.stringify({
-        text: "Hello! I'm your English conversation partner. Let's practice speaking together!",
+        text: 'Good evening. What can I get for you?',
+        textZh: '晚上好。您想点些什么？',
         motionId: 'wave',
         expressionId: 'happy',
-        vocabulary: ['practice', 'speaking', 'together']
+        vocabulary: [],
+        vocabularySentences: [],
+        studentReplyHints: ['Could I see the menu, please?']
       })
     }
   }
@@ -61,11 +64,13 @@ export class MockProvider implements LLMProvider {
     // 在一个分片里产出完整 JSON 响应，使下游解析能够像非流式路径一样
     // 提取 text、textZh、vocabulary 等字段。
     const response = JSON.stringify({
-      text: "Hello! I'm your English conversation partner. Let's practice speaking together!",
-      textZh: '你好！我是你的英语对话伙伴。让我们一起练习口语吧！',
+      text: 'Good evening. What can I get for you?',
+      textZh: '晚上好。您想点些什么？',
       motionId: 'wave',
       expressionId: 'happy',
-      vocabulary: ['practice', 'speaking', 'together']
+      vocabulary: [],
+      vocabularySentences: [],
+      studentReplyHints: ['Could I see the menu, please?']
     })
 
     await new Promise(resolve => setTimeout(resolve, 300))

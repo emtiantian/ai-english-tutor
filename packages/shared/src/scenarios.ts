@@ -10,8 +10,8 @@ import scenariosDefault from './scenarios-default.json' with { type: 'json' }
 export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
 
 /**
- * Act 是三幕故事（开场 / 主线 / 收尾）中的一个阶段。
- * goal 会作为该幕的专属目标注入 LLM 提示词。
+ * 历史场景数据中的目标分组。对话提示词会将 goal 展平为无顺序的会话目标，
+ * 不再要求模型按三幕阶段推进；vocabThemes 仍可用于离线选择相关目标词。
  */
 export interface ActDef {
   /** Act 在 UI 中显示的中文名，如 "开场" / "主线" / "收尾" */
@@ -43,7 +43,7 @@ export interface ScenarioLevelProfile {
   maxTurns?: number
   /** 该等级下目标词数量（默认 30） */
   targetWordCount?: number
-  /** 该等级下的三幕结构 */
+  /** 该等级下的会话目标分组（不表示运行时阶段） */
   acts?: ActDef[]
 }
 
@@ -95,7 +95,7 @@ export interface Scenario {
    */
   objectives: ScenarioObjective[]
   /**
-   * 3 幕剧骨架（开场 / 主线 / 收尾），注入 LLM prompt。
+   * 历史会话目标分组；运行时会展平为无顺序目标。
    */
   acts?: ActDef[]
 }

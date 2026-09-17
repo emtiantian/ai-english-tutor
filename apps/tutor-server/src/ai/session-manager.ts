@@ -1,5 +1,5 @@
 import { LRUCache } from 'lru-cache'
-import type { CEFRLevel, OpeningStyle, TeachingResponse } from '@ai-english-tutor/shared'
+import type { CEFRLevel, TeachingResponse } from '@ai-english-tutor/shared'
 
 export interface ScenarioState {
   id: string
@@ -14,7 +14,6 @@ export interface SessionData {
   level: number
   history: Array<{ role: 'user' | 'assistant'; content: string }>
   vocabulary: Set<string>
-  openingStyle?: OpeningStyle
   voiceDesign?: string
   scenario?: ScenarioState
 }

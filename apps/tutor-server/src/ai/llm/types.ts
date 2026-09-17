@@ -45,6 +45,12 @@ export interface LLMStreamChunk {
   isEnd: boolean
 }
 
+export interface LLMRequestOptions {
+  signal?: AbortSignal
+  /** 要求 Provider 使用其原生 JSON 输出模式。 */
+  responseFormat?: 'json'
+}
+
 // ── Provider 能力 ──
 
 export interface ProviderCapabilities {
@@ -63,11 +69,12 @@ export interface LLMProvider {
   readonly capabilities: ProviderCapabilities
 
   /** 非流式补全 */
-  complete(messages: LLMMessage[], signal?: AbortSignal): Promise<LLMResponse>
+  complete(
+    messages: LLMMessage[],
+    signal?: AbortSignal,
+    options?: Omit<LLMRequestOptions, 'signal'>
+  ): Promise<LLMResponse>
 
   /** 流式补全（仅文本） */
-  stream?(
-    messages: LLMMessage[],
-    options?: { signal?: AbortSignal }
-  ): AsyncGenerator<LLMStreamChunk>
+  stream?(messages: LLMMessage[], options?: LLMRequestOptions): AsyncGenerator<LLMStreamChunk>
 }

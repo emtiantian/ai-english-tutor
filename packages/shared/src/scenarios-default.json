@@ -3,7 +3,7 @@
     "id": "restaurant-ordering",
     "name": "餐厅点餐",
     "nameEn": "Restaurant Ordering",
-    "description": "在一家西餐厅，你是顾客，Luna 是服务员。你需要完成点餐的全过程。",
+    "description": "在一家西餐厅，你是顾客，对方是服务员。你需要完成点餐的全过程。",
     "icon": "🍽️",
     "level": 1,
     "topics": ["food", "politeness", "number"],
@@ -190,7 +190,7 @@
     "id": "asking-directions",
     "name": "问路指路",
     "nameEn": "Asking for Directions",
-    "description": "你在一座陌生城市迷路了，Luna 是一位友好的路人。你需要问路找到目的地。",
+    "description": "你在一座陌生城市迷路了，对方是一位友好的路人。你需要问路找到目的地。",
     "icon": "🗺️",
     "level": 1,
     "topics": ["place", "question", "basic"],
@@ -377,7 +377,7 @@
     "id": "shopping",
     "name": "购物对话",
     "nameEn": "Shopping",
-    "description": "你在一家商店购物，Luna 是店员。你需要询问商品并完成购买。",
+    "description": "你在一家商店购物，对方是店员。你需要询问商品并完成购买。",
     "icon": "🛒",
     "level": 1,
     "topics": ["object", "number", "description"],
@@ -564,7 +564,7 @@
     "id": "meeting-someone",
     "name": "初次见面",
     "nameEn": "Meeting Someone New",
-    "description": "你在一次聚会上认识新朋友，Luna 是你的新朋友。你们互相介绍自己。",
+    "description": "你在一次聚会上认识新朋友。你们互相介绍自己。",
     "icon": "👋",
     "level": 1,
     "topics": ["greeting", "people", "family"],
@@ -744,7 +744,7 @@
     "id": "at-school",
     "name": "校园生活",
     "nameEn": "At School",
-    "description": "你是新同学，Luna 是你的同学。你们讨论学校和学习。",
+    "description": "你是新同学，对方是你的同学。你们讨论学校和学习。",
     "icon": "🏫",
     "level": 1,
     "topics": ["people", "object", "verb"],
@@ -931,7 +931,7 @@
     "id": "daily-routine",
     "name": "日常作息",
     "nameEn": "Daily Routine",
-    "description": "Luna 是你的室友，你们讨论每天的日常作息。",
+    "description": "你和室友讨论每天的日常作息。",
     "icon": "⏰",
     "level": 1,
     "topics": ["time", "verb", "family"],
@@ -940,7 +940,7 @@
       "student": "室友 (Roommate)",
       "teacher": "室友 (Roommate)"
     },
-    "setting": "Your apartment in the morning. You and Luna are having breakfast together.",
+    "setting": "Your apartment in the morning. You and your roommate are having breakfast together.",
     "objectives": [
       {
         "id": "greet-morning",
@@ -980,7 +980,7 @@
     ],
     "levelProfiles": {
       "A1": {
-        "setting": "Your apartment in the morning. You and Luna are having breakfast together.",
+        "setting": "Your apartment in the morning. You and your roommate are having breakfast together.",
         "twist": "You are both relaxed and talking about the day.",
         "acts": [
           {
@@ -1064,7 +1064,7 @@
         ]
       },
       "A2": {
-        "setting": "Your apartment in the morning. You and Luna are having breakfast together.",
+        "setting": "Your apartment in the morning. You and your roommate are having breakfast together.",
         "twist": "You are both relaxed and talking about the day.",
         "acts": [
           {
@@ -1111,7 +1111,7 @@
     "id": "job-interview",
     "name": "求职面试",
     "nameEn": "Job Interview",
-    "description": "你正在参加一场英语面试，Luna 是面试官。展示你的英语能力。",
+    "description": "你正在参加一场英语面试，对方是面试官。展示你的英语能力。",
     "icon": "💼",
     "level": 3,
     "topics": ["communication", "evaluation", "success"],
@@ -1305,7 +1305,7 @@
     "id": "hotel-complaint",
     "name": "酒店投诉",
     "nameEn": "Hotel Complaint",
-    "description": "你在酒店遇到问题，Luna 是前台服务员。你需要礼貌但清楚地表达不满。",
+    "description": "你在酒店遇到问题，对方是前台服务员。你需要礼貌但清楚地表达不满。",
     "icon": "🏨",
     "level": 3,
     "topics": ["communication", "manners", "emotion"],
@@ -1492,7 +1492,7 @@
     "id": "travel-planning",
     "name": "旅行规划",
     "nameEn": "Travel Planning",
-    "description": "你和 Luna 在讨论即将到来的旅行计划。",
+    "description": "你和旅行伙伴在讨论即将到来的旅行计划。",
     "icon": "✈️",
     "level": 3,
     "topics": ["decision", "social", "knowledge"],
@@ -1501,7 +1501,7 @@
       "student": "旅行者 (Traveler)",
       "teacher": "旅行伙伴 (Travel Buddy)"
     },
-    "setting": "A coffee shop. You and Luna are planning a trip together.",
+    "setting": "A coffee shop. You and your travel partner are planning a trip together.",
     "objectives": [
       {
         "id": "suggest-destination",
@@ -1548,7 +1548,7 @@
     ],
     "levelProfiles": {
       "A1": {
-        "setting": "A coffee shop. You and Luna are planning a short trip together.",
+        "setting": "A coffee shop. You and your travel partner are planning a short trip together.",
         "twist": "You both want a simple, fun plan.",
         "acts": [
           {
@@ -1632,7 +1632,7 @@
         ]
       },
       "A2": {
-        "setting": "A coffee shop. You and Luna are planning a short trip together.",
+        "setting": "A coffee shop. You and your travel partner are planning a short trip together.",
         "twist": "You both want a simple, fun plan.",
         "acts": [
           {
@@ -1679,7 +1679,7 @@
     "id": "doctor-visit",
     "name": "看医生",
     "nameEn": "Doctor Visit",
-    "description": "你感觉不舒服去看医生，Luna 是医生。描述你的症状。",
+    "description": "你感觉不舒服去看医生。请向医生描述你的症状。",
     "icon": "🏥",
     "level": 3,
     "topics": ["emotion", "state", "description"],

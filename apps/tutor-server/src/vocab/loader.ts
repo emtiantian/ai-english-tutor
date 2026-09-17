@@ -5,12 +5,8 @@ import { logger } from '../logger.js'
 import { config } from '../config.js'
 import {
   scenarios as sharedScenarios,
-  LUNA_PERSONA,
-  personaFromJson,
   type Scenario as SharedScenario,
-  type ScenarioObjective as SharedScenarioObjective,
-  type CharacterPersona,
-  type PersonaJson
+  type ScenarioObjective as SharedScenarioObjective
 } from '@ai-english-tutor/shared'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -262,34 +258,4 @@ export function getScenarioById(id: string): Scenario | undefined {
  */
 export function getAllScenarios(): Scenario[] {
   return [...ensureScenarios()]
-}
-
-// ── 人设系统 ──────────────────────────────────────
-
-/** 运行时加载的人设（来自 JSON 文件或编译内置默认值） */
-let runtimePersona: CharacterPersona | null = null
-
-/**
- * 从 JSON 文件加载人设，回退到编译内置默认值（Luna）。
- */
-export function loadPersona(): CharacterPersona {
-  if (runtimePersona) return runtimePersona
-
-  const filePath = join(resolveConfigDir(), 'persona.json')
-  try {
-    if (existsSync(filePath)) {
-      const data = readFileSync(filePath, 'utf-8')
-      const json: PersonaJson = JSON.parse(data)
-      runtimePersona = personaFromJson(json)
-      logger.info({ name: json.name, source: filePath }, 'Persona loaded from JSON file')
-      return runtimePersona
-    }
-  } catch (err) {
-    logger.error({ err, filePath }, 'Failed to load persona.json, using compiled default')
-  }
-
-  // 回退到编译内置默认值
-  runtimePersona = LUNA_PERSONA
-  logger.info({ name: LUNA_PERSONA.name }, 'Persona loaded from compiled default')
-  return runtimePersona
 }

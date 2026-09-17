@@ -1,107 +1,63 @@
-import { describe, it, expect } from 'vitest'
-import { scenarios, LUNA_PERSONA } from '@ai-english-tutor/shared'
+import { describe, expect, it } from 'vitest'
+import { scenarios } from '@ai-english-tutor/shared'
 import { buildScenarioStartMessages } from '@/ai/prompts/scenario/scenario-start.js'
 import { buildScenarioTeachingMessages } from '@/ai/prompts/scenario/scenario-turn.js'
 import { buildScenarioContext } from '@/ai/prompts/scenario/context-builder.js'
 
-const restaurant = scenarios.find(s => s.id === 'restaurant-ordering')!
-const runtimeWords = Array.from({ length: 60 }, (_, i) => `word${i + 1}`)
+const restaurant = scenarios.find(scenario => scenario.id === 'restaurant-ordering')!
+const runtimeWords = Array.from({ length: 60 }, (_, index) => `word${index + 1}`)
 
 describe('scenario teaching prompts', () => {
-  it('start messages inject runtime target words', () => {
-    const { messages: startMessages } = buildScenarioStartMessages(
-      restaurant,
-      1,
-      'A1',
-      undefined,
-      LUNA_PERSONA,
-      runtimeWords
-    )
-    const startSystem = String(startMessages[0].content)
+  it('uses only the assigned scene role without a named tutor persona or act progression', () => {
+    const { messages } = buildScenarioStartMessages(restaurant, 4, 'B2', runtimeWords)
+    const system = String(messages[0].content)
 
-    expect(startSystem).toContain('Target vocabulary pool')
-    for (const w of runtimeWords) {
-      expect(startSystem).toContain(w)
-    }
-    expect(startSystem).toContain('Setting:')
-    expect(startSystem).toContain('Your role:')
-    expect(startSystem).toContain('Target CEFR level: A1')
-    expect(startSystem).toContain('RESPONSE CONTRACT — HIGHEST PRIORITY')
-    expect(startSystem).toContain('Every key below is required on every turn')
-    expect(startSystem).toContain('textZh is non-empty')
-    expect(startSystem).toContain('studentReplyHints contains 1-3 non-empty strings')
-    expect(startSystem).not.toContain('Current act:')
-    expect(startSystem).not.toContain('Focus words for this turn')
-    expect(startSystem).not.toContain('Three-act structure')
+    expect(system).toContain('Your role in this scene:')
+    expect(system).toContain("User's role in this scene:")
+    expect(system).toContain('English difficulty: B2')
+    expect(system).toContain('Conversation goals:')
+    expect(system).toContain('RESPONSE CONTRACT — HIGHEST PRIORITY')
+    expect(system).not.toContain('Luna')
+    expect(system).not.toContain('Three-act structure')
+    expect(system).not.toContain('Current act:')
+    expect(system).not.toContain('TEACHING LEVEL')
   })
 
-  it('teaching messages focus on unused words in current act', () => {
-    const usedWords = ['word1', 'word2', 'word3']
-    const teachingMessages = buildScenarioTeachingMessages(
+  it('treats unused vocabulary as optional guidance instead of an act bucket', () => {
+    const messages = buildScenarioTeachingMessages(
       'I would like to order something.',
       restaurant,
-      1,
-      'A1',
+      4,
+      'B2',
       [],
-      undefined,
-      LUNA_PERSONA,
       runtimeWords,
-      { currentActIndex: 0, wordsUsed: usedWords }
+      { wordsUsed: ['word1', 'word2'] }
     )
-    const teachingSystem = String(teachingMessages[0].content)
+    const system = String(messages[0].content)
 
-    expect(teachingSystem).toContain('Target vocabulary pool')
-    for (const w of usedWords) {
-      expect(teachingSystem).toContain(`- ${w}`)
-    }
-
-    const bucketSize = Math.ceil(runtimeWords.length / 3)
-    const firstBucket = runtimeWords.slice(0, bucketSize)
-    const firstBucketUnused = firstBucket.filter(w => !usedWords.includes(w))
-    for (const w of firstBucketUnused.slice(0, 10)) {
-      expect(teachingSystem).toContain(`- ${w}`)
-    }
-
-    const focusSection = teachingSystem
-      .split('Focus words for this turn')[1]
-      .split(/Coming up|Words the student|The student has/)[0]
-    expect(focusSection.match(/^- word\d+$/gm)).toHaveLength(10)
-
-    expect(teachingSystem).toContain('studentReplyHints must be')
-    expect(teachingSystem.match(/RESPONSE CONTRACT — HIGHEST PRIORITY/g)).toHaveLength(1)
+    expect(system).toContain('Relevant unused vocabulary for the next reply: word3')
+    expect(system).toContain('Vocabulary is guidance, not a script.')
+    expect(system).toContain('Do not force a goal or vocabulary item')
+    expect(system).not.toContain('Current act:')
+    expect(system).not.toContain('Coming up')
+    expect(system.match(/RESPONSE CONTRACT — HIGHEST PRIORITY/g)).toHaveLength(1)
   })
 
-  it('buildScenarioContext 正确注入 twist 和 vocabThemes', () => {
-    const levelProfile = {
+  it('keeps level-specific setting, goals and optional complication without act labels', () => {
+    const context = buildScenarioContext(restaurant, 'B1', runtimeWords, undefined, {
       setting: 'A busy burger joint at lunchtime.',
-      twist: 'You need to ask whether a dish contains nuts or dairy.',
+      twist: 'A dish may contain nuts or dairy.',
       acts: [
-        {
-          name: '开场',
-          goal: 'Greet and ask about allergens.',
-          vocabThemes: ['greeting', 'health']
-        },
-        { name: '主线', goal: 'Choose a safe meal.', vocabThemes: ['food', 'preference'] },
-        {
-          name: '收尾',
-          goal: 'Pay and give brief feedback.',
-          vocabThemes: ['payment', 'evaluation']
-        }
+        { name: '开场', goal: 'Ask about allergens.' },
+        { name: '主线', goal: 'Choose a safe meal.' }
       ]
-    }
+    })
 
-    const ctx = buildScenarioContext(
-      restaurant,
-      'B1',
-      runtimeWords,
-      { currentActIndex: 1 },
-      levelProfile
-    )
-
-    expect(ctx).toContain(
-      'Natural complication for this level: You need to ask whether a dish contains nuts or dairy.'
-    )
-    expect(ctx).toContain('Current act theme: food, preference')
-    expect(ctx).toContain('A busy burger joint at lunchtime.')
+    expect(context).toContain('A busy burger joint at lunchtime.')
+    expect(context).toContain('- Ask about allergens.')
+    expect(context).toContain('- Choose a safe meal.')
+    expect(context).toContain('Optional natural complication: A dish may contain nuts or dairy.')
+    expect(context).not.toContain('Opening:')
+    expect(context).not.toContain('Body:')
   })
 })

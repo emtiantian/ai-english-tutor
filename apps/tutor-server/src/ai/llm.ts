@@ -5,6 +5,7 @@ export type {
   LLMMessage,
   LLMResponse,
   LLMStreamChunk,
+  LLMRequestOptions,
   ProviderCapabilities,
   LLMProvider
 } from './llm/types.js'

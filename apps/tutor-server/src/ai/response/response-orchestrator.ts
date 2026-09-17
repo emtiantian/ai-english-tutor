@@ -1,5 +1,3 @@
-import type { CharacterPersona } from '@ai-english-tutor/shared'
-import { LUNA_PERSONA } from '@ai-english-tutor/shared'
 import { logger } from '../../logger.js'
 import { broadcastToSession } from '../../sse/handler.js'
 import type { TeacherChunkEvent, TeacherResponseEvent } from '../../sse/types.js'
@@ -33,7 +31,8 @@ export async function streamTeachingResponse(
   messages: LLMMessage[],
   sessionId: string,
   signal?: AbortSignal,
-  requestId?: string
+  requestId?: string,
+  jsonOutput = false
 ): Promise<string> {
   if (!llm.stream) {
     const response = await llm.complete(messages, signal)
@@ -46,7 +45,10 @@ export async function streamTeachingResponse(
 
   const chunks: string[] = []
   const extractor = new JsonTextStreamExtractor()
-  for await (const chunk of llm.stream(messages, { signal })) {
+  for await (const chunk of llm.stream(messages, {
+    signal,
+    responseFormat: jsonOutput ? 'json' : undefined
+  })) {
     if (chunk.content) {
       chunks.push(chunk.content)
       const visible = extractor.push(chunk.content)
@@ -76,8 +78,7 @@ export class ResponseOrchestrator {
   constructor(
     private llm: LLMProvider,
     private sessions: SessionManager,
-    private audio: AudioPipeline,
-    private persona: CharacterPersona = LUNA_PERSONA
+    private audio: AudioPipeline
   ) {}
 
   async handleUserSpeak(
@@ -103,8 +104,6 @@ export class ResponseOrchestrator {
       session.level,
       session.scenario.level,
       session.history,
-      session.openingStyle,
-      this.persona,
       session.scenario.targetWords,
       { wordsUsed: Array.from(session.scenario.wordsUsed) }
     )
@@ -114,9 +113,10 @@ export class ResponseOrchestrator {
           messages,
           sessionId,
           options.signal,
-          options.requestId
+          options.requestId,
+          true
         )
-      : (await this.llm.complete(messages, options.signal)).content
+      : (await this.llm.complete(messages, options.signal, { responseFormat: 'json' })).content
     return this.finalize(sessionId, session, text, raw, options.signal, options.requestId)
   }
 

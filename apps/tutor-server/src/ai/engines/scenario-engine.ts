@@ -1,10 +1,8 @@
-import type { CharacterPersona } from '@ai-english-tutor/shared'
-import { LUNA_PERSONA } from '@ai-english-tutor/shared'
 import { logger } from '../../logger.js'
 import { getScenarioById } from '../../vocab/loader.js'
 import type { AudioPipeline } from '../audio-pipeline.js'
 import type { LLMProvider } from '../llm.js'
-import { buildScenarioStartMessages, pickOpeningStyle } from '../prompts/teaching.js'
+import { buildScenarioStartMessages } from '../prompts/teaching.js'
 import { parseCompleteTeachingResponse } from '../response/complete-teaching-response.js'
 import {
   streamTeachingResponse,
@@ -22,8 +20,7 @@ export class ScenarioEngine {
   constructor(
     private llm: LLMProvider,
     private sessions: SessionManager,
-    private audio: AudioPipeline,
-    private persona: CharacterPersona = LUNA_PERSONA
+    private audio: AudioPipeline
   ) {}
 
   async startScenarioLesson(
@@ -51,26 +48,17 @@ export class ScenarioEngine {
       ),
       wordsUsed: new Set()
     }
-    const style = pickOpeningStyle(this.persona)
-    const { messages } = buildScenarioStartMessages(
-      scenario,
-      level,
-      cefrLevel,
-      style,
-      this.persona,
-      state.targetWords
-    )
+    const { messages } = buildScenarioStartMessages(scenario, level, cefrLevel, state.targetWords)
     const session = this.sessions.getOrCreate(sessionId, level)
     session.history = []
     session.vocabulary.clear()
-    session.openingStyle = style
     session.voiceDesign = voiceDesign
     session.scenario = state
 
     logger.info({ sessionId, scenarioId, cefrLevel }, '开始场景对话')
     const raw = stream
-      ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId)
-      : (await this.llm.complete(messages, signal)).content
+      ? await streamTeachingResponse(this.llm, messages, sessionId, signal, requestId, true)
+      : (await this.llm.complete(messages, signal, { responseFormat: 'json' })).content
     const parsed = ensureReplyVocabulary(
       await parseCompleteTeachingResponse(raw, this.llm, signal),
       state.targetWords

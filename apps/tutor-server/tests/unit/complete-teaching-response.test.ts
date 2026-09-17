@@ -10,28 +10,46 @@ function provider(content: string) {
   } satisfies LLMProvider
 }
 
+function response(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    text: 'Tea, coming right up.',
+    textZh: '茶马上就来。',
+    motionId: 'nod',
+    expressionId: 'happy',
+    vocabulary: [],
+    vocabularySentences: [],
+    studentReplyHints: ['Thank you.'],
+    ...overrides
+  })
+}
+
 describe('complete teaching response', () => {
-  it('keeps a translated reply with no vocabulary without another request', async () => {
+  it('accepts a complete main response without repair', async () => {
     const llm = provider('')
-    const result = await parseCompleteTeachingResponse(
-      JSON.stringify({ text: 'Hello.', textZh: '你好。', vocabulary: [] }),
-      llm
-    )
-    expect(result.textZh).toBe('你好。')
-    expect(result.vocabulary).toEqual([])
+    const result = await parseCompleteTeachingResponse(response(), llm)
+    expect(result.textZh).toBe('茶马上就来。')
+    expect(result.studentReplyHints).toEqual(['Thank you.'])
     expect(llm.complete).not.toHaveBeenCalled()
   })
-  it('repairs missing translation while preserving English and cancellation', async () => {
-    const llm = provider('{"textZh":"茶马上就来。"}')
+
+  it('repairs the whole structure when translation or hints are missing', async () => {
+    const llm = provider(response())
     const signal = new AbortController().signal
-    const result = await parseCompleteTeachingResponse('Tea, coming right up.', llm, signal)
-    expect(result.text).toBe('Tea, coming right up.')
+    const result = await parseCompleteTeachingResponse(
+      response({ textZh: '', studentReplyHints: [] }),
+      llm,
+      signal
+    )
     expect(result.textZh).toBe('茶马上就来。')
-    expect(llm.complete).toHaveBeenCalledWith(expect.any(Array), signal)
+    expect(result.studentReplyHints).toEqual(['Thank you.'])
+    expect(llm.complete).toHaveBeenCalledWith(expect.any(Array), signal, {
+      responseFormat: 'json'
+    })
   })
-  it('rejects an incomplete repair instead of silently accepting no translation', async () => {
+
+  it('rejects an incomplete repair instead of silently accepting missing fields', async () => {
     await expect(parseCompleteTeachingResponse('Hello.', provider('{}'))).rejects.toThrow(
-      '中文翻译生成失败'
+      '缺少中文翻译或下一句提示'
     )
   })
 })

@@ -5,6 +5,7 @@ import type {
   LLMProvider,
   LLMMessage,
   LLMResponse,
+  LLMRequestOptions,
   LLMStreamChunk,
   ProviderCapabilities
 } from '../llm.js'
@@ -88,7 +89,11 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     })
   }
 
-  async complete(messages: LLMMessage[], signal?: AbortSignal): Promise<LLMResponse> {
+  async complete(
+    messages: LLMMessage[],
+    signal?: AbortSignal,
+    options?: Omit<LLMRequestOptions, 'signal'>
+  ): Promise<LLMResponse> {
     const normalizedMessages = this.normalizeMessages(messages)
 
     logger.debug({ provider: this.name, messageCount: normalizedMessages.length }, 'LLM 完整请求')
@@ -108,9 +113,12 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
     try {
       response = await withRetry(
         () =>
-          this.client.chat.completions.create(this.buildRequestOptions(normalizedMessages, false), {
-            signal
-          }) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
+          this.client.chat.completions.create(
+            this.buildRequestOptions(normalizedMessages, false, options),
+            {
+              signal
+            }
+          ) as Promise<OpenAI.Chat.Completions.ChatCompletion>,
         {
           maxRetries: this.maxRetries,
           signal,
@@ -159,7 +167,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
 
   async *stream(
     messages: LLMMessage[],
-    options?: { signal?: AbortSignal }
+    options?: LLMRequestOptions
   ): AsyncGenerator<LLMStreamChunk> {
     const signal = options?.signal
     const normalizedMessages = this.normalizeMessages(messages)
@@ -187,7 +195,7 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
         throw new Error('AbortError')
       }
 
-      const stream = await this.createStream(normalizedMessages, signal)
+      const stream = await this.createStream(normalizedMessages, signal, options)
 
       for await (const chunk of stream) {
         if (signal?.aborted) {
@@ -241,14 +249,18 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    */
   protected buildRequestOptions(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    stream: boolean
+    stream: boolean,
+    options?: Omit<LLMRequestOptions, 'signal'>
   ): OpenAI.Chat.ChatCompletionCreateParams {
     return {
       model: this.model,
       messages,
       temperature: this.temperature,
       max_tokens: this.maxTokens,
-      stream
+      stream,
+      ...(options?.responseFormat === 'json'
+        ? { response_format: { type: 'json_object' as const } }
+        : {})
     } as OpenAI.Chat.ChatCompletionCreateParams
   }
 
@@ -257,10 +269,15 @@ export abstract class OpenAIBaseProvider implements LLMProvider {
    */
   protected async createStream(
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options?: Omit<LLMRequestOptions, 'signal'>
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     return this.client.chat.completions.create(
-      this.buildRequestOptions(messages, true) as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
+      this.buildRequestOptions(
+        messages,
+        true,
+        options
+      ) as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal }
     )
   }

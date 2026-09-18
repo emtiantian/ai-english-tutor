@@ -93,7 +93,7 @@ import ChatInputBar from './components/ChatInputBar.vue'
 import ScenarioPicker from './components/ScenarioPicker.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import type { ChatRequestBody, ScenarioSummary, WordExplanation } from './client/types.js'
-import { createMessageId } from './lib/message-utils.js'
+import { createMessageId } from './utils/message-utils.js'
 import { blobToBase64 } from './audio/utils.js'
 import { audioDiagnostic } from './audio/diagnostics.js'
 

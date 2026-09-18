@@ -4,7 +4,7 @@ import { TutorClient } from '../client/TutorClient'
 import { useTutorStore } from '../stores/tutor'
 import type { TeachingResponse } from '@ai-english-tutor/shared'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
-import { createMessageId } from '../lib/message-utils.js'
+import { createMessageId } from '../utils/message-utils.js'
 
 export interface TutorClientConfig {
   baseUrl?: string

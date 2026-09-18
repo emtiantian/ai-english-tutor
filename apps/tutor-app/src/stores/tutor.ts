@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { TTSSource } from '@ai-english-tutor/shared'
 import type { ScenarioProgress } from '../client/types.js'
-import { createMessageId } from '../lib/message-utils.js'
+import { createMessageId } from '../utils/message-utils.js'
 
 export type AppPhase = 'loading' | 'scenario-select' | 'teaching'
 

@@ -1,8 +1,8 @@
 import { computed, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 import type { ChatMessage } from '../stores/tutor.js'
-import { pickBestStudentHint } from '../lib/hint-picker.js'
-import { findLastAssistantMessage } from '../lib/message-utils.js'
+import { pickBestStudentHint } from '../utils/hint-picker.js'
+import { findLastAssistantMessage } from '../utils/message-utils.js'
 
 export interface UseCurrentHintOptions {
   messages: MaybeRef<ChatMessage[]>

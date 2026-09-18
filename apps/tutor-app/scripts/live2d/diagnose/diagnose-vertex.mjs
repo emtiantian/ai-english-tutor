@@ -2,7 +2,7 @@ import { chromium } from 'playwright-core'
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
 
-await page.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle', timeout: 30000 })
+await page.goto('http://127.0.0.1:6173/', { waitUntil: 'networkidle', timeout: 30000 })
 await page.waitForTimeout(8000)
 
 // 注入代码，覆盖 drawMeshWebGL 来检查顶点数据
@@ -12,7 +12,7 @@ const result = await page.evaluate(() => {
     // 但由于这是模块化的，无法直接访问
     // 换一种方式：检查 WebGL 的 vertex buffer 内容
 
-    const canvas = document.querySelector('.live2d-canvas')
+    const canvas = document.querySelector('canvas')
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
 
     let sampleVerts = []

@@ -2,12 +2,12 @@ import { chromium } from 'playwright-core'
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
 
-await page.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle', timeout: 30000 })
+await page.goto('http://127.0.0.1:6173/', { waitUntil: 'networkidle', timeout: 30000 })
 await page.waitForTimeout(8000)
 
 const result = await page.evaluate(() => {
   return new Promise(resolve => {
-    const canvas = document.querySelector('.live2d-canvas')
+    const canvas = document.querySelector('canvas')
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
 
     let matrixInfo = []

@@ -16,7 +16,7 @@ await page.waitForTimeout(12000)
 await page.screenshot({ path: 'live2d-screenshot-1.png', fullPage: false })
 
 const canvasData = await page.evaluate(() => {
-  const canvas = document.querySelector('.character-canvas')
+  const canvas = document.querySelector('canvas')
   if (!canvas) return { exists: false }
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
   if (!gl) return { exists: true, hasContext: false }

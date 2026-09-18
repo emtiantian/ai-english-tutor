@@ -7,7 +7,7 @@ await page.waitForTimeout(12000)
 await page.screenshot({ path: 'live2d-current.png', fullPage: false })
 
 const result = await page.evaluate(() => {
-  const canvas = document.querySelector('.character-canvas')
+  const canvas = document.querySelector('canvas')
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
 
   // 采样多个点

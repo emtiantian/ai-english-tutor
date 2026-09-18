@@ -1,63 +1,63 @@
-# Diagnostic Scripts
+# Live2D 诊断工具
 
-Playwright-based headless browser scripts for debugging WebGL rendering (Live2D / Spine).
+本目录保存 Live2D/WebGL 的手动诊断工具，不参与应用构建、测试或生产部署。所有工具统一放在 `live2d/` 下，按用途分为状态检查、深度诊断和截图验证三类。
 
-## Prerequisites
+## 前置条件
 
 ```bash
-pnpm add -D playwright-core
+pnpm install
 npx playwright install chromium
+pnpm dev
 ```
 
-## Usage
+当前脚本统一访问 `http://127.0.0.1:6173/`。
 
-Start the dev server first, then run a script:
+## 目录
+
+### `live2d/check/`：WebGL 状态检查
+
+- `check-all-mvp.mjs`：检查 MVP 矩阵、顶点范围和绘制次数。
+- `check-full-mvp.mjs`：详细检查 MVP 矩阵、顶点范围和基础颜色。
+- `check-matrix.mjs`：检查首帧矩阵、顶点范围和像素绘制情况。
+- `check-buffer.mjs`：检查顶点缓冲区大小、数据和属性位置。
+- `check-opacity.mjs`：检查透明度、基础颜色和纹理绑定。
+- `check-texture.mjs`：检查纹理、Shader uniform、Framebuffer 和 viewport。
+- `check-utils.mjs`：检查 Live2D Core 的 Utils、版本 API 和绘制次数。
+
+### `live2d/diagnose/`：深度诊断
+
+- `diagnose-matrix.mjs`：输出矩阵、uniform 和顶点范围。
+- `diagnose-model.mjs`：检查 Live2D Core、模型 API 和实际绘制状态。
+- `diagnose-vertex.mjs`：检查顶点缓冲区、attribute 和 uniform。
+- `find-model.mjs`：捕获模型日志并采样 Canvas 像素范围。
+- `test-webgl.mjs`：绘制红色三角形，验证基础 WebGL 是否可用。
+
+### `live2d/screenshot/`：截图验证
+
+- `screenshot-live2d.mjs`：截图并输出 Canvas、Live2D 日志和错误。
+- `screenshot-check.mjs`：截图检查角色位置。
+- `monorepo-root-screenshot-live2d.mjs`：从仓库根目录运行截图检查。
+
+## 运行示例
+
+从 `apps/tutor-app` 目录运行：
 
 ```bash
-pnpm dev
-node scripts/check/check-matrix.mjs
+node scripts/live2d/check/check-texture.mjs
+node scripts/live2d/diagnose/diagnose-model.mjs
+node scripts/live2d/screenshot/screenshot-live2d.mjs
 ```
 
-## Directory Structure
+从仓库根目录运行：
 
-### `check/` — WebGL State Inspection
+```bash
+node apps/tutor-app/scripts/live2d/check/check-texture.mjs
+```
 
-Quick checks on the character canvas WebGL context.
+截图脚本会把图片写入当前工作目录。诊断脚本只读取浏览器和 WebGL 状态，不修改源代码或模型资源。
 
-| Script               | What it checks                        |
-| -------------------- | ------------------------------------- |
-| `check-all-mvp.mjs`  | Full MVP matrix state                 |
-| `check-buffer.mjs`   | WebGL buffer objects                  |
-| `check-full-mvp.mjs` | Detailed MVP matrix check             |
-| `check-matrix.mjs`   | Matrix/transformation state           |
-| `check-opacity.mjs`  | Alpha/opacity rendering               |
-| `check-texture.mjs`  | Texture binding state                 |
-| `check-utils.mjs`    | Live2DCubismCore utility availability |
+## 注意事项
 
-### `diagnose/` — Deep Diagnostics
-
-In-depth investigation of model loading and rendering issues.
-
-| Script                | What it does                                            |
-| --------------------- | ------------------------------------------------------- |
-| `diagnose-matrix.mjs` | Matrix-related issue diagnosis                          |
-| `diagnose-model.mjs`  | Model loading and rendering diagnostics                 |
-| `diagnose-vertex.mjs` | Vertex data inspection (injects drawMeshWebGL override) |
-| `find-model.mjs`      | Captures console logs to find model-related info        |
-| `test-webgl.mjs`      | Draws a red triangle to verify basic WebGL works        |
-
-### `screenshot/` — Visual Capture
-
-Screenshot-based visual verification.
-
-| Script                  | Output                                      |
-| ----------------------- | ------------------------------------------- |
-| `screenshot-check.mjs`  | `live2d-current.png` + WebGL position check |
-| `screenshot-live2d.mjs` | `live2d-position-check.png`                 |
-| `spine-screenshot.mjs`  | Spine animation screenshot                  |
-
-## Ports
-
-- `:5173` — Default Vite dev server
-- `:5174` — Alternate dev server (used by some diagnose scripts)
-- `:6173` — Production-like server (used by screenshot scripts)
+- 需要真实 Chromium WebGL 环境；无 GPU 环境可能只能验证 WebGL 创建。
+- 脚本通过页面中的第一个 `canvas` 获取角色 WebGL 上下文；当前应用只有一个角色 Canvas。
+- Live2D 现在在首页场景数据加载完成后后台启动，脚本需要等待资源初始化后再采样。

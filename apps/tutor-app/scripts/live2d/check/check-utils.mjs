@@ -1,7 +1,7 @@
 import { chromium } from 'playwright-core'
 const browser = await chromium.launch({ headless: true })
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
-await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle', timeout: 30000 })
+await page.goto('http://127.0.0.1:6173/', { waitUntil: 'networkidle', timeout: 30000 })
 await page.waitForTimeout(8000)
 
 const utils = await page.evaluate(() => {
@@ -19,7 +19,7 @@ console.log('Core Utils:', JSON.stringify(utils, null, 2))
 // 检查 draw calls
 const drawInfo = await page.evaluate(() => {
   return new Promise(resolve => {
-    const canvas = document.querySelector('.character-canvas')
+    const canvas = document.querySelector('canvas')
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
     let drawCount = 0
     const orig = gl.drawElements

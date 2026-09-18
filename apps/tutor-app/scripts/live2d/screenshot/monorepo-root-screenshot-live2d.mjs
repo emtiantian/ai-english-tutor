@@ -7,11 +7,11 @@ page.on('console', msg => {
   const t = msg.type()
   if (t === 'error' || t === 'warn') errors.push(`CONSOLE ${t.toUpperCase()}: ${msg.text()}`)
 })
-await page.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle', timeout: 30000 })
+await page.goto('http://127.0.0.1:6173/', { waitUntil: 'networkidle', timeout: 30000 })
 await page.waitForTimeout(5000)
 await page.screenshot({ path: 'live2d-screenshot-1.png', fullPage: false })
 const canvasData = await page.evaluate(() => {
-  const canvas = document.querySelector('.live2d-canvas')
+  const canvas = document.querySelector('canvas')
   if (!canvas) return { exists: false }
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
   if (!gl) return { exists: true, hasContext: false }

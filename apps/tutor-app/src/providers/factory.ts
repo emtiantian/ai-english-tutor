@@ -1,7 +1,7 @@
 import type { CharacterProvider } from '@ai-english-tutor/shared'
 import { getLive2DModelManifestOrDefault } from '@ai-english-tutor/shared'
 import { loadLive2DCore } from './live2d-core-loader.js'
-export type CharacterProviderType = 'live2d' | 'svg'
+export type CharacterProviderType = 'live2d'
 
 export interface ProviderFactoryOptions {
   /** Provider 类型 */
@@ -15,7 +15,7 @@ export interface ProviderFactoryOptions {
 /**
  * 创建 CharacterProvider 实例
  *
- * 第一版使用 Live2D；初始化失败时降级到轻量 SVG。
+ * 当前默认使用 Live2D；未来新增 Provider 时在这里扩展类型和实现分支。
  *
  * @throws 如果指定类型的 Provider 初始化失败
  */
@@ -34,12 +34,7 @@ export async function createCharacterProvider(
       return provider
     }
 
-    case 'svg':
-    default: {
-      const { SvgCharacterProvider } = await import('./svg-character')
-      const provider = new SvgCharacterProvider()
-      await provider.init(canvas)
-      return provider
-    }
+    default:
+      throw new Error(`Unsupported character provider: ${type}`)
   }
 }

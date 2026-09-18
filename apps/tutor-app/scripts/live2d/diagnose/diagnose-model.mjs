@@ -8,7 +8,7 @@ page.on('console', msg => {
   if (msg.type() === 'warn') console.log('[WARN]', msg.text())
 })
 
-await page.goto('http://127.0.0.1:5174/', { waitUntil: 'networkidle', timeout: 30000 })
+await page.goto('http://127.0.0.1:6173/', { waitUntil: 'networkidle', timeout: 30000 })
 await page.waitForTimeout(8000)
 
 // 注入诊断代码，通过修改 LAppModel.prototype.update 来暴露内部状态
@@ -53,7 +53,7 @@ console.log(JSON.stringify(result, null, 2))
 // 现在注入代码到 drawMeshWebGL 来获取实际绘制参数
 const drawInfo = await page.evaluate(() => {
   return new Promise(resolve => {
-    const canvas = document.querySelector('.live2d-canvas')
+    const canvas = document.querySelector('canvas')
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
 
     let frameCount = 0

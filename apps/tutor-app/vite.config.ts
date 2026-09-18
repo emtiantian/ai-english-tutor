@@ -20,7 +20,9 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env': {}
+    'process.env': {},
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    __VUE_PROD_DEVTOOLS__: false
   },
   server: {
     host: '0.0.0.0',

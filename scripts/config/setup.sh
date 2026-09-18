@@ -33,7 +33,6 @@ if [[ "$tts" == xiaomi && -z "$xiaomi_key" ]]; then xiaomi_key="$(read_value 'Xi
 umask 077
 cat > "$TARGET" <<ENV
 PORT=3000
-NODE_ENV=development
 LOG_LEVEL=info
 CORS_ORIGIN=*
 LLM_PROVIDER=$llm

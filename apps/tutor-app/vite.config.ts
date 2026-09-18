@@ -19,11 +19,6 @@ export default defineConfig({
       '@framework': resolve(__dirname, 'src/lib/cubism-framework')
     }
   },
-  define: {
-    'process.env': {},
-    'process.env.NODE_ENV': JSON.stringify('production'),
-    __VUE_PROD_DEVTOOLS__: false
-  },
   server: {
     host: '0.0.0.0',
     port: 6173,

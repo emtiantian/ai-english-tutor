@@ -5,7 +5,20 @@ import { buildScenarioTeachingMessages } from '@/ai/prompts/scenario/scenario-tu
 import { buildScenarioContext } from '@/ai/prompts/scenario/context-builder.js'
 
 const restaurant = scenarios.find(scenario => scenario.id === 'restaurant-ordering')!
+const askingDirections = scenarios.find(scenario => scenario.id === 'asking-directions')!
 describe('scenario teaching prompts', () => {
+  it('keeps the directions scene generic instead of binding it to a fixed destination', () => {
+    const { messages } = buildScenarioStartMessages(askingDirections, 4, 'B2')
+    const system = String(messages[0].content)
+
+    expect(system).toContain('unfamiliar city')
+    expect(system).toContain('find a place and ask a local for directions')
+    expect(system).not.toContain('train station')
+    expect(system).not.toContain('school')
+    expect(system).not.toContain('hospital')
+    expect(system).toContain('English difficulty: B2')
+  })
+
   it('uses only the assigned scene role without a named tutor persona or act progression', () => {
     const { messages } = buildScenarioStartMessages(restaurant, 4, 'B2')
     const system = String(messages[0].content)
@@ -40,20 +53,12 @@ describe('scenario teaching prompts', () => {
     expect(system.match(/RESPONSE CONTRACT — HIGHEST PRIORITY/g)).toHaveLength(1)
   })
 
-  it('keeps level-specific setting, goals and optional complication without act labels', () => {
-    const context = buildScenarioContext(restaurant, 'B1', {
-      setting: 'A busy burger joint at lunchtime.',
-      twist: 'A dish may contain nuts or dairy.',
-      acts: [
-        { name: '开场', goal: 'Ask about allergens.' },
-        { name: '主线', goal: 'Choose a safe meal.' }
-      ]
-    })
+  it('uses the scene definition independently from the CEFR difficulty', () => {
+    const context = buildScenarioContext(restaurant, 'B1')
 
-    expect(context).toContain('A busy burger joint at lunchtime.')
-    expect(context).toContain('- Ask about allergens.')
-    expect(context).toContain('- Choose a safe meal.')
-    expect(context).toContain('Optional natural complication: A dish may contain nuts or dairy.')
+    expect(context).toContain(`Setting: ${restaurant.setting}`)
+    expect(context).toContain('English difficulty: B1')
+    expect(context).toContain('- Greet the waiter')
     expect(context).not.toContain('Opening:')
     expect(context).not.toContain('Body:')
   })

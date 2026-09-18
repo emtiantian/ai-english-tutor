@@ -32,21 +32,6 @@ export interface ActDef {
  * 某个场景在特定 CEFR 等级下的变体配置。
  * 若存在，则优先使用本配置中的 setting/role/acts；否则回退到场景顶层字段。
  */
-export interface ScenarioLevelProfile {
-  /** 该等级下的场景设定 */
-  setting?: string
-  /** 该等级下的角色身份 */
-  role?: { student: string; teacher: string }
-  /** 该等级下自然发生的转折 / 冲突，用于让高级词自然出现 */
-  twist?: string
-  /** 该等级下的硬上限轮次 */
-  maxTurns?: number
-  /** 该等级下目标词数量（默认 30） */
-  targetWordCount?: number
-  /** 该等级下的会话目标分组（不表示运行时阶段） */
-  acts?: ActDef[]
-}
-
 /**
  * @deprecated v2 起场景不再用 phase 级 objective；改用顶层 acts 描述剧情骨架，
  * 并由运行时按用户 CEFR 档从 config/vocab/{level}.json 自动抽 30 个目标词。
@@ -71,7 +56,6 @@ export interface Scenario {
    * v2 新增：不同 CEFR 等级下的场景变体。
    * 存在时，引擎会按当前等级选取对应的 setting/role/acts/twist。
    */
-  levelProfiles?: Partial<Record<CEFRLevel, ScenarioLevelProfile>>
   /**
    * @deprecated v2: 场景不再有固定 level，每个场景都能从 A1 → C2 闯关。
    * 仅为向后兼容旧 scenarios-default.json 保留。
@@ -107,13 +91,6 @@ export const scenarios: Scenario[] = scenariosDefault as Scenario[]
  * 获取场景在指定 CEFR 等级下的变体配置。
  * 若该等级没有配置，则返回 undefined（调用方应回退到顶层字段）。
  */
-export function getScenarioProfile(
-  scenario: Scenario,
-  level: CEFRLevel
-): ScenarioLevelProfile | undefined {
-  return scenario.levelProfiles?.[level]
-}
-
 /** 获取指定等级的场景 */
 export function getScenariosForLevel(levelNum: number): Scenario[] {
   return scenarios.filter(s => s.level === levelNum)

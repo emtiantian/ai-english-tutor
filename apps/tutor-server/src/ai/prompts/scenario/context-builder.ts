@@ -1,26 +1,20 @@
-import { type CEFRLevel, type Scenario, type ScenarioLevelProfile } from '@ai-english-tutor/shared'
+import { type CEFRLevel, type Scenario } from '@ai-english-tutor/shared'
 import { buildTeachingOutputContract } from './output-contract.js'
 
 /** 构建场景对话上下文，不引入固定角色名、教师身份或三幕阶段。 */
-export function buildScenarioContext(
-  scenario: Scenario,
-  targetLevel: CEFRLevel,
-  levelProfile?: ScenarioLevelProfile
-): string {
-  const activeSetting = levelProfile?.setting ?? scenario.setting
-  const activeRole = levelProfile?.role ?? scenario.role
+export function buildScenarioContext(scenario: Scenario, targetLevel: CEFRLevel): string {
+  const activeRole = scenario.role
 
   return `${buildRolePlaySystemPrompt()}
 
 SCENE
-Setting: ${activeSetting}
+Setting: ${scenario.setting}
 Your role in this scene: ${activeRole.teacher}
 User's role in this scene: ${activeRole.student}
 English difficulty: ${targetLevel}
 
 Conversation goals:
-${buildConversationGoals(scenario, levelProfile)}
-${levelProfile?.twist ? `\nOptional natural complication: ${levelProfile.twist}` : ''}
+${buildConversationGoals(scenario)}
 
 VOCABULARY ANNOTATION
 - Write the scene reply naturally first; never alter the dialogue merely to create vocabulary annotations.
@@ -37,12 +31,8 @@ CURRENT-TURN RULES
 ${buildTeachingOutputContract(activeRole.student)}`
 }
 
-export function buildScenarioOpeningContext(
-  scenario: Scenario,
-  targetLevel: CEFRLevel,
-  levelProfile?: ScenarioLevelProfile
-): string {
-  return buildScenarioContext(scenario, targetLevel, levelProfile)
+export function buildScenarioOpeningContext(scenario: Scenario, targetLevel: CEFRLevel): string {
+  return buildScenarioContext(scenario, targetLevel)
 }
 
 function buildRolePlaySystemPrompt(): string {
@@ -56,8 +46,8 @@ IDENTITY RULES
 - Model clear English through your reply without giving grammar explanations or evaluating the user.`
 }
 
-function buildConversationGoals(scenario: Scenario, levelProfile?: ScenarioLevelProfile): string {
-  const acts = levelProfile?.acts ?? scenario.acts
+function buildConversationGoals(scenario: Scenario): string {
+  const acts = scenario.acts
   const goals = acts?.flatMap(act => (Array.isArray(act.goal) ? act.goal : [act.goal])) ?? []
   const fallbackGoals = scenario.objectives.map(objective => objective.descriptionEn)
   const selected = goals.length > 0 ? goals : fallbackGoals

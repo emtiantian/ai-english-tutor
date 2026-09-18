@@ -1,6 +1,6 @@
 import { onUnmounted, type Ref } from 'vue'
 import type { CharacterProvider } from '@ai-english-tutor/shared'
-import { createCharacterProviderSafe } from '../providers/factory.js'
+import { createCharacterProvider } from '../providers/factory.js'
 import type { TutorClient } from '../client/TutorClient.js'
 
 export function useCharacterProvider(
@@ -9,19 +9,40 @@ export function useCharacterProvider(
   providerRef: Ref<CharacterProvider | null>
 ) {
   let eventUnsubscribers: (() => void)[] = []
+  let initializationPromise: Promise<void> | null = null
+  let disposed = false
 
-  async function init(): Promise<void> {
-    if (!canvasRef.value) return
+  function init(): Promise<void> {
+    if (providerRef.value) return Promise.resolve()
+    if (initializationPromise) return initializationPromise
 
-    const provider = await createCharacterProviderSafe({
-      type: 'live2d',
-      canvas: canvasRef.value
+    initializationPromise = initialize().catch(error => {
+      initializationPromise = null
+      throw error
     })
+    return initializationPromise
+  }
+
+  async function initialize(): Promise<void> {
+    const canvas = canvasRef.value
+    if (!canvas) return
+
+    const provider = await createCharacterProvider({
+      type: 'live2d',
+      canvas
+    })
+
+    if (disposed) {
+      provider.dispose()
+      return
+    }
+
     providerRef.value = provider
     eventUnsubscribers = wireCharacterEvents(provider, client)
   }
 
   onUnmounted(() => {
+    disposed = true
     eventUnsubscribers.forEach(unsubscribe => unsubscribe())
     providerRef.value?.dispose()
     providerRef.value = null

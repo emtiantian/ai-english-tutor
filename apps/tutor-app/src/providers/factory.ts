@@ -1,5 +1,6 @@
 import type { CharacterProvider } from '@ai-english-tutor/shared'
 import { getLive2DModelManifestOrDefault } from '@ai-english-tutor/shared'
+import { loadLive2DCore } from './live2d-core-loader.js'
 export type CharacterProviderType = 'live2d' | 'svg'
 
 export interface ProviderFactoryOptions {
@@ -25,6 +26,7 @@ export async function createCharacterProvider(
 
   switch (type) {
     case 'live2d': {
+      await loadLive2DCore()
       const { Live2DCharacterProvider } = await import('./live2d-character')
       const manifest = getLive2DModelManifestOrDefault(live2dModelId)
       const provider = new Live2DCharacterProvider(manifest)
@@ -39,22 +41,5 @@ export async function createCharacterProvider(
       await provider.init(canvas)
       return provider
     }
-  }
-}
-
-/**
- * 安全创建 Provider，失败时自动降级到 SVG
- */
-export async function createCharacterProviderSafe(
-  options: ProviderFactoryOptions
-): Promise<CharacterProvider> {
-  try {
-    return await createCharacterProvider(options)
-  } catch (err) {
-    console.warn(`[ProviderFactory] ${options.type} init failed, falling back to SVG:`, err)
-    const { SvgCharacterProvider } = await import('./svg-character')
-    const provider = new SvgCharacterProvider()
-    await provider.init(options.canvas)
-    return provider
   }
 }

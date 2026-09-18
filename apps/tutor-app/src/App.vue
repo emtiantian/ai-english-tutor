@@ -19,6 +19,7 @@
       v-model:voice-design="voiceDesign"
       v-model:level="selectedLevel"
       :scenarios="availableScenarios"
+      @ready="handleScenarioPickerReady"
       @select="handleScenarioSelect"
     />
 
@@ -162,8 +163,12 @@ function interruptTeacher() {
 }
 
 onMounted(async () => {
-  // Live2D 首次加载包含较大的模型纹理，不能阻塞场景选择界面。
-  // 页面和 API 先进入可用状态，角色在后台完成初始化后再渐显。
+  await loadScenarios()
+  store.phase = 'scenario-select'
+})
+
+function handleScenarioPickerReady() {
+  // 场景选择页已进入可交互状态后，才启动非关键的 Live2D 下载与初始化。
   void initCharacter()
     .then(() => {
       showCharacterCanvas.value = true
@@ -171,9 +176,7 @@ onMounted(async () => {
     .catch(err => {
       console.error('[App] Character initialization failed:', err)
     })
-  await loadScenarios()
-  store.phase = 'scenario-select'
-})
+}
 
 async function loadScenarios() {
   try {

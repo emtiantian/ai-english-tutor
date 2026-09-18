@@ -119,7 +119,6 @@ pnpm typecheck
 pnpm build
 pnpm --filter tutor-app test
 pnpm --filter @ai-english-tutor/server test
-pnpm push:server
 ```
 
 需要追溯近期架构决策时查询 `.context/INDEX.md`，按索引只读取相关条目。

@@ -11,7 +11,6 @@
     "setup:set": "bash scripts/config/set-key.sh",
     "dev:clean": "bash scripts/dev/clean.sh",
     "build": "pnpm --filter tutor-app build",
-    "push:server": "bash scripts/deploy/server.sh",
     "cert:check": "bash scripts/deploy/cert-check.sh",
     "cert:renew": "bash scripts/deploy/cert-renew.sh",
     "lint": "eslint .",

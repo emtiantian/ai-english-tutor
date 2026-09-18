@@ -77,11 +77,12 @@ XIAOMI_TTS_VOICE_DESIGN=...
 
 ```bash
 bash scripts/config/init-host.sh
-pnpm push:server
 ```
+
+生产环境运行在 ECS 的 `/root/.ai-english-tutor/app`。通过 Workbench 连接后，在该目录执行 `docker compose config --quiet`、`docker compose build gateway frontend backend` 和 `docker compose up -d --remove-orphans`，最后检查 `docker compose ps`、首页和 `/api/health`。网关配置变更必须重新构建 gateway 镜像。
 
 部署使用 Docker Compose。`backend`、`frontend` 和 `gateway` 都配置了 `restart: unless-stopped`，容器进程异常退出或 Docker 服务重启后会自动拉起，因此 Node 服务不需要 PM2。Docker 服务本身需要在宿主机启用开机启动。
 
 容器不设置固定 DNS，默认由 Docker 使用宿主机 DNS；服务器的 Docker 全局配置也不应覆盖 `dns`。切换宿主机网络后，若容器仍使用旧 DNS，应重建受影响的容器并验证域名解析。自定义网络中显示的 `127.0.0.11` 是 Docker 内置解析器，并非旧路由器地址。
 
-部署脚本默认先执行类型检查、前后端测试和生产构建，要求 Git 工作区干净，然后备份、同步、构建容器并检查 `/api/health`。详见 [scripts/README.md](scripts/README.md)。
+证书检查和续期脚本仍位于 [scripts/README.md](scripts/README.md) 说明的 `scripts/deploy/` 目录。

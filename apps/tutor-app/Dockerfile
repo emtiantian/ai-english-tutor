@@ -47,4 +47,5 @@ COPY apps/tutor-app/nginx.conf /etc/nginx/conf.d/default.conf
 # 配置和静态文件已在构建期固定，不需要官方入口脚本再次改写配置。
 # 直接使用基础镜像的 CMD 启动 Nginx，避免入口脚本调用 apk manifest 时阻塞启动。
 ENTRYPOINT []
+CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 80

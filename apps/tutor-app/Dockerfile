@@ -44,4 +44,7 @@ RUN find apps/tutor-app/dist -type f -size +1024c \
 FROM nginx:alpine
 COPY --from=builder /app/apps/tutor-app/dist /usr/share/nginx/html
 COPY apps/tutor-app/nginx.conf /etc/nginx/conf.d/default.conf
+# 静态配置已在构建阶段固定；跳过 ECS 上可能卡在 apk manifest 的官方入口脚本。
+ENTRYPOINT []
+CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 80

@@ -66,12 +66,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ScenarioSummary } from '../client/types.js'
 
 const props = defineProps<{ scenarios: ScenarioSummary[]; voiceDesign: string; level: number }>()
 const emit = defineEmits<{
-  ready: []
   select: [scenarioId: string]
   'update:voiceDesign': [value: string]
   'update:level': [value: number]
@@ -96,6 +95,4 @@ const showAll = ref(false)
 const visibleScenarios = computed(() =>
   showAll.value ? props.scenarios : props.scenarios.slice(0, INITIAL_COUNT)
 )
-
-onMounted(() => emit('ready'))
 </script>

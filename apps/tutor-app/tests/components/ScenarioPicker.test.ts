@@ -22,8 +22,6 @@ describe('ScenarioPicker', () => {
 
     expect(wrapper.text()).toContain('餐厅点餐')
     expect(wrapper.text()).toContain('Restaurant Ordering')
-    expect(wrapper.emitted('ready')).toHaveLength(1)
-
     await wrapper.findAll('section button')[0].trigger('click')
 
     expect(wrapper.emitted('select')).toEqual([['restaurant-ordering']])

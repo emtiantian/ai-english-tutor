@@ -33,6 +33,13 @@ ENV VITE_LIVE2D_MAX_DPR=${VITE_LIVE2D_MAX_DPR}
 ENV VITE_LIVE2D_TARGET_FPS=${VITE_LIVE2D_TARGET_FPS}
 RUN pnpm --filter tutor-app build
 
+# 构建阶段预压缩文本静态资源。运行时 Nginx 直接发送同名 .gz，
+# 避免每次请求动态压缩占用服务器 CPU；原文件保留给不支持 gzip 的客户端。
+RUN find apps/tutor-app/dist -type f -size +1024c \
+    \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.json' \
+       -o -name '*.svg' -o -name '*.xml' -o -name '*.txt' -o -name '*.wasm' \) \
+    -exec gzip -9 -k {} \;
+
 # ── Serve Stage ──
 FROM nginx:alpine
 COPY --from=builder /app/apps/tutor-app/dist /usr/share/nginx/html

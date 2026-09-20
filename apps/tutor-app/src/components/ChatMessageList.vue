@@ -64,7 +64,7 @@
           </svg>
           生词
         </span>
-        <span v-for="(word, idx) in msg.vocabulary" :key="word" class="vocab-item">
+        <span v-for="word in msg.vocabulary" :key="word" class="vocab-item">
           <button class="vocab-tag" title="点击朗读" @click="$emit('speak-word', word)">
             <svg
               class="vocab-speak-icon"
@@ -81,7 +81,7 @@
           <button
             class="vocab-detail-btn"
             title="查看详细说明"
-            @click="$emit('word-detail', { word, sentence: msg.vocabularySentences?.[idx] })"
+            @click="$emit('word-detail', { word, sentence: msg.text })"
           >
             详细
           </button>

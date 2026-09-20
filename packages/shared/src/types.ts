@@ -56,12 +56,9 @@ export interface TeachingResponse {
   motionId?: string
   expressionId?: string
   vocabulary?: string[]
-  /** 教学例句 —— 每个生词一个，展示在语境中的用法。 */
-  vocabularySentences?: string[]
   /**
    * 学习者视角的回复建议：1-3 句学生接下来可以说的简短回复，
    * 使用其角色口吻。为 `ChatInputBar` 中的 💡 提示提供内容。
-   * 与 `vocabularySentences`（教学例句）不同。
    * 不持久化 —— 每轮临时的提示，每次 LLM 回复后刷新。
    */
   studentReplyHints?: string[]

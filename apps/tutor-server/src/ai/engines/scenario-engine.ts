@@ -4,11 +4,7 @@ import type { AudioPipeline } from '../audio-pipeline.js'
 import type { LLMProvider } from '../llm.js'
 import { buildScenarioStartMessages } from '../prompts/teaching.js'
 import { parseCompleteTeachingResponse } from '../response/complete-teaching-response.js'
-import {
-  streamTeachingResponse,
-  warnIfMissingVocabSentences,
-  ensureReplyVocabulary
-} from '../response/response-orchestrator.js'
+import { streamTeachingResponse, ensureReplyVocabulary } from '../response/response-orchestrator.js'
 import { SessionManager, type ScenarioState } from '../session-manager.js'
 import { levelNumToCEFR } from '../utils/cefr.js'
 import { broadcastToSession } from '../../sse/handler.js'
@@ -55,7 +51,6 @@ export class ScenarioEngine {
       await parseCompleteTeachingResponse(raw, this.llm, signal),
       session.vocabulary
     )
-    warnIfMissingVocabSentences(parsed, sessionId, 'startScenarioLesson')
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 
     const scenarioResponse = this.toResponse(state, session.vocabulary)

@@ -1,4 +1,3 @@
-import { logger } from '../../logger.js'
 import { broadcastToSession } from '../../sse/handler.js'
 import type { TeacherChunkEvent, TeacherResponseEvent } from '../../sse/types.js'
 import { getScenarioById } from '../../vocab/loader.js'
@@ -12,19 +11,6 @@ import { JsonTextStreamExtractor } from '../stream-text-extractor.js'
 import { ensureReplyVocabulary } from './reply-vocabulary.js'
 
 export { ensureReplyVocabulary } from './reply-vocabulary.js'
-
-export function warnIfMissingVocabSentences(
-  parsed: { vocabulary?: string[]; vocabularySentences?: string[] },
-  sessionId: string,
-  origin: string
-): void {
-  if (parsed.vocabulary?.length && !parsed.vocabularySentences?.length) {
-    logger.warn(
-      { sessionId, origin, vocabulary: parsed.vocabulary },
-      'LLM 响应缺少 vocabularySentences'
-    )
-  }
-}
 
 export async function streamTeachingResponse(
   llm: LLMProvider,
@@ -132,7 +118,6 @@ export class ResponseOrchestrator {
       await parseCompleteTeachingResponse(raw, this.llm, signal),
       session.vocabulary
     )
-    warnIfMissingVocabSentences(parsed, sessionId, 'handleUserSpeak')
     this.sessions.addMessage(sessionId, session, 'user', userText)
     this.sessions.addMessage(sessionId, session, 'assistant', parsed.text, parsed)
 

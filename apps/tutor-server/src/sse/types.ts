@@ -21,7 +21,6 @@ export interface TeacherResponseEvent extends SSEEventBase {
     motionId?: string
     expressionId?: string
     vocabulary?: string[]
-    vocabularySentences?: string[]
     /** 学习者可说的回复建议（每轮 1-3 条短回复，不持久化）。 */
     studentReplyHints?: string[]
     scenario?: {

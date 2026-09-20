@@ -4,8 +4,7 @@ import type { LLMMessage } from '../../llm.js'
  * 单词详情 / 词典释义
  *
  * 为单个英文单词生成结构化、词典风格的中文释义，可选地基于它出现的句子。
- * LLM 是主要来源（覆盖任何上下文词）；静态词汇表只提供可选提示（等级 / 已知释义），
- * 将其融入 prompt。
+ * LLM 直接按词典式结构生成解释；单词出现的句子只用于确定语境义项。
  */
 
 /**
@@ -13,27 +12,18 @@ import type { LLMMessage } from '../../llm.js'
  *
  * @param word     要解释的单词。
  * @param sentence 单词出现的可选句子（让 LLM 优先处理该上下文义项）。
- * @param hint     可选的静态词典提示（等级 / 已知释义 / 词性）。
  */
-export function buildVocabExplainMessages(
-  word: string,
-  sentence?: string,
-  hint?: { level?: string; meaning?: string; pos?: string }
-): LLMMessage[] {
+export function buildVocabExplainMessages(word: string, sentence?: string): LLMMessage[] {
   const contextLines: string[] = []
   if (sentence) {
     contextLines.push(
       `The word appeared in this sentence: "${sentence}". Put the sense that fits this context FIRST.`
     )
   }
-  if (hint?.level) contextLines.push(`Known CEFR level: ${hint.level}.`)
-  if (hint?.meaning)
-    contextLines.push(`A rough known Chinese gloss (refine, do not blindly copy): ${hint.meaning}.`)
-  if (hint?.pos) contextLines.push(`Likely part of speech: ${hint.pos}.`)
 
   const system = [
     'You are a bilingual (English–Chinese) dictionary for Chinese learners of English.',
-    'Given an English word, produce a concise but complete dictionary entry.',
+    'Given an English word, produce a concise but complete dictionary-style entry.',
     'All explanations and example translations MUST be in Simplified Chinese (简体中文).',
     'Example sentences themselves stay in natural English.',
     '',

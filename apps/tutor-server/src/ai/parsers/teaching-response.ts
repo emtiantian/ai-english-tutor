@@ -14,7 +14,6 @@ export interface ParsedResponse {
   motionId: string
   expressionId: string
   vocabulary?: string[]
-  vocabularySentences?: string[]
   /** 学习者视角的回复建议（驱动 💡 提示）。每轮临时生成，不持久化。 */
   studentReplyHints?: string[]
   intent: string
@@ -29,7 +28,6 @@ export interface ParsedResponse {
 export function parseTeachingResponse(content: string): ParsedResponse {
   let text = content
   let vocabulary: string[] | undefined
-  let vocabularySentences: string[] | undefined
   let studentReplyHints: string[] | undefined
   let llmMotionId: string | undefined
   let llmExpressionId: string | undefined
@@ -43,9 +41,6 @@ export function parseTeachingResponse(content: string): ParsedResponse {
       text = typeof parsed.text === 'string' ? parsed.text : content
       textZh = typeof parsed.textZh === 'string' ? parsed.textZh : undefined
       vocabulary = Array.isArray(parsed.vocabulary) ? parsed.vocabulary : undefined
-      vocabularySentences = Array.isArray(parsed.vocabularySentences)
-        ? parsed.vocabularySentences.filter((s: unknown) => typeof s === 'string' && s.length > 0)
-        : undefined
       studentReplyHints = Array.isArray(parsed.studentReplyHints)
         ? parsed.studentReplyHints.filter((s: unknown) => typeof s === 'string' && s.length > 0)
         : undefined
@@ -73,14 +68,13 @@ export function parseTeachingResponse(content: string): ParsedResponse {
   }
 
   // 若 JSON 解析失败，尝试从纯文本中提取尾部分析字段
-  // （例如 'vocabulary: ["word"] vocabularySentences: [...] studentReplyHints: [...]'）
-  if (!vocabulary && !vocabularySentences && !studentReplyHints) {
+  // （例如 'vocabulary: ["word"] studentReplyHints: [...]'）
+  if (!vocabulary && !studentReplyHints) {
     const result = extractLiteralFields(text)
     if (result.stripped !== text) {
       logger.info('Extracted trailing analysis fields from non-JSON LLM response')
       text = result.stripped
       vocabulary = result.vocabulary
-      vocabularySentences = result.vocabularySentences
       studentReplyHints = result.studentReplyHints
     }
   }
@@ -102,7 +96,6 @@ export function parseTeachingResponse(content: string): ParsedResponse {
     motionId,
     expressionId,
     vocabulary,
-    vocabularySentences,
     studentReplyHints,
     intent
   }
@@ -112,7 +105,6 @@ export function parseTeachingResponse(content: string): ParsedResponse {
  * 提取 LLM 无法生成有效 JSON 时可能以纯文本形式输出的尾部分析字段。
  * 匹配如下模式：
  *   vocabulary: ["word1", "word2"]
- *   vocabularySentences: ["sentence1"]
  *   studentReplyHints: ["hint1"]
  * 位于文本末尾（前导空白可选）。
  *
@@ -121,12 +113,10 @@ export function parseTeachingResponse(content: string): ParsedResponse {
 function extractLiteralFields(text: string): {
   stripped: string
   vocabulary?: string[]
-  vocabularySentences?: string[]
   studentReplyHints?: string[]
 } {
   // 一次性匹配所有尾部分段
-  const fieldPattern =
-    /(?:\s+(vocabulary|vocabularySentences|studentReplyHints)\s*:\s*(\[[\s\S]*?\]))+$/
+  const fieldPattern = /(?:\s+(vocabulary|studentReplyHints)\s*:\s*(\[[\s\S]*?\]))+$/
 
   const match = text.match(fieldPattern)
   if (!match) return { stripped: text }
@@ -136,11 +126,10 @@ function extractLiteralFields(text: string): {
   const stripped = text.slice(0, text.length - trailingBlock.length).trimEnd()
 
   let vocabulary: string[] | undefined
-  let vocabularySentences: string[] | undefined
   let studentReplyHints: string[] | undefined
 
   // 从尾部分段解析每个字段
-  const fieldRegex = /(vocabulary|vocabularySentences|studentReplyHints)\s*:\s*(\[[\s\S]*?\])/g
+  const fieldRegex = /(vocabulary|studentReplyHints)\s*:\s*(\[[\s\S]*?\])/g
   let fieldMatch: RegExpExecArray | null
   while ((fieldMatch = fieldRegex.exec(trailingBlock)) !== null) {
     const key = fieldMatch[1]
@@ -151,14 +140,13 @@ function extractLiteralFields(text: string): {
       const strings = arr.filter((s: unknown) => typeof s === 'string' && s.length > 0)
       if (strings.length === 0) continue
       if (key === 'vocabulary') vocabulary = strings
-      else if (key === 'vocabularySentences') vocabularySentences = strings
       else if (key === 'studentReplyHints') studentReplyHints = strings
     } catch {
       // 跳过无法解析的字段
     }
   }
 
-  return { stripped, vocabulary, vocabularySentences, studentReplyHints }
+  return { stripped, vocabulary, studentReplyHints }
 }
 
 /**

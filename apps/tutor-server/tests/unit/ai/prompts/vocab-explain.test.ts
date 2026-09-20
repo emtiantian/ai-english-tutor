@@ -3,18 +3,14 @@ import { buildVocabExplainMessages } from '@/ai/prompts/vocab-explain.js'
 import { parseVocabExplainResponse } from '@/ai/prompts/parsers/vocab-explain.js'
 
 describe('vocab-explain prompt and parser', () => {
-  it('buildVocabExplainMessages includes word, sentence and level hint', () => {
-    const messages = buildVocabExplainMessages('abandon', 'They had to abandon the ship.', {
-      level: 'B2',
-      meaning: '放弃',
-      pos: 'v.'
-    })
+  it('buildVocabExplainMessages includes word and sentence without static dictionary hints', () => {
+    const messages = buildVocabExplainMessages('abandon', 'They had to abandon the ship.')
     expect(messages.length).toBe(2)
     expect(messages[0].role).toBe('system')
     const userContent = String(messages[1].content)
     expect(userContent).toContain('abandon')
     expect(userContent).toContain('They had to abandon the ship.')
-    expect(userContent).toContain('B2')
+    expect(userContent).not.toContain('Known CEFR level')
   })
 
   it('parses normal JSON response', () => {

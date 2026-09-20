@@ -17,7 +17,6 @@ function response(overrides: Record<string, unknown> = {}) {
     motionId: 'nod',
     expressionId: 'happy',
     vocabulary: [],
-    vocabularySentences: [],
     studentReplyHints: ['Thank you.'],
     ...overrides
   })

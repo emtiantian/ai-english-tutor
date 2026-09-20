@@ -4,12 +4,11 @@ import { parseTeachingResponse } from '@/ai/parsers/teaching-response.js'
 describe('parseTeachingResponse', () => {
   it('parses valid JSON object directly', () => {
     const validJson = parseTeachingResponse(
-      '{"text":"Hello!","textZh":"你好！","vocabulary":["hello"],"vocabularySentences":["Hello there."],"studentReplyHints":["Hi, nice to meet you!"]}'
+      '{"text":"Hello!","textZh":"你好！","vocabulary":["hello"],"studentReplyHints":["Hi, nice to meet you!"]}'
     )
     expect(validJson.text).toBe('Hello!')
     expect(validJson.textZh).toBe('你好！')
     expect(validJson.vocabulary).toEqual(['hello'])
-    expect(validJson.vocabularySentences).toEqual(['Hello there.'])
     expect(validJson.studentReplyHints).toEqual(['Hi, nice to meet you!'])
     expect(validJson.motionId).toBe('wave')
     expect(validJson.intent).toBe('greeting')
@@ -50,14 +49,6 @@ describe('parseTeachingResponse', () => {
   it('falls back to raw content when JSON has no text field', () => {
     const result = parseTeachingResponse('{"textZh":"你好"}')
     expect(result.text).toBe('{"textZh":"你好"}')
-  })
-
-  it('filters non-string and empty vocabulary sentences', () => {
-    const mixed = parseTeachingResponse(
-      '{"text":"Ok","vocabulary":["a","b"],"vocabularySentences":["Good sentence", 123, "", "Another"]}'
-    )
-    expect(mixed.vocabulary).toEqual(['a', 'b'])
-    expect(mixed.vocabularySentences).toEqual(['Good sentence', 'Another'])
   })
 
   it('filters non-string and empty student reply hints', () => {

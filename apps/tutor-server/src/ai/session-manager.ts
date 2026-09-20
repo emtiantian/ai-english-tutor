@@ -67,7 +67,6 @@ function serializeAssistantHistory(metadata: TeachingResponse, fallbackText: str
     motionId: metadata.motionId ?? 'nod',
     expressionId: metadata.expressionId ?? 'neutral',
     vocabulary: metadata.vocabulary ?? [],
-    vocabularySentences: metadata.vocabularySentences ?? [],
     studentReplyHints: metadata.studentReplyHints ?? []
   })
 }

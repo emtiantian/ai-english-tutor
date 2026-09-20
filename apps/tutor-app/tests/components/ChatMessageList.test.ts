@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ChatMessageList from '../../src/components/ChatMessageList.vue'
 import type { ChatMessage } from '../../src/stores/tutor.js'
@@ -159,8 +159,7 @@ describe('ChatMessageList', () => {
           text: 'Let us practice.',
           isStreaming: false,
           timestamp: Date.now(),
-          vocabulary: ['practice', 'abandon'],
-          vocabularySentences: ['Let us practice.', 'Do not abandon it.']
+          vocabulary: ['practice', 'abandon']
         }
       ]
     })
@@ -172,7 +171,7 @@ describe('ChatMessageList', () => {
     expect(wrapper.emitted('speak-word')![0]).toEqual(['practice'])
   })
 
-  it('emits word-detail with the aligned sentence when 详细 button is clicked', async () => {
+  it('emits word-detail with the dialogue sentence when 详细 button is clicked', async () => {
     const wrapper = mountComponent({
       messages: [
         {
@@ -181,8 +180,7 @@ describe('ChatMessageList', () => {
           text: 'Let us practice.',
           isStreaming: false,
           timestamp: Date.now(),
-          vocabulary: ['practice', 'abandon'],
-          vocabularySentences: ['Let us practice.', 'Do not abandon it.']
+          vocabulary: ['practice', 'abandon']
         }
       ]
     })
@@ -192,7 +190,7 @@ describe('ChatMessageList', () => {
     await detailButtons[1].trigger('click')
     expect(wrapper.emitted('word-detail')).toHaveLength(1)
     expect(wrapper.emitted('word-detail')![0]).toEqual([
-      { word: 'abandon', sentence: 'Do not abandon it.' }
+      { word: 'abandon', sentence: 'Let us practice.' }
     ])
   })
 })

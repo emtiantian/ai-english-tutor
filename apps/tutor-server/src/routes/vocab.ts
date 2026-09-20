@@ -6,7 +6,7 @@ import { lookupWord } from '../vocab/loader.js'
 
 const explainCache = new LRUCache<string, WordExplanation>({ max: 500 })
 
-/** Basic word lookup used by the dialogue vocabulary popover. */
+/** 词典式单词解释接口。 */
 export async function vocabRoutes(server: FastifyInstance): Promise<void> {
   server.get(
     '/api/vocab/lookup/:word',

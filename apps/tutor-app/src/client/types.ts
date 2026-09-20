@@ -94,7 +94,6 @@ export interface ChatResponse {
   motionId?: string
   expressionId?: string
   vocabulary?: string[]
-  vocabularySentences?: string[]
   /** 学习者口吻的回复建议（用于 💡 提示）。 */
   studentReplyHints?: string[]
   audioBase64?: string

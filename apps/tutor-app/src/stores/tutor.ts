@@ -14,7 +14,6 @@ export interface ChatMessage {
   textZh?: string
   isStreaming?: boolean
   vocabulary?: string[]
-  vocabularySentences?: string[]
   studentReplyHints?: string[]
   timestamp: number
   audioBase64?: string
@@ -78,7 +77,6 @@ export const useTutorStore = defineStore('tutor', () => {
     text: string
     textZh?: string
     vocabulary?: string[]
-    vocabularySentences?: string[]
     studentReplyHints?: string[]
   }) {
     const scenario = currentScenario.value ? { ...currentScenario.value } : undefined
@@ -88,7 +86,6 @@ export const useTutorStore = defineStore('tutor', () => {
         text: response.text,
         textZh: response.textZh,
         vocabulary: response.vocabulary,
-        vocabularySentences: response.vocabularySentences,
         studentReplyHints: response.studentReplyHints,
         scenario,
         isStreaming: false
@@ -102,7 +99,6 @@ export const useTutorStore = defineStore('tutor', () => {
       text: response.text,
       textZh: response.textZh,
       vocabulary: response.vocabulary,
-      vocabularySentences: response.vocabularySentences,
       studentReplyHints: response.studentReplyHints,
       scenario,
       timestamp: Date.now()

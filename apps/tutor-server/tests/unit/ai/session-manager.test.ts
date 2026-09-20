@@ -12,7 +12,6 @@ describe('SessionManager conversation history', () => {
       motionId: 'gesture',
       expressionId: 'curious',
       vocabulary: ['menu'],
-      vocabularySentences: ['Could I see the menu, please?'],
       studentReplyHints: ['Yes, please. Could I see the menu?']
     })
 
@@ -23,7 +22,6 @@ describe('SessionManager conversation history', () => {
       motionId: 'gesture',
       expressionId: 'curious',
       vocabulary: ['menu'],
-      vocabularySentences: ['Could I see the menu, please?'],
       studentReplyHints: ['Yes, please. Could I see the menu?']
     })
   })

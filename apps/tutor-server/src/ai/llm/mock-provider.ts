@@ -42,7 +42,6 @@ export class MockProvider implements LLMProvider {
         motionId: 'wave',
         expressionId: 'happy',
         vocabulary: [],
-        vocabularySentences: [],
         studentReplyHints: ['Could I see the menu, please?']
       })
     }
@@ -69,7 +68,6 @@ export class MockProvider implements LLMProvider {
       motionId: 'wave',
       expressionId: 'happy',
       vocabulary: [],
-      vocabularySentences: [],
       studentReplyHints: ['Could I see the menu, please?']
     })
 

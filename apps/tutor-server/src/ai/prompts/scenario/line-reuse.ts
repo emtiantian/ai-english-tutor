@@ -22,7 +22,7 @@ export function buildLineReuseBlock(reusableLines?: string[]): string {
   // 提示词：台词复用规则 —— 让模型在自然且符合角色时，逐字复用已说过的台词以命中 TTS 缓存
   const lineReuseRule = `
 
-LINE REUSE (reuse verbatim when appropriate) — Below are lines you have already spoken in this scenario and CEFR level. If one of them fits the current situation naturally and in character, reuse it word-for-word (including identical punctuation) as your "text" field. Only write a new "text" when none of the lines fit. This keeps your voice consistent. This rule applies ONLY to the "text" field; "textZh", "vocabularySentences", and "studentReplyHints" still follow their own rules.`
+LINE REUSE (reuse verbatim when appropriate) — Below are lines you have already spoken in this scenario and CEFR level. If one of them fits the current situation naturally and in character, reuse it word-for-word (including identical punctuation) as your "text" field. Only write a new "text" when none of the lines fit. This keeps your voice consistent. This rule applies ONLY to the "text" field; "studentReplyHints" still follows its own rules.`
   // 提示词：可复用台词列表 —— 列出模型可以选择逐字复用的具体台词
   const lineReuseList = `
 

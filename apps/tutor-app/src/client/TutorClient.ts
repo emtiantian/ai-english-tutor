@@ -8,6 +8,19 @@ import type {
   RuntimeConfig,
   ScenarioSummary
 } from './types'
+import type { ApiErrorResponse } from '@ai-english-tutor/shared'
+
+export class TutorApiError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+    readonly details?: Record<string, unknown>,
+    readonly status?: number
+  ) {
+    super(message)
+    this.name = 'TutorApiError'
+  }
+}
 
 export interface TutorClientOptions {
   baseUrl: string
@@ -204,12 +217,19 @@ export class TutorClient {
     try {
       const res = await fetchWithTimeout(`${this.options.baseUrl}${path}`, {
         ...init,
+        credentials: init.credentials ?? 'include',
         timeout
       })
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
-        throw new Error(err.error || `HTTP ${res.status}`)
+        const err = (await res.json().catch(() => undefined)) as
+          (Partial<ApiErrorResponse> & { error?: string }) | undefined
+        throw new TutorApiError(
+          err?.message || err?.error || `HTTP ${res.status}`,
+          err?.code || 'HTTP_ERROR',
+          err?.details,
+          res.status
+        )
       }
 
       return res.json().catch(() => {

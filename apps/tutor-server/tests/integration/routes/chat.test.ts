@@ -59,4 +59,75 @@ describe('chat routes stream mode', () => {
 
     await server.close()
   })
+
+  it('allows five guest turns across scenario restarts and rejects the sixth', async () => {
+    const { createServer } = await import('@/server.js')
+    const server = await createServer()
+    const sessionId = 'guest-limit-session'
+
+    const start = await server.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: {
+        type: 'lesson.start',
+        scenarioId: 'restaurant-ordering',
+        sessionId,
+        level: 2
+      }
+    })
+    expect(start.statusCode).toBe(200)
+    const cookie = start.headers['set-cookie']?.split(';')[0]
+    expect(cookie).toContain('tutor_guest=')
+
+    for (let turn = 1; turn <= 5; turn += 1) {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/api/chat',
+        headers: { cookie: cookie ?? '' },
+        payload: {
+          type: 'user.speak',
+          text: `Guest turn ${turn}`,
+          sessionId,
+          level: 2
+        }
+      })
+      expect(response.statusCode).toBe(200)
+
+      if (turn === 3) {
+        const restart = await server.inject({
+          method: 'POST',
+          url: '/api/chat',
+          headers: { cookie: cookie ?? '' },
+          payload: {
+            type: 'lesson.start',
+            scenarioId: 'restaurant-ordering',
+            sessionId,
+            level: 2
+          }
+        })
+        expect(restart.statusCode).toBe(200)
+      }
+    }
+
+    const blocked = await server.inject({
+      method: 'POST',
+      url: '/api/chat',
+      headers: { cookie: cookie ?? '' },
+      payload: {
+        type: 'user.speak',
+        text: 'One more turn',
+        sessionId,
+        level: 2
+      }
+    })
+
+    expect(blocked.statusCode).toBe(401)
+    expect(JSON.parse(blocked.body)).toEqual({
+      code: 'AUTH_REQUIRED',
+      message: '你已完成 5 轮免费英语练习，登录后可继续。',
+      details: { used: 5, limit: 5 }
+    })
+
+    await server.close()
+  })
 })

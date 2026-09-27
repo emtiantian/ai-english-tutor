@@ -81,6 +81,12 @@ export interface SpeakOptions {
 
 export type TTSSource = 'local' | 'remote'
 
+export interface ApiErrorResponse {
+  code: string
+  message: string
+  details?: Record<string, unknown>
+}
+
 export interface CharacterState {
   currentMotion: string | null
   currentExpression: string | null

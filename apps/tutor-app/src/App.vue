@@ -41,6 +41,12 @@
       @speak="handleSpeakWord(activeWord)"
     />
 
+    <LoginRequiredModal
+      v-if="loginRequired"
+      :limit="guestTurnLimit"
+      @close="loginRequired = false"
+    />
+
     <ChatInputBar
       v-if="store.phase === 'teaching'"
       :is-recording="isRecording"
@@ -92,7 +98,9 @@ import WordDetailModal from './components/WordDetailModal.vue'
 import ChatInputBar from './components/ChatInputBar.vue'
 import ScenarioPicker from './components/ScenarioPicker.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
+import LoginRequiredModal from './components/LoginRequiredModal.vue'
 import type { ChatRequestBody, ScenarioSummary, WordExplanation } from './client/types.js'
+import { TutorApiError } from './client/TutorClient.js'
 import { createMessageId } from './utils/message-utils.js'
 import { blobToBase64 } from './audio/utils.js'
 import { audioDiagnostic } from './audio/diagnostics.js'
@@ -106,6 +114,8 @@ const selectedLevel = ref(4)
 const characterProvider = shallowRef<CharacterProvider | null>(null)
 // 远程 TTS 在网络响应期间尚未进入 audioPlayer.isPlaying，单靠播放状态无法防止重复点击。
 const speechRequestActive = ref(false)
+const loginRequired = ref(false)
+const guestTurnLimit = ref(5)
 
 const { client } = useTutorClient({ characterProvider })
 const {
@@ -144,15 +154,25 @@ async function sendToBackend(
 ) {
   store.requestEpoch++
   const requestId = createMessageId().replace('msg-', 'req-')
-  return client.sendMessage(
-    {
-      level: selectedLevel.value,
-      sessionId: store.connectionId,
-      requestId,
-      ...payload
-    },
-    undefined
-  )
+  try {
+    return await client.sendMessage(
+      {
+        level: selectedLevel.value,
+        sessionId: store.connectionId,
+        requestId,
+        ...payload
+      },
+      undefined
+    )
+  } catch (err) {
+    if (err instanceof TutorApiError && err.code === 'AUTH_REQUIRED') {
+      const limit = err.details?.limit
+      guestTurnLimit.value = typeof limit === 'number' ? limit : 5
+      loginRequired.value = true
+      store.isThinking = false
+    }
+    throw err
+  }
 }
 
 function interruptTeacher() {
@@ -324,6 +344,7 @@ async function sendText(text: string) {
   } catch (err) {
     console.error('[App] Failed to send message:', err)
     store.isThinking = false
+    if (err instanceof TutorApiError && err.code === 'AUTH_REQUIRED') return
     store.messages.push({
       id: createMessageId(),
       role: 'system',

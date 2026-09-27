@@ -3,6 +3,8 @@ import { logger } from '../logger.js'
 import { broadcastToSession, interruptSession, onSessionDisconnect } from '../sse/handler.js'
 import { tutorEngine } from '../ai/engine.js'
 import type { ErrorEvent, TeacherInterruptedEvent, TeacherResponseEvent } from '../sse/types.js'
+import { GUEST_TURN_LIMIT, guestUsageLimiter } from '../access/guest-usage-limiter.js'
+import { config } from '../config.js'
 
 function reportStreamingFailure(
   sessionId: string | undefined,
@@ -46,6 +48,11 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
     }
     const { type, text, level, sessionId, requestId, stream, scenarioId, voiceDesign } =
       request.body
+    const guest = guestUsageLimiter.identify(
+      request.headers.cookie,
+      config.NODE_ENV === 'production'
+    )
+    if (guest.cookie) reply.header('Set-Cookie', guest.cookie)
     if (text !== undefined && typeof text !== 'string') {
       return reply.status(400).send({ error: 'text must be a string', code: 'INVALID_TEXT' })
     }
@@ -76,6 +83,17 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
     try {
       switch (type) {
         case 'user.speak': {
+          const reservation = guestUsageLimiter.reserveTurn(guest.id)
+          if (!reservation) {
+            return reply.status(401).send({
+              code: 'AUTH_REQUIRED',
+              message: `你已完成 ${GUEST_TURN_LIMIT} 轮免费英语练习，登录后可继续。`,
+              details: {
+                used: guestUsageLimiter.getCompletedTurns(guest.id),
+                limit: GUEST_TURN_LIMIT
+              }
+            })
+          }
           const controller = new AbortController()
           const onClose = () => controller.abort()
 
@@ -103,7 +121,9 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
           // 等待的生成过程，最终以 500 报错。
           if (stream) {
             enginePromise
+              .then(() => reservation.commit())
               .catch(err => {
+                reservation.release()
                 logger.error({ err, sessionId }, 'Streaming user speak failed')
                 if (!controller.signal.aborted) reportStreamingFailure(sessionId, requestId, err)
               })
@@ -116,6 +136,7 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
           // 非流式模式：等待完整响应并返回。
           try {
             const result = await enginePromise
+            reservation.commit()
 
             // 注意：engine 内部已经通过 SSE 广播
             return reply.send({
@@ -128,6 +149,9 @@ export async function chatRoutes(server: FastifyInstance): Promise<void> {
               audioBase64: result.audioBase64,
               scenario: result.scenario
             })
+          } catch (err) {
+            reservation.release()
+            throw err
           } finally {
             request.raw.off('close', onClose)
             unsubscribeSSE?.()

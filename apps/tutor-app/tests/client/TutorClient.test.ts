@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { TutorClient } from '../../src/client/TutorClient.js'
+import { TutorApiError, TutorClient } from '../../src/client/TutorClient.js'
 
 // 模拟 EventSource
 global.EventSource = vi.fn() as any
@@ -112,6 +112,27 @@ describe('TutorClient', () => {
       await expect(client.sendMessage({ type: 'user.speak', text: 'Hi' })).rejects.toThrow(
         'Server error'
       )
+    })
+
+    it('preserves structured API error details for auth gates', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: () =>
+          Promise.resolve({
+            code: 'AUTH_REQUIRED',
+            message: '登录后可继续',
+            details: { used: 5, limit: 5 }
+          })
+      })
+
+      await expect(client.sendMessage({ type: 'user.speak', text: 'Hi' })).rejects.toMatchObject({
+        name: 'TutorApiError',
+        code: 'AUTH_REQUIRED',
+        message: '登录后可继续',
+        details: { used: 5, limit: 5 },
+        status: 401
+      } satisfies Partial<TutorApiError>)
     })
   })
 
